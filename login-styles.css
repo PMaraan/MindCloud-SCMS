@@ -1,0 +1,130 @@
+/* Full screen row layout */
+.full-height {
+  min-height: 100vh;
+  display: flex;
+}
+
+/* Left panel (Logo) */
+.left {
+  background-image: url("lpu-logo.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-color: #a8242c;
+}
+
+/* Right panel (Background + Login) */
+.right {
+  background-image: url("coecsa-building.jpg");
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5%;
+  position: relative;
+}
+
+/* Dark overlay for right panel */
+.right::before {
+  content: "";
+  position: absolute;
+  top: 0; 
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.3);
+  z-index: 0;
+}
+
+/* Login container styling (glass effect) */
+.login-form-container {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  padding: 40px 40px 3% 40px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  width: 100%;
+  max-width: 400px;
+  z-index: 1;
+  position: relative;
+  opacity: 0;
+  animation: fadeIn 1s ease-in-out forwards;
+}
+
+/* Login form layout */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  color: #fff;
+}
+
+/* Label and form text color */
+.login-form label,
+.login-form .form-text {
+  color: #fff;
+}
+
+/* Input field appearance */
+.login-form .form-control {
+  background-color: rgba(255, 255, 255, 0.85);
+  color: #000;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+
+/* Login button styling */
+.login-button {
+  display: block;
+  margin: 0 auto;
+  padding: 10px 30px;
+  font-weight: bold;
+  border-radius: 8px;
+  margin-top: 10%;
+}
+
+/* Forgot password link */
+.forgot-password {
+  font-size: 0.8rem;
+  color: #f8f9fa;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.forgot-password:hover {
+  color: #0d6efd;
+  text-decoration: underline;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 1200px) {
+  .left {
+    display: none !important;
+  }
+
+  .right {
+    width: 100% !important;
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+  }
+
+  .login-form-container {
+    padding-top: 5% !important;
+    padding-bottom: 5% !important;
+  }
+}
+
+/* Fade-in animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
