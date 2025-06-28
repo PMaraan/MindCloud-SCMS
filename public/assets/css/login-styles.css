@@ -6,7 +6,7 @@
 
 /* Left panel (Logo) */
 .left {
-  background-image: url("lpu-logo.png");
+  background-image: url("../images/lpu-logo.png");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -15,7 +15,7 @@
 
 /* Right panel (Background + Login) */
 .right {
-  background-image: url("coecsa-building.jpg");
+  background-image: url("../images/coecsa-building.jpg");
   background-size: cover;
   background-repeat: no-repeat;
   background-position: center;
