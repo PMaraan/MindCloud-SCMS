@@ -1,4 +1,35 @@
 <!DOCTYPE html>
+
+<?php
+/*
+// public/index.php
+
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../app/lib/Database.php';
+
+if (USE_MOCK) {
+    require_once __DIR__ . '/../app/models/MockUserModel.php';
+    $userModel = new MockUserModel();
+} else {
+    require_once __DIR__ . '/../app/models/UserModel.php';
+    $db = new Database(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS);
+    $pdo = $db->connect();
+    $userModel = new UserModel($pdo);
+}
+
+// Example login check (replace with real routing)
+$username = $_POST['username'] ?? '';
+$password = $_POST['password'] ?? '';
+$user = $userModel->authenticate($username, $password);
+
+if ($user) {
+    echo "Login successful!";
+} else {
+    echo "Invalid credentials.";
+}
+    */
+?>
+
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
