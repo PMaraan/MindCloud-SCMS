@@ -1,72 +1,117 @@
+/* ========== Base ========== */
 body {
   font-family: Arial, sans-serif;
   margin: 0;
   background-color: #f3f4f6;
 }
-.sidebar {
-  width: 250px;
-  background-color: #7a0e0e;
-  color: white;
-  height: 100vh;
-  position: fixed;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-.sidebar img {
-  width: 200px;
-  margin: 20px 0;
+
+.container-fluid {
+  margin: 1% auto;
 }
 
-.nav-item {
-  background-color: #b30000;
-  padding: 12px;
-  width: 100%;
-  text-align: center;
-  cursor: pointer;
-}
-.nav-item + .nav-item {
-  background-color: lightgray;
-  color: #333;
-}
-.main-content {
-  margin-left: 250px;
-  padding: 20px;
+.container-search-bar {
+  margin: 0;
 }
 
-.search-bar {
-  margin: 20px 0;
+/* ========== Input + Buttons ========== */
+.input-group .form-control {
+  height: 40px;
+}
+
+.filter-btn {
+  background-color: transparent;
+  border: none;
+  padding: 0 10px;
+  font-size: 18px;
+  color: #555;
   display: flex;
   align-items: center;
 }
-.search-bar input {
-  width: 300px;
-  padding: 10px;
-  border-radius: 5px;
-  border: 1px solid #ccc;
+
+.filter-btn:hover {
+  color: #000;
 }
+
+/* ========== Table Styling ========== */
 .account-table {
   width: 100%;
   border-collapse: collapse;
   background-color: white;
+  table-layout: fixed;
 }
-.account-table th, .account-table td {
+
+.account-table thead {
+  background-color: #f0dcdc;
+  color: black;
+}
+
+.account-table th,
+.account-table td {
   padding: 12px;
   text-align: left;
   border-bottom: 0.5px solid #ddd;
+  word-wrap: break-word;
+  font-size: 14px;
 }
+
+/* ========== Role Badges ========== */
 .role-badge {
   padding: 5px 10px;
   border-radius: 12px;
   font-size: 12px;
   font-weight: bold;
   display: inline-block;
-}
-.Dean { background-color: #e0f7fa; color: #00acc1; }
-.Chair { background-color: #f3e5f5; color: #ab47bc; }
-.Professor { background-color: #e3f2fd; color: #42a5f5; }
-.edit-icon {
-  text-align: right;
+  margin-right: 5px;
   cursor: pointer;
-  color: red;
+}
+
+/* Role Color Schemes */
+.Dean {
+  background-color: #e0f7fa;
+  color: #00acc1;
+}
+
+.Chair {
+  background-color: #f3e5f5;
+  color: #ab47bc;
+}
+
+.Professor {
+  background-color: #e3f2fd;
+  color: #42a5f5;
+}
+
+.Academic-Affairs {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+/* ========== Add Role Button ========== */
+.add-role-btn {
+  margin-left: 5px;
+}
+
+.editing .add-role-btn {
+  display: inline-block !important;
+}
+
+/* ========== Edit Controls ========== */
+#edit-controls {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+#edit-controls .btn {
+  margin-left: 10px;
+  min-width: 120px;
+}
+
+/* Square Edit Buttons for Desktop */
+#edit-controls .btn.d-md-inline-flex {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  justify-content: center;
+  align-items: center;
 }

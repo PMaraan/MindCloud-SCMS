@@ -1,0 +1,65 @@
+/* ================================
+   Reset & Base Font Styling
+================================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+
+/* ================================
+   Navbar Base & Branding
+================================== */
+.navbar {
+  background-color: #670003 !important; /* LPU Red */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: white !important;
+  text-decoration: none;
+}
+
+
+/* ================================
+   Navbar Links
+================================== */
+.navbar .nav-link {
+  color: #f8f9fa !important;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.navbar .nav-link:hover {
+  color: #ffffff !important;
+  text-decoration: underline;
+}
+
+
+/* ================================
+   Active Link Styling
+================================== */
+.navbar .nav-link.active {
+  background-color: #7a0e0e;
+  border-radius: 5px;
+  padding: 5px 10px;
+  color: #fff !important;
+}
+
+
+/* ================================
+   Icon Styling
+================================== */
+.navbar .nav-link i {
+  transition: color 0.2s;
+  color: #ffffff;
+}
+
+.navbar .nav-link:hover i {
+  color: #e0e0e0;
+}
