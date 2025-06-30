@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const passwordInput = document.getElementById("password-input");
 
   form.addEventListener("submit", function (e) {
-    e.preventDefault();
+    //e.preventDefault(); // this code prevents the login logic and should be removed
 
     // Trim and validate input values
     const email = emailInput.value.trim();
@@ -30,9 +30,12 @@ document.addEventListener("DOMContentLoaded", () => {
       isValid = false;
     }
 
+    console.log("Submitting form with:", email, password);
+
     // If all validations pass
-    if (isValid) {
-      alert("Successfully logged in!");
+    if (!isValid) {
+      e.preventDefault();
+      // alert("Please fill out all of the required fields!"); // this line of code is blocking the login logic and must be removed
     }
   });
 });

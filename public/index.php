@@ -1,37 +1,5 @@
 <!DOCTYPE html>
 
-<?php
-/*
-// public/index.php
-
-//set environment variables
-require_once __DIR__ . '/../config/config.php'; 
-// database class for creating pdo
-require_once __DIR__ . '/../app/lib/database.php'; 
-
-if (USE_MOCK) {
-    require_once __DIR__ . '/../app/models/MockUserModel.php'; 
-    $userModel = new MockUserModel();
-} else {
-    require_once __DIR__ . '/../app/models/UserModel.php';
-    $db = new Database(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS);
-    $pdo = $db->connect();
-    $userModel = new UserModel($pdo);
-}
-
-// Example login check (replace with real routing)
-$username = $_POST['username'] ?? '';
-$password = $_POST['password'] ?? '';
-$user = $userModel->authenticate($username, $password);
-
-if ($user) {
-    echo "Login successful!";
-} else {
-    echo "Invalid credentials.";
-}
-    */
-?>
-
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -56,7 +24,7 @@ if ($user) {
         <!-- Login Form Container -->
         <div class="col login-form-container">
           <div class="col login-form">
-            <form method="POST" action="../app/lib/login_auth.php">
+            <form method="POST" action="../app/controllers/UserController.php">
 
               <!-- Email Input -->
               <div class="mb-3">
@@ -101,28 +69,6 @@ if ($user) {
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="assets/js/login-script.js"></script>
+  <!--<script src="assets/js/login-script.js"></script>-->
 </body>
 </html>
-
-
-
-
-
-
-
-<?php
-/*
-<!DOCTYPE html>
-<html>
-<head><title>Login</title></head>
-<body>
-<form method="POST" action="../app/lib/login_auth.php">
-  <input type="text" name="email" required placeholder="Email"><br>
-  <input type="password" name="password" required placeholder="Password"><br>
-  <button type="submit">Login</button>
-</form>
-</body>
-</html>
-*/
-?>

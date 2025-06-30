@@ -5,7 +5,7 @@
 // public/index.php
 
 require_once __DIR__ . '/../config/config.php';
-require_once __DIR__ . '/../app/lib/Database.php';
+require_once __DIR__ . '/../app/lib/database.php';
 
 if (USE_MOCK) {
     require_once __DIR__ . '/../app/models/MockUserModel.php';
@@ -54,13 +54,14 @@ if ($user) {
         <!-- Login Form Container -->
         <div class="col login-form-container">
           <div class="col login-form">
-            <form>
+            <form method="POST" action="../app/lib/login_auth.php">
 
               <!-- Email Input -->
               <div class="mb-3">
                 <label for="email-input" class="form-label">Email Address</label>
                 <input 
                   type="email" 
+                  name = "email"
                   class="form-control" 
                   id="email-input" 
                   required>
@@ -74,6 +75,7 @@ if ($user) {
                 <label for="password-input" class="form-label">Password</label>
                 <input 
                   type="password" 
+                  name = "password"
                   class="form-control password-input" 
                   id="password-input" 
                   required>

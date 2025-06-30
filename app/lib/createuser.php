@@ -4,7 +4,7 @@ require '../../config/dbconn.php';
 $id_no = '2025-01-00001';
 $fname = 'admin';
 $lname = 'admin';
-$email = 'admin';
+$email = 'admin@lpunetwork.edu.ph';
 $password = 'password';
 
 $hash = password_hash($password, PASSWORD_ARGON2ID);

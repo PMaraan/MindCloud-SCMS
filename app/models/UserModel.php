@@ -9,7 +9,7 @@ class UserModel {
     }
 
     public function authenticate($username, $password) {
-        $stmt = $this->pdo->prepare("SELECT * FROM users WHERE username = :username AND password = :password");
+        $stmt = $this->pdo->prepare("SELECT * FROM users WHERE email = :username AND password = :password");
         $stmt->execute(['username' => $username, 'password' => $password]);
         return $stmt->fetch();
     }

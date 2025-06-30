@@ -1,11 +1,14 @@
 <?php
-// config/config.php
+// app/config/config.php
 
-require_once __DIR__ . '/../vendor/autoload.php'; // If using Composer (optional)
+//require_once __DIR__ . '/../vendor/autoload.php'; // If using Composer (optional)
 
 // Load .env file if it exists
 if (file_exists(__DIR__ . '/../.env')) {
     $env = parse_ini_file(__DIR__ . '/../.env');
+    if ($env === false) {
+        die(".env file syntax is invalid.");
+    }
     foreach ($env as $key => $value) {
         putenv("$key=$value");
     }
