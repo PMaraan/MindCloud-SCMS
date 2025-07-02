@@ -1,65 +1,36 @@
-/* ================================
-   Reset & Base Font Styling
-================================== */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-
-/* ================================
-   Navbar Base & Branding
-================================== */
 .navbar {
-  background-color: #670003 !important; /* LPU Red */
+  background-color: #670003;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  min-height: 64px;
+  max-height: 64px;
 }
 
 .navbar-brand {
   font-size: 1.5rem;
   font-weight: 700;
   letter-spacing: 1px;
-  color: white !important;
-  text-decoration: none;
+  color: white;
 }
 
-
-/* ================================
-   Navbar Links
-================================== */
-.navbar .nav-link {
-  color: #f8f9fa !important;
-  font-weight: 500;
-  transition: color 0.2s ease;
+.navbar-brand,
+.navbar-brand:hover,
+.navbar-brand:focus,
+.navbar-brand:active,
+.navbar-brand:visited {
+  color: white;
 }
 
-.navbar .nav-link:hover {
-  color: #ffffff !important;
-  text-decoration: underline;
-}
-
-
-/* ================================
-   Active Link Styling
-================================== */
-.navbar .nav-link.active {
-  background-color: #7a0e0e;
-  border-radius: 5px;
-  padding: 5px 10px;
-  color: #fff !important;
-}
-
-
-/* ================================
-   Icon Styling
-================================== */
 .navbar .nav-link i {
+  display: inline-block;
   transition: color 0.2s;
-  color: #ffffff;
+  transition: transform 0.3s ease, color 0.3s ease;
+  color: white;
 }
 
 .navbar .nav-link:hover i {
-  color: #e0e0e0;
+  color: #bbbbbb;
+  transform: scale(1.2);
 }
+
+
+

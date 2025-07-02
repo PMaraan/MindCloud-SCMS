@@ -1,12 +1,9 @@
+/* REMOVE from template_menu.css */
 .sidebar {
   background-color: white;
   min-height: 100vh;
   padding: 0;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
-}
-
-.workspace {
-    background-color: #f8f4f4;
 }
 
 .sidebar-icon {
@@ -40,48 +37,9 @@
   background-color: #750303;
   transform: scale(1.02);
 }
+
 .menu-icon {
   width: 20px;
   height: 20px;
   object-fit: contain;
-}
-
-.template-card {
-  width: 200px;
-  height: 260px;
-  background-color: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  cursor: pointer;
-}
-
-.template-card:hover {
-  transform: scale(1.03);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
-}
-
-.template-thumbnail {
-  width: 80px;
-  height: 100px;
-  object-fit: contain;
-  margin-top: 40px;
-}
-
-.template-title {
-  margin-top: auto;
-  margin-bottom: 24px;
-  font-weight: 500;
-  color: #333;
-}
-
-.add-template {
-  background-color: #fffcfc;
-  border: 2px dashed #ccc;
-  color: #900404;
-}
-
-.add-template:hover {
-  background-color: #f9f9f9;
-  border-color: #900404;
 }

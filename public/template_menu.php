@@ -4,82 +4,61 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>LPU-SCMS | Design A Template</title>
+
+  <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="template_menu.css">
+
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="assets/css/nav-bar.css">
+  <link rel="stylesheet" href="assets/css/side-bar.css">
+  <link rel="stylesheet" href="assets/css/template_menu.css">
 </head>
 <body>
 
-  <div class = "container-fluid">
-  <div class = "row full-height">
+  <!-- ✅ TOP NAVIGATION BAR -->
+  <?php include 'nav-bar.php'; ?>
 
-    <div class="col-2 sidebar d-flex flex-column align-items-center py-4">
-  <!-- Icon (Sample) -->
-  <img src="sample-icon.png" alt="Icon" class="mb-4 sidebar-icon">
+  <!-- ✅ LAYOUT WRAPPER -->
+  <div class="container-fluid">
+    <div class="row">
 
-  <!-- Menu Containers -->
-  <a href="#" class="w-100 text-decoration-none">
-  <div class="menu-item active d-flex align-items-center px-3">
-    <img src="icons/design-icon.png" alt="Icon" class="menu-icon me-3">
-    <span class="flex-grow-1 text-start">Design A Template</span>
-  </div>
-</a>
-<a href="for-approval.php" class="w-100 text-decoration-none">
-  <div class="menu-item d-flex align-items-center px-3">
-    <img src="icons/approval-icon.png" alt="Icon" class="menu-icon me-3">
-    <span class="flex-grow-1 text-start">For Approval</span>
-  </div>
-</a>
-<a href="templates.php" class="w-100 text-decoration-none">
-  <div class="menu-item d-flex align-items-center px-3">
-    <img src="icons/templates-icon.png" alt="Icon" class="menu-icon me-3">
-    <span class="flex-grow-1 text-start">Templates</span>
-  </div>
-</a>
-<a href="syllabus.php" class="w-100 text-decoration-none">
-  <div class="menu-item d-flex align-items-center px-3">
-    <img src="icons/syllabus-icon.png" alt="Icon" class="menu-icon me-3">
-    <span class="flex-grow-1 text-start">Syllabus</span>
-  </div>
-</a>
-</div>
+      <!-- ✅ SIDEBAR COLUMN -->
+      <div class="col-md-2 p-0">
+        <?php include 'side-bar.php'; ?>
+      </div>
 
-
-    <div class = "col-10 workspace">
+      <!-- ✅ MAIN CONTENT AREA -->
+      <div class="col-md-10 workspace">
         <div class="container py-5">
-  <h4 class="mb-4 fw-bold">Choose a Template</h4>
-  <div class="d-flex justify-content-start gap-4 flex-wrap">
+          <h4 class="mb-4 fw-bold">Choose a Template</h4>
+          <div class="d-flex justify-content-start gap-4 flex-wrap">
 
-    <!-- Template Card 1 -->
-    <div class="template-card d-flex flex-column justify-content-center align-items-center">
-      <img src="icons/template1.png" class="template-thumbnail mb-2">
-      <span class="template-title">ABET</span>
+            <!-- Template Card 1 -->
+            <div class="template-card d-flex flex-column justify-content-center align-items-center">
+              <img src="icons/template1.png" class="template-thumbnail mb-2">
+              <span class="template-title">ABET</span>
+            </div>
+
+            <!-- Template Card 2 -->
+            <div class="template-card d-flex flex-column justify-content-center align-items-center">
+              <img src="icons/template2.png" class="template-thumbnail mb-2">
+              <span class="template-title">PTC</span>
+            </div>
+
+            <!-- Add Template -->
+            <div class="template-card add-template d-flex justify-content-center align-items-center">
+              <span class="display-4 text-muted">+</span>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
     </div>
-
-    <!-- Template Card 2 -->
-    <div class="template-card d-flex flex-column justify-content-center align-items-center">
-      <img src="icons/template2.png" class="template-thumbnail mb-2">
-      <span class="template-title">PTC</span>
-    </div>
-
-    <!-- Custom Template (Add New) -->
-    <div class="template-card add-template d-flex justify-content-center align-items-center">
-      <span class="display-4 text-muted">+</span>
-    </div>
-
   </div>
-</div>
-
-
-
-  
-    </div>
-
-  </div>
-
-
-
-  </div>
-
 
 </body>
 </html>

@@ -12,7 +12,7 @@
   <!-- Custom Styles -->
   <link rel="stylesheet" href="assets/css/accstyle.css">
 
-  <?php include 'nav-bar.html'; ?>
+  <?php include 'nav-bar.php'; ?>
 </head>
 
 <body>
