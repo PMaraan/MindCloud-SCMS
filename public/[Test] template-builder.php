@@ -3,13 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>template Builder Test</title>
+  <title>Rich Document Builder</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    :root {
-      --transition-speed: 0.4s;
-    }
-
     body {
       margin: 0;
       font-family: sans-serif;
@@ -19,238 +15,159 @@
       flex-direction: row-reverse;
     }
 
-    /* Sidebar container */
     .sidebar-wrapper {
-      position: relative;
       width: 250px;
-      transition: transform var(--transition-speed) ease-in-out;
-      z-index: 1000;
-    }
-
-    /* Sidebar slide-out effect */
-    .sidebar-wrapper.hidden {
-      transform: translateX(210px);
-    }
-
-    /* Sidebar style */
-    .sidebar {
       background: #222;
       color: #fff;
       padding: 10px;
-      height: 100vh;
-      overflow-y: auto;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      animation: slideInSidebar var(--transition-speed) ease forwards;
     }
 
-    /* Sidebar toggle button */
-    .toggle-btn {
-      width: 40px;
-      height: 40px;
-      background: #111;
-      color: #fff;
-      border: none;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      position: absolute;
-      right: 250px;
-      top: 10px;
-      border-top-right-radius: 5px;
-      border-bottom-right-radius: 5px;
-      cursor: pointer;
-      z-index: 1001;
-      transition: background var(--transition-speed);
-    }
-    .toggle-btn:hover {
-      background: #333;
-    }
-
-    /* Elements available for drag */
     .element {
       padding: 10px;
       background: #444;
       border: 1px solid #555;
-      cursor: grab;
-      user-select: none;
       margin-bottom: 10px;
       border-radius: 5px;
-      transition: transform var(--transition-speed), background var(--transition-speed);
-    }
-    .element:hover {
-      transform: scale(1.03);
-      background: #555;
+      cursor: grab;
+      user-select: none;
     }
 
-    /* Main builder area */
     .builder {
       flex-grow: 1;
-      height: 100vh;
       background: #f0f0f0;
+      padding: 10px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      padding: 10px;
-      overflow-y: auto;
-      animation: fadeIn var(--transition-speed) ease-in-out;
     }
 
-    /* Placed element style */
-    .dropped {
-      padding: 10px;
+    .toolbar {
+      background: #fff;
+      padding: 8px;
+      border: 1px solid #ccc;
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .toolbar button {
+      border: none;
+      background: #e0e0e0;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+
+    .toolbar button:hover {
+      background: #ccc;
+    }
+
+    .document {
+      flex-grow: 1;
       background: #fff;
       border: 1px solid #ccc;
-      min-height: 50px;
-      text-align: center;
-      cursor: move;
-      position: relative;
-      animation: dropFadeIn var(--transition-speed) ease;
-      transition: box-shadow var(--transition-speed);
-    }
-    .dropped:hover {
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-
-    /* Animations */
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes dropFadeIn {
-      from { opacity: 0; transform: scale(0.9); }
-      to { opacity: 1; transform: scale(1); }
-    }
-
-    @keyframes slideInSidebar {
-      from { transform: translateX(50px); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
+      padding: 20px;
+      min-height: 400px;
+      overflow-y: auto;
+      outline: none;
     }
   </style>
 </head>
 <body>
-  <!-- Sidebar with elements -->
-  <div class="sidebar-wrapper" id="sidebarWrapper">
-    <div class="sidebar">
-      <div>
-        <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
-        <h5 class="text-white mt-3">Drag Elements</h5>
-        <!-- Draggable options -->
-        <div class="element" draggable="true" data-type="button">Button</div>
-        <div class="element" draggable="true" data-type="input">Text Input</div>
-        <div class="element" draggable="true" data-type="label">Label</div>
-        <div class="element" draggable="true" data-type="radio">Radio Button</div>
-        <div class="element" draggable="true" data-type="textarea">Textarea</div>
-      </div>
-      <div class="mt-3">
-        <button class="btn btn-success w-100" onclick="saveLayout()">Save</button>
-      </div>
+
+  <div class="sidebar-wrapper">
+    <div>
+      <h5 class="text-white">Elements</h5>
+      <div class="element" draggable="true" data-type="button">Button</div>
+      <div class="element" draggable="true" data-type="input">Text Input</div>
+      <div class="element" draggable="true" data-type="label">Label</div>
+      <div class="element" draggable="true" data-type="radio">Radio</div>
+      <div class="element" draggable="true" data-type="textarea">Textarea</div>
     </div>
+    <button class="btn btn-success w-100 mt-3" onclick="saveLayout()">Save</button>
   </div>
 
-  <!-- Main builder grid -->
-  <div class="builder" id="builder"></div>
+  <div class="builder">
+    <div class="toolbar">
+      <button onclick="formatText('bold')"><b>B</b></button>
+      <button onclick="formatText('italic')"><i>I</i></button>
+      <button onclick="formatText('underline')"><u>U</u></button>
+      <button onclick="formatText('insertUnorderedList')">• List</button>
+      <button onclick="formatText('insertOrderedList')">1. List</button>
+    </div>
+
+    <div class="document" contenteditable="true" id="docArea"></div>
+  </div>
 
   <script>
-    const builder = document.getElementById("builder");
-    const sidebarWrapper = document.getElementById("sidebarWrapper");
-    let draggedElement = null;
-    let dragSource = null;
+    const docArea = document.getElementById('docArea');
+    let draggedType = null;
 
-    // Enable drag from sidebar
-    document.querySelectorAll(".element").forEach((el) => {
-      el.addEventListener("dragstart", (e) => {
-        e.dataTransfer.setData("text/plain", e.target.dataset.type);
-        draggedElement = null;
-        dragSource = "sidebar";
+    // Store the dragged type
+    document.querySelectorAll('.element').forEach(el => {
+      el.addEventListener('dragstart', e => {
+        draggedType = e.target.dataset.type;
       });
     });
 
-    // Enable drag from within builder
-    builder.addEventListener("dragstart", (e) => {
-      if (e.target.classList.contains("dropped")) {
-        draggedElement = e.target;
-        dragSource = "builder";
-      }
-    });
-
     // Allow dropping
-    builder.addEventListener("dragover", (e) => {
+    docArea.addEventListener('dragover', e => {
       e.preventDefault();
     });
 
-    // Handle drop logic
-    builder.addEventListener("drop", (e) => {
+    // Insert HTML on drop
+    docArea.addEventListener('drop', e => {
       e.preventDefault();
-      const type = e.dataTransfer.getData("text/plain");
+      const html = getElementHTML(draggedType);
+      insertHTMLAtCursor(html);
+    });
 
-      // If dragging existing element from builder
-      if (dragSource === "builder" && draggedElement) {
-        const afterElement = getDragAfterElement(builder, e.clientY);
-        if (afterElement === null) {
-          builder.appendChild(draggedElement);
-        } else {
-          builder.insertBefore(draggedElement, afterElement);
-        }
-        draggedElement = null;
-        return;
-      }
+    // Formatting
+    function formatText(cmd) {
+      document.execCommand(cmd, false, null);
+    }
 
-      // New element from sidebar
-      const element = document.createElement("div");
-      element.classList.add("dropped");
-      element.setAttribute("draggable", "true");
-
-      // Assign HTML for element type
+    // Generate element HTML
+    function getElementHTML(type) {
       switch (type) {
-        case "button":
-          element.innerHTML = '<button class="btn btn-primary w-100">Click Me</button>';
-          break;
-        case "input":
-          element.innerHTML = '<input type="text" class="form-control" placeholder="Text Input" />';
-          break;
-        case "label":
-          element.innerHTML = '<label>Label</label>';
-          break;
-        case "radio":
-          element.innerHTML = '<div class="form-check d-flex align-items-center justify-content-center"><input class="form-check-input me-2" type="radio" name="radioGroup"><label class="form-check-label">Radio</label></div>';
-          break;
-        case "textarea":
-          element.innerHTML = '<textarea class="form-control" placeholder="Write something..."></textarea>';
-          break;
+        case 'button':
+          return '<button class="btn btn-primary">Click Me</button>';
+        case 'input':
+          return '<input type="text" class="form-control d-inline w-auto mx-2" placeholder="Text Input">';
+        case 'label':
+          return '<label class="mx-2">Label</label>';
+        case 'radio':
+          return '<label class="form-check mx-2"><input type="radio" name="rgroup"> Option</label>';
+        case 'textarea':
+          return '<textarea class="form-control my-2" rows="2" placeholder="Write something..."></textarea>';
+        default:
+          return '';
       }
+    }
 
-      builder.appendChild(element);
-    });
+    // Insert at caret
+    function insertHTMLAtCursor(html) {
+      const sel = window.getSelection();
+      if (sel.rangeCount) {
+        const range = sel.getRangeAt(0);
+        range.deleteContents();
 
-    // Determine closest element for drop position
-    function getDragAfterElement(container, y) {
-      const draggableElements = [...container.querySelectorAll(".dropped:not(.dragging)")];
-
-      return draggableElements.reduce((closest, child) => {
-        const box = child.getBoundingClientRect();
-        const offset = y - box.top - box.height / 2;
-        if (offset < 0 && offset > closest.offset) {
-          return { offset: offset, element: child };
-        } else {
-          return closest;
+        const temp = document.createElement("div");
+        temp.innerHTML = html;
+        const frag = document.createDocumentFragment();
+        let node;
+        while ((node = temp.firstChild)) {
+          frag.appendChild(node);
         }
-      }, { offset: Number.NEGATIVE_INFINITY }).element;
+        range.insertNode(frag);
+      }
     }
 
-    // Sidebar toggle logic
-    function toggleSidebar() {
-      sidebarWrapper.classList.toggle("hidden");
-    }
-
-    // Save layout (to console)
     function saveLayout() {
-      const html = builder.innerHTML;
-      console.log("Saved Layout HTML:", html);
-      alert("Layout saved (check console).");
+      const content = docArea.innerHTML;
+      console.log("Saved Document Content:", content);
+      alert("Document content saved (check console).");
     }
   </script>
 </body>
