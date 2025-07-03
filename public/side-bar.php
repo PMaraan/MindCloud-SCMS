@@ -28,7 +28,7 @@
 
     <ul class="nav flex-column">
       <li class="nav-item">
-        <a class="nav-link linkstyle active" href="template_menu.php">Design a Template</a>
+        <a class="nav-link linkstyle" href="template_menu.php">Design a Template</a>
       </li>
       <li class="nav-item">
         <a class="nav-link linkstyle" href="Test.php">Templates</a>
