@@ -26,9 +26,8 @@
     <div class="row">
 
       <!-- ✅ SIDEBAR COLUMN -->
-      <div class="col-md-2 p-0">
         <?php include 'side-bar.php'; ?>
-      </div>
+   
 
       <!-- ✅ MAIN CONTENT AREA -->
       <div class="col-md-10 workspace">
