@@ -1,15 +1,15 @@
 .navbar {
-  background-color: #670003;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  min-height: 64px;
-  max-height: 64px;
+  background-color: #670003 !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1) !important;
+  min-height: 64px !important;
+  max-height: 64px !important;
 }
 
 .navbar-brand {
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: 1px;
-  color: white;
+  font-size: 1.5rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 1px !important;
+  color: white !important;
 }
 
 .navbar-brand,
@@ -17,19 +17,19 @@
 .navbar-brand:focus,
 .navbar-brand:active,
 .navbar-brand:visited {
-  color: white;
+  color: white !important;
 }
 
 .navbar .nav-link i {
-  display: inline-block;
-  transition: color 0.2s;
-  transition: transform 0.3s ease, color 0.3s ease;
-  color: white;
+  display: inline-block !important;
+  transition: color 0.2s !important;
+  transition: transform 0.3s ease, color 0.3s ease !important;
+  color: white !important;
 }
 
 .navbar .nav-link:hover i {
-  color: #bbbbbb;
-  transform: scale(1.2);
+  color: #bbbbbb !important;
+  transform: scale(1.2) !important;
 }
 
 
