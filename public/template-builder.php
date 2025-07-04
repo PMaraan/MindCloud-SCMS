@@ -24,6 +24,8 @@
 
     </div>
     <button class="btn btn-success w-100 mt-3" onclick="saveLayout()">Save</button>
+    <button class="btn btn-danger w-100 mt-2" onclick="downloadAsPDF()">Download as PDF</button>
+
   </div>
 
   <div class="builder" id="builderArea">
@@ -31,5 +33,7 @@
   </div>
 
   <script src="assets/js/template-builder.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
 </body>
 </html>

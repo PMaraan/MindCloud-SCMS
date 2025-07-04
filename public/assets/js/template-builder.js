@@ -165,3 +165,17 @@ function saveLayout() {
   console.log("Saved Layout HTML:", content);
   alert("Layout saved (check console).");
 }
+function downloadAsPDF() {
+  const element = document.getElementById('builderArea');
+
+  // Optional styling adjustments before export
+  const opt = {
+    margin:       0.5,
+    filename:     'template-layout.pdf',
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { scale: 2 },
+    jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+  };
+
+  html2pdf().set(opt).from(element).save();
+}
