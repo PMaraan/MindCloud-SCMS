@@ -1,6 +1,6 @@
 <?php
 session_start();
-require '../../config/dbconn.php';
+//require '../../config/dbconn.php';
 
 /*
 // app/login_auth.php

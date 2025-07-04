@@ -1,3 +1,21 @@
+<?php
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../app/models/MockDatabase.php';
+require_once __DIR__ . '/../app/models/PostgresDatabase.php';
+
+//require_once __DIR__ . '/../middleware/auth.php'; // Access control
+/*require_once USE_MOCK
+    ? __DIR__ . '/../app/models/MockDatabase.php'
+    : __DIR__ . '/../app/models/PostgresDatabase.php';
+*/
+$db = USE_MOCK
+    ? new MockDatabase()
+    : new PostgresDatabase(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS);
+
+$users = $db->getAllUsersWithRoles();
+?>
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -60,6 +78,21 @@
         </tr>
       </thead>
       <tbody id="table-body">
+         <?php foreach ($users as $user): ?>
+        <tr>
+          <td><?= htmlspecialchars($user['id_no']) ?></td>
+          <td><?= htmlspecialchars($user['email']) ?></td>
+          <td><?= htmlspecialchars($user['fname']) ?></td>
+          <td><?= htmlspecialchars($user['mname']) ?></td>
+          <td><?= htmlspecialchars($user['lname']) ?></td>
+          <td>
+            <?php foreach (explode(',', $user['roles']) as $role): ?>
+              <span class="role-badge"><?= htmlspecialchars(trim($role)) ?></span>
+            <?php endforeach; ?>
+          </td>
+        </tr>
+      <?php endforeach;
+        /* to be deleted
         <tr>
           <td>20231001</td>
           <td>george@lpunetwork.edu.ph</td>
@@ -71,6 +104,8 @@
             <button class="btn btn-sm btn-outline-success add-role-btn d-none" onclick="addRole(this)">+</button>
           </td>
         </tr>
+        */
+      ?>
       </tbody>
     </table>
 

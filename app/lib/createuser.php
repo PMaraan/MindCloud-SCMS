@@ -1,10 +1,23 @@
 <?php
-require '../../config/dbconn.php';
+//require '../../config/dbconn.php';
 
-$id_no = '2025-01-00001';
-$fname = 'admin';
-$lname = 'admin';
-$email = 'admin@lpunetwork.edu.ph';
+$host = 'localhost';
+$db = 'cms_db';
+$user = 'postgres';
+$pass = 'root';
+
+$dsn = "pgsql:host=$host;dbname=$db";
+
+try {
+    $pdo = new PDO($dsn, $user, $pass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+} catch (PDOException $e) {
+    die("DB connection failed: " . $e->getMessage());
+}
+
+$id_no = '2025-01-00006';
+$fname = 'course';
+$lname = 'professor';
+$email = 'professor@lpunetwork.edu.ph';
 $password = 'password';
 
 $hash = password_hash($password, PASSWORD_ARGON2ID);
