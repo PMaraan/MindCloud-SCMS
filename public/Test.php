@@ -17,7 +17,7 @@
 
     <div class="workspace">
       <div class="container py-5">
-        <h4 class="fw-bold mb-4">I love you Uncle Night Owl</h4>
+        <h4 class="fw-bold mb-4">Test Page</h4>
         <p>This is a test template page.</p>
       </div>
     </div>

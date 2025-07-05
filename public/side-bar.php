@@ -31,11 +31,27 @@
         <a class="nav-link linkstyle" href="template_menu.php">Design a Template</a>
       </li>
       <li class="nav-item">
+        <a class="nav-link linkstyle" href="#">For Approval</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link linkstyle" href="#">For Noting</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link linkstyle" href="#">For Preparation</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link linkstyle" href="#">For Revision</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link linkstyle" href="#">Courses & Professors</a>
+      </li>
+      <li class="nav-item">
         <a class="nav-link linkstyle" href="Test.php">Templates</a>
       </li>
       <li class="nav-item">
         <a class="nav-link linkstyle" href="#">Syllabus</a>
       </li>
+      
     </ul>
   </div>
 </div>
