@@ -10,7 +10,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // Trim and validate input values
     const email = emailInput.value.trim();
     const password = passwordInput.value.trim();
-    const emailPattern = /^[a-zA-Z0-9._%+-]+@lpunetwork\.edu\.ph$/;
+    //const emailPattern = /^[a-zA-Z0-9._%+-]+@your_domain\.edu\.ph$/; //dangerous code as this exposes your company's domain, remove
+    const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
     // Reset previous error states
     emailInput.classList.remove("is-invalid");
