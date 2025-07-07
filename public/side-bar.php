@@ -28,29 +28,37 @@
 
     <ul class="nav flex-column">
       <li class="nav-item">
-        <a class="nav-link linkstyle" href="template_menu.php">Design a Template</a>
+        <a class="nav-link linkstyle" href="test.php">Approve</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link linkstyle" href="#">For Approval</a>
+        <a class="nav-link linkstyle" href="#">Note</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link linkstyle" href="#">For Noting</a>
+        <a class="nav-link linkstyle" href="#">Prepare</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link linkstyle" href="#">For Preparation</a>
+        <a class="nav-link linkstyle" href="#">Revise</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link linkstyle" href="#">For Revision</a>
+        <a class="nav-link linkstyle" href="#">Faculty</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link linkstyle" href="#">Courses & Professors</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link linkstyle" href="Test.php">Templates</a>
+        <a class="nav-link linkstyle" href="template_menu.php">Templates</a>
       </li>
       <li class="nav-item">
         <a class="nav-link linkstyle" href="#">Syllabus</a>
       </li>
+      <li class="nav-item">
+        <a class="nav-link linkstyle" href="#">College</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link linkstyle" href="#">Secretary</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link linkstyle" href="#">Courses</a>
+      </li>
+      
+      
       
     </ul>
   </div>

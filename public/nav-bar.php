@@ -6,7 +6,7 @@
   <link rel="stylesheet" href="assets/css/nav-bar.css">
 </head>
 
-<nav class="navbar px-3">
+<nav class="navbar px-3 sticky-top">
   <div class="container-fluid">
     <a class="navbar-brand" href="#">LPU-SCMS</a>
     <ul class="navbar-nav ms-auto d-flex flex-row">
