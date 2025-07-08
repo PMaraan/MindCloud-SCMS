@@ -11,16 +11,17 @@
 <body>
 
 <?php
-  // Use existing $currentPage if set, otherwise fallback to GET or 'index'
   $currentPage = $currentPage ?? ($_GET['page'] ?? 'index');
 ?>
 
+<div class="toggle-wrapper">
+  <button class="btn toggle-btn" id="toggleBtn">
+    <i class="bi bi-list"></i>
+  </button>
+</div>
+
 <div class="wrapper">
   <div class="sidebar" id="sidebar">
-    <button class="btn toggle-btn" id="toggleBtn">
-      <i class="bi bi-list"></i>
-    </button>
-
     <div class="fade-group">
       <div class="sidebar-img-wrapper">
         <img src="../../public/assets/images/coecsa-building.jpg" alt="Sidebar logo" class="sidebar-img" />
@@ -56,8 +57,13 @@
       </ul>
     </div>
   </div>
-</div>
 
-<script src="../../public/assets/js/SidebarComponent.js"></script>
+
+<script>
+  document.getElementById("toggleBtn").addEventListener("click", function () {
+    document.getElementById("sidebar").classList.toggle("collapsed");
+  });
+</script>
+
 </body>
 </html>
