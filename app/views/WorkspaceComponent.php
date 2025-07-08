@@ -17,9 +17,10 @@
     <div class="workspace">
       <div class="container py-5">
         <?php
-          $page = $_GET['page'] ?? 'home';
+          $page = $_GET['page'] ?? 'index';
 
           $allowed_pages = [
+            'index' => 'index.php',
             'approve' => '#',
             'note' => '#',
             'prepare' => '#',
