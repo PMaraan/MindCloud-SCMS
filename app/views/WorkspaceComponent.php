@@ -4,7 +4,8 @@ $page = $_GET['page'] ?? 'index';
 // CSS Mappings
 $page_css = [
   'templates' => '../../public/assets/css/Templates.css',
-  'college'   => '../../public/assets/css/CollegeRoles.css'
+  'college'   => '../../public/assets/css/CollegeRoles.css',
+  'faculty'   => '../../public/assets/css/FacultyRoles.css'
 ];
 
 // JS Mappings
@@ -20,7 +21,7 @@ $allowed_pages = [
   'note'      => '#',
   'prepare'   => '#',
   'revise'    => '#',
-  'faculty'   => '#',
+  'faculty'   => 'FacultyRoles.php',
   'templates' => 'Templates.php',
   'syllabus'  => '#',
   'college'   => 'CollegeRoles.php',
