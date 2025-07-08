@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" />
-  <link rel="stylesheet" href="assets/css/side-bar.css" />
-  <title>Collapsible Sidebar</title>
+  <link rel="stylesheet" href="../../public/assets/css/SidebarComponent.css" />
+  <title>Sidebar</title>
 </head>
 <body>
 
@@ -18,7 +18,7 @@
 
   <div class="fade-group">
     <div class="sidebar-img-wrapper">
-      <img src="assets/images/coecsa-building.jpg" alt="Sidebar logo" class="sidebar-img" />
+      <img src="../../public/assets/images/coecsa-building.jpg" alt="Sidebar logo" class="sidebar-img" />
     </div>
 
     <div class="d-flex flex-column align-items-center text-center profile-section">
@@ -28,34 +28,34 @@
 
     <ul class="nav flex-column">
       <li class="nav-item">
-        <a class="nav-link linkstyle" href="test.php">Approve</a>
+        <a class="nav-link linkstyle" href="WorkspaceComponent.php?page=approve">Approve</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link linkstyle" href="#">Note</a>
+        <a class="nav-link linkstyle" href="WorkspaceComponent.php?page=note">Note</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link linkstyle" href="#">Prepare</a>
+        <a class="nav-link linkstyle" href="WorkspaceComponent.php?page=prepare">Prepare</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link linkstyle" href="#">Revise</a>
+        <a class="nav-link linkstyle" href="WorkspaceComponent.php?page=revise">Revise</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link linkstyle" href="#">Faculty</a>
+        <a class="nav-link linkstyle" href="WorkspaceComponent.php?page=faculty">Faculty</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link linkstyle" href="template_menu.php">Templates</a>
+        <a class="nav-link linkstyle" href="WorkspaceComponent.php?page=templates">Templates</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link linkstyle" href="#">Syllabus</a>
+        <a class="nav-link linkstyle" href="WorkspaceComponent.php?page=syllabus">Syllabus</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link linkstyle" href="#">College</a>
+        <a class="nav-link linkstyle" href="WorkspaceComponent.php?page=college">College</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link linkstyle" href="#">Secretary</a>
+        <a class="nav-link linkstyle" href="WorkspaceComponent.php?page=secretary">Secretary</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link linkstyle" href="#">Courses</a>
+        <a class="nav-link linkstyle" href="WorkspaceComponent.php?page=courses">Courses</a>
       </li>
       
       
@@ -64,7 +64,7 @@
   </div>
 </div>
 
-  <script src="assets/js/side-bar.js"></script>
+  <script src="../../public/assets/js/SidebarComponent.js"></script>
 
 </body>
 </html>
