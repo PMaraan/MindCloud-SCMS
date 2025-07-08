@@ -10,61 +10,54 @@
 </head>
 <body>
 
+<?php
+  // Use existing $currentPage if set, otherwise fallback to GET or 'index'
+  $currentPage = $currentPage ?? ($_GET['page'] ?? 'index');
+?>
+
 <div class="wrapper">
   <div class="sidebar" id="sidebar">
-  <button class="btn toggle-btn" id="toggleBtn">
-    <i class="bi bi-list"></i>
-  </button>
+    <button class="btn toggle-btn" id="toggleBtn">
+      <i class="bi bi-list"></i>
+    </button>
 
-  <div class="fade-group">
-    <div class="sidebar-img-wrapper">
-      <img src="../../public/assets/images/coecsa-building.jpg" alt="Sidebar logo" class="sidebar-img" />
+    <div class="fade-group">
+      <div class="sidebar-img-wrapper">
+        <img src="../../public/assets/images/coecsa-building.jpg" alt="Sidebar logo" class="sidebar-img" />
+      </div>
+
+      <div class="d-flex flex-column align-items-center text-center profile-section">
+        <h4 class="profile-name">Test Name</h4>
+        <span class="profile-role">Test Role</span>
+      </div>
+
+      <ul class="nav flex-column">
+        <?php
+          $links = [
+            'approve'   => 'Approve',
+            'note'      => 'Note',
+            'prepare'   => 'Prepare',
+            'revise'    => 'Revise',
+            'faculty'   => 'Faculty',
+            'templates' => 'Templates',
+            'syllabus'  => 'Syllabus',
+            'college'   => 'College',
+            'secretary' => 'Secretary',
+            'courses'   => 'Courses'
+          ];
+
+          foreach ($links as $key => $label) {
+            $activeClass = $currentPage === $key ? 'active' : '';
+            echo "<li class='nav-item'>
+                    <a class='nav-link linkstyle $activeClass' href='WorkspaceComponent.php?page=$key'>$label</a>
+                  </li>";
+          }
+        ?>
+      </ul>
     </div>
-
-    <div class="d-flex flex-column align-items-center text-center profile-section">
-      <h4 class="profile-name">Test Name</h4>
-      <span class="profile-role">Test Role</span>
-    </div>
-
-    <ul class="nav flex-column">
-      <li class="nav-item">
-        <a class="nav-link linkstyle" href="WorkspaceComponent.php?page=approve">Approve</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link linkstyle" href="WorkspaceComponent.php?page=note">Note</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link linkstyle" href="WorkspaceComponent.php?page=prepare">Prepare</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link linkstyle" href="WorkspaceComponent.php?page=revise">Revise</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link linkstyle" href="WorkspaceComponent.php?page=faculty">Faculty</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link linkstyle" href="WorkspaceComponent.php?page=templates">Templates</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link linkstyle" href="WorkspaceComponent.php?page=syllabus">Syllabus</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link linkstyle" href="WorkspaceComponent.php?page=college">College</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link linkstyle" href="WorkspaceComponent.php?page=secretary">Secretary</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link linkstyle" href="WorkspaceComponent.php?page=courses">Courses</a>
-      </li>
-      
-      
-      
-    </ul>
   </div>
 </div>
 
-  <script src="../../public/assets/js/SidebarComponent.js"></script>
-
+<script src="../../public/assets/js/SidebarComponent.js"></script>
 </body>
 </html>

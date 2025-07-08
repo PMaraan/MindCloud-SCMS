@@ -1,29 +1,32 @@
 <?php
-  $page = $_GET['page'] ?? 'index';
+$page = $_GET['page'] ?? 'index';
 
-  // CSS and JS mappings
-  $page_css = [
-    'templates' => '../../public/assets/css/Templates.css',
-  ];
+// CSS Mappings
+$page_css = [
+  'templates' => '../../public/assets/css/Templates.css',
+  'college'   => '../../public/assets/css/CollegeRoles.css'
+];
 
-  $page_js = [
-    'templates' => 'assets/js/Templates.js'
-  ];
+// JS Mappings
+$page_js = [
+  'templates' => 'assets/js/Templates.js',
+  'college'   => '../../public/assets/js/CollegeRoles.js'
+];
 
-  // Content mapping
-  $allowed_pages = [
-    'index' => 'index.php',
-    'approve' => '#',
-    'note' => '#',
-    'prepare' => '#',
-    'revise' => '#',
-    'faculty' => '#',
-    'templates' => 'Templates.php',
-    'syllabus' => '#',
-    'college' => 'College.php',
-    'secretary' => '#',
-    'courses' => '#'
-  ];
+// Content mapping
+$allowed_pages = [
+  'index'     => 'index.php',
+  'approve'   => '#',
+  'note'      => '#',
+  'prepare'   => '#',
+  'revise'    => '#',
+  'faculty'   => '#',
+  'templates' => 'Templates.php',
+  'syllabus'  => '#',
+  'college'   => 'CollegeRoles.php',
+  'secretary' => '#',
+  'courses'   => '#'
+];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -31,9 +34,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>LPU-SCMS</title>
+
+  <!-- Bootstrap & Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" />
 
+  <!-- Page-specific CSS -->
   <?php if (isset($page_css[$page])): ?>
     <link rel="stylesheet" href="<?= $page_css[$page] ?>">
   <?php endif; ?>
@@ -43,10 +49,13 @@
   <?php include 'HeaderComponent.php'; ?>
 
   <div class="wrapper">
-    <?php include 'SidebarComponent.php'; ?>
+    <?php
+      $currentPage = $page; // Set before including sidebar
+      include 'SidebarComponent.php';
+    ?>
 
-    <div class="workspace">
-      <div class="container py-5">
+    <div class="main-content">
+      <div class="container-fluid py-5">
         <?php
           if (array_key_exists($page, $allowed_pages)) {
             include $allowed_pages[$page];
@@ -58,6 +67,7 @@
     </div>
   </div>
 
+  <!-- Page-specific JS -->
   <?php if (isset($page_js[$page])): ?>
     <script src="<?= $page_js[$page] ?>"></script>
   <?php endif; ?>

@@ -86,8 +86,8 @@
 }
 
 .linkstyle.active {
-  background-color: #900404;
-  color: white;
+  background-color: #900404 !important;
+  color: white !important;
 }
 
 .linkstyle:hover {
@@ -117,4 +117,9 @@
   .sidebar.collapsed + .main-content {
     display: block;
   }
+}
+
+.sidebar .nav-link.linkstyle.active {
+  background-color: #900404 !important;
+  color: white !important;
 }

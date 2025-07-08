@@ -21,3 +21,16 @@ toggleBtn.addEventListener('click', () => {
     });
   });
 
+document.addEventListener("DOMContentLoaded", () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const page = urlParams.get("page") || "index";
+  const links = document.querySelectorAll(".nav-link.linkstyle");
+
+  links.forEach(link => {
+    if (link.href.includes("page=" + page)) {
+      link.classList.add("active");
+    } else {
+      link.classList.remove("active");
+    }
+  });
+});
