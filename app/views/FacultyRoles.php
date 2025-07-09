@@ -2,8 +2,8 @@
 
   <!-- Top Bar -->
   <div class="top-bar d-flex flex-wrap align-items-start gap-2 mb-3">
-    
-    <!-- Text Fields (Inline) -->
+
+    <!-- Text Fields -->
     <div class="d-flex gap-2 flex-wrap" style="flex: 1 1 auto;">
       <input
         type="text"
@@ -22,23 +22,40 @@
     </div>
 
     <!-- Buttons -->
-    <div class="d-flex gap-2 ms-auto">
+    <div class="d-flex flex-wrap gap-2 button-group-container">
       <a href="WorkspaceComponent.php?page=filter_colleges" class="btn btn-secondary btn_filtercollege">
         <i class="bi bi-person-gear"></i> Roles
       </a>
       <a href="WorkspaceComponent.php?page=add_college" class="btn btn-primary btn_addcollege">
-        <i class="bi bi-plus"></i> Add College
+        <i class="bi bi-plus"></i> Add Faculty
       </a>
     </div>
 
-    <!-- General Search (Full width below) -->
-    <div class="w-100">
+    <!-- Search + Filter -->
+    <div class="w-100 d-flex align-items-center gap-2 position-relative">
       <input
         type="text"
         id="generalSearch"
-        class="form-control mt-2"
+        class="form-control flex-grow-1"
         placeholder="General Search"
       />
+      <button
+        class="btn btn-outline-secondary d-flex align-items-center justify-content-center dropdown-toggle"
+        id="filterBtn"
+        data-bs-toggle="dropdown"
+        aria-expanded="false"
+        title="Filter"
+        type="button"
+      >
+        <i class="bi bi-funnel"></i>
+      </button>
+
+      <!-- Filter Dropdown -->
+      <div class="dropdown-menu dropdown-menu-end p-3" id="roleFilterContainer" style="min-width: 200px;">
+        <p class="mb-2 fw-semibold">Filter by Role:</p>
+        <div id="roleFilterOptions" class="d-flex flex-column gap-1 mb-2"></div>
+
+      </div>
     </div>
 
   </div>
@@ -48,21 +65,21 @@
     <table class="table table-bordered table-hover" id="CollegeRolesTable">
       <thead class="table-header">
         <tr>
-          <th>College</th>
-          <th>Code</th>
-          <th>Dean</th>
+          <th>ID Number</th>
+          <th>First Name</th>
+          <th>M.I.</th>
+          <th>Last Name</th>
           <th>Email</th>
-          <th>Phone</th>
-          <th>Status</th>
+          <th>Role</th>
           <th>Manage</th>
         </tr>
       </thead>
       <tbody>
         <?php
           $data = [
-            ['College of Nursing', 'CON', 'Dr. Santos', 'nursing@example.com', '09123456789', 'Active'],
-            ['College of Engineering', 'COE', 'Engr. Reyes', 'engineering@example.com', '09987654321', 'Inactive'],
-            ['College of Arts and Sciences', 'CAS', 'Prof. Cruz', 'cas@example.com', '09112223344', 'Active'],
+            ['123456', 'John', 'D.', 'Doe', 'john.doe@example.com', 'VPAA'],
+            ['789012', 'Jane', 'A.', 'Smith', 'jane.smith@example.com', 'Dean'],
+            ['345678', 'Emily', 'B.', 'Johnson', 'emily.johnson@example.com', 'Chair'],
           ];
 
           foreach ($data as $row) {

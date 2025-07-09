@@ -1,12 +1,26 @@
 /* Container */
+
+
 .table-container {
+  width: 100% ;
+  min-height: calc(100vh - 136px);
+  overflow-y: auto;
+}
+
+/* Scrollable wrapper */
+.table-responsive-wrapper {
   width: 100%;
+  overflow-x: auto;
+  scrollbar-color: #ccc transparent;
+  scrollbar-width: thin;
 }
 
 /* Table setup */
 #CollegeRolesTable {
   width: 100%;
+  min-width: 900px; /* Set a base width to prevent shrinking */
   table-layout: fixed;
+  border-collapse: collapse;
 }
 
 /* Table header styling */
@@ -20,39 +34,70 @@
   text-align: center;
 }
 
-.top-bar {
-  justify-content: flex-start;
-  flex-wrap: wrap;
-}
-
-/* College textfields */
-.top-bar .college-textfield {
-  min-width: 180px;
-  flex: 1 1 auto;
-}
-
-.btn_filtercollege,
-.btn_addcollege {
+/* Fixed text overflow handling */
+#CollegeRolesTable td,
+#CollegeRolesTable th {
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.btn_addcollege {
+/* Column widths */
+#CollegeRolesTable th:nth-child(1),
+#CollegeRolesTable td:nth-child(1) {
+  width: 12%;
+}
+
+#CollegeRolesTable th:nth-child(2),
+#CollegeRolesTable td:nth-child(2) {
+  width: 14%;
+}
+
+#CollegeRolesTable th:nth-child(3),
+#CollegeRolesTable td:nth-child(3) {
+  width: 5%;
+}
+
+#CollegeRolesTable th:nth-child(4),
+#CollegeRolesTable td:nth-child(4) {
+  width: 14%;
+}
+
+#CollegeRolesTable th:nth-child(5),
+#CollegeRolesTable td:nth-child(5) {
+  width: 25%;
+}
+
+#CollegeRolesTable th:nth-child(6),
+#CollegeRolesTable td:nth-child(6) {
+  width: 15%;
+}
+
+#CollegeRolesTable th:nth-child(7),
+#CollegeRolesTable td:nth-child(7) {
+  width: 15%;
+  text-align: center;
+}
+
+/* Buttons */
+.btn_addcollege,
+.btn_filtercollege {
+  white-space: nowrap;
+  width: auto;
   margin-left: auto;
 }
 
-/* Responsive scroll */
-.table-responsive-wrapper {
-  width: 100%;
-  overflow-x: auto;
+/* Top bar layout */
+.top-bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  
 }
 
-.table-responsive-wrapper::-webkit-scrollbar {
-  height: 8px;
-}
-
-.table-responsive-wrapper::-webkit-scrollbar-thumb {
-  background-color: #ccc;
-  border-radius: 4px;
+.top-bar .college-textfield {
+  min-width: 180px;
+  flex: 1 1 auto;
 }
 
 /* No results styling */
@@ -61,20 +106,36 @@
   color: #888;
 }
 
-/* Responsive tweaks for < 768px */
+.button-group-container {
+  margin-left: auto;
+  display: flex;
+  gap: 0.5rem;
+}
+
+#filterBtn {
+  background-color: transparent;  
+  color: #9095a0;
+  border: none;
+  transition: background-color 0.3s ease;
+}
+
+#filterBtn:hover {
+  background-color: #9095a0; 
+  color: #fff;
+}
+
+
 @media (max-width: 768px) {
+  .button-group-container {
+    width: 100%;
+    margin-left: 0;
+    justify-content: space-between;
+  }
+
   .btn_filtercollege,
   .btn_addcollege {
-    width: 100%;
+    width: calc(50% - 0.5rem);
+    flex: 1 1 calc(50% - 0.5rem);
   }
 }
 
-.btn_addcollege,
-.btn_filtercollege {
-  width: auto;
-}
-
-#CollegeRolesTable th,
-#CollegeRolesTable td {
-  font-size: 14px;
-}

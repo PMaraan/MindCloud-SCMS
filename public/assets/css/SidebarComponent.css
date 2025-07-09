@@ -7,7 +7,7 @@
 .wrapper {
   display: flex;
   height: 100vh;
-  overflow: hidden;
+  overflow: auto;
   position: relative;
 }
 
@@ -90,13 +90,14 @@
   background-color: rgb(204, 104, 104);
   color: white;
 }
-
 .main-content {
   flex: 1;
-  padding: 20px;
-  background-color: #f8f9fa;
+  min-width: 0;
   overflow-y: auto;
+  padding: 20px;
+  height: 100vh;
 }
+
 
 .toggle-wrapper {
   position: absolute;

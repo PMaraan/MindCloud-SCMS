@@ -5,13 +5,16 @@ $page = $_GET['page'] ?? 'index';
 $page_css = [
   'templates' => '../../public/assets/css/Templates.css',
   'college'   => '../../public/assets/css/CollegeRoles.css',
-  'faculty'   => '../../public/assets/css/FacultyRoles.css'
+  'faculty'   => '../../public/assets/css/FacultyRoles.css',
+  'add_college' => '../../public/assets/css/CollegeFacultyRoles.css',
 ];
 
 // JS Mappings
 $page_js = [
   'templates' => 'assets/js/Templates.js',
-  'college'   => '../../public/assets/js/CollegeRoles.js'
+  'college'   => '../../public/assets/js/CollegeRoles.js',
+  'faculty'   => '../../public/assets/js/FacultyRoles.js',
+  'add_college' => '../../public/assets/js/CollegeFacultyRoles.js'
 ];
 
 // Content mapping
@@ -26,7 +29,8 @@ $allowed_pages = [
   'syllabus'  => '#',
   'college'   => 'CollegeRoles.php',
   'secretary' => '#',
-  'courses'   => '#'
+  'courses'   => '#',
+  'add_college' => 'CollegeFacultyRoles.php'
 ];
 ?>
 <!DOCTYPE html>
@@ -51,12 +55,12 @@ $allowed_pages = [
 
   <div class="wrapper">
     <?php
-      $currentPage = $page; // Set before including sidebar
+      $currentPage = $page; 
       include 'SidebarComponent.php';
     ?>
 
     <div class="main-content">
-      <div class="container-fluid py-5">
+      <div class="container-fluid py-4">
         <?php
           if (array_key_exists($page, $allowed_pages)) {
             include $allowed_pages[$page];
@@ -67,7 +71,7 @@ $allowed_pages = [
       </div>
     </div>
   </div>
-
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <!-- Page-specific JS -->
   <?php if (isset($page_js[$page])): ?>
     <script src="<?= $page_js[$page] ?>"></script>
