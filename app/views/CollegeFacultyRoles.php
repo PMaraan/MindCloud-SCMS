@@ -22,7 +22,7 @@
 
   <!-- Button Group -->
   <div class="d-flex flex-wrap gap-2 faculty-button-group">
-    <a href="WorkspaceComponent.php?page=filter_colleges" class="btn btn-secondary btn-role-filter">
+    <a href="WorkspaceComponent.php?page=view_roles" class="btn btn-secondary btn-view-roles">
       <i class="bi bi-person-gear"></i> Roles
     </a>
     <a href="WorkspaceComponent.php?page=add_college" class="btn btn-primary btn-add-faculty">
@@ -99,6 +99,17 @@
         ?>
       </tbody>
     </table>
+    </table>
+
+<!-- Add College Button (Bottom Center, Function-based) -->
+<div class="d-flex justify-content-center my-4">
+  <button class="btn btn-success" onclick="addCollege()">
+    <i class="bi bi-check-lg"></i>Add College
+  </button>
+</div>
+
+</div> <!-- end of .faculty-table-wrapper -->
+
   </div>
 
 </div>

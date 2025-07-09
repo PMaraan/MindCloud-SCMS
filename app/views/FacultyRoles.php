@@ -23,7 +23,7 @@
 
     <!-- Buttons -->
     <div class="d-flex flex-wrap gap-2 button-group-container">
-      <a href="WorkspaceComponent.php?page=filter_colleges" class="btn btn-secondary btn_filtercollege">
+      <a href="WorkspaceComponent.php?page=view_roles" class="btn btn-secondary btn_viewroles">
         <i class="bi bi-person-gear"></i> Roles
       </a>
       <a href="WorkspaceComponent.php?page=add_college" class="btn btn-primary btn_addcollege">

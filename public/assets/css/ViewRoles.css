@@ -1,0 +1,87 @@
+/* Container */
+.table-container {
+  width: 100%;
+}
+
+/* Table setup */
+#RolesTable {
+  width: 100%;
+  min-width: 900px; /* ✅ Prevents table from shrinking */
+  table-layout: fixed;
+}
+
+
+/* Table header styling */
+.table-header th {
+  background-color: #e0e4e4 !important;
+  color: #565e6c !important;
+}
+
+/* Column alignment */
+#RolesTable .role-manage {
+  text-align: center;
+}
+
+/* Top bar */
+.top-bar {
+  justify-content: flex-start;
+}
+
+.top-bar .search-input {
+  width: 75%;
+}
+
+.btn_addrole {
+  margin-left: auto;
+}
+
+/* Responsive scroll */
+.table-responsive-wrapper {
+  width: 100%;
+  overflow-x: auto; /* ✅ Enables horizontal scroll */
+}
+
+/* Scrollbar appearance */
+.table-responsive-wrapper::-webkit-scrollbar {
+  height: 8px;
+}
+
+.table-responsive-wrapper::-webkit-scrollbar-thumb {
+  background-color: #ccc;
+  border-radius: 4px;
+}
+
+/* No results styling */
+.no-results td {
+  font-style: italic;
+  color: #888;
+}
+
+#RolesTable th,
+#RolesTable td {
+  white-space: nowrap;
+}
+
+
+/* Responsive tweaks for < 1400px */
+@media (max-width: 1400px) {
+  .table-responsive-wrapper {
+    overflow-x: auto;
+  }
+
+  #RolesTable th:nth-child(3),
+  #RolesTable td:nth-child(3) {
+    width: 19% !important;
+  }
+
+  #RolesTable th:nth-child(1),
+  #RolesTable td:nth-child(1),
+  #RolesTable th:nth-child(2),
+  #RolesTable td:nth-child(2) {
+    width: 40.5% !important;
+  }
+
+  .top-bar .search-input {
+    width: 60%;
+  }
+}

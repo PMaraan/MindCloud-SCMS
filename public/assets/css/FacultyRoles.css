@@ -81,7 +81,7 @@
 
 /* Buttons */
 .btn_addcollege,
-.btn_filtercollege {
+.btn_viewroles {
   white-space: nowrap;
   width: auto;
   margin-left: auto;
@@ -132,7 +132,7 @@
     justify-content: space-between;
   }
 
-  .btn_filtercollege,
+  .btn_viewroles,
   .btn_addcollege {
     width: calc(50% - 0.5rem);
     flex: 1 1 calc(50% - 0.5rem);

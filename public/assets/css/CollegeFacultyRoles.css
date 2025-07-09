@@ -99,7 +99,7 @@
 
 /* Buttons */
 .btn-add-faculty,
-.btn-role-filter {
+.btn-view-roles {
   white-space: nowrap;
   margin-left: auto;
 }
@@ -137,7 +137,7 @@
     justify-content: space-between;
   }
 
-  .btn-role-filter,
+  .btn-view-roles,
   .btn-add-faculty {
     width: calc(50% - 0.5rem);
     flex: 1 1 calc(50% - 0.5rem);
