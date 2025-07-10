@@ -8,9 +8,9 @@
       class="form-control search-input"
       placeholder="Search Roles"
     />
-    <a href="WorkspaceComponent.php?page=add_role" class="btn btn-primary btn_addrole">
+    <button class="btn btn-primary btn_addrole" id="openAddRoleModal">
       <i class="bi bi-plus"></i> Add Roles
-    </a>
+    </button>
   </div>
 
   <!-- Table -->
@@ -45,6 +45,49 @@
         ?>
       </tbody>
     </table>
-  </div>
 
+    <!-- Overlay Modal -->
+    <div id="addRoleModal" class="add-role-modal">
+      <div class="add-role-container position-relative">
+        
+        <!-- Close Button -->
+        <button
+          type="button"
+          class="btn-close close-add-role"
+          aria-label="Close"
+          style="position: absolute; top: 1rem; right: 1rem;"
+        ></button>
+
+        <!-- Modal Header -->
+        <h5 class="mb-3">Add New Role</h5>
+
+        <!-- Role Name Input -->
+        <div class="mb-3">
+          <label for="roleName" class="form-label">Role Name</label>
+          <input type="text" class="form-control" id="roleName" placeholder="Enter role name" />
+        </div>
+
+        <!-- Permissions List -->
+        <div class="permissions-list mb-3">
+          <div class="permission-item d-flex justify-content-between align-items-center mb-2">
+            <span>Manage Users</span>
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="permManageUsers" />
+            </div>
+          </div>
+          <div class="permission-item d-flex justify-content-between align-items-center mb-2">
+            <span>Access Reports</span>
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="permAccessReports" />
+            </div>
+          </div>
+          <!-- Add more permissions here -->
+        </div>
+
+        <!-- Add Button -->
+        <button class="btn btn-primary w-100" id="confirmAddRole">Add Role</button>
+      </div>
+    </div>
+
+  </div>
 </div>

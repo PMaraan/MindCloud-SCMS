@@ -85,3 +85,33 @@
     width: 60%;
   }
 }
+
+/* Overlay Modal */
+.add-role-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1050;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5); /* Dim background */
+  display: none;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Main Modal Container */
+.add-role-container {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.permission-item span {
+  font-weight: 500;
+}
