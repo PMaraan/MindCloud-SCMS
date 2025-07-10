@@ -8,6 +8,7 @@ $page_css = [
   'faculty'   => '../../public/assets/css/FacultyRoles.css',
   'add_college' => '../../public/assets/css/CollegeFacultyRoles.css',
   'view_roles' => '../../public/assets/css/ViewRoles.css',
+  'edit_college' => '../../public/assets/css/EditCollegeRoles.css',
 ];
 
 // JS Mappings
@@ -17,6 +18,7 @@ $page_js = [
   'faculty'   => '../../public/assets/js/FacultyRoles.js',
   'add_college' => '../../public/assets/js/CollegeFacultyRoles.js',
   'view_roles' => '../../public/assets/js/ViewRoles.js',
+  'edit_college' => '../../public/assets/js/EditCollegeRoles.js',
 ];
 
 // Content mapping
@@ -34,6 +36,7 @@ $allowed_pages = [
   'courses'   => '#',
   'add_college' => 'CollegeFacultyRoles.php',
   'view_roles' => 'ViewRoles.php',
+  'edit_college' => 'EditCollegeRoles.php',
 ];
 ?>
 <!DOCTYPE html>

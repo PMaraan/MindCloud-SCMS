@@ -36,7 +36,7 @@
             echo "<td class='col-name'>{$row[0]}</td>";
             echo "<td class='col-code'>{$row[1]}</td>";
             echo "<td class='col-manage'>
-                    <a href='WorkspaceComponent.php?page=edit_college={$row[1]}' title='Edit'>
+                    <a href='WorkspaceComponent.php?page=edit_college&code={$row[1]}' title='Edit'>
                       <i class='bi bi-pencil-square'></i>
                     </a>
                   </td>";
