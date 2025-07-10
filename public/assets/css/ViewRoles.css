@@ -1,28 +1,35 @@
-/* Container */
-.table-container {
+/* Layout Container */
+.table-container,
+.table-responsive-wrapper {
   width: 100%;
 }
 
-/* Table setup */
+.table-responsive-wrapper {
+  overflow-x: auto;
+}
+
+/* Table Styling */
 #RolesTable {
   width: 100%;
-  min-width: 900px; /* ✅ Prevents table from shrinking */
+  min-width: 900px;
   table-layout: fixed;
 }
 
+#RolesTable th,
+#RolesTable td {
+  white-space: nowrap;
+}
 
-/* Table header styling */
 .table-header th {
   background-color: #e0e4e4 !important;
   color: #565e6c !important;
 }
 
-/* Column alignment */
 #RolesTable .role-manage {
   text-align: center;
 }
 
-/* Top bar */
+/* Top Bar */
 .top-bar {
   justify-content: flex-start;
 }
@@ -35,13 +42,7 @@
   margin-left: auto;
 }
 
-/* Responsive scroll */
-.table-responsive-wrapper {
-  width: 100%;
-  overflow-x: auto; /* ✅ Enables horizontal scroll */
-}
-
-/* Scrollbar appearance */
+/* Scrollbar Styling */
 .table-responsive-wrapper::-webkit-scrollbar {
   height: 8px;
 }
@@ -51,22 +52,16 @@
   border-radius: 4px;
 }
 
-/* No results styling */
+/* No Results Message */
 .no-results td {
   font-style: italic;
   color: #888;
 }
 
-#RolesTable th,
-#RolesTable td {
-  white-space: nowrap;
-}
-
-
-/* Responsive tweaks for < 1400px */
+/* Responsive Tweaks */
 @media (max-width: 1400px) {
-  .table-responsive-wrapper {
-    overflow-x: auto;
+  .top-bar .search-input {
+    width: 60%;
   }
 
   #RolesTable th:nth-child(3),
@@ -80,13 +75,9 @@
   #RolesTable td:nth-child(2) {
     width: 40.5% !important;
   }
-
-  .top-bar .search-input {
-    width: 60%;
-  }
 }
 
-/* Overlay Modal */
+/* Modal Overlay */
 .add-role-modal {
   position: fixed;
   top: 0;
@@ -94,24 +85,28 @@
   z-index: 1050;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(0, 0, 0, 0.5); /* Dim background */
   display: none;
   justify-content: center;
   align-items: center;
+  background-color: rgba(0, 0, 0, 0.5);
 }
 
-/* Main Modal Container */
+/* Modal Box */
 .add-role-container {
   background: white;
   padding: 2rem;
   border-radius: 12px;
   width: 100%;
   max-width: 500px;
+  min-height: 600px;
   max-height: 90vh;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
 }
 
+/* Permissions */
 .permission-item span {
   font-weight: 500;
 }

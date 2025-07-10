@@ -1,5 +1,5 @@
 <div class="container-fluid table-container">
-
+  
   <!-- Top Bar -->
   <div class="top-bar d-flex align-items-center gap-2 mb-3">
     <input
@@ -35,10 +35,14 @@
             echo "<tr>";
             echo "<td class='role-name'>{$row[0]}</td>";
             echo "<td class='role-count'>{$row[1]}</td>";
-            echo "<td class='role-manage'>
-                    <a href='WorkspaceComponent.php?page=edit_role&name={$row[0]}' title='Edit'>
+            echo "<td class='role-manage text-center'>
+                    <button 
+                      class='btn btn-sm btn-outline-secondary edit-role-btn' 
+                      data-role-name='{$row[0]}'
+                      data-role-count='{$row[1]}'
+                      title='Edit'>
                       <i class='bi bi-pencil-square'></i>
-                    </a>
+                    </button>
                   </td>";
             echo "</tr>";
           }
@@ -48,7 +52,7 @@
 
     <!-- Overlay Modal -->
     <div id="addRoleModal" class="add-role-modal">
-      <div class="add-role-container position-relative">
+      <div class="add-role-container d-flex flex-column position-relative">
         
         <!-- Close Button -->
         <button
@@ -58,34 +62,44 @@
           style="position: absolute; top: 1rem; right: 1rem;"
         ></button>
 
-        <!-- Modal Header -->
-        <h5 class="mb-3">Add New Role</h5>
+        <!-- Content Block -->
+        <div class="flex-grow-1">
+          <!-- Dynamic Title -->
+          <h5 id="roleModalTitle" class="mb-3">Add New Role</h5>
 
-        <!-- Role Name Input -->
-        <div class="mb-3">
-          <label for="roleName" class="form-label">Role Name</label>
-          <input type="text" class="form-control" id="roleName" placeholder="Enter role name" />
+          <!-- Role Name Input -->
+          <div class="mb-3">
+            <label for="roleName" class="form-label">Role Name</label>
+            <input
+              type="text"
+              class="form-control"
+              id="roleName"
+              placeholder="Enter role name"
+            />
+          </div>
+
+          <!-- Permissions List -->
+          <div class="permissions-list mb-3">
+            <div class="permission-item d-flex justify-content-between align-items-center mb-2">
+              <span>Permission 1</span>
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="permManageUsers" />
+              </div>
+            </div>
+            <div class="permission-item d-flex justify-content-between align-items-center mb-2">
+              <span>Permission 2</span>
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="permAccessReports" />
+              </div>
+            </div>
+            <!-- Add more permissions here if needed -->
+          </div>
         </div>
 
-        <!-- Permissions List -->
-        <div class="permissions-list mb-3">
-          <div class="permission-item d-flex justify-content-between align-items-center mb-2">
-            <span>Manage Users</span>
-            <div class="form-check form-switch">
-              <input class="form-check-input" type="checkbox" id="permManageUsers" />
-            </div>
-          </div>
-          <div class="permission-item d-flex justify-content-between align-items-center mb-2">
-            <span>Access Reports</span>
-            <div class="form-check form-switch">
-              <input class="form-check-input" type="checkbox" id="permAccessReports" />
-            </div>
-          </div>
-          <!-- Add more permissions here -->
-        </div>
+        <!-- Modal Action Buttons -->
+        <button class="btn btn-primary w-100 mt-3" id="confirmAddRole">Add Role</button>
+        <button class="btn btn-success w-100 mt-3 d-none" id="saveEditRole">Save Changes</button>
 
-        <!-- Add Button -->
-        <button class="btn btn-primary w-100" id="confirmAddRole">Add Role</button>
       </div>
     </div>
 
