@@ -1,58 +1,47 @@
-<?php
-// Simulate fetching existing data based on query param (e.g., code or ID)
-$collegeCode = $_GET['code'] ?? 'CON';
-$collegeList = [
-  'CON' => 'College of Nursing',
-  'COE' => 'College of Engineering',
-  'CAS' => 'College of Arts and Sciences',
-];
-$collegeName = $collegeList[$collegeCode] ?? '';
-?>
-
-<div class="faculty-table-container">
+<div class="container-fluid table-container">
 
   <!-- Top Bar -->
-  <div class="faculty-top-bar d-flex flex-wrap align-items-start gap-2 mb-3">
+  <div class="top-bar d-flex flex-wrap align-items-start gap-2 mb-3">
 
-    <!-- Text Fields Group -->
-    <div class="d-flex flex-grow-1 gap-2" style="min-width: 0;">
+    <!-- Text Fields -->
+    <div class="d-flex gap-2 flex-wrap" style="flex: 1 1 auto;">
       <input
         type="text"
-        id="facultyNameField"
-        class="form-control faculty-input"
+        id="collegeNameField"
+        class="form-control college-textfield"
         placeholder="College Name"
-        value="<?= htmlspecialchars($collegeName) ?>"
+        style="width: 200px;"
       />
       <input
         type="text"
-        id="facultyCodeField"
-        class="form-control faculty-input"
+        id="collegeCodeField"
+        class="form-control college-textfield"
         placeholder="College Code"
-        value="<?= htmlspecialchars($collegeCode) ?>"
+        style="width: 200px;"
       />
     </div>
 
-    <!-- Button Group -->
-    <div class="d-flex flex-wrap gap-2 faculty-button-group">
-      <a href="WorkspaceComponent.php?page=view_roles" class="btn btn-secondary btn-view-roles">
+    <!-- Buttons -->
+    <div class="d-flex flex-wrap gap-2 button-group-container">
+      <a href="WorkspaceComponent.php?page=view_roles" class="btn btn-secondary btn_viewroles">
         <i class="bi bi-person-gear"></i> Roles
       </a>
-      <a href="WorkspaceComponent.php?page=add_college" class="btn btn-primary btn-add-faculty">
-        <i class="bi bi-plus"></i> Add College
-      </a>
+      <button class="btn btn-primary btn_addcollege" id="openAddFacultyBtn">
+        <i class="bi bi-plus"></i> Add Faculty
+      </button>
     </div>
 
-    <!-- Search Bar + Filter -->
-    <div class="w-100 d-flex align-items-center gap-2 position-relative mt-2">
+    <!-- Search + Filter -->
+    <div class="w-100 d-flex align-items-center gap-2 position-relative">
       <input
         type="text"
-        id="facultyGeneralSearch"
+        id="generalSearch"
         class="form-control flex-grow-1"
         placeholder="General Search"
       />
       <button
         class="btn btn-outline-secondary d-flex align-items-center justify-content-center dropdown-toggle"
-        id="facultyFilterBtn"
+        id="filterBtn"
         data-bs-toggle="dropdown"
         aria-expanded="false"
         title="Filter"
@@ -61,17 +50,18 @@ $collegeName = $collegeList[$collegeCode] ?? '';
         <i class="bi bi-funnel"></i>
       </button>
 
-      <div class="dropdown-menu dropdown-menu-end p-3" id="facultyRoleFilterContainer" style="min-width: 200px;">
+      <!-- Filter Dropdown -->
+      <div class="dropdown-menu dropdown-menu-end p-3" id="roleFilterContainer" style="min-width: 200px;">
         <p class="mb-2 fw-semibold">Filter by Role:</p>
-        <div id="facultyRoleFilterOptions" class="d-flex flex-column gap-1 mb-2"></div>
+        <div id="roleFilterOptions" class="d-flex flex-column gap-1 mb-2"></div>
       </div>
     </div>
   </div>
 
   <!-- Table -->
-  <div class="faculty-table-wrapper">
-    <table class="table table-bordered table-hover" id="EditCollegeRolesTable">
-      <thead class="faculty-table-header">
+  <div class="table-responsive-wrapper">
+    <table class="table table-bordered table-hover" id="CollegeRolesTable">
+      <thead class="table-header">
         <tr>
           <th>ID Number</th>
           <th>First Name</th>
@@ -92,16 +82,16 @@ $collegeName = $collegeList[$collegeCode] ?? '';
 
           foreach ($data as $row) {
             echo "<tr>";
-            echo "<td>{$row[0]}</td>"; // ID Number
-            echo "<td>{$row[1]}</td>"; // First Name
-            echo "<td>{$row[2]}</td>"; // M.I.
-            echo "<td>{$row[3]}</td>"; // Last Name
-            echo "<td>{$row[4]}</td>"; // Email
-            echo "<td>{$row[5]}</td>"; // Role
-            echo "<td class='manage-cell'>
-                    <a href='WorkspaceComponent.php?page=edit_college&code={$collegeCode}&id={$row[0]}' title='Edit'>
+            echo "<td>{$row[0]}</td>";
+            echo "<td>{$row[1]}</td>";
+            echo "<td>{$row[2]}</td>";
+            echo "<td>{$row[3]}</td>";
+            echo "<td>{$row[4]}</td>";
+            echo "<td>{$row[5]}</td>";
+            echo "<td class='col-manage'>
+                    <button class='btn btn-sm btn-outline-primary edit-btn' data-id='{$row[0]}'>
                       <i class='bi bi-pencil-square'></i>
-                    </a>
+                    </button>
                   </td>";
             echo "</tr>";
           }
@@ -109,13 +99,60 @@ $collegeName = $collegeList[$collegeCode] ?? '';
       </tbody>
     </table>
 
-    <!-- Save Button (Bottom Center) -->
-    <div class="d-flex justify-content-center my-4">
-      <button class="btn btn-success" onclick="saveCollegeChanges()">
-        <i class="bi bi-check-lg"></i> Save Changes
-      </button>
-    </div>
+    <!-- Bottom Save/Delete Buttons -->
+<div class="d-flex justify-content-between mt-3">
+  <a href="WorkspaceComponent.php?page=college" class="btn btn-danger" id="deleteCollegeBtn" onclick="return confirm('Are you sure you want to delete this college? This action cannot be undone.');">
+    <i class="bi bi-trash3"></i> Delete College
+  </a>
+  <a href="WorkspaceComponent.php?page=college" class="btn btn-success" id="saveCollegeBtn">
+    <i class="bi bi-save"></i> Save Changes
+  </a>
+</div>
 
-  </div> <!-- end of .faculty-table-wrapper -->
+
+  <!-- Shared Modal for Edit/Add -->
+  <div id="editFacultyModal" class="modal-overlay d-none">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalTitle">Manage Faculty</h5>
+        <button class="btn-close" id="modalCloseBtn" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-2">
+          <label class="form-label">First Name</label>
+          <input type="text" id="editFirstName" class="form-control" />
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Middle Initial</label>
+          <input type="text" id="editMiddleInitial" class="form-control" />
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Last Name</label>
+          <input type="text" id="editLastName" class="form-control" />
+        </div>
+        <div class="mb-2">
+          <label class="form-label">ID Number</label>
+          <input type="text" id="editIdNumber" class="form-control" />
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Email</label>
+          <input type="email" id="editEmail" class="form-control" />
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Role</label>
+          <select id="editRole" class="form-select">
+            <option>Dean</option>
+            <option>Chair</option>
+            <option>Professor</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer d-flex justify-content-between">
+        <button class="btn btn-danger d-none" id="deleteFacultyBtn">Delete</button>
+        <button class="btn btn-success" id="saveFacultyBtn">Save</button>
+        <button class="btn btn-primary d-none" id="addFacultyBtn">Add</button>
+      </div>
+    </div>
+  </div>
 
 </div>

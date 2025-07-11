@@ -6,9 +6,9 @@ $page_css = [
   'templates' => '../../public/assets/css/Templates.css',
   'college'   => '../../public/assets/css/CollegeRoles.css',
   'faculty'   => '../../public/assets/css/FacultyRoles.css',
-  'add_college' => '../../public/assets/css/CollegeFacultyRoles.css',
+  'add_college' => '../../public/assets/css/FacultyRoles.css',
   'view_roles' => '../../public/assets/css/ViewRoles.css',
-  'edit_college' => '../../public/assets/css/EditCollegeRoles.css',
+  'edit_college' => '../../public/assets/css/FacultyRoles.css',
 ];
 
 // JS Mappings
@@ -16,9 +16,9 @@ $page_js = [
   'templates' => 'assets/js/Templates.js',
   'college'   => '../../public/assets/js/CollegeRoles.js',
   'faculty'   => '../../public/assets/js/FacultyRoles.js',
-  'add_college' => '../../public/assets/js/CollegeFacultyRoles.js',
+  'add_college' => '../../public/assets/js/FacultyRoles.js',
   'view_roles' => '../../public/assets/js/ViewRoles.js',
-  'edit_college' => '../../public/assets/js/EditCollegeRoles.js',
+  'edit_college' => '../../public/assets/js/FacultyRoles.js',
 ];
 
 // Content mapping

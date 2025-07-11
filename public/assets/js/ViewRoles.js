@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const modal = document.getElementById("addRoleModal");
   const confirmBtn = document.getElementById("confirmAddRole");
   const saveEditBtn = document.getElementById("saveEditRole");
+  const deleteBtn = document.getElementById("deleteRole"); // 🆕 Delete button
   const closeModalBtn = document.querySelector(".close-add-role");
   const modalTitle = document.getElementById("roleModalTitle");
 
@@ -14,13 +15,11 @@ document.addEventListener("DOMContentLoaded", function () {
   let isEditMode = false;
   let editingRow = null;
 
-  // Permission switches map (update when adding new permissions)
   const permissionFields = {
     manageUsers: "permManageUsers",
     accessReports: "permAccessReports"
   };
 
-  // Filters table rows based on search input
   if (searchInput && table && tbody) {
     noResultsRow = document.createElement("tr");
     noResultsRow.classList.add("no-results");
@@ -52,7 +51,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // Opens modal for adding new role
   if (addRoleBtn && modal) {
     addRoleBtn.addEventListener("click", () => openModal("add"));
     modal.addEventListener("click", (e) => {
@@ -60,7 +58,6 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Closes modal when close button is clicked
   if (closeModalBtn) {
     closeModalBtn.addEventListener("click", closeModal);
   }
@@ -71,7 +68,6 @@ document.addEventListener("DOMContentLoaded", function () {
     isEditMode = false;
   }
 
-  // Opens modal for either add or edit mode
   function openModal(mode, row = null) {
     isEditMode = mode === "edit";
     editingRow = row;
@@ -102,10 +98,10 @@ document.addEventListener("DOMContentLoaded", function () {
     modalTitle.textContent = isEditMode ? "Edit Role" : "Add New Role";
     confirmBtn.classList.toggle("d-none", isEditMode);
     saveEditBtn.classList.toggle("d-none", !isEditMode);
+    deleteBtn.classList.toggle("d-none", !isEditMode); // 🆕 Show delete in edit mode
     modal.style.display = "flex";
   }
 
-  // Adds a new role to the table
   if (confirmBtn) {
     confirmBtn.addEventListener("click", () => {
       const roleNameInput = document.getElementById("roleName");
@@ -116,8 +112,6 @@ document.addEventListener("DOMContentLoaded", function () {
       Object.keys(permissionFields).forEach((key) => {
         permissions[key] = document.getElementById(permissionFields[key]).checked;
       });
-
-      console.log("Adding Role:", roleName, permissions); // Backend insert logic goes here
 
       const newRow = document.createElement("tr");
       newRow.dataset.permissions = JSON.stringify(permissions);
@@ -143,7 +137,6 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Saves changes to the selected role
   if (saveEditBtn) {
     saveEditBtn.addEventListener("click", () => {
       if (!editingRow) return;
@@ -157,8 +150,6 @@ document.addEventListener("DOMContentLoaded", function () {
         permissions[key] = document.getElementById(permissionFields[key]).checked;
       });
 
-      console.log("Saving Edit:", newRoleName, permissions); // Backend update logic goes here
-
       editingRow.querySelector(".role-name").textContent = newRoleName;
       editingRow.querySelector(".edit-role-btn").dataset.roleName = newRoleName;
       editingRow.dataset.permissions = JSON.stringify(permissions);
@@ -166,7 +157,20 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Opens modal with pre-filled data on edit click
+  // 🆕 Delete role logic
+  if (deleteBtn) {
+    deleteBtn.addEventListener("click", () => {
+      if (!editingRow) return;
+      const roleName = editingRow.querySelector(".role-name")?.textContent;
+      const confirmDelete = confirm(`Are you sure you want to delete the role "${roleName}"?`);
+      if (confirmDelete) {
+        editingRow.remove();
+        closeModal();
+        filterRoles(searchInput.value);
+      }
+    });
+  }
+
   document.addEventListener("click", function (e) {
     if (e.target.closest(".edit-role-btn")) {
       const btn = e.target.closest(".edit-role-btn");

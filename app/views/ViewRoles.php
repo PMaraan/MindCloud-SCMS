@@ -99,6 +99,8 @@
         <!-- Modal Action Buttons -->
         <button class="btn btn-primary w-100 mt-3" id="confirmAddRole">Add Role</button>
         <button class="btn btn-success w-100 mt-3 d-none" id="saveEditRole">Save Changes</button>
+        <button class="btn btn-danger w-100 mt-2 d-none" id="deleteRole">Delete Role</button>
+
 
       </div>
     </div>
