@@ -36,6 +36,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
 
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)){
+        header('Location: /login?error=invalid_email');
+        exit;
+    }
+
+    
+
     $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
     $stmt->execute([$email]);
     $user = $stmt->fetch();
@@ -43,11 +50,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($user && password_verify($password, $user['password'])) {
         session_regenerate_id(true);
         $_SESSION['user_id'] = $user['id_no'];
-        $_SESSION['email'] = $user['email'];
-        header("Location: dashboard.php"); // redirect to dashboard; change this location for production
+        //$_SESSION['email'] = $user['email']; // Email is not used. Remove for production
+        header('Location: /dashboard'); // redirect to dashboard; change this location for production
         exit;
     } else {
-        echo "<script>alert('Invalid email or password'); window.location='../../public/loginprototype.html';</script>"; //change address for deployment
+        header('Location: /login?error=1');
     }
 }
 ?>
