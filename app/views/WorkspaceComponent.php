@@ -13,7 +13,7 @@ $page_css = [
 
 // JS Mappings
 $page_js = [
-  'templates' => 'assets/js/Templates.js',
+  'templates' => '../../public/assets/js/Templates.js',
   'college'   => '../../public/assets/js/CollegeRoles.js',
   'faculty'   => '../../public/assets/js/FacultyRoles.js',
   'add_college' => '../../public/assets/js/FacultyRoles.js',
