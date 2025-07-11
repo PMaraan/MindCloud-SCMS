@@ -22,7 +22,7 @@ class PostgresDatabase implements StorageInterface {
             if ($user && password_verify($password, $user['password'])) {
                 session_regenerate_id(true);
                 $_SESSION['username'] = $user['fname'] . " " . $user['lname'];
-                header("Location: ../views/dashboard.php");
+                header("Location: ../../public/accounts.php");
                 exit;
             }else {
                 $logFile = __DIR__ . '/../logs/login_errors.log';
