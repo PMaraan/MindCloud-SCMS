@@ -1,21 +1,18 @@
-/* FacultyRoles.js  (shared)
- * Search + filter + edit + add logic for a 7‑column Faculty table.
- * Bootstrap 5 compatible
+/* FacultyRoles.js (shared)
+ * Handles search, filter, edit, and add logic for a 7‑column Faculty table using Bootstrap 5.
  */
 document.addEventListener("DOMContentLoaded", () => {
 
-  /* ------------------------------------------------------------------
-     1) DISCOVER CORE ELEMENTS
-  ------------------------------------------------------------------ */
-  // ❶ Table: grab the first <table> that has 7 header cells
-  const targetTable   = Array.from(document.querySelectorAll("table"))
-                              .find(t => t.querySelectorAll("thead th").length === 7);
-  if (!targetTable) return;                                   // no table found → abort
+  // Get the first table with exactly 7 headers (our target faculty table)
+  const targetTable = Array.from(document.querySelectorAll("table"))
+                           .find(t => t.querySelectorAll("thead th").length === 7);
+  if (!targetTable) return; // Abort if no target table is found
 
-  const tableBody         = targetTable.querySelector("tbody");
-  const totalCols         = targetTable.querySelectorAll("thead th").length;
+  // Get core table elements
+  const tableBody   = targetTable.querySelector("tbody");
+  const totalCols   = targetTable.querySelectorAll("thead th").length;
 
-  /* Static IDs shared by both pages */
+  // Get DOM elements by ID
   const searchInput       = document.getElementById("generalSearch");
   const roleFilterOptions = document.getElementById("roleFilterOptions");
   const modal             = document.getElementById("editFacultyModal");
@@ -26,32 +23,32 @@ document.addEventListener("DOMContentLoaded", () => {
   const deleteBtn         = document.getElementById("deleteFacultyBtn");
   const openAddBtn        = document.getElementById("openAddFacultyBtn");
 
-  if (!searchInput || !roleFilterOptions || !modal) return;   // insure all essentials exist
+  // Ensure necessary elements exist
+  if (!searchInput || !roleFilterOptions || !modal) return;
 
-  const firstNameField    = document.getElementById("editFirstName");
-  const middleInitialField= document.getElementById("editMiddleInitial");
-  const lastNameField     = document.getElementById("editLastName");
-  const idNumberField     = document.getElementById("editIdNumber");
-  const emailField        = document.getElementById("editEmail");
-  const roleField         = document.getElementById("editRole");
+  // Get modal form fields
+  const firstNameField      = document.getElementById("editFirstName");
+  const middleInitialField  = document.getElementById("editMiddleInitial");
+  const lastNameField       = document.getElementById("editLastName");
+  const idNumberField       = document.getElementById("editIdNumber");
+  const emailField          = document.getElementById("editEmail");
+  const roleField           = document.getElementById("editRole");
 
-  /* ------------------------------------------------------------------
-     2) STATE & UTILITIES
-  ------------------------------------------------------------------ */
+  // Initialize state variables
   let currentRow = null;
   let activeRole = null;
   let debounceId = null;
 
-  // No‑results row
+  // Create and append the "No Records" row for empty search results
   const noResultsRow = (() => {
     const tr = document.createElement("tr");
     tr.className = "no-results";
-    tr.innerHTML =
-      `<td colspan="${totalCols}" class="text-center text-muted py-3">No Records to Display.</td>`;
+    tr.innerHTML = `<td colspan="${totalCols}" class="text-center text-muted py-3">No Records to Display.</td>`;
     tableBody.appendChild(tr);
     return tr;
   })();
 
+  // Clear modal form fields
   const clearForm = () => {
     firstNameField.value     = "";
     middleInitialField.value = "";
@@ -61,9 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
     roleField.value          = "Dean";
   };
 
-  /* ------------------------------------------------------------------
-     3) ROLE FILTER BUTTONS
-  ------------------------------------------------------------------ */
+  // Rebuild filter buttons based on unique roles in the table
   const rebuildRoleButtons = () => {
     roleFilterOptions.innerHTML = "";
     const roles = new Set(
@@ -77,17 +72,14 @@ document.addEventListener("DOMContentLoaded", () => {
       btn.textContent = role;
       roleFilterOptions.appendChild(btn);
     });
-    // Show All
     const reset = document.createElement("button");
     reset.className = "btn btn-outline-secondary btn-sm w-100 mt-1";
     reset.textContent = "Show All";
     roleFilterOptions.appendChild(reset);
   };
-  rebuildRoleButtons();
+  rebuildRoleButtons(); // Initial call to build filter buttons
 
-  /* ------------------------------------------------------------------
-     4) FILTER ROUTINE
-  ------------------------------------------------------------------ */
+  // Apply text search and role filter to table rows
   const applyFilters = () => {
     const term = (searchInput?.value || "").trim().toLowerCase();
     let shown = 0;
@@ -104,9 +96,7 @@ document.addEventListener("DOMContentLoaded", () => {
     noResultsRow.style.display = shown ? "none" : "";
   };
 
-  /* ------------------------------------------------------------------
-     5) EDIT / ADD LOGIC
-  ------------------------------------------------------------------ */
+  // Handle edit button click, pre-fill modal fields and show edit mode
   const handleEditClick = e => {
     currentRow = e.currentTarget.closest("tr");
     const cells = currentRow.children;
@@ -124,14 +114,12 @@ document.addEventListener("DOMContentLoaded", () => {
     modal.classList.remove("d-none");
   };
 
-  /* Add edit handler to existing rows */
+  // Attach edit listener to each edit button in the table
   targetTable.querySelectorAll(".edit-btn").forEach(btn =>
     btn.addEventListener("click", handleEditClick)
   );
 
-  /* ------------------------------------------------------------------
-     6) EVENT BINDINGS
-  ------------------------------------------------------------------ */
+  // Debounce and apply filters on search input
   if (searchInput) {
     searchInput.addEventListener("input", () => {
       clearTimeout(debounceId);
@@ -139,20 +127,22 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Handle role filter button clicks and toggle active state
   roleFilterOptions.addEventListener("click", e => {
     const btn = e.target.closest("button");
     if (!btn) return;
     activeRole = btn.dataset.role || null;
     roleFilterOptions.querySelectorAll("button").forEach(b => {
       b.classList.toggle("btn-primary", b === btn && activeRole);
-      b.classList.toggle("btn-outline-primary",
-        !(b === btn && activeRole) && b.dataset.role);
+      b.classList.toggle("btn-outline-primary", !(b === btn && activeRole) && b.dataset.role);
     });
     applyFilters();
   });
 
+  // Close modal on cancel button click
   closeBtn && closeBtn.addEventListener("click", () => modal.classList.add("d-none"));
 
+  // Save edits to the selected row
   saveBtn && saveBtn.addEventListener("click", () => {
     if (!currentRow) return;
     const cells = currentRow.children;
@@ -167,6 +157,7 @@ document.addEventListener("DOMContentLoaded", () => {
     rebuildRoleButtons();
   });
 
+  // Delete the selected row
   deleteBtn && deleteBtn.addEventListener("click", () => {
     if (!currentRow) return;
     currentRow.remove();
@@ -175,7 +166,7 @@ document.addEventListener("DOMContentLoaded", () => {
     rebuildRoleButtons();
   });
 
-  /* Add Faculty */
+  // Open modal for adding new faculty
   openAddBtn && openAddBtn.addEventListener("click", () => {
     currentRow = null;
     modalTitle.textContent = "Add Faculty";
@@ -186,6 +177,7 @@ document.addEventListener("DOMContentLoaded", () => {
     modal.classList.remove("d-none");
   });
 
+  // Add new row to the table
   addBtn && addBtn.addEventListener("click", () => {
     const newRow = document.createElement("tr");
     newRow.innerHTML = `
@@ -208,8 +200,6 @@ document.addEventListener("DOMContentLoaded", () => {
     rebuildRoleButtons();
   });
 
-  /* Initial filter run */
+  // Run filters on initial load
   applyFilters();
 });
-
-
