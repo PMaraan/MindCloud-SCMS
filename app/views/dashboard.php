@@ -7,8 +7,9 @@ if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] !== 'on') {
     exit;
 }
 */
-if (!isset($_SESSION['username'])) {
-    echo "<script>alert('You are not logged in!'); window.location='../../public/loginprototype.html';</script>";
+
+if (!isset($_SESSION['user_id'])) {
+    echo "<script>alert('You are not logged in!'); window.location='login.php';</script>";
     exit;
 }else {
     echo "<h1>Welcome to the Dashboard!</h1>";

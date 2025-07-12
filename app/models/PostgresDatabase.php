@@ -2,9 +2,10 @@
 // app/models/PostgresDatabase.php
 
 require_once __DIR__ . '/StorageInterface.php';
-
+ echo "PostgresDatabase.php: basePath1: $basePath <br>"; //delete
 class PostgresDatabase implements StorageInterface {
     private $pdo;
+    private $basePath = BASE_PATH;
 
     public function __construct($host, $port, $dbname, $user, $pass) {
         try {
@@ -12,18 +13,20 @@ class PostgresDatabase implements StorageInterface {
         } catch (PDOException $e) {
             die("Database connection failed: " . $e->getMessage());
         }
+        echo "PostgresDatabase.php: basePath2: $this->basePath <br>"; //delete
     }
 
     public function authenticate($email, $password) {
         $stmt = $this->pdo->prepare("SELECT * FROM users WHERE email = ?");
         $stmt->execute([$email]);
         $user = $stmt->fetch();
-
+        echo "PostgresDatabase.php: basePath3: $this->basePath <br>";
         if ($user && password_verify($password, $user['password'])) {
             session_regenerate_id(true);
             $_SESSION['username'] = $user['fname'] . " " . $user['lname'];
             $_SESSION['user_id'] = $user['id_no'];
-            header('Location: /dashboard');
+            echo "PostgresDatabase.php: basePath4: $this->basePath <br>"; //delete
+            header("Location: $this->basePath/app/views/Dashboard.php");
             exit;
         }else {
             $logFile = __DIR__ . '/../logs/login_errors.log';
@@ -35,7 +38,7 @@ class PostgresDatabase implements StorageInterface {
                 "[" . date('Y-m-d H:i:s') . "] Login failed for email: $email\n",
                 FILE_APPEND
             );
-            header('Location: /login?error=1');
+            header("Location: $basePath/app/views/login.php?error=1");
         }    
     }
 

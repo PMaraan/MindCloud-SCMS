@@ -13,7 +13,7 @@ if (file_exists(__DIR__ . '/../.env')) {
         putenv("$key=$value");
     }
 }
-echo "getenv: " . var_export(getenv('USE_MOCK'), true) . "<br>";
+// echo "getenv: " . var_export(getenv('USE_MOCK'), true) . "<br>"; //delete for production
 // Read from environment
 define('USE_MOCK', filter_var(getenv('USE_MOCK'), FILTER_VALIDATE_BOOLEAN));
 define('DB_HOST', getenv('DB_HOST'));
@@ -23,4 +23,5 @@ define('DB_USER', getenv('DB_USER'));
 define('DB_PASS', getenv('DB_PASS'));
 define('BASE_PATH', getenv('BASE_PATH'));
 
-echo "USE_MOCK: " . var_export(USE_MOCK, true) . "<br>";
+$basePath = BASE_PATH ?: '/MindCloud-SCMS';
+// echo "USE_MOCK: " . var_export(USE_MOCK, true) . "<br>"; // delete for production

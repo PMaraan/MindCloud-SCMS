@@ -74,7 +74,8 @@ if ($user) {
                   type="email" 
                   name = "email"
                   class="form-control" 
-                  id="email-input" 
+                  id="email-input"
+                  value="admin@lpunetwork.edu.ph" 
                   required>
                 <div class="invalid-feedback">
                   Email must be a valid @lpunetwork.edu.ph address.
@@ -88,7 +89,8 @@ if ($user) {
                   type="password" 
                   name = "password"
                   class="form-control password-input" 
-                  id="password-input" 
+                  id="password-input"
+                  value="password"
                   required>
                 <div class="invalid-feedback">
                   Password is required.
