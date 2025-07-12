@@ -13,7 +13,7 @@
         </a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" href="#" title="Logout">
+        <a class="nav-link" href=<?="$basePath/app/lib/logout.php"?> title="Logout">
           <i class="bi bi-box-arrow-right fs-4"></i>
         </a>
       </li>

@@ -2,6 +2,6 @@
 session_start();
 session_unset();
 session_destroy();
-header("Location: /"); //change address for deployment
+header("Location: /MindCloud-SCMS/public/index.php"); //change address for deployment
 exit;
 ?>
