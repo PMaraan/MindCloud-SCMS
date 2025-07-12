@@ -39,6 +39,7 @@ class PostgresDatabase implements StorageInterface {
                 FILE_APPEND
             );
             header("Location: $basePath/app/views/login.php?error=1");
+            exit;
         }    
     }
 

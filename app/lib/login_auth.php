@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'] ?? '';
 
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)){
-        header('Location: /login?error=invalid_email');
+        header("Location: /login?error=invalid_email");
         exit;
     }
 
@@ -51,10 +51,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         session_regenerate_id(true);
         $_SESSION['user_id'] = $user['id_no'];
         //$_SESSION['email'] = $user['email']; // Email is not used. Remove for production
-        header('Location: /dashboard'); // redirect to dashboard; change this location for production
+        header("Location: /dashboard"); // redirect to dashboard; change this location for production
         exit;
     } else {
-        header('Location: /login?error=1');
+        header("Location: /login?error=1");
+        exit;
     }
 }
 ?>

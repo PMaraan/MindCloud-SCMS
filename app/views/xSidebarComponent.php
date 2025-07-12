@@ -22,6 +22,10 @@
 
             <ul class="nav flex-column">
                 <?php
+                // Create the database pdo
+                // Get the role of the user
+                // Map out the permmissions of the user
+                // Display the sidebar tabs that the user has permissions to
                 $links = [
                     'approve'   => 'Approve',
                     'note'      => 'Note',
