@@ -1,0 +1,78 @@
+/* Page title styling */
+.title {
+  font-size: 28px;
+  font-weight: bold;
+}
+
+/* Full-width layout for main container */
+.container-fluid.table-container {
+  width: 100vw;
+  max-width: 100%;
+  margin: 0;
+  padding: 0 20px; /* spacing from left and right */
+  box-sizing: border-box;
+}
+
+/* Search input field */
+.search-input {
+  width: 100%;
+}
+
+/* File header row (sort buttons) */
+.file-header {
+  padding: 0 12px;
+}
+
+/* File list wrapper (vertical stack) */
+.file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* File card style */
+.file-item {
+  flex: 0 0 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 12px 16px;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* File title + icon group */
+.file-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+}
+
+/* File icon appearance */
+.file-info .icon {
+  font-size: 20px;
+  color: #555;
+}
+
+/* File date on right */
+.file-date {
+  font-size: 14px;
+  color: #777;
+}
+
+/* Hover effect for each file item */
+.file-item:hover {
+  background-color: #f2f2f2;
+  cursor: pointer;
+}
+
+/* Empty state message styling */
+.no-results {
+  font-style: italic;
+  font-size: 16px;
+  color: #777;
+}

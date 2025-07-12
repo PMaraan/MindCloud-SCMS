@@ -9,6 +9,10 @@ $page_css = [
   'add_college' => '../../public/assets/css/FacultyRoles.css',
   'view_roles' => '../../public/assets/css/ViewRoles.css',
   'edit_college' => '../../public/assets/css/FacultyRoles.css',
+  'approve' => '../../public/assets/css/ForStatus.css',
+  'note' => '../../public/assets/css/ForStatus.css',
+  'prepare' => '../../public/assets/css/ForStatus.css',
+  'revise' => '../../public/assets/css/ForStatus.css',
 ];
 
 // JS Mappings
@@ -19,15 +23,19 @@ $page_js = [
   'add_college' => '../../public/assets/js/FacultyRoles.js',
   'view_roles' => '../../public/assets/js/ViewRoles.js',
   'edit_college' => '../../public/assets/js/FacultyRoles.js',
+  'approve' => '../../public/assets/js/ForStatus.js',
+  'note' => '../../public/assets/js/ForStatus.js',
+  'prepare' => '../../public/assets/js/ForStatus.js',
+  'revise' => '../../public/assets/js/ForStatus.js',
 ];
 
 // Content mapping
 $allowed_pages = [
   'index'     => 'index.php',
-  'approve'   => '#',
-  'note'      => '#',
-  'prepare'   => '#',
-  'revise'    => '#',
+  'approve'   => 'ForApproval.php',
+  'note'      => 'ForNoting.php',
+  'prepare'   => 'ForPreparation.php',
+  'revise'    => 'SyllabusForRevision.php',
   'faculty'   => 'FacultyRoles.php',
   'templates' => 'Templates.php',
   'syllabus'  => '#',
