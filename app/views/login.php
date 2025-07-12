@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 
 <?php
+
+// Load environment variables
+//require_once __DIR__ . '/../../config/config.php';
+
 /*
 // public/index.php
 
@@ -33,7 +37,7 @@ if ($user) {
 <!-- display login error message -->
 <?php if (isset($_GET['error'])): ?>
   <p style="color:red;">
-    <?= $GET['error'] === 'invalid_email' ? 'Invalid email format.' : 'Invalid email or password' ?>
+    <?= $_GET['error'] === 'invalid_email' ? 'Invalid email format.' : 'Invalid email or password' ?>
   </p>
 <?php endif; ?>
 
@@ -43,7 +47,7 @@ if ($user) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>LPU-SCMS | Login</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/login-styles.css">
+  <link rel="stylesheet" href="../../public/assets/css/login-styles.css">
 </head>
 <body>
   <div class="container-fluid">
@@ -61,7 +65,7 @@ if ($user) {
         <!-- Login Form Container -->
         <div class="col login-form-container">
           <div class="col login-form">
-            <form method="POST" action="../app/lib/login_auth.php">
+            <form method="POST" action="<?= BASE_PATH ?>/auth">
 
               <!-- Email Input -->
               <div class="mb-3">

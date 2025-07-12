@@ -1,5 +1,5 @@
 <?php
-// app/config/config.php
+// myapp/config/config.php
 
 //require_once __DIR__ . '/../vendor/autoload.php'; // If using Composer (optional)
 
@@ -21,3 +21,4 @@ define('DB_PORT', getenv('DB_PORT'));
 define('DB_NAME', getenv('DB_NAME'));
 define('DB_USER', getenv('DB_USER'));
 define('DB_PASS', getenv('DB_PASS'));
+define('BASE_PATH', getenv('BASE_PATH'));

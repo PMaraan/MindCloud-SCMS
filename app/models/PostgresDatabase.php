@@ -15,27 +15,28 @@ class PostgresDatabase implements StorageInterface {
     }
 
     public function authenticate($email, $password) {
-            $stmt = $this->pdo->prepare("SELECT * FROM users WHERE email = ?");
-            $stmt->execute([$email]);
-            $user = $stmt->fetch();
+        $stmt = $this->pdo->prepare("SELECT * FROM users WHERE email = ?");
+        $stmt->execute([$email]);
+        $user = $stmt->fetch();
 
-            if ($user && password_verify($password, $user['password'])) {
-                session_regenerate_id(true);
-                $_SESSION['username'] = $user['fname'] . " " . $user['lname'];
-                header("Location: ../../public/accounts.php");
-                exit;
-            }else {
-                $logFile = __DIR__ . '/../logs/login_errors.log';
-                if (!file_exists($logFile)) {
-                    file_put_contents($logFile, "=== Login Log Initialized on " . date('Y-m-d H:i:s') . " ===\n");
-                }
-                file_put_contents(
-                    $logFile,
-                    "[" . date('Y-m-d H:i:s') . "] Login failed for email: $email\n",
-                    FILE_APPEND
-                );
-                echo "<script>alert('Invalid email or password for postgres'); window.location='../../public/index.php';</script>"; //change address for deployment
-            }        
+        if ($user && password_verify($password, $user['password'])) {
+            session_regenerate_id(true);
+            $_SESSION['username'] = $user['fname'] . " " . $user['lname'];
+            $_SESSION['user_id'] = $user['id_no'];
+            header('Location: /dashboard');
+            exit;
+        }else {
+            $logFile = __DIR__ . '/../logs/login_errors.log';
+            if (!file_exists($logFile)) {
+                file_put_contents($logFile, "=== Login Log Initialized on " . date('Y-m-d H:i:s') . " ===\n");
+            }
+            file_put_contents(
+                $logFile,
+                "[" . date('Y-m-d H:i:s') . "] Login failed for email: $email\n",
+                FILE_APPEND
+            );
+            header('Location: /login?error=1');
+        }    
     }
 
     public function getAllUsersWithRoles() {

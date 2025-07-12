@@ -1,0 +1,8 @@
+RewriteEngine On
+RewriteBase /MindCloud-SCMS/
+
+# Redirect all requests to index.php
+RewriteRule ^$ public/index.php [L] # Redirect for root path
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ public/index.php [QSA,L] # Route everything through public/index.php
