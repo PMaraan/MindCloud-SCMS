@@ -3,7 +3,7 @@
 <?php
 
 // Load environment variables
-//require_once __DIR__ . '/../../config/config.php';
+require_once __DIR__ . '/../../config/config.php';
 
 /*
 // public/index.php
@@ -65,7 +65,7 @@ if ($user) {
         <!-- Login Form Container -->
         <div class="col login-form-container">
           <div class="col login-form">
-            <form method="POST" action="<?= BASE_PATH ?>/auth">
+            <form method="POST" action="<?= BASE_PATH ?>/app/controllers/UserController.php">
 
               <!-- Email Input -->
               <div class="mb-3">
