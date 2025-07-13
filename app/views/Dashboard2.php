@@ -5,12 +5,10 @@ session_start();
 
 require_once __DIR__ . '/../../config/config.php'; // Load environment variables
 require_once __DIR__ . '/../controllers/ContentController.php'; // Dynamically control the content
-//require_once __DIR__ . '/xHeaderComponent.php'; // Load header component          // delete for production
-//require_once __DIR__ . '/xSidebarComponent.php'; // Load sidebar component        // delete for production
 
 require_once __DIR__ . '/../models/PostgresDatabase.php';
-$pdo = new PostgresDatabase(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS);
-$permissions = $pdo->getUserPermissions($_SESSION['user_id']);
+//$pdo = new PostgresDatabase(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS);
+//$permissions = $pdo->getUserPermissions($_SESSION['user_id']);
 
 
 /*
@@ -49,9 +47,9 @@ if (!isset($_SESSION['user_id'])) {
   <link rel="stylesheet" href="../../public/assets/css/SidebarComponent.css" />
 
   <!-- Page-specific CSS -->
-  <?php if (isset($page_css[$page])): ?>
-    <link rel="stylesheet" href="<?= $page_css[$page] ?>">
-  <?php endif; ?>
+  <?//php if (isset($page_css[$page])): ?>
+    <!-- <?php // echo '<link rel="stylesheet" href="' . $page_css[$page] . '">'; ?> -->
+  <?//php endif; ?>
 
 
 </head>
@@ -61,7 +59,7 @@ if (!isset($_SESSION['user_id'])) {
 
     <div class="wrapper">
         <?php
-        $currentPage = $page; 
+        //$currentPage = $page; 
         require_once __DIR__ . '/xSidebarComponent2.php'; // Load sidebar component
         ?>
 

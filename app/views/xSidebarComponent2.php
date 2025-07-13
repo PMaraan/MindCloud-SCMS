@@ -1,5 +1,5 @@
 <?php
-  $currentPage = $currentPage ?? ($_GET['page'] ?? 'index');
+  //$currentPage = $currentPage ?? ($_GET['page'] ?? 'index');
 ?>
 
 <div class="toggle-wrapper">
@@ -23,27 +23,32 @@
             <ul class="nav flex-column">
                 <?php
                 // the comments below are just pseudo code to guide the devs
-                // Create the database pdo
+                // Create the database pdo               
                 // Get the role of the user
-                // Map out the permmissions of the user
-                // Display the sidebar tabs that the user has permissions to
+                // Map out the permissions of the user
+                require_once __DIR__ . '/../models/PostgresDatabase.php'; // Load the database model
+                $pdo = new PostgresDatabase(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS);
+                $permissionGroups = $pdo->getPermissionGroupsByUser($_SESSION['user_id']);
 
-                // this array is javascript frontend. create a php implementation and delete this
-                $links = [
-                    'approve'   => 'Approve',
-                    'note'      => 'Note',
-                    'prepare'   => 'Prepare',
-                    'revise'    => 'Revise',
-                    'faculty'   => 'Faculty',
-                    'templates' => 'Templates',
-                    'syllabus'  => 'Syllabus',
-                    'college'   => 'College',
-                    'secretary' => 'Secretary',
-                    'courses'   => 'Courses'
+                $mapper = [
+                    'Accounts' => '/Accounts.php',
+                    'Roles' => '/Roles.php',
+                    'Colleges' => '/Colleges.php',
+                    'Courses' => '/Courses.php',
+                    'Templates' => '/Templates.php',
+                    'Syllabus' => '/Syllabus.php'
                 ];
-
-                // change logic to take list permissions from the database and create a list element for each permission
-                foreach ($permissions as $permKey) {
+                // Display the sidebar tabs that the user has permissions to
+                foreach ($mapper as $key => $href) {
+                    if (in_array($key, $permissionGroups)) {
+                        echo "<li class='nav-item'>
+                                <a class='nav-link linkstyle' href='$href'>$key</a>
+                        </li>";
+                        //echo "<a href=\"$href\">$key</a><br>";
+                    }
+                }
+                /*
+                foreach ($permissionGroups as $perm) {
                     if (array_key_exists($permKey, $availablePages)) {
                         $label = $availablePages[$permKey];
                         $activeClass = $currentPage === $permKey ? 'active' : '';
@@ -52,6 +57,7 @@
                             </li>";
                     }
                 }
+                */
                 ?>
             </ul>
         </div>

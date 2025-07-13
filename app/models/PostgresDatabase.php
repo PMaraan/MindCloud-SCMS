@@ -25,7 +25,7 @@ class PostgresDatabase implements StorageInterface {
         // Check if email and password match
         if ($user && password_verify($password, $user['password'])) {
             // Retrieve user role
-            $stmtRole = $this->pdo->prepare("SELECT r.name AS role_name
+            $stmtRole = $this->pdo->prepare("SELECT r.role_id, r.name AS role_name
                                         FROM user_roles ur
                                         JOIN roles r ON ur.role_id = r.role_id                                        
                                         WHERE ur.id_no = ?");
@@ -44,13 +44,14 @@ class PostgresDatabase implements StorageInterface {
             session_regenerate_id(true);
             $_SESSION['username'] = $user['fname'] . " " . $user['lname'];
             $_SESSION['user_id'] = $user['id_no'];
+            $_SESSION['role_id'] = $_SESSION['role'] = $userRole['role_id'];
             $_SESSION['role'] = $userRole['role_name'];
             $_SESSION['college_id'] = $userCollege['college_id'];
             $_SESSION['college'] = $userCollege['college_name'];
             $role = $_SESSION['role'];
             //echo "role: $role <br>";                                                  //delete for production
             //echo "PostgresDatabase.php: basePath4: $this->basePath <br>";             //delete for production
-            header("Location: $this->basePath/app/views/Dashboard.php");
+            header("Location: $this->basePath/app/views/Dashboard2.php");
             exit;
         }else {
             $logFile = __DIR__ . '/../logs/login_errors.log';
@@ -91,6 +92,34 @@ class PostgresDatabase implements StorageInterface {
         ");
         $stmt->execute([$userId]);
         return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
+
+    public function getPermissionGroupsByUser($id_no) {
+        $stmt = $this->pdo->prepare("
+            SELECT p.permission_id, p.name
+            FROM user_roles ur
+            JOIN role_permissions rp ON ur.role_id = rp.role_id
+            JOIN permissions p ON rp.permission_id = p.permission_id
+            WHERE ur.id_no = ?
+        ");
+        $stmt->execute([$id_no]);
+        $permissions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $groups = [];
+        foreach ($permissions as $perm) {
+            $setPrefix = substr($perm['permission_id'], 0, 1); // e.g., '1' for account, '3' for college
+            switch ($setPrefix) {
+                case '1': $groups['Accounts'] = true; break;
+                case '2': $groups['Roles'] = true; break;
+                case '3': $groups['Colleges'] = true; break;
+                case '4': $groups['Courses'] = true; break;
+                case '5': $groups['Templates'] = true; break;
+                case '6': $groups['Syllabus'] = true; break;
+                default: break;
+            }
+        }
+
+        return array_keys($groups); // e.g., ['accounts', 'college', 'templates']
     }
 
     public function connect() {
