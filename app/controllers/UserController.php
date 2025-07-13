@@ -28,7 +28,7 @@ if (USE_MOCK) {
     // declare a new pdo
     require_once __DIR__ . '/../models/PostgresDatabase.php';
     $pdo = new PostgresDatabase(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS);
-    echo "Use Postgres Database";
+    echo "Use Postgres Database <br>";
 }
 
 $pdo->authenticate($email, $password);

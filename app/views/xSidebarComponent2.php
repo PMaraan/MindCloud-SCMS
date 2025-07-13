@@ -43,11 +43,14 @@
                 ];
 
                 // change logic to take list permissions from the database and create a list element for each permission
-                foreach ($links as $key => $label) {
-                    $activeClass = $currentPage === $key ? 'active' : '';
-                    echo "<li class='nav-item'>
-                            <a class='nav-link linkstyle $activeClass' href='Dashboard.php?page=$key'>$label</a>
-                        </li>";
+                foreach ($permissions as $permKey) {
+                    if (array_key_exists($permKey, $availablePages)) {
+                        $label = $availablePages[$permKey];
+                        $activeClass = $currentPage === $permKey ? 'active' : '';
+                        echo "<li class='nav-item'>
+                                <a class='nav-link linkstyle $activeClass' href='Dashboard.php?page=$permKey'>$label</a>
+                            </li>";
+                    }
                 }
                 ?>
             </ul>

@@ -8,6 +8,11 @@ require_once __DIR__ . '/../controllers/ContentController.php'; // Dynamically c
 //require_once __DIR__ . '/xHeaderComponent.php'; // Load header component          // delete for production
 //require_once __DIR__ . '/xSidebarComponent.php'; // Load sidebar component        // delete for production
 
+require_once __DIR__ . '/../models/PostgresDatabase.php';
+$pdo = new PostgresDatabase(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS);
+$permissions = $pdo->getUserPermissions($_SESSION['user_id']);
+
+
 /*
 // Force HTTPS
 if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] !== 'on') {
@@ -52,31 +57,32 @@ if (!isset($_SESSION['user_id'])) {
 </head>
 <body>
 
-  <?php require_once __DIR__ . '/xHeaderComponent.php'; // Load header component ?>
+    <?php require_once __DIR__ . '/xHeaderComponent.php'; // Load header component ?>
 
-  <div class="wrapper">
-    <?php
-      $currentPage = $page; 
-      require_once __DIR__ . '/xSidebarComponent.php'; // Load sidebar component
-    ?>
-
-    <div class="main-content">
-      <div class="container-fluid py-4">
+    <div class="wrapper">
         <?php
-          if (array_key_exists($page, $allowed_pages)) {
-            include $allowed_pages[$page];
-          } else {
-            echo "<h4 class='fw-bold mb-4'>404 - Page Not Found</h4>";
-          }
+        $currentPage = $page; 
+        require_once __DIR__ . '/xSidebarComponent2.php'; // Load sidebar component
         ?>
-      </div>
+
+        <div class="main-content">
+        <div class="container-fluid py-4">
+            <?php
+            if (array_key_exists($page, $allowed_pages)) {
+                include $allowed_pages[$page];
+            } else {
+                echo "<h4 class='fw-bold mb-4'>404 - Page Not Found</h4>";
+            }
+            ?>
+        </div>
+        </div>
     </div>
-  </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <!-- Page-specific JS -->
-  <?php if (isset($page_js[$page])): ?>
-    <script src="<?= $page_js[$page] ?>"></script>
-  <?php endif; ?>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Page-specific JS -->
+    <?php if (isset($page_js[$page])): ?>
+        <script src="<?= $page_js[$page] ?>"></script>
+    <?php endif; ?>
 
 </body>
 </html>
