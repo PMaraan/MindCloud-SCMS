@@ -46,18 +46,36 @@ class ContentController {
 
   }
 
-  private function mapSidebarTabsToAddresses($permissionGroupsArray){
-    $mappedTabs;
-    $mapper['Accounts'] = '/accounts';
-    $mapper['Roles'] = '/roles';
-    $mapper['Colleges'] = '/colleges';
-    $mapper['Courses'] = '/courses';
-    $mapper['Templates'] = '/templates';
-    $mapper['Syllabus'] = '/syllabus';
-    foreach ($permissionGroupsArray as $tabName){
+  // ✅ Public method to return all resources needed for a specific page
+  public function getPageResources($page) {
+    $css = $this->css_map[$page] ?? null;               // Get CSS file or null if not mapped
+    $js = $this->js_map[$page] ?? null;                 // Get JS file or null if not mapped
+    $content = $this->page_map[$page] ?? '404.php';     // Get content file or default to 404
 
-      //$mappedTabs[$tabName] = 
+    return [
+        'css'     => $css,
+        'js'      => $js,
+        'content' => $content
+    ];
+  }
+
+  private function mapSidebarTabsToAddresses($permissionGroupsArray){
+    $mappedTabs = [];
+    $mapper = [
+      'Accounts'  => '/accounts',
+      'Roles'     => '/roles',
+      'Colleges'  => '/colleges',
+      'Courses'   => '/courses',
+      'Templates' => '/templates',
+      'Syllabus'  => '/syllabus',
+    ];
+
+    foreach ($permissionGroupsArray as $tabName) {
+      if (isset($mapper[$tabName])) {
+        $mappedTabs[$tabName] = $mapper[$tabName];
+      }
     }
+
     // Return a key value pair Tab_name and Address
     return $mappedTabs;
   }
@@ -70,7 +88,7 @@ class ContentController {
     $permissionGroups = $pdo->getPermissionGroupsByUser($_SESSION['user_id']);
 
     // Return array
-
+    return $this->mapSidebarTabsToAddresses($permissionGroups);
   }
 
 }
