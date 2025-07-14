@@ -26,14 +26,18 @@ if (!isset($_SESSION['user_id'])) {
     //echo "<h1>Welcome to the Dashboard!</h1>";
 }
 
+// Load dynamic content using the ContentController
+$page = $_POST['page'] ?? 'index';
+$controller = new ContentController();
+$resources = $controller->getPageResources($page);
 
-
-
+$css_file = $resources['css'];
+$js_file = $resources['js'];
+$content_file = $resources['content'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
 
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -47,10 +51,13 @@ if (!isset($_SESSION['user_id'])) {
   <link rel="stylesheet" href="../../public/assets/css/SidebarComponent.css" />
 
   <!-- Page-specific CSS -->
+  <?php if ($css_file): ?>
+    <link rel="stylesheet" href="<?= $css_file ?>">
+  <?php endif; ?>
+
   <?//php if (isset($page_css[$page])): ?>
     <!-- <?php // echo '<link rel="stylesheet" href="' . $page_css[$page] . '">'; ?> -->
   <?//php endif; ?>
-
 
 </head>
 <body>
@@ -66,8 +73,8 @@ if (!isset($_SESSION['user_id'])) {
         <div class="main-content">
         <div class="container-fluid py-4">
             <?php
-            if (array_key_exists($page, $allowed_pages)) {
-                include $allowed_pages[$page];
+            if ($content_file !== '#' && file_exists(__DIR__ . '/' . $content_file)) {
+                include __DIR__ . '/' . $content_file;
             } else {
                 echo "<h4 class='fw-bold mb-4'>404 - Page Not Found</h4>";
             }
@@ -77,13 +84,15 @@ if (!isset($_SESSION['user_id'])) {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
     <!-- Page-specific JS -->
-    <?php if (isset($page_js[$page])): ?>
-        <script src="<?= $page_js[$page] ?>"></script>
+    <?php if ($js_file): ?>
+        <script src="<?= $js_file ?>"></script>
     <?php endif; ?>
+
+    <?php // if (isset($page_js[$page])): ?>
+        <!-- <?php // echo '<script src="' . $page_js[$page] . '"></script>'; ?> -->
+    <?php // endif; ?>
 
 </body>
 </html>
-
-
-?>

@@ -3,6 +3,43 @@
 //$page = $_GET['page'] ?? 'index';                       //delete for production
 
 class ContentController {
+  // CSS file mappings for each page
+  private $css_map = [
+    'templates'    => '../../public/assets/css/Templates.css',
+    'college'      => '../../public/assets/css/CollegeRoles.css',
+    'faculty'      => '../../public/assets/css/FacultyRoles.css',
+    'add_college'  => '../../public/assets/css/FacultyRoles.css',
+    'view_roles'   => '../../public/assets/css/ViewRoles.css',
+    'edit_college' => '../../public/assets/css/FacultyRoles.css',
+  ];
+
+  // JS file mappings for each page
+  private $js_map = [
+    'templates'    => '../../public/assets/js/Templates.js',
+    'college'      => '../../public/assets/js/CollegeRoles.js',
+    'faculty'      => '../../public/assets/js/FacultyRoles.js',
+    'add_college'  => '../../public/assets/js/FacultyRoles.js',
+    'view_roles'   => '../../public/assets/js/ViewRoles.js',
+    'edit_college' => '../../public/assets/js/FacultyRoles.js',
+  ];
+
+  // Content mapping (used to locate the correct PHP file for each page)
+  private $page_map = [
+    'index'        => 'index.php',
+    'approve'      => '#',                      // Placeholder / Not yet implemented
+    'note'         => '#',                      // Placeholder / Not yet implemented
+    'prepare'      => '#',                      // Placeholder / Not yet implemented
+    'revise'       => '#',                      // Placeholder / Not yet implemented
+    'faculty'      => 'FacultyRoles.php',
+    'templates'    => 'Templates.php',
+    'syllabus'     => '#',                      // Placeholder / Not yet implemented
+    'college'      => 'CollegeRoles.php',
+    'secretary'    => '#',                      // Placeholder / Not yet implemented
+    'courses'      => '#',                      // Placeholder / Not yet implemented
+    'add_college'  => 'CollegeFacultyRoles.php',
+    'view_roles'   => 'ViewRoles.php',
+    'edit_college' => 'EditCollegeRoles.php',
+  ];
 
   // Constructor
   public function __construct(){
