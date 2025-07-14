@@ -35,7 +35,7 @@
                     'Roles' => '/Roles.php',
                     'Colleges' => '/Colleges.php',
                     'Courses' => '/Courses.php',
-                    'Templates' => '/Templates.php',
+                    'Templates' => "/MindCloud-SCMS/app/views/Templates.php",
                     'Syllabus' => '/Syllabus.php'
                 ];
                 // Display the sidebar tabs that the user has permissions to

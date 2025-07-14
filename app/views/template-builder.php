@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Drag & Drop UI Builder</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/template-builder.css">
+  <link rel="stylesheet" href="../../public/assets/css/template-builder.css">
 </head>
 <body>
 
@@ -32,7 +32,7 @@
     <p class="text-muted">Drag elements here...</p>
   </div>
 
-  <script src="assets/js/template-builder.js"></script>
+  <script src="../../public/assets/js/template-builder.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 </body>

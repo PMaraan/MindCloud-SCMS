@@ -79,6 +79,37 @@ class ContentController {
     // Return a key value pair Tab_name and Address
     return $mappedTabs;
   }
+  
+  public function getWorkspace($tabName) {
+    switch($tabName){
+      case 'Accounts':
+        //address
+        break;
+      case 'Roles':
+        //address
+        break;
+      case 'Colleges':
+        //address
+        break;
+      case 'Courses':
+        //address
+        break;
+      case 'Templates':
+        //address
+        break;
+      case 'Syllabus':
+        //address
+        break;
+    }
+  }
+
+  public function getWorkspace($tabName) {
+    
+  }
+
+
+
+  //Add CSS & JS Mappings using public_fuction
 
   public function getSidebarTabs($role_id){
     // Get permission groups from db and map the page addresses

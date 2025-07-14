@@ -18,4 +18,8 @@
     <span class="display-4 text-muted">+</span>
   </div>
 
+  <div class="template-card add-template d-flex justify-content-center align-items-center">
+    <span class="display-4 text-muted">+</span>
+  </div>
+  
 </div>

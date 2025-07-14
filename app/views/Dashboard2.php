@@ -62,15 +62,15 @@ $content_file = $resources['content'];
 </head>
 <body>
 
-    <?php require_once __DIR__ . '/xHeaderComponent.php'; // Load header component ?>
 
     <div class="wrapper">
         <?php
         //$currentPage = $page; 
-        require_once __DIR__ . '/xSidebarComponent2.php'; // Load sidebar component
         ?>
 
+        <!-- Load Dynamic Workspace -->
         <div class="main-content">
+<<<<<<< Updated upstream
         <div class="container-fluid py-4">
             <?php
             if ($content_file !== '#' && file_exists(__DIR__ . '/' . $content_file)) {
@@ -80,6 +80,22 @@ $content_file = $resources['content'];
             }
             ?>
         </div>
+=======
+            <div class="container-fluid py-4">
+                <?php
+                /*
+                if (array_key_exists($page, $allowed_pages)) {
+                    include $allowed_pages[$page];
+                } else {
+                    echo "<h4 class='fw-bold mb-4'>404 - Page Not Found</h4>";
+                }
+                    */
+                $contentController = new ContentController();
+                $workspace = $contentController->getWorkspace();
+
+                ?>
+            </div>
+>>>>>>> Stashed changes
         </div>
     </div>
 

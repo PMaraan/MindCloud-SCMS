@@ -24,8 +24,10 @@ $users = $db->getAllUsersWithRoles();
   <title>LPU-SCMS Accounts</title>
 
   <!-- Bootstrap and Icons -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="../../public/assets/css/HeaderComponent.css">
   
   <!-- Custom Styles -->
   <link rel="stylesheet" href="assets/css/accstyle.css">

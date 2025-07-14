@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const email = emailInput.value.trim();
     const password = passwordInput.value;
     //const emailPattern = /^[a-zA-Z0-9._%+-]+@your_domain\.edu\.ph$/; //dangerous code as this exposes your company's domain, remove
-    const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    //const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/; //delete for production
 
     // Reset previous error states
     emailInput.classList.remove("is-invalid");
