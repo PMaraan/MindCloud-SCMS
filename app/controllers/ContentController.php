@@ -46,7 +46,7 @@ class ContentController {
 
   }
 
-  // ✅ Public method to return all resources needed for a specific page
+  // Public method to return all resources needed for a specific page
   public function getPageResources($page) {
     $css = $this->css_map[$page] ?? null;               // Get CSS file or null if not mapped
     $js = $this->js_map[$page] ?? null;                 // Get JS file or null if not mapped
