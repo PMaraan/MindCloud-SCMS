@@ -1,5 +1,5 @@
 <?php
-// root/app/views/Dashboard.php
+// root/app/views/Dashboard2.php
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -7,18 +7,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 require_once __DIR__ . '/../../config/config.php'; // Load environment variables
 require_once __DIR__ . '/../controllers/ContentController.php'; // Dynamically control the content
-
 require_once __DIR__ . '/../models/PostgresDatabase.php';
-// $pdo = new PostgresDatabase(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS);
-// $permissions = $pdo->getUserPermissions($_SESSION['user_id']);
-
-/*
-// force https or smtn
-if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] !== 'on') {
-    header("Location: https://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']);
-    exit;
-}
-*/
 
 // FAKE LOGIN SESSION FOR TESTING WITHOUT DB
 $_SESSION['user_id'] = 1;
@@ -26,15 +15,8 @@ $_SESSION['username'] = 'TestUser';
 $_SESSION['college_id'] = 'TESTCOL';
 $_SESSION['role'] = 'Developer';
 
-// if (!isset($_SESSION['user_id'])) {
-//     echo "<script>alert('You are not logged in!'); window.location='login.php';</script>";
-//     exit;
-// } else {
-//     echo "<h1>Welcome to the Dashboard!</h1>";
-// }
-
 // Load dynamic content using the ContentController
-$page = $_POST['page'] ?? 'approve';
+$page = $_POST['page'] ?? 'college';
 $controller = new ContentController();
 $resources = $controller->getPageResources($page);
 
@@ -60,37 +42,37 @@ $content_file = $resources['content'];
   <?php if ($css_file): ?>
     <link rel="stylesheet" href="<?= $css_file ?>">
   <?php endif; ?>
-
 </head>
 <body>
-    <div class="wrapper">
 
-        <!-- Load Dynamic Workspace -->
-        <div class="main-content">
-              <button data-page="templates">Load Templates Page</button> <!-- SAMPLE BUTTONS -->
-<button data-page="college">Load College Page</button> <!-- SAMPLE BUTTONS -->
+<?php include 'xHeaderComponent.php'; ?>
 
-            <div class="container-fluid py-4">
-                <?php
-                if ($content_file !== '#' && file_exists(__DIR__ . '/' . $content_file)) {
-                    include __DIR__ . '/' . $content_file;
-                } else {
-                    echo "<h4 class='fw-bold mb-4'>404 - Page Not Found</h4>";
-                }
-                ?>
-            </div>
-        </div>
+<div class="wrapper">
+  <?php
+    $currentPage = $page;
+    include 'xSidebarComponent2.php';
+  ?>
+
+  <div class="main-content">
+    <div class="container-fluid py-4">
+      <?php
+      if ($content_file !== '#' && file_exists(__DIR__ . '/' . $content_file)) {
+          include __DIR__ . '/' . $content_file;
+      } else {
+          echo "<h4 class='fw-bold mb-4'>404 - Page Not Found</h4>";
+      }
+      ?>
     </div>
+  </div>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Page-specific JS -->
-    <?php if ($js_file): ?>
-        <script src="<?= $js_file ?>"></script>
-    <?php endif; ?>
+<!-- Page-specific JS -->
+<?php if ($js_file): ?>
+  <script src="<?= $js_file ?>"></script>
+<?php endif; ?>
 
-
-</body>
 <script>
 document.querySelectorAll('[data-page]').forEach(button => {
   button.addEventListener('click', function (e) {
@@ -109,20 +91,17 @@ document.querySelectorAll('[data-page]').forEach(button => {
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
       const newContent = doc.querySelector('.main-content');
-      const newCss = doc.querySelectorAll('head link[rel="stylesheet"]:not([href*="bootstrap"], [href*="HeaderComponent"], [href*="xSidebarComponent2"])');
+      const newCss = doc.querySelectorAll('head link[rel="stylesheet"]:not([href*="bootstrap"], [href*="HeaderComponent"], [href*="SidebarComponent"])');
       const newJs = doc.querySelectorAll('script[src]');
 
-      // Replace workspace content
       document.querySelector('.main-content').innerHTML = newContent.innerHTML;
 
-      // Dynamically add CSS (or reload all if needed)
       newCss.forEach(link => {
         if (!document.querySelector(`link[href="${link.href}"]`)) {
           document.head.appendChild(link.cloneNode());
         }
       });
 
-      // Load associated JS
       newJs.forEach(script => {
         const newScript = document.createElement('script');
         newScript.src = script.src;
@@ -132,4 +111,6 @@ document.querySelectorAll('[data-page]').forEach(button => {
   });
 });
 </script>
+
+</body>
 </html>
