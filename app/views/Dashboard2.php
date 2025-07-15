@@ -45,26 +45,43 @@ $content_file = $resources['content'];
 </head>
 <body>
 
-<?php include 'xHeaderComponent.php'; ?>
+    <?php include_once __DIR__ . '/xHeaderComponent.php'; // Load header component ?>
 
-<div class="wrapper">
-  <?php
-    $currentPage = $page;
-    include 'xSidebarComponent2.php';
-  ?>
+    <div class="wrapper">
+        <?php
+        //$currentPage = $page; 
+        ?>
 
-  <div class="main-content">
-    <div class="container-fluid py-4">
-      <?php
-      if ($content_file !== '#' && file_exists(__DIR__ . '/' . $content_file)) {
-          include __DIR__ . '/' . $content_file;
-      } else {
-          echo "<h4 class='fw-bold mb-4'>404 - Page Not Found</h4>";
-      }
-      ?>
+        <!-- Load Dynamic Workspace -->
+        <div class="main-content">
+<<<<<<< Updated upstream
+        <div class="container-fluid py-4">
+            <?php
+            if ($content_file !== '#' && file_exists(__DIR__ . '/' . $content_file)) {
+                include __DIR__ . '/' . $content_file;
+            } else {
+                echo "<h4 class='fw-bold mb-4'>404 - Page Not Found</h4>";
+            }
+            ?>
+        </div>
+=======
+            <div class="container-fluid py-4">
+                <?php
+                /*
+                if (array_key_exists($page, $allowed_pages)) {
+                    include $allowed_pages[$page];
+                } else {
+                    echo "<h4 class='fw-bold mb-4'>404 - Page Not Found</h4>";
+                }
+                    */
+                $contentController = new ContentController();
+                $workspace = $contentController->getWorkspace();
+
+                ?>
+            </div>
+>>>>>>> Stashed changes
+        </div>
     </div>
-  </div>
-</div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 

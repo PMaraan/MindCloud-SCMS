@@ -19,28 +19,50 @@
       <span class="profile-role"><?= trim($_SESSION['college_id'] . " " . $_SESSION['role']) ?></span>
     </div>
 
-    <ul class="nav flex-column">
-      <?php
-      require_once __DIR__ . '/../models/PostgresDatabase.php';
-      $pdo = new PostgresDatabase(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS);
-      //$permissionGroups = $pdo->getPermissionGroupsByUser($_SESSION['user_id']);
-      $permissionGroups = ['Accounts', 'Roles', 'Colleges', 'Courses', 'Templates', 'Syllabus'];
+            <ul class="nav flex-column">
+                <?php
+                // the comments below are just pseudo code to guide the devs
+                // Create the database pdo               
+                // Get the role of the user
+                // Map out the permissions of the user
+                require_once __DIR__ . '/../models/PostgresDatabase.php'; // Load the database model
+                $pdo = new PostgresDatabase(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS);
+                $permissionGroups = $pdo->getPermissionGroupsByUser($_SESSION['user_id']);
 
+                $mapper = [
+                    'Accounts' => '/Accounts.php',
+                    'Roles' => '/Roles.php',
+                    'Colleges' => '/College.php',
+                    'Courses' => '/Courses.php',
+                    'Templates' => "/MindCloud-SCMS/app/views/Templates.php",
+                    'Syllabus' => '/Syllabus.php'
+                ];
+                // Display the sidebar tabs that the user has permissions to
+                foreach ($mapper as $key => $href) {
+                    if (in_array($key, $permissionGroups)) {
+                        echo "<li class='nav-item'>
+                                <a class='nav-link linkstyle' href='$href'>$key</a>
+                        </li>";
+                        //echo "<a href=\"$href\">$key</a><br>";
+                    }
+                }
+                /*
+                foreach ($permissionGroups as $perm) {
+                    if (array_key_exists($permKey, $availablePages)) {
+                        $label = $availablePages[$permKey];
+                        $activeClass = $currentPage === $permKey ? 'active' : '';
+                        echo "<li class='nav-item'>
+                                <a class='nav-link linkstyle $activeClass' href='Dashboard.php?page=$permKey'>$label</a>
+                            </li>";
+                    }
+                }
+                */
+                ?>
+            </ul>
+        </div>
+    </div>
+<!--</div>-->
 
-      // Sidebar labels only
-      $labels = ['Accounts', 'Roles', 'Colleges', 'Courses', 'Templates', 'Syllabus'];
-      foreach ($labels as $key) {
-        if (in_array($key, $permissionGroups)) {
-          $pageKey = strtolower(str_replace(' ', '_', $key)); // Normalize key
-          echo "<li class='nav-item'>
-                  <a class='nav-link linkstyle' href='#' data-page='$pageKey'>$key</a>
-                </li>";
-        }
-      }
-      ?>
-    </ul>
-  </div>
-</div>
 
 <script>
   document.getElementById("toggleBtn").addEventListener("click", function () {

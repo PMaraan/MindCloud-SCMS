@@ -104,7 +104,6 @@ class ContentController {
   }
 
 
-
   //Add CSS & JS Mappings using public_fuction
 
   public function getSidebarTabs($role_id){
