@@ -1,33 +1,40 @@
 <?php
 // root/app/views/Dashboard.php
 
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 require_once __DIR__ . '/../../config/config.php'; // Load environment variables
 require_once __DIR__ . '/../controllers/ContentController.php'; // Dynamically control the content
 
 require_once __DIR__ . '/../models/PostgresDatabase.php';
-//$pdo = new PostgresDatabase(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS);
-//$permissions = $pdo->getUserPermissions($_SESSION['user_id']);
-
+// $pdo = new PostgresDatabase(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS);
+// $permissions = $pdo->getUserPermissions($_SESSION['user_id']);
 
 /*
-// Force HTTPS
+// force https or smtn
 if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] !== 'on') {
     header("Location: https://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']);
     exit;
 }
 */
 
-if (!isset($_SESSION['user_id'])) {
-    echo "<script>alert('You are not logged in!'); window.location='login.php';</script>";
-    exit;
-}else {
-    //echo "<h1>Welcome to the Dashboard!</h1>";
-}
+// FAKE LOGIN SESSION FOR TESTING WITHOUT DB
+$_SESSION['user_id'] = 1;
+$_SESSION['username'] = 'TestUser';
+$_SESSION['college_id'] = 'TESTCOL';
+$_SESSION['role'] = 'Developer';
+
+// if (!isset($_SESSION['user_id'])) {
+//     echo "<script>alert('You are not logged in!'); window.location='login.php';</script>";
+//     exit;
+// } else {
+//     echo "<h1>Welcome to the Dashboard!</h1>";
+// }
 
 // Load dynamic content using the ContentController
-$page = $_POST['page'] ?? 'index';
+$page = $_POST['page'] ?? 'approve';
 $controller = new ContentController();
 $resources = $controller->getPageResources($page);
 
@@ -38,7 +45,6 @@ $content_file = $resources['content'];
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LPU-SCMS</title>
@@ -55,47 +61,24 @@ $content_file = $resources['content'];
     <link rel="stylesheet" href="<?= $css_file ?>">
   <?php endif; ?>
 
-  <?//php if (isset($page_css[$page])): ?>
-    <!-- <?php // echo '<link rel="stylesheet" href="' . $page_css[$page] . '">'; ?> -->
-  <?//php endif; ?>
-
 </head>
 <body>
-
-
     <div class="wrapper">
-        <?php
-        //$currentPage = $page; 
-        ?>
 
         <!-- Load Dynamic Workspace -->
         <div class="main-content">
-<<<<<<< Updated upstream
-        <div class="container-fluid py-4">
-            <?php
-            if ($content_file !== '#' && file_exists(__DIR__ . '/' . $content_file)) {
-                include __DIR__ . '/' . $content_file;
-            } else {
-                echo "<h4 class='fw-bold mb-4'>404 - Page Not Found</h4>";
-            }
-            ?>
-        </div>
-=======
+              <button data-page="templates">Load Templates Page</button> <!-- SAMPLE BUTTONS -->
+<button data-page="college">Load College Page</button> <!-- SAMPLE BUTTONS -->
+
             <div class="container-fluid py-4">
                 <?php
-                /*
-                if (array_key_exists($page, $allowed_pages)) {
-                    include $allowed_pages[$page];
+                if ($content_file !== '#' && file_exists(__DIR__ . '/' . $content_file)) {
+                    include __DIR__ . '/' . $content_file;
                 } else {
                     echo "<h4 class='fw-bold mb-4'>404 - Page Not Found</h4>";
                 }
-                    */
-                $contentController = new ContentController();
-                $workspace = $contentController->getWorkspace();
-
                 ?>
             </div>
->>>>>>> Stashed changes
         </div>
     </div>
 
@@ -106,16 +89,13 @@ $content_file = $resources['content'];
         <script src="<?= $js_file ?>"></script>
     <?php endif; ?>
 
-    <?php // if (isset($page_js[$page])): ?>
-        <!-- <?php // echo '<script src="' . $page_js[$page] . '"></script>'; ?> -->
-    <?php // endif; ?>
 
 </body>
 <script>
 document.querySelectorAll('[data-page]').forEach(button => {
   button.addEventListener('click', function (e) {
     e.preventDefault();
-    
+
     const page = this.getAttribute('data-page');
     const formData = new FormData();
     formData.append('page', page);
@@ -152,5 +132,4 @@ document.querySelectorAll('[data-page]').forEach(button => {
   });
 });
 </script>
-
 </html>

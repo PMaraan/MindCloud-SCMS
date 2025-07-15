@@ -112,7 +112,9 @@ class ContentController {
     // Get permission groups from db
     require_once __DIR__ . '/../models/PostgresDatabase.php'; // Load the database model
     $pdo = new PostgresDatabase(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS);
-    $permissionGroups = $pdo->getPermissionGroupsByUser($_SESSION['user_id']);
+    //$permissionGroups = $pdo->getPermissionGroupsByUser($_SESSION['user_id']);
+    $permissionGroups = ['Accounts', 'Roles', 'Colleges', 'Courses', 'Templates', 'Syllabus'];
+
 
     // Return array
     return $this->mapSidebarTabsToAddresses($permissionGroups);

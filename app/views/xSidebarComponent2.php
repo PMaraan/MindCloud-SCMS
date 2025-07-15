@@ -23,7 +23,9 @@
       <?php
       require_once __DIR__ . '/../models/PostgresDatabase.php';
       $pdo = new PostgresDatabase(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS);
-      $permissionGroups = $pdo->getPermissionGroupsByUser($_SESSION['user_id']);
+      //$permissionGroups = $pdo->getPermissionGroupsByUser($_SESSION['user_id']);
+      $permissionGroups = ['Accounts', 'Roles', 'Colleges', 'Courses', 'Templates', 'Syllabus'];
+
 
       // Sidebar labels only
       $labels = ['Accounts', 'Roles', 'Colleges', 'Courses', 'Templates', 'Syllabus'];
