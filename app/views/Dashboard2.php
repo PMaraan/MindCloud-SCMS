@@ -111,4 +111,46 @@ $content_file = $resources['content'];
     <?php // endif; ?>
 
 </body>
+<script>
+document.querySelectorAll('[data-page]').forEach(button => {
+  button.addEventListener('click', function (e) {
+    e.preventDefault();
+    
+    const page = this.getAttribute('data-page');
+    const formData = new FormData();
+    formData.append('page', page);
+
+    fetch('Dashboard2.php', {
+      method: 'POST',
+      body: formData
+    })
+    .then(res => res.text())
+    .then(html => {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const newContent = doc.querySelector('.main-content');
+      const newCss = doc.querySelectorAll('head link[rel="stylesheet"]:not([href*="bootstrap"], [href*="HeaderComponent"], [href*="xSidebarComponent2"])');
+      const newJs = doc.querySelectorAll('script[src]');
+
+      // Replace workspace content
+      document.querySelector('.main-content').innerHTML = newContent.innerHTML;
+
+      // Dynamically add CSS (or reload all if needed)
+      newCss.forEach(link => {
+        if (!document.querySelector(`link[href="${link.href}"]`)) {
+          document.head.appendChild(link.cloneNode());
+        }
+      });
+
+      // Load associated JS
+      newJs.forEach(script => {
+        const newScript = document.createElement('script');
+        newScript.src = script.src;
+        document.body.appendChild(newScript);
+      });
+    });
+  });
+});
+</script>
+
 </html>

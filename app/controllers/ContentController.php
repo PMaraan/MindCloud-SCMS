@@ -26,16 +26,16 @@ class ContentController {
   // Content mapping (used to locate the correct PHP file for each page)
   private $page_map = [
     'index'        => 'index.php',
-    'approve'      => '#',                      // Placeholder / Not yet implemented
-    'note'         => '#',                      // Placeholder / Not yet implemented
-    'prepare'      => '#',                      // Placeholder / Not yet implemented
-    'revise'       => '#',                      // Placeholder / Not yet implemented
+    'approve'      => '#',                      
+    'note'         => '#',                      
+    'prepare'      => '#',                      
+    'revise'       => '#',                      
     'faculty'      => 'FacultyRoles.php',
     'templates'    => 'Templates.php',
-    'syllabus'     => '#',                      // Placeholder / Not yet implemented
+    'syllabus'     => '#',                      
     'college'      => 'CollegeRoles.php',
-    'secretary'    => '#',                      // Placeholder / Not yet implemented
-    'courses'      => '#',                      // Placeholder / Not yet implemented
+    'secretary'    => '#',                     
+    'courses'      => '#',                      
     'add_college'  => 'CollegeFacultyRoles.php',
     'view_roles'   => 'ViewRoles.php',
     'edit_college' => 'EditCollegeRoles.php',
@@ -101,10 +101,6 @@ class ContentController {
         //address
         break;
     }
-  }
-
-  public function getWorkspace($tabName) {
-    
   }
 
 
