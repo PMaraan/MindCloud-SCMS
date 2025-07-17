@@ -5,40 +5,48 @@
 class ContentController {
   // CSS file mappings for each page
   private $css_map = [
-    'templates'    => '../../public/assets/css/Templates.css',
-    'college'      => '../../public/assets/css/CollegeRoles.css',
-    'faculty'      => '../../public/assets/css/FacultyRoles.css',
-    'add_college'  => '../../public/assets/css/FacultyRoles.css',
-    'view_roles'   => '../../public/assets/css/ViewRoles.css',
-    'edit_college' => '../../public/assets/css/FacultyRoles.css',
+    'Templates'    => '../../public/assets/css/Templates.css',
+    'Colleges'      => '../../public/assets/css/CollegeRoles.css',
+    'Faculty'      => '../../public/assets/css/FacultyRoles.css',
+    //'add_college'  => '../../public/assets/css/FacultyRoles.css',
+    //'view_roles'   => '../../public/assets/css/ViewRoles.css',
+    //'edit_college' => '../../public/assets/css/FacultyRoles.css',
   ];
 
   // JS file mappings for each page
   private $js_map = [
-    'templates'    => '../../public/assets/js/Templates.js',
-    'college'      => '../../public/assets/js/CollegeRoles.js',
-    'faculty'      => '../../public/assets/js/FacultyRoles.js',
-    'add_college'  => '../../public/assets/js/FacultyRoles.js',
-    'view_roles'   => '../../public/assets/js/ViewRoles.js',
-    'edit_college' => '../../public/assets/js/FacultyRoles.js',
+    'Templates'    => '../../public/assets/js/Templates.js',
+    'Colleges'      => '../../public/assets/js/CollegeRoles.js',
+    'Faculty'      => '../../public/assets/js/FacultyRoles.js',
+    //'add_college'  => '../../public/assets/js/FacultyRoles.js',
+    //'view_roles'   => '../../public/assets/js/ViewRoles.js',
+    //'edit_college' => '../../public/assets/js/FacultyRoles.js',
   ];
 
   // Content mapping (used to locate the correct PHP file for each page)
   private $page_map = [
-    'index'        => 'index.php',
-    'approve'      => '#',                      
-    'note'         => '#',                      
-    'prepare'      => '#',                      
-    'revise'       => '#',                      
-    'faculty'      => 'FacultyRoles.php',
-    'templates'    => 'Templates.php',
-    'syllabus'     => '#',                      
-    'college'      => 'CollegeRoles.php',
-    'secretary'    => '#',                     
-    'courses'      => '#',                      
-    'add_college'  => 'CollegeFacultyRoles.php',
-    'view_roles'   => 'ViewRoles.php',
-    'edit_college' => 'EditCollegeRoles.php',
+    'default'      => 'DefaultWorkspace.php',
+    'Accounts'     => 'Accounts2.php',
+    'Roles'        => 'Roles.php',
+    'Colleges'     => 'CollegeRoles.php',
+    'Faculty'      => 'CollegeFacultyRoles.php',
+    'Programs'     => 'Programs.php',
+    'Courses'      => 'Courses.php',
+    'Templates'    => 'Templates.php',
+    'Syllabus'     => 'SyllabusForRevision.php',
+    //'approve'      => '#',                      
+    //'note'         => '#',                      
+    //'prepare'      => '#',                      
+    //'revise'       => '#',                      
+    //'faculty'      => 'FacultyRoles.php',
+    //'templates'    => 'Templates.php',
+    //'syllabus'     => '#',                      
+    //'college'      => 'CollegeRoles.php',
+    //'secretary'    => '#',                     
+    //'courses'      => '#',                      
+    //'add_college'  => 'CollegeFacultyRoles.php',
+    //'view_roles'   => 'ViewRoles.php',
+    //'edit_college' => 'EditCollegeRoles.php',
   ];
 
   // Constructor
@@ -111,8 +119,8 @@ class ContentController {
     // Get permission groups from db
     require_once __DIR__ . '/../models/PostgresDatabase.php'; // Load the database model
     $pdo = new PostgresDatabase(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS);
-    //$permissionGroups = $pdo->getPermissionGroupsByUser($_SESSION['user_id']);
-    $permissionGroups = ['Accounts', 'Roles', 'Colleges', 'Courses', 'Templates', 'Syllabus'];
+    $permissionGroups = $pdo->getPermissionGroupsByUser($_SESSION['user_id']);
+    //$permissionGroups = ['Accounts', 'Roles', 'Colleges', 'Courses', 'Templates', 'Syllabus'];
 
 
     // Return array

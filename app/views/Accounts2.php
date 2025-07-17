@@ -32,7 +32,7 @@ $users = $db->getAllUsersWithRoles();
   <!-- Custom Styles -->
   <link rel="stylesheet" href="assets/css/accstyle.css">
 
-  <?php include 'xHeaderComponent.php'; ?>
+  <?php // include 'xHeaderComponent.php'; ?>
 </head>
 
 <body>
@@ -68,7 +68,7 @@ $users = $db->getAllUsersWithRoles();
     </div>
 
     <!-- Accounts Table -->
-    <table class="account-table">
+    <table class=" table account-table table-bordered table-hover">
       <thead>
         <tr>
           <th>ID Number</th>

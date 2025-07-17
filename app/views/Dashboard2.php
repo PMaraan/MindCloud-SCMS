@@ -9,14 +9,22 @@ require_once __DIR__ . '/../../config/config.php'; // Load environment variables
 require_once __DIR__ . '/../controllers/ContentController.php'; // Dynamically control the content
 require_once __DIR__ . '/../models/PostgresDatabase.php';
 
+/*
 // FAKE LOGIN SESSION FOR TESTING WITHOUT DB
 $_SESSION['user_id'] = 1;
 $_SESSION['username'] = 'TestUser';
 $_SESSION['college_id'] = 'TESTCOL';
 $_SESSION['role'] = 'Developer';
+*/
 
 // Load dynamic content using the ContentController
-$page = $_POST['page'] ?? 'college';
+$page = $_POST['page'] ?? 'default';
+//echo "Dashboard2.php: page value = $page";
+//console log page value for debugging
+$data = ['page' => $_POST['page'] ?? 'college'];
+$message = "Dashboard2.php: page value = {$data['page']}";
+echo "<script>console.log(" . json_encode($message) . ");</script>";
+
 $controller = new ContentController();
 $resources = $controller->getPageResources($page);
 
@@ -80,6 +88,8 @@ document.querySelectorAll('[data-page]').forEach(button => {
     e.preventDefault();
 
     const page = this.getAttribute('data-page');
+    console.log('Clicked page:', page); // log the value to the console
+
     const formData = new FormData();
     formData.append('page', page);
 

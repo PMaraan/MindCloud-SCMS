@@ -68,6 +68,15 @@ class PostgresDatabase implements StorageInterface {
         }    
     }
 
+    public function getAllRoles() {
+        $stmt = $this->pdo->prepare("
+            SELECT * FROM roles
+            ORDER BY role_id
+        ");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function getAllUsersWithRoles() {
         $stmt = $this->pdo->prepare("
             SELECT u.id_no, u.email, u.fname, u.mname, u.lname,

@@ -1,4 +1,5 @@
 <?php
+  // root/app/views/xSidebarCoponent2.php
   //$currentPage = $currentPage ?? ($_GET['page'] ?? 'index');
 ?>
 
@@ -30,19 +31,23 @@
                 $permissionGroups = $pdo->getPermissionGroupsByUser($_SESSION['user_id']);
 
                 $mapper = [
-                    'Accounts' => '/Accounts.php',
-                    'Roles' => '/Roles.php',
-                    'Colleges' => '/College.php',
-                    'Courses' => '/Courses.php',
-                    'Templates' => "/MindCloud-SCMS/app/views/Templates.php",
-                    'Syllabus' => '/Syllabus.php'
+                  // key is the actual sidebar text and value is the value of the $_POST['page'] for mapping in ContentController
+                    'Accounts' => 'Accounts',
+                    'Roles' => 'Roles',
+                    'Colleges' => 'Colleges',
+                    'Faculty' => 'Faculty',
+                    'Programs' => 'Programs',
+                    'Courses' => 'Courses',
+                    'Templates' => 'Templates',
+                    'Syllabus' => 'Syllabus'
                 ];
                 // Display the sidebar tabs that the user has permissions to
                 foreach ($mapper as $key => $href) {
                     if (in_array($key, $permissionGroups)) {
                         echo "<li class='nav-item'>
-                                <a class='nav-link linkstyle' href='$href'>$key</a>
+                                <a href=\"#\" class=\"nav-link\" data-page=\"$href\">$key</a>
                         </li>";
+                        //<a class='nav-link linkstyle' href='$href'>$key</a>
                         //echo "<a href=\"$href\">$key</a><br>";
                     }
                 }
@@ -68,4 +73,27 @@
   document.getElementById("toggleBtn").addEventListener("click", function () {
     document.getElementById("sidebar").classList.toggle("collapsed");
   });
+  /*
+  document.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', function (e) {
+      e.preventDefault();
+      const page = this.dataset.page;
+
+      fetch('dashboard.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'page=' + encodeURIComponent(page)
+      })
+      .then(res => res.text())
+      .then(html => {
+        const temp = document.createElement('div');
+        temp.innerHTML = html;
+        const newContent = temp.querySelector('#main-content');
+        if (newContent) {
+          document.getElementById('main-content').innerHTML = newContent.innerHTML;
+        }
+      });
+    });
+  });
+  */
 </script>
