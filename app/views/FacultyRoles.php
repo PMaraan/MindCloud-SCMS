@@ -27,7 +27,7 @@
         <i class="bi bi-person-gear"></i> Roles
       </a>
       <button class="btn btn-primary btn_addcollege" id="openAddFacultyBtn">
-        <i class="bi bi-plus"></i> Add Faculty
+        <i class="bi bi-plus"></i> 
       </button>
     </div>
 

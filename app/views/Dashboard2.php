@@ -25,8 +25,8 @@ $data = ['page' => $_POST['page'] ?? 'college'];
 $message = "Dashboard2.php: page value = {$data['page']}";
 echo "<script>console.log(" . json_encode($message) . ");</script>";
 
-$controller = new ContentController();
-$resources = $controller->getPageResources($page);
+$contentController = new ContentController();
+$resources = $contentController->getPageResources($page);
 
 $css_file = $resources['css'];
 $js_file = $resources['js'];
@@ -45,6 +45,7 @@ $content_file = $resources['content'];
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" />
   <link rel="stylesheet" href="../../public/assets/css/HeaderComponent.css">
   <link rel="stylesheet" href="../../public/assets/css/SidebarComponent.css" />
+  <link rel="stylesheet" href="../../public/assets/css/main.css" />
 
   <!-- Page-specific CSS -->
   <?php if ($css_file): ?>
