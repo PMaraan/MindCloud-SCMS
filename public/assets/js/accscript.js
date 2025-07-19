@@ -205,3 +205,46 @@ function addRole(button) {
 
   cell.insertBefore(select, button);
 }
+
+//pupulate the fields in EditUserModal
+document.addEventListener("DOMContentLoaded", () => {
+  const editButtons = document.querySelectorAll(".edit-btn");
+
+  editButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.getElementById("editIdNumber").value = btn.dataset.id_no;      
+      document.getElementById("editFirstName").value = btn.dataset.fname;
+      document.getElementById("editMiddleInitial").value = btn.dataset.mname;
+      document.getElementById("editLastName").value = btn.dataset.lname;
+      document.getElementById("editEmail").value = btn.dataset.email;
+
+      // You can also set college and role dropdowns here
+      // Example:
+      // document.getElementById("editCollege").value = btn.dataset.college;
+      // document.getElementById("editRole").value = btn.dataset.role;
+    });
+  });
+});
+
+/*
+document.addEventListener('DOMContentLoaded', () => {
+  const editButtons = document.querySelectorAll('.edit-btn');
+  const modal = document.getElementById('editUserModal');
+
+  editButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const id_no = button.getAttribute('data-id_no');
+      const email = button.getAttribute('data-email');
+      const fname = button.getAttribute('data-fname');
+      const mname = button.getAttribute('data-mname');
+      const lname = button.getAttribute('data-lname');
+
+      modal.querySelector('[name="id_no"]').value = id_no;
+      modal.querySelector('[name="email"]').value = email;
+      modal.querySelector('[name="fname"]').value = fname;
+      modal.querySelector('[name="mname"]').value = mname;
+      modal.querySelector('[name="lname"]').value = lname;
+    });
+  });
+});
+*/
