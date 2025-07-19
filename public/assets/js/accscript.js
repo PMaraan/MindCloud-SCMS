@@ -1,3 +1,80 @@
+console.log("✅ accscript.js LOADED");
+
+function bindEditButtons() {
+  document.querySelectorAll('.edit-btn2').forEach(btn => {
+    btn.addEventListener('click', function () {
+      const userId = this.getAttribute('data-id-no');
+      console.log("📝 Edit button clicked. ID:", userId);
+
+      const rawAttr = this.getAttribute('data-id-no');     // Safe string
+    const datasetValue = this.dataset.id;              // Also safe string
+    const directAttr = this.getAttributeNode('data-id-no').value;
+
+    console.log("Raw attribute:", rawAttr);
+    console.log("dataset.id:", datasetValue);
+    console.log("Direct getAttributeNode:", directAttr);
+
+      // Call the API endpoint using existing routing
+      fetch(`/MindCloud-SCMS/public/api.php?action=get_user&id_no=${encodeURIComponent(userId)}`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${res.status}`);
+          }
+          return response.json();
+        })
+        .then(data => {
+          console.log("✅ User data received:", data);
+
+          if (data.error) {
+            console.error("⚠️ Server error:", data.error);
+            return; // don't proceed if there's an error
+          }
+          
+          // Example of how you might populate modal (update to match your modal IDs)
+          document.getElementById('editIdNumber').value = data.id_no || '';          
+          document.getElementById('editFirstName').value = data.fname || '';
+          document.getElementById('editMiddleInitial').value = data.mname || '';
+          document.getElementById('editLastName').value = data.lname || '';
+          document.getElementById('editEmail').value = data.email || '';          
+          //document.getElementById('editCollege').value = data.college_short_name || '';
+          //document.getElementById('editRole').value = data.role_name || '';
+
+          // Check existence before assigning select values
+          const collegeSelect = document.getElementById('editCollege');
+          if (collegeSelect) collegeSelect.value = data.college_short_name ?? '';
+
+          const roleSelect = document.getElementById('editRole');
+          if (roleSelect) roleSelect.value = data.role_name ?? '';
+          // You may need to set role and college dropdowns here too:
+          /*
+          if (data.role_name) {
+            document.getElementById('edit-role').value = data.role_name;
+          }
+          if (data.college_short_name) {
+            document.getElementById('edit-college').value = data.college_short_name;
+          }
+          */
+          // Show the modal (depends on how you're handling modals)
+          console.log('Modal element:', document.getElementById('editUserModal'));
+          const editModal = new bootstrap.Modal(document.getElementById('editUserModal2'));
+          editModal.show();
+        })
+        .catch(error => {
+          console.error("❌ Error fetching user data:", error);
+          alert("Error loading user info.");
+        });
+    });
+  });
+}
+
+
+
+bindEditButtons();
+
+
+
+
+
 // Search filter function
 document.getElementById("search").addEventListener("input", function (e) {
   const value = e.target.value.toLowerCase();
@@ -23,6 +100,7 @@ let editMode = false;
 
 document.addEventListener("DOMContentLoaded", () => {
   bindEditButton();
+  
 });
 
 function bindEditButton() {
@@ -206,7 +284,7 @@ function addRole(button) {
   cell.insertBefore(select, button);
 }
 
-//pupulate the fields in EditUserModal
+//populate the fields in EditUserModal
 document.addEventListener("DOMContentLoaded", () => {
   const editButtons = document.querySelectorAll(".edit-btn");
 
@@ -217,15 +295,54 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("editMiddleInitial").value = btn.dataset.mname;
       document.getElementById("editLastName").value = btn.dataset.lname;
       document.getElementById("editEmail").value = btn.dataset.email;
-
-      // You can also set college and role dropdowns here
-      // Example:
-      // document.getElementById("editCollege").value = btn.dataset.college;
-      // document.getElementById("editRole").value = btn.dataset.role;
+      document.getElementById("editCollege").value = btn.dataset.college;
+      document.getElementById("editRole").value = btn.dataset.role;
+      
     });
   });
 });
 
+//fill modal with table values
+/*
+document.addEventListener('DOMContentLoaded', () => {
+    console.log("JS loaded");
+
+    document.querySelectorAll('.edit-btn2').forEach(button => {
+        button.addEventListener('click', () => {
+            const id = button.getAttribute('data-id-no');
+
+            fetch(`api.php?action=get_user&id_no=${id}`)
+                .then(res => res.json())
+                .then(data => {
+                    console.log("Userdata received: ", data); //checking response
+
+                    if (data.error) {
+                        alert(data.error);
+                        return;
+                    }
+                    
+                    // Fill modal fields
+                    document.getElementById('editIdNumber').value = data.id_no;
+                    document.getElementById('editFirstName').value = data.fname;
+                    document.getElementById('editMiddleInitial').value = data.mname || '';
+                    document.getElementById('editLastName').value = data.lname;
+                    document.getElementById('editEmail').value = data.email;
+                    document.getElementById('editCollege').value = data.college_short_name || '';
+                    document.getElementById('editRole').value = data.role_name || '';
+
+                    // Show modal
+                    const modal = new bootstrap.Modal(document.getElementById('editUserModal'));
+                    modal.show();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to load user data');
+                });
+        });
+    });
+
+});
+*/
 /*
 document.addEventListener('DOMContentLoaded', () => {
   const editButtons = document.querySelectorAll('.edit-btn');
@@ -248,3 +365,12 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 */
+console.log("JS file is loading");
+
+window.addEventListener('load', () => {
+    console.log("Window loaded");
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    console.log("DOM fully loaded");
+});

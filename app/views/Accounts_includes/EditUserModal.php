@@ -7,11 +7,11 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Create Account</h5>
+                    <h5 class="modal-title">Edit Account Details</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <h6>Please fill in the following details</h6>
+                    
                     <!-- Input for ID Number  -->
                     <div class="mb-2">
                         <label class="form-label required">ID Number</label>

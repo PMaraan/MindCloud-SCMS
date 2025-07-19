@@ -96,6 +96,27 @@ class PostgresDatabase implements StorageInterface {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function getUserWithRoleAndCollegeUsingID($id_no) {
+        $query = "
+            SELECT 
+                u.id_no,
+                u.fname,
+                u.mname,
+                u.lname,
+                u.email,
+                r.name AS role_name,
+                c.short_name AS college_short_name
+            FROM users u
+            JOIN user_roles ur ON u.id_no = ur.id_no
+            JOIN roles r ON ur.role_id = r.role_id
+            LEFT JOIN colleges c ON ur.college_id = c.college_id
+            WHERE u.id_no = ?;
+        ";
+        $stmt = $this->pdo->prepare($query);
+        $stmt->execute([$id_no]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
     public function getAllUsersWithRoles() {
         $stmt = $this->pdo->prepare("
             SELECT u.id_no, u.email, u.fname, u.mname, u.lname,
@@ -120,6 +141,23 @@ class PostgresDatabase implements StorageInterface {
         ");
         $stmt->execute([$userId]);
         return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
+
+    public function getAllRoleNames(){
+        $stmt = $this->pdo->prepare("
+            SELECT name as role_name FROM roles
+            ORDER BY role_id DESC;
+        ");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getAllCollegeShortNames(){
+        $stmt = $this->pdo->prepare("
+            SELECT short_name FROM colleges;
+        ");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function getPermissionGroupsByUser($id_no) {

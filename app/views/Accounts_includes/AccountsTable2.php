@@ -1,5 +1,5 @@
     <?php
-        //root/app/views/Accounts_includes/AccountsTable.php
+        //root/app/views/Accounts_includes/AccountsTable2.php
     ?>
 
     <!-- Accounts Table -->
@@ -26,20 +26,17 @@
                 <td><?= htmlspecialchars($user['lname']) ?></td>
                 <td><?= htmlspecialchars($user['email']) ?></td>
                 <td><?= htmlspecialchars($user['college_short_name']) ?></td>
-                <td>
-                    <?php foreach (explode(',', $user['roles']) as $role): ?>
-                        <span class="role-badge"><?= htmlspecialchars(trim($role)) ?></span>
-                    <?php endforeach; ?>
-                </td>
+                <td><?= htmlspecialchars($user['role_name']) ?></td>
                 <td>
                     <button 
-                    class="btn btn-sm btn-outline-primary edit-btn"
-                    data-id_no="<?= htmlspecialchars($user['id_no']) ?>"                    
+                    class="btn btn-sm btn-outline-primary edit-btn2"
+                    data-id-no="<?= htmlspecialchars($user['id_no']) ?>"                    
                     data-fname="<?= htmlspecialchars($user['fname']) ?>"
                     data-mname="<?= htmlspecialchars($user['mname']) ?>"
                     data-lname="<?= htmlspecialchars($user['lname']) ?>"
                     data-email="<?= htmlspecialchars($user['email']) ?>"
-                    data-role="<?= htmlspecialchars($user['roles']) ?>"
+                    data-college="<?= htmlspecialchars($user['college_short_name']) ?>"
+                    data-role="<?= htmlspecialchars($user['role_name']) ?>"
                     data-bs-toggle="modal"
                     data-bs-target="#editUserModal"
                     >

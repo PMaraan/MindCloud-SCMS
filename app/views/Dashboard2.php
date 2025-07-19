@@ -76,13 +76,15 @@ $content_file = $resources['content'];
         </div>
     </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
 
 <!-- Page-specific JS -->
 <?php if ($js_file): ?>
   <script src="<?= $js_file ?>"></script>
 <?php endif; ?>
 
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 document.querySelectorAll('[data-page]').forEach(button => {
   button.addEventListener('click', function (e) {
@@ -102,27 +104,37 @@ document.querySelectorAll('[data-page]').forEach(button => {
     .then(html => {
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
-      const newContent = doc.querySelector('.main-content');
-      const newCss = doc.querySelectorAll('head link[rel="stylesheet"]:not([href*="bootstrap"], [href*="HeaderComponent"], [href*="SidebarComponent"])');
-      const newJs = doc.querySelectorAll('script[src]');
 
+      // Replace the dynamic content
+      const newContent = doc.querySelector('.main-content');
       document.querySelector('.main-content').innerHTML = newContent.innerHTML;
 
+      // Load dynamic CSS (if needed)
+      const newCss = doc.querySelectorAll('head link[rel="stylesheet"]:not([href*="bootstrap"], [href*="HeaderComponent"], [href*="SidebarComponent"])');
       newCss.forEach(link => {
         if (!document.querySelector(`link[href="${link.href}"]`)) {
           document.head.appendChild(link.cloneNode());
         }
       });
 
+      // Load external JS files manually (including accscript.js)
+      const newJs = doc.querySelectorAll('script[src]');
       newJs.forEach(script => {
+        const src = script.getAttribute('src');
+
+        // Always reload external scripts like accscript.js
         const newScript = document.createElement('script');
-        newScript.src = script.src;
+        newScript.src = src + `?t=${Date.now()}`; // force fresh load
+        newScript.defer = true;
+        newScript.onload = () => console.log(`✅ Reloaded: ${src}`);
         document.body.appendChild(newScript);
+
       });
     });
   });
 });
 </script>
+
 
 </body>
 </html>

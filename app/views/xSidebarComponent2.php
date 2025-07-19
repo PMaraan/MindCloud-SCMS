@@ -4,7 +4,7 @@
 ?>
 
 <div class="toggle-wrapper">
-  <button class="btn toggle-btn" id="toggleBtn">
+  <button class="btn toggle-btn" id="toggleBtn" title="Toggle sidebar">
     <i class="bi bi-list"></i>
   </button>
 </div>
