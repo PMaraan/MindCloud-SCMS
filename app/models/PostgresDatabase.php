@@ -33,7 +33,7 @@ class PostgresDatabase implements StorageInterface {
             $userRole = $stmtRole->fetch();
 
             // Retrieve user college (if present)
-            $stmtCollege = $this->pdo->prepare("SELECT c.college_id, c.name AS college_name
+            $stmtCollege = $this->pdo->prepare("SELECT c.short_name, c.name AS college_name
                                         FROM user_roles ur
                                         JOIN colleges c ON ur.college_id = c.college_id                                        
                                         WHERE ur.id_no = ?");
@@ -46,7 +46,7 @@ class PostgresDatabase implements StorageInterface {
             $_SESSION['user_id'] = $user['id_no'];
             $_SESSION['role_id'] = $_SESSION['role'] = $userRole['role_id'];
             $_SESSION['role'] = $userRole['role_name'];
-            $_SESSION['college_id'] = $userCollege['college_id'];
+            $_SESSION['college_id'] = $userCollege['short_name'];
             $_SESSION['college'] = $userCollege['college_name'];
             $role = $_SESSION['role'];
             //echo "role: $role <br>";                                                  //delete for production
@@ -347,11 +347,17 @@ class PostgresDatabase implements StorageInterface {
     }
 
     public function createRole($role_name, $role_level) {
-        $stmt = $this->pdo->prepare("
-            INSERT INTO roles (name, level)
-            VALUES (?, ?)
-        ");
-        return $stmt->execute([$role_name, $role_level]);
+        try {
+            $stmt = $this->pdo->prepare("
+                INSERT INTO roles (name, level)
+                VALUES (?, ?)
+            ");
+            $stmt->execute([$role_name, $role_level]);
+            return ['success' => true];
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+        
     }
 
     public function connect() {
