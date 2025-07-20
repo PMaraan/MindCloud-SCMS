@@ -21,7 +21,7 @@ switch ($type) {
         //post switch statement
         $action = $_POST['action'];
         switch ($action) {
-            case 'saveAccountChangesUsingID':
+            case 'setAccountChangesUsingID':
                 //forward to data controller
                 $id_no = $_POST['id_no'];
                 $fname = $_POST['fname'];
@@ -39,10 +39,34 @@ switch ($type) {
                 }
                 
                 if ($result['success']){
-                    //echo json_encode($result); //send the result back if any
+                    header("Location: ../app/views/Dashboard2.php?status=success&message=" . urlencode("User updated successfully."));
+                    exit;
                 }else {
-                    //echo "Failed to update college: " . $result['error'];
+                    $error = $result['error'] ?? 'Unknown error';
+                    header("Location: ../app/views/Dashboard2.php?status=error&message=" . urlencode($error));
+                    exit;
                 }
+                break;
+            case 'createUser':
+                $id_no = $_POST['id_no'];
+                $fname = $_POST['fname'];
+                $mname = $_POST['mname'];
+                $lname = $_POST['lname'];
+                $email = $_POST['email'];
+                $college_short_name = $_POST['college_short_name'];
+                $role_name = $_POST['role_name'];
+                $result = $controller->createUser($id_no, $fname, $mname, $lname, 
+                    $email, $college_short_name,$role_name);
+                //response
+                if($result['success']){
+                    header("Location: ../app/views/Dashboard2.php?status=success&message=" . urlencode("User created successfully."));
+                    exit;
+                }else{
+                    $error = $result['error'] ?? 'Unknown error';
+                    header("Location: ../app/views/Dashboard2.php?status=error&message=" . urlencode($error));
+                    exit;
+                }
+                break;
             default:
                 http_response_code(400);
                 echo json_encode(['error' => 'Invalid action!']);

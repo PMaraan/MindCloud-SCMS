@@ -24,40 +24,27 @@ class DataController {
         return $this->db->getAllCollegeShortNames();
     }
 
-    public function setAccountChangesUsingID($id_no, $fname, $mname, $lname, $email, $college_short_name, $role_name) {
+    public function createUser($id_no, $fname, $mname, $lname, $email, $college_short_name,$role_name){
         try {
-            // Start transaction
-            $this->db->beginTransaction();
-
-            // Step 1: Update user details
-            $userUpdated = $this->db->setUserDetails($id_no, $fname, $mname, $lname, $email);
-            if (!$userUpdated) {
-                throw new Exception("User details update failed.");
-            }
-
-            // Step 2: Update college
-            $collegeUpdated = $this->db->setUserCollegeUsingCollegeShortName($id_no, $college_short_name);
-            if (!$collegeUpdated) {
-                throw new Exception("College update failed.");
-            }
-
-            // Step 3: Update role
-            $roleUpdated = $this->db->setUserRoleUsingRoleName($id_no, $role_name);
-            if (!$roleUpdated) {
-                throw new Exception("Role update failed.");
-            }
-
-            // Commit the transaction
-            $this->db->commit();
-            return ['success' => true];
-
+            $defaultPassword = 'password';
+            $password = password_hash($defaultPassword, PASSWORD_ARGON2ID);
+            return $this->db->createUser($id_no, $fname, $mname, $lname, $email, $password, $college_short_name,$role_name);
+        } catch (PDOException $e) {
+            // Database or logic-level error
+            return ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
         } catch (Exception $e) {
-            // Rollback on any failure
-            $this->db->rollBack();
-            return [
-                'success' => false,
-                'error' => $e->getMessage()
-            ];
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    public function setAccountChangesUsingID($id_no, $fname, $mname, $lname, $email, $college_short_name, $role_name) {
+        try {            
+            return $this->db->setAccountChangesUsingID($id_no, $fname, $mname, $lname, $email, $college_short_name, $role_name);
+        } catch (PDOException $e) {
+            // Database or logic-level error
+            return ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
         }
     }
 }

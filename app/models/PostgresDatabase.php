@@ -91,6 +91,7 @@ class PostgresDatabase implements StorageInterface {
             JOIN user_roles ur ON u.id_no = ur.id_no
             JOIN roles r ON ur.role_id = r.role_id
             LEFT JOIN colleges c ON ur.college_id = c.college_id
+            ORDER BY u.id_no ASC
         ");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -186,6 +187,127 @@ class PostgresDatabase implements StorageInterface {
         }
 
         return array_keys($groups); // e.g., ['accounts', 'college', 'templates']
+    }
+
+    public function createUser($id_no, $fname, $mname, $lname, $email, $password, $college_short_name, $role_name) {
+        try {
+            // Begin transaction
+            $this->pdo->beginTransaction();
+
+            // Step 1: Insert into users table
+            $stmt1 = $this->pdo->prepare("
+                INSERT INTO users (id_no, fname, mname, lname, email, password)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ");
+            $stmt1->execute([$id_no, $fname, $mname, $lname, $email, $password]);
+
+            // Step 2: Resolve college_id (if college is provided)
+            $college_id = null;
+            if (!empty($college_short_name)) {
+                $stmt2 = $this->pdo->prepare("
+                    SELECT college_id FROM colleges WHERE short_name = ?
+                ");
+                $stmt2->execute([$college_short_name]);
+                $college = $stmt2->fetch(PDO::FETCH_ASSOC);
+
+                if (!$college) {
+                    throw new Exception("College not found: $college_short_name");
+                }
+                $college_id = $college['college_id'];
+            }
+
+            // Step 3: Get role_id from role_name
+            $stmt3 = $this->pdo->prepare("
+                SELECT role_id FROM roles WHERE name = ?
+            ");
+            $stmt3->execute([$role_name]);
+            $role = $stmt3->fetch(PDO::FETCH_ASSOC);
+
+            if (!$role) {
+                throw new Exception("Role not found: $role_name");
+            }
+            $role_id = $role['role_id'];
+
+            // Step 4: Insert into user_roles table (college_id may be null)
+            $stmt4 = $this->pdo->prepare("
+                INSERT INTO user_roles (id_no, role_id, college_id)
+                VALUES (?, ?, ?)
+            ");
+            $stmt4->execute([$id_no, $role_id, $college_id]);
+
+            // Commit transaction
+            $this->pdo->commit();
+
+            return ['success' => true];
+
+        } catch (Exception $e) {
+            // Rollback on any failure
+            $this->pdo->rollBack();
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    public function setAccountChangesUsingID($id_no, $fname, $mname, $lname, $email, $college_short_name, $role_name) {
+        try {
+            $this->pdo->beginTransaction();
+
+            // Step 1: Update user details
+            $stmt1 = $this->pdo->prepare("
+                UPDATE users
+                SET fname = ?, mname = ?, lname = ?, email = ?
+                WHERE id_no = ?
+            ");
+            $stmt1->execute([$fname, $mname, $lname, $email, $id_no]);
+
+            if ($stmt1->rowCount() === 0) {
+                throw new \Exception("User update failed: No matching user found.");
+            }
+
+            // Step 2: Update college
+            $stmt2 = $this->pdo->prepare("
+                UPDATE user_roles
+                SET college_id = (
+                    SELECT college_id
+                    FROM colleges
+                    WHERE short_name = ?
+                )
+                WHERE id_no = ?
+            ");
+            $stmt2->execute([$college_short_name, $id_no]);
+
+            if ($stmt2->rowCount() === 0) {
+                throw new \Exception("College update failed: Invalid college short name or user role not found.");
+            }
+
+            // Step 3: Update role
+            $stmt3 = $this->pdo->prepare("
+                UPDATE user_roles
+                SET role_id = (
+                    SELECT role_id
+                    FROM roles
+                    WHERE name = ?
+                )
+                WHERE id_no = ?
+            ");
+            $stmt3->execute([$role_name, $id_no]);
+
+            if ($stmt3->rowCount() === 0) {
+                throw new \Exception("Role update failed: Invalid role name or user role not found.");
+            }
+
+            $this->pdo->commit();
+
+            return ['success' => true];
+
+        } catch (\Exception $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            return [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
+        }
     }
 
     public function setUserDetails($id_no, $fname, $mname, $lname, $email) {

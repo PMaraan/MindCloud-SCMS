@@ -9,6 +9,17 @@ require_once __DIR__ . '/../../config/config.php'; // Load environment variables
 require_once __DIR__ . '/../controllers/ContentController.php'; // Dynamically control the content
 require_once __DIR__ . '/../models/PostgresDatabase.php';
 
+if (isset($_GET['status']) && isset($_GET['message'])): ?>
+    <script>
+        alert("<?= addslashes($_GET['message']) ?>");
+    </script>
+    <script>
+    if (window.location.search.includes('status=') && window.location.search.includes('message=')) {
+        // Remove query params from URL after showing alert
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+</script>
+<?php endif;
 
 // FAKE LOGIN SESSION FOR TESTING WITHOUT DB
 //$_SESSION['user_id'] = 1;
