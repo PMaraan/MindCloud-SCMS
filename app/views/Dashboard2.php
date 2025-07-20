@@ -9,13 +9,13 @@ require_once __DIR__ . '/../../config/config.php'; // Load environment variables
 require_once __DIR__ . '/../controllers/ContentController.php'; // Dynamically control the content
 require_once __DIR__ . '/../models/PostgresDatabase.php';
 
-/*
+
 // FAKE LOGIN SESSION FOR TESTING WITHOUT DB
-$_SESSION['user_id'] = 1;
-$_SESSION['username'] = 'TestUser';
-$_SESSION['college_id'] = 'TESTCOL';
-$_SESSION['role'] = 'Developer';
-*/
+//$_SESSION['user_id'] = 1;
+//$_SESSION['username'] = 'TestUser';
+//$_SESSION['college_id'] = 'TESTCOL';
+//$_SESSION['role'] = 'Developer';
+
 
 // Load dynamic content using the ContentController
 $page = $_POST['page'] ?? 'default';
@@ -87,54 +87,58 @@ $content_file = $resources['content'];
 <!-- Dashboard Script -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-document.querySelectorAll('[data-page]').forEach(button => {
-  button.addEventListener('click', function (e) {
-    e.preventDefault();
+document.body.addEventListener('click', function (e) {
+  const button = e.target.closest('[data-page]');
+  if (!button) return; // Ignore clicks outside data-page elements
 
-    const page = this.getAttribute('data-page');
-    console.log('Clicked page:', page); // log the value to the console
+  e.preventDefault();
 
-    const formData = new FormData();
-    formData.append('page', page);
+  const page = button.getAttribute('data-page');
+  console.log('Clicked page:', page); // log the value to the console
 
-    fetch('Dashboard2.php', {
-      method: 'POST',
-      body: formData
-    })
-    .then(res => res.text())
-    .then(html => {
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, 'text/html');
+  const formData = new FormData();
+  formData.append('page', page);
 
-      // Replace the dynamic content
-      const newContent = doc.querySelector('.main-content');
+  fetch('Dashboard2.php', {
+    method: 'POST',
+    body: formData
+  })
+  .then(res => res.text())
+  .then(html => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+
+    // Replace the dynamic content
+    const newContent = doc.querySelector('.main-content');
+    if (newContent) {
       document.querySelector('.main-content').innerHTML = newContent.innerHTML;
+    }
 
-      // Load dynamic CSS (if needed)
-      const newCss = doc.querySelectorAll('head link[rel="stylesheet"]:not([href*="bootstrap"], [href*="HeaderComponent"], [href*="SidebarComponent"])');
-      newCss.forEach(link => {
-        if (!document.querySelector(`link[href="${link.href}"]`)) {
-          document.head.appendChild(link.cloneNode());
-        }
-      });
-
-      // Load external JS files manually (including accscript.js)
-      const newJs = doc.querySelectorAll('script[src]');
-      newJs.forEach(script => {
-        const src = script.getAttribute('src');
-
-        // Always reload external scripts like accscript.js
-        const newScript = document.createElement('script');
-        newScript.src = src + `?t=${Date.now()}`; // force fresh load
-        newScript.defer = true;
-        newScript.onload = () => console.log(`✅ Reloaded: ${src}`);
-        document.body.appendChild(newScript);
-
-      });
+    // Load dynamic CSS (if needed)
+    const newCss = doc.querySelectorAll('head link[rel="stylesheet"]:not([href*="bootstrap"], [href*="HeaderComponent"], [href*="SidebarComponent"])');
+    newCss.forEach(link => {
+      if (!document.querySelector(`link[href="${link.href}"]`)) {
+        document.head.appendChild(link.cloneNode());
+      }
     });
-  });
+
+    // Load external JS files manually (including accscript.js)
+    const newJs = doc.querySelectorAll('script[src]');
+    newJs.forEach(script => {
+      const src = script.getAttribute('src');
+
+      // Always reload external scripts like accscript.js
+      const newScript = document.createElement('script');
+      newScript.src = src + `?t=${Date.now()}`; // force fresh load
+      newScript.defer = true;
+      newScript.onload = () => console.log(`✅ Reloaded: ${src}`);
+      document.body.appendChild(newScript);
+    });
+  })
+  .catch(err => console.error('Fetch error:', err));
 });
 </script>
+
 
 
 </body>
