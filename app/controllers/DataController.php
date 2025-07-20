@@ -47,6 +47,19 @@ class DataController {
             return ['success' => false, 'error' => $e->getMessage()];
         }
     }
+
+    public function createRole($role_name, $role_level) {
+        try {            
+            $role_level = intval($role_level);      
+            return $this->db->createRole($role_name, $role_level);
+        } catch (PDOException $e) {
+            // Database or logic-level error
+            return ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
 }
 
 /*

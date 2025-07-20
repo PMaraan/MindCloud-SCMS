@@ -6,7 +6,7 @@
 
   <!-- Accounts -->
   <div class="container-fluid"> <!--container-fluid open-->
-
+    <h2>Accounts</h2>
     <!-- Search + Edit Controls -->
      <?php
       include_once __DIR__ . '/Accounts_includes/SearchBar.php';

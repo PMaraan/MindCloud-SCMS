@@ -346,6 +346,14 @@ class PostgresDatabase implements StorageInterface {
         return $stmt->execute([$role_name, $id_no]);
     }
 
+    public function createRole($role_name, $role_level) {
+        $stmt = $this->pdo->prepare("
+            INSERT INTO roles (name, level)
+            VALUES (?, ?)
+        ");
+        return $stmt->execute([$role_name, $role_level]);
+    }
+
     public function connect() {
         
     }
