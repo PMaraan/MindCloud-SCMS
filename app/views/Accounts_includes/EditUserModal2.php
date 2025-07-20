@@ -3,10 +3,10 @@
     require_once __DIR__ . '/../../controllers/DataController.php';
     $db = new DataController();
  ?>
-<div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+<div class="modal fade" id="editUserModal2" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
-      <form id="editUserForm" action="update_user.php" method="POST">
+      <form id="editUserForm" action="/MindCloud-SCMS/public/api.php" method="POST">
         <div class="modal-header">
           <h5 class="modal-title" id="editUserModalLabel">Edit User</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -33,8 +33,8 @@
             <input type="email" class="form-control" id="editEmail" name="email" required>
           </div>
           <div class="mb-3">
-            <label for="editCollege" class="form-label required">College</label>
-            <select class="form-select" id="editCollege" name="college_id" required>
+            <label for="editCollege" class="form-label">College</label>
+            <select class="form-select" id="editCollege" name="college_short_name">
                 <!-- College options go here -->
                 <option value="">NULL</option>
                 <?php
@@ -49,7 +49,7 @@
           </div>
           <div class="mb-3">
             <label for="editRole" class="form-label required">Role</label>
-            <select class="form-select" id="editRole" name="role_id" required>
+            <select class="form-select" id="editRole" name="role_name" required>
                 <option value="">NULL</option>
                 <!-- Role options go here -->
                  <?php 
@@ -66,7 +66,9 @@
         </div>
 
         <div class="modal-footer">
-          <button type="submit" class="btn btn-primary">Save changes</button>
+          <button type="submit" class="btn btn-primary save-btn" id="setAccountChangesUsingID" name="action" value="setAccountChangesUsingID" data-action="setAccountChangesUsingID">
+            Save changes
+          </button>
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
         </div>
       </form>

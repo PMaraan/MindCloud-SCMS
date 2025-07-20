@@ -1,3 +1,4 @@
+<!-- header component -->
 <nav class="navbar px-3 sticky-top">
   <div class="container-fluid">
     <a class="navbar-brand" href="#">LPU-SCMS</a>

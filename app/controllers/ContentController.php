@@ -127,7 +127,32 @@ class ContentController {
     return $this->mapSidebarTabsToAddresses($permissionGroups);
   }
 
+
+  public function render(string $page): string {
+      ob_start();
+
+      switch ($page) {
+        case 'accounts':
+          require __DIR__ . '/../views/accounts.php';
+          break;
+        case 'users':
+          require __DIR__ . '/../views/users.php';
+          break;
+        case 'dashboard':
+          require __DIR__ . '/../views/dashboard.php';
+          break;
+        case 'default':
+        default:
+          require __DIR__ . '/../views/default.php';
+          break;
+    }
+
+    return ob_get_clean(); // return the captured HTML
+  }
+
 }
+
+
 
 /*
 // CSS Mappings

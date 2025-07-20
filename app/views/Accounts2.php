@@ -4,7 +4,7 @@
   $users = $db->getAllUsersAccountInfo();
 ?>
 
-
+  <!-- Accounts -->
   <div class="container-fluid"> <!--container-fluid open-->
 
     <!-- Search + Edit Controls -->

@@ -1,5 +1,83 @@
 console.log("✅ accscript.js LOADED");
 
+// add event listener for modals
+function initializeModals() {
+
+  console.log("✅ Initializing modal. Setting up modal action listener.");
+
+  document.addEventListener('click', function (e) {
+    console.log("Clicked element: ",e.target);
+    
+    const button = e.target.closest('[data-action]');
+    if (!button) return;
+
+    const action = button.getAttribute('data-action');
+
+    let modal;
+    if (button.getAttribute('data-bs-toggle') === "modal"){
+      const modalSelector = button.getAttribute('data-bs-target');
+      modal = document.querySelector(modalSelector);
+    }
+    /*
+    const button = e.target.closest('[data-bs-toggle="modal"][data-action]');
+    if (!button)  return;
+
+    //console.log("🔘 Button with modal action clicked:", button)
+
+    console.log("Thre's a button!");
+    
+    const modalSelector = button.getAttribute('data-bs-target');
+    const modal = document.querySelector(modalSelector);
+    if (!modal) return;
+    */
+    switch (action) {
+      case 'edit':
+        populateEditModal(button, modal);
+        break;
+      case 'delete':
+        populateDeleteModal(button, modal);
+        break;
+      case 'saveAccountChangesToDb':
+        // call api and send modal values using post
+        break;
+      default:
+        console.warn(`Unhandled action type: ${action}`);
+    }
+  });
+}
+
+// initialize the modal
+initializeModals();
+
+
+
+// Helper function to fill in the edit modal
+function populateEditModal(button, modal) {
+  modal.querySelector('#editIdNumber').value = button.getAttribute('data-id-no') || '';
+  modal.querySelector('#editFirstName').value = button.getAttribute('data-fname') || '';
+  modal.querySelector('#editMiddleInitial').value = button.getAttribute('data-mname') || '';
+  modal.querySelector('#editLastName').value = button.getAttribute('data-lname') || '';
+  modal.querySelector('#editEmail').value = button.getAttribute('data-email') || '';
+
+  const collegeSelect = modal.querySelector('#editCollege');
+  if (collegeSelect) collegeSelect.value = button.getAttribute('data-college') || '';
+
+  const roleSelect = modal.querySelector('#editRole');
+  if (roleSelect) roleSelect.value = button.getAttribute('data-role') || '';
+}
+
+
+// Example: for delete modals
+function populateDeleteModal(button, modal) {
+  modal.querySelector('#deleteIdNumber').value = button.getAttribute('data-id-no') || '';
+  modal.querySelector('#deleteUserName').textContent =
+    `${button.getAttribute('data-fname')} ${button.getAttribute('data-lname')}`;
+}
+
+
+
+
+/*
 function bindEditButtons() {
   document.querySelectorAll('.edit-btn2').forEach(btn => {
     btn.addEventListener('click', function () {
@@ -45,15 +123,7 @@ function bindEditButtons() {
 
           const roleSelect = document.getElementById('editRole');
           if (roleSelect) roleSelect.value = data.role_name ?? '';
-          // You may need to set role and college dropdowns here too:
-          /*
-          if (data.role_name) {
-            document.getElementById('edit-role').value = data.role_name;
-          }
-          if (data.college_short_name) {
-            document.getElementById('edit-college').value = data.college_short_name;
-          }
-          */
+          
           // Show the modal (depends on how you're handling modals)
           console.log('Modal element:', document.getElementById('editUserModal'));
           const editModal = new bootstrap.Modal(document.getElementById('editUserModal2'));
@@ -67,10 +137,8 @@ function bindEditButtons() {
   });
 }
 
-
-
 bindEditButtons();
-
+*/
 
 
 

@@ -188,6 +188,42 @@ class PostgresDatabase implements StorageInterface {
         return array_keys($groups); // e.g., ['accounts', 'college', 'templates']
     }
 
+    public function setUserDetails($id_no, $fname, $mname, $lname, $email) {
+        $stmt = $this->pdo->prepare("
+            UPDATE users
+            SET fname = ?, mname = ?, lname = ?, email = ?
+            WHERE id_no = ?
+        ");
+        return $stmt->execute([$fname, $mname, $lname, $email, $id_no]);
+
+    }
+
+    public function setUserCollegeUsingCollegeShortName($id_no,$college_short_name){
+        $stmt = $this->pdo->prepare("
+            UPDATE user_roles
+            SET college_id = (
+                SELECT college_id
+                FROM colleges
+                WHERE short_name = ?
+            )
+            WHERE id_no = ?
+        ");
+        return $stmt->execute([$college_short_name, $id_no]);
+    }
+
+    public function setUserRoleUsingRoleName($id_no, $role_name) {
+        $stmt = $this->pdo->prepare("
+            UPDATE user_roles
+            SET role_id = (
+                SELECT role_id
+                FROM roles
+                WHERE role_name = ?
+            )
+            WHERE id_no = ?
+        ");
+        return $stmt->execute([$role_name, $id_no]);
+    }
+
     public function connect() {
         
     }

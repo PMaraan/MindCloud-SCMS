@@ -38,8 +38,9 @@
                     data-college="<?= htmlspecialchars($user['college_short_name']) ?>"
                     data-role="<?= htmlspecialchars($user['role_name']) ?>"
                     data-bs-toggle="modal"
-                    data-bs-target="#editUserModal"
-                    >
+                    data-bs-target="#editUserModal2"
+                    data-action="edit" 
+                    ><!-- action is required to be handled by js -->
                     <i class="bi bi-pencil"></i> Edit
                     </button>
                 </td>
