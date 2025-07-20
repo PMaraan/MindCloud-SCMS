@@ -1,6 +1,37 @@
-.workspace {
-  flex: 1;
-  display: flex;
-  background-color: gray;
-  padding: 20px;
+#template-list {
+  /* Align items top-left */
+  align-items: flex-start;
+}
+
+.template-card {
+  width: 150px;
+  height: 200px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+  display: flex !important; /* override if needed */
+  justify-content: center !important;
+  align-items: center !important;
+  color: #555;
+  font-weight: bold;
+  user-select: none;
+  text-align: center;
+}
+
+.template-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  border-color: #aaa;
+  color: #222;
+}
+
+.add-template {
+  font-size: 5rem;
+  color: #999;
+  font-weight: 300;
+}
+
+.add-template:hover {
+  color: #555;
 }

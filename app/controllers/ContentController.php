@@ -8,6 +8,7 @@ class ContentController {
     'Templates'    => '../../public/assets/css/Templates.css',
     'Colleges'      => '../../public/assets/css/CollegeRoles.css',
     'Faculty'      => '../../public/assets/css/FacultyRoles.css',
+    'TemplateBuilder' => '../../public/assets/css/TemplateBuilder.css'
     //'add_college'  => '../../public/assets/css/FacultyRoles.css',
     //'view_roles'   => '../../public/assets/css/ViewRoles.css',
     //'edit_college' => '../../public/assets/css/FacultyRoles.css',
@@ -18,6 +19,7 @@ class ContentController {
     'Templates'    => '../../public/assets/js/Templates.js',
     'Colleges'      => '../../public/assets/js/CollegeRoles.js',
     'Faculty'      => '../../public/assets/js/FacultyRoles.js',
+    'TemplateBuilder' => '../../public/assets/js/TemplateBuilder.js'
     //'add_college'  => '../../public/assets/js/FacultyRoles.js',
     //'view_roles'   => '../../public/assets/js/ViewRoles.js',
     //'edit_college' => '../../public/assets/js/FacultyRoles.js',
@@ -34,6 +36,7 @@ class ContentController {
     'Courses'      => 'Courses.php',
     'Templates'    => 'Templates.php',
     'Syllabus'     => 'SyllabusForRevision.php',
+    'TemplateBuilder' => 'TemplateBuilder.php',
     //'approve'      => '#',                      
     //'note'         => '#',                      
     //'prepare'      => '#',                      
