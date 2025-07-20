@@ -4,30 +4,28 @@
 html, body {
   height: 100%;
   margin: 0;
-  font-family: Arial, sans-serif;
-  overflow: hidden;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
-#template-builder-container {
-  position: relative;
+body {
   display: flex;
-  flex-direction: column;
-  height: 100%;
-  width: 100%;
+  flex-direction: row-reverse;
+  height: 100vh;
+  overflow: hidden;
 }
 
 /* ============================== */
 /*          TOP TOOLBAR          */
 /* ============================== */
-#template-builder-container .builder-header {
+.builder-header {
   position: fixed;
-  top: 64px;
+  top: 0;
   left: 0;
   right: 0;
   height: 56px;
   background: #f8f9fa;
   border-bottom: 1px solid #ccc;
-  z-index: 1050;
+  z-index: 1100;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -35,7 +33,7 @@ html, body {
   flex-wrap: wrap;
 }
 
-#template-builder-container .builder-header > * {
+.builder-header > * {
   margin: 0 1px;
 }
 
@@ -74,33 +72,50 @@ button.active {
 }
 
 /* ============================== */
-/*       SIDEBAR / PALETTE       */
+/*         WORKSPACE AREA        */
 /* ============================== */
-#template-builder-container #palette-wrapper {
-  position: fixed;
-  top: 120px;
-  right: 0;
-  width: 240px;
-  height: calc(100vh - 120px);
-  background: #fafafa;
-  border-left: 1px solid #bbb;
-  display: flex;
-  flex-direction: column;
-  transition: width 0.3s ease;
-  z-index: 1040;
+#workspace {
+  margin-top: 56px;
+  flex: 1;
+  overflow: auto;
+  padding: 20px;
+  background: #f0f2f5;
 }
 
-#template-builder-container #palette-wrapper.collapsed {
+/* ============================== */
+/*       SIDEBAR WRAPPER         */
+/* ============================== */
+#palette-wrapper {
+  margin-top: 56px;
+  width: 240px;
+  background: #fafafa;
+  border-left: 1px solid #bbb;
+  transition: width 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+#palette-wrapper.collapsed {
   width: 48px;
   overflow: hidden;
 }
 
-#template-builder-container #palette {
-  flex-grow: 1;
+#palette-wrapper.collapsed #palette {
+  display: none;
+}
+
+#palette-wrapper.collapsed .toggle-btn {
+  padding: 6px;
+}
+
+/* ============================== */
+/*        SIDEBAR / PALETTE      */
+/* ============================== */
+#palette {
+  height: calc(100vh - 56px);
   overflow-y: auto;
   padding: 12px;
   box-sizing: border-box;
-  height: 100%;
 }
 
 .toggle-btn {
@@ -112,27 +127,38 @@ button.active {
   text-align: right;
 }
 
-/* ============================== */
-/*         WORKSPACE AREA        */
-/* ============================== */
-#template-builder-container #workspace {
-  margin-top: 120px;
-  margin-right: 240px;
-  flex: 1;
-  overflow: auto;
-  padding: 20px;
-  background: #f0f2f5;
-  position: relative;
-  z-index: 1;
+.draggable {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  margin: 6px 0;
+  border: 1px solid #777;
+  background: #fff;
+  border-radius: 4px;
+  cursor: grab;
+  user-select: none;
 }
 
+.draggable i {
+  font-size: 1.1rem;
+  color: #444;
+}
+
+select {
+  width: 100%;
+  margin-bottom: 16px;
+  padding: 4px;
+}
+
+/* ============================== */
+/*          PAGE + CONTENT       */
+/* ============================== */
 .page {
-  width: 794px;
-  height: 1123px;
-  margin: 0 auto 40px;
-  background: white;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
   position: relative;
+  margin: 0 auto 40px;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
 }
 
 .content {
@@ -271,7 +297,7 @@ button.active {
 
 .element.selected,
 .label-block.selected,
-.paragraph-block.selected,
+.paragraph-block.selected
 .table-block.element.selected {
   border-color: #007bff;
   background-color: #e9f5ff;
@@ -287,7 +313,10 @@ button.active {
 
 .label-block {
   font-weight: 600;
-  color: #333;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+
 }
 
 .label-block .element-body {
@@ -298,7 +327,8 @@ button.active {
   text-align: left;
 }
 
-.table-block {
+/* ---------- TABLE BLOCK ---------- */
+.table-block {                /* same footprint & border as .element */
   border: 1px dashed #555;
   background: #fff;
 }
@@ -313,9 +343,15 @@ button.active {
   border: 1px solid #bbb;
   padding: 2px 4px;
   min-width: 40px;
-  word-break: break-word;
+  word-break: break-word;     /* keep text from overflowing */
 }
 
+/* selected state is inherited from .element.selected */
+
+
+/* ============================== */
+/*          DRAG HANDLE          */
+/* ============================== */
 .drag-handle,
 .paragraph-block .drag-handle {
   position: absolute;
@@ -343,6 +379,9 @@ button.active {
   cursor: grabbing;
 }
 
+/* ============================== */
+/*          GHOST LINE           */
+/* ============================== */
 .ghost-line {
   position: fixed;
   height: 2px;
@@ -352,13 +391,16 @@ button.active {
   transition: top 0.05s ease, left 0.05s ease, width 0.05s ease;
 }
 
+/* ============================== */
+/*       RESIZE HANDLE           */
+/* ============================== */
 .resize-handle {
   height: 8px;
   cursor: ns-resize;
   margin-top: 2px;
   user-select: none;
 }
-
+/* Solid outline for text-3 */
 .element[data-type="text-3"] {
   border: 1.5px solid #444;
   border-radius: 4px;
@@ -366,16 +408,27 @@ button.active {
   padding: 2px;
 }
 
+/* No outline for paragraph */
 .paragraph-block {
   border: none !important;
   background: transparent !important;
   box-shadow: none !important;
 }
+.signature-block {
+  position: absolute;
+  left: 32px;
+  width: calc(100% - 32px); /* Match all other .element blocks */
+  box-sizing: border-box;
+  padding: 4px 8px;
+  border: 1px dashed #555;
+  background: #fff;
+  border-radius: 4px;
+}
 
 .signature-block {
   position: absolute;
   left: 32px;
-  width: calc(100% - 64px);
+  width: calc(100% - 64px); /* matches other .element blocks with left + right padding */
   box-sizing: border-box;
   padding: 4px 8px;
   background: #fff;
@@ -389,10 +442,13 @@ button.active {
   align-items: center;
 }
 
+
 .signature-table {
   width: fit-content;
   max-width: 100%;
 }
+
+
 
 .signature-table td {
   padding: 6px;
@@ -407,4 +463,35 @@ button.active {
   display: block;
   margin: 4px auto;
   max-width: 100%;
+}
+/* Remove (X) Button on Hover */
+.element:hover .remove-btn,
+.label-block:hover .remove-btn,
+.paragraph-block:hover .remove-btn,
+.signature-block:hover .remove-btn,
+.table-block:hover .remove-btn {
+  display: block;
+}
+
+.remove-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 10;
+  background: transparent;
+  color: darkred;
+  border: none;
+  border-radius: 50%;
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  line-height: 17px;
+  text-align: center;
+  cursor: pointer;
+  display: none;
+  padding: 0;
+}
+
+.remove-btn:hover {
+  color: red;
 }

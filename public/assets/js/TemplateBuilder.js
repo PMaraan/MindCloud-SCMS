@@ -14,7 +14,7 @@ class TemplateBuilder {
     this.ghostLine.style.display = "none";
     this.workspace.appendChild(this.ghostLine);
       this.defaultFontFamily = "Arial";
-  this.defaultFontSize   = 12;          
+  this.defaultFontSize   = 12;                 // <— NEW
   this.fontFamilySel     = document.getElementById("fontFamily");
   this.fontSizeSel       = document.getElementById("fontSize");
     this.paperSel = document.getElementById("paperSize");
@@ -143,6 +143,7 @@ this.fontSizeSel.addEventListener("change", () => {
 this.workspace.addEventListener("change", e => {
   const input = e.target;
   
+  // Only process if input[type='file'] AND inside a .header-logo container
   if (input.matches("input[type='file']") && input.files[0] && input.closest(".header-logo")) {
     const reader = new FileReader();
     reader.onload = () => {
@@ -249,6 +250,7 @@ this.workspace.addEventListener("change", e => {
   handleDrop(e) {
   e.preventDefault();
 
+  /* -------- identify element type -------- */
   const type        = e.dataTransfer.getData("text/plain") || e.dataTransfer.getData("type");
   if (!type) return;
 
@@ -258,6 +260,7 @@ this.workspace.addEventListener("change", e => {
   const isTable     = type === "table";
   const isSignature = type === "signature";
 
+  /* -------- create the shell -------- */
   const el = document.createElement("div");
   el.className =
         isLabel      ? "label-block"
@@ -278,9 +281,10 @@ el.style.border = "1px dashed #555";
 el.style.background = "#fff";
 
 
-  let body;              
-  let startRows = 1;      
+  let body;                 // will hold the element content
+  let startRows = 1;        // default row footprint
 
+  /* -------- content for tables -------- */
   if (isTable) {
     body = document.createElement("table");
     body.className      = "element-body";
@@ -299,17 +303,20 @@ el.style.background = "#fff";
       body.appendChild(tr);
     }
 
+    /* click‑through selection */
     el.addEventListener("mousedown", ev => { ev.stopPropagation(); this.selectElement(el); });
 
+  /* -------- content for signature block -------- */
   } else if (isSignature) {
   body = document.createElement("table");
   body.className = "element-body signature-table";
   body.contentEditable = false;
 
-  const row1 = document.createElement("tr"); 
-  const row2 = document.createElement("tr"); 
+  const row1 = document.createElement("tr"); // Row for image upload
+  const row2 = document.createElement("tr"); // Row for name/date/role
 
   for (let i = 0; i < 4; i++) {
+    // === Signature Cell ===
     const sigCell = document.createElement("td");
     sigCell.style.cssText = `
       width: 180px;
@@ -356,6 +363,7 @@ el.style.background = "#fff";
     sigCell.appendChild(uploadBtn);
     row1.appendChild(sigCell);
 
+    // === Info Cell (Name, Date, Role) ===
     const infoCell = document.createElement("td");
     infoCell.style.cssText = `
       padding: 6px;
@@ -393,11 +401,12 @@ el.style.background = "#fff";
   body.appendChild(row1);
   body.appendChild(row2);
   el.appendChild(body);
- 
+  // Temporarily add to body to measure accurate height
 document.body.appendChild(el);
 const actualHeight = el.offsetHeight;
 document.body.removeChild(el);
 
+// Calculate how many rows it needs to occupy
 const requiredRows = Math.ceil(actualHeight / this.ROW_HEIGHT);
 el.dataset.rows = requiredRows;
 el.style.height = requiredRows * this.ROW_HEIGHT + "px";
@@ -420,7 +429,9 @@ el.style.height = requiredRows * this.ROW_HEIGHT + "px";
 
   el.appendChild(body);
 
+  /* -------- determine initial height / rows -------- */
   if (isTable || isSignature) {
+    // measure off‑screen to snap to grid
     document.body.appendChild(el);
     startRows = Math.ceil(el.offsetHeight / this.ROW_HEIGHT);
     document.body.removeChild(el);
@@ -431,18 +442,18 @@ el.style.height = requiredRows * this.ROW_HEIGHT + "px";
   el.dataset.rows = startRows;
   el.style.height = startRows * this.ROW_HEIGHT + "px";
 
-
+  /* -------- textarea logic for text‑3 / paragraph -------- */
   if (!isLabel && !isTable && !isSignature) {
     this.setupTextArea(el);
   }
 
-  
+  /* -------- drag handle -------- */
   const grip = document.createElement("div");
   grip.className = "drag-handle";
   grip.innerHTML = "<i class='bi bi-grip-vertical'></i>";
   el.prepend(grip);
 
-  
+  /* -------- place element in current content -------- */
   const content = e.currentTarget;
   const insertY = e.offsetY;
   this.placeElement(content, el, insertY);
@@ -475,6 +486,7 @@ el.style.height = requiredRows * this.ROW_HEIGHT + "px";
 
       el.style.top = this.DROP_MARGIN + insertRow * this.ROW_HEIGHT + "px";
       if (!content.contains(el)) content.appendChild(el);
+      this.addRemoveButton(el); 
 
       const blocks = [...content.querySelectorAll(".element, .label-block, .paragraph-block")]
         .filter(b => b !== el)
@@ -501,10 +513,27 @@ el.style.height = requiredRows * this.ROW_HEIGHT + "px";
         currentY = 0;
         continue;
       }
+      
 
       break;
+      
     }
+    
   }
+
+  addRemoveButton(el) {
+  const btn = document.createElement("button");
+  btn.className = "remove-btn";
+  btn.innerHTML = "&times;";
+  btn.title = "Remove Element";
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    el.remove();
+    this.cleanupPages();
+  });
+  el.appendChild(btn);
+}
+
 
   makeMovable(el) {
     const grip = el.querySelector(".drag-handle");
@@ -995,6 +1024,7 @@ if (type === "paragraph") {
 
   return;
 }
+
 
 }
 setupLabelInputRestrictions(labelElement) {
