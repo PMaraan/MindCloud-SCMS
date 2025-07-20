@@ -360,6 +360,20 @@ class PostgresDatabase implements StorageInterface {
         
     }
 
+    public function setRoleChangesUsingID($role_id, $role_name, $role_level) {
+        try {
+            $stmt = $this->pdo->prepare("
+                UPDATE roles
+                SET name = ?, level = ?
+                WHERE role_id = ?
+            ");
+            $stmt->execute([$role_name, $role_level, $role_id]);
+            return ['success' => true];
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
     public function connect() {
         
     }

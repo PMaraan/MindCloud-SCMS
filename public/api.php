@@ -87,6 +87,27 @@ switch ($type) {
                     exit;
                 }
                 break;
+            case 'setRoleChangesUsingID':
+                //forward to data controller
+                $role_id = $_POST['role_id'];
+                $role_name = $_POST['role_name'];
+                $role_level = $_POST['role_level'];
+                try {
+                    $result = $controller->setRoleChangesUsingID($role_id, $role_name, $role_level);
+                    echo json_encode(['success' => true, 'message' => 'User saved successfully.']);
+                } catch (Exception $e) {
+                    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+                }
+                
+                if ($result['success']){
+                    header("Location: ../app/views/Dashboard2.php?status=success&message=" . urlencode("Role updated successfully."));
+                    exit;
+                }else {
+                    $error = $result['error'] ?? 'Unknown error';
+                    header("Location: ../app/views/Dashboard2.php?status=error&message=" . urlencode($error));
+                    exit;
+                }
+                break;
             default:
                 http_response_code(400);
                 echo json_encode(['error' => 'Invalid action!']);

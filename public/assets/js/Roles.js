@@ -21,6 +21,7 @@ function initializeModals() {
     
     switch (action) {
       case 'edit':
+        console.log("button: ",button,"\nmodal: ",modal);
         populateEditModal(button, modal);
         break;
       case 'delete':
@@ -42,17 +43,9 @@ initializeModals();
 
 // Helper function to fill in the edit modal
 function populateEditModal(button, modal) {
-  modal.querySelector('#editIdNumber').value = button.getAttribute('data-id-no') || '';
-  modal.querySelector('#editFirstName').value = button.getAttribute('data-fname') || '';
-  modal.querySelector('#editMiddleInitial').value = button.getAttribute('data-mname') || '';
-  modal.querySelector('#editLastName').value = button.getAttribute('data-lname') || '';
-  modal.querySelector('#editEmail').value = button.getAttribute('data-email') || '';
-
-  const collegeSelect = modal.querySelector('#editCollege');
-  if (collegeSelect) collegeSelect.value = button.getAttribute('data-college') || '';
-
-  const roleSelect = modal.querySelector('#editRole');
-  if (roleSelect) roleSelect.value = button.getAttribute('data-role') || '';
+  modal.querySelector('#editRoleId').value = button.getAttribute('data-role-id') || '';
+  modal.querySelector('#editRoleName').value = button.getAttribute('data-role-name') || '';
+  modal.querySelector('#editRoleLevel').value = button.getAttribute('data-role-level') || '';
 }
 
 
