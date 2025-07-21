@@ -14,7 +14,7 @@ class TemplateBuilder {
     this.ghostLine.style.display = "none";
     this.workspace.appendChild(this.ghostLine);
       this.defaultFontFamily = "Arial";
-  this.defaultFontSize   = 12;                 // <— NEW
+  this.defaultFontSize   = 12;               
   this.fontFamilySel     = document.getElementById("fontFamily");
   this.fontSizeSel       = document.getElementById("fontSize");
     this.paperSel = document.getElementById("paperSize");
@@ -96,28 +96,24 @@ this.fontSizeSel.addEventListener("change", () => {
 
   const body = this.getEditableBody(this.selectedElement);
 
-  // Skip header/subtitle cells
   if (body.classList.contains("header-title") ||
       body.classList.contains("header-subtitle")) return;
 
-  /* apply new size */
   body.style.fontSize = `${newSize}px`;
 
-  /* ---- force instant re‑measure ---- */
   const el = this.selectedElement;
   const ROW = this.ROW_HEIGHT;
 
   const forceResize = () => {
     const scrollH = body.scrollHeight;
-    const rows     = Math.max(3, Math.ceil(scrollH / ROW)); // <- 3‑row minimum
+    const rows     = Math.max(3, Math.ceil(scrollH / ROW)); 
     el.dataset.rows = rows;
     el.style.height = rows * ROW + "px";
     this.reflowContent(el.closest(".content"));
   };
 
-  requestAnimationFrame(forceResize);   // run right after the DOM update
+  requestAnimationFrame(forceResize);  
 });
-
 
   this.workspace.addEventListener("input", e => {
     const target = e.target;
@@ -141,7 +137,6 @@ this.fontSizeSel.addEventListener("change", () => {
 this.workspace.addEventListener("change", e => {
   const input = e.target;
   
-  // Only process if input[type='file'] AND inside a .header-logo container
   if (input.matches("input[type='file']") && input.files[0] && input.closest(".header-logo")) {
     const reader = new FileReader();
     reader.onload = () => {
@@ -279,10 +274,9 @@ el.style.border = "1px dashed #555";
 el.style.background = "#fff";
 
 
-  let body;                 // will hold the element content
-  let startRows = 1;        // default row footprint
+  let body;               
+  let startRows = 1;        
 
-  /* -------- content for tables -------- */
   if (isTable) {
     body = document.createElement("table");
     body.className      = "element-body";
@@ -301,20 +295,17 @@ el.style.background = "#fff";
       body.appendChild(tr);
     }
 
-    /* click‑through selection */
     el.addEventListener("mousedown", ev => { ev.stopPropagation(); this.selectElement(el); });
 
-  /* -------- content for signature block -------- */
   } else if (isSignature) {
   body = document.createElement("table");
   body.className = "element-body signature-table";
   body.contentEditable = false;
 
-  const row1 = document.createElement("tr"); // Row for image upload
-  const row2 = document.createElement("tr"); // Row for name/date/role
+  const row1 = document.createElement("tr");
+  const row2 = document.createElement("tr"); 
 
   for (let i = 0; i < 4; i++) {
-    // === Signature Cell ===
     const sigCell = document.createElement("td");
     sigCell.style.cssText = `
       width: 180px;
@@ -361,7 +352,6 @@ el.style.background = "#fff";
     sigCell.appendChild(uploadBtn);
     row1.appendChild(sigCell);
 
-    // === Info Cell (Name, Date, Role) ===
     const infoCell = document.createElement("td");
     infoCell.style.cssText = `
       padding: 6px;
@@ -399,12 +389,10 @@ el.style.background = "#fff";
   body.appendChild(row1);
   body.appendChild(row2);
   el.appendChild(body);
-  // Temporarily add to body to measure accurate height
 document.body.appendChild(el);
 const actualHeight = el.offsetHeight;
 document.body.removeChild(el);
 
-// Calculate how many rows it needs to occupy
 const requiredRows = Math.ceil(actualHeight / this.ROW_HEIGHT);
 el.dataset.rows = requiredRows;
 el.style.height = requiredRows * this.ROW_HEIGHT + "px";
@@ -427,9 +415,7 @@ el.style.height = requiredRows * this.ROW_HEIGHT + "px";
 
   el.appendChild(body);
 
-  /* -------- determine initial height / rows -------- */
   if (isTable || isSignature) {
-    // measure off‑screen to snap to grid
     document.body.appendChild(el);
     startRows = Math.ceil(el.offsetHeight / this.ROW_HEIGHT);
     document.body.removeChild(el);
@@ -440,12 +426,10 @@ el.style.height = requiredRows * this.ROW_HEIGHT + "px";
   el.dataset.rows = startRows;
   el.style.height = startRows * this.ROW_HEIGHT + "px";
 
-  /* -------- textarea logic for text‑3 / paragraph -------- */
   if (!isLabel && !isTable && !isSignature) {
     this.setupTextArea(el);
   }
 
-  /* -------- drag handle -------- */
   const grip = document.createElement("div");
   grip.className = "drag-handle";
   grip.innerHTML = "<i class='bi bi-grip-vertical'></i>";
@@ -615,7 +599,6 @@ reflowContent(content) {
     const blk = blocks[i];
     const blkTop = parseInt(blk.style.top || 0);
     
-    // Use actual height and snap it to grid
     const actualHeight = Math.ceil(blk.offsetHeight / ROW) * ROW;
     const blkBottom = blkTop + actualHeight;
 
@@ -627,14 +610,12 @@ reflowContent(content) {
       const nextHeight = Math.ceil(nextBlk.offsetHeight / ROW) * ROW;
 
       if (nextTop < cursor) {
-        // Snap next block to next available row
         nextBlk.style.top = `${cursor}px`;
         cursor += nextHeight;
       } else {
         break;
       }
 
-      // Check if it overflows beyond page
       const usableHeight = content.clientHeight - this.DROP_MARGIN;
       const newBottom = parseInt(nextBlk.style.top) + nextHeight;
       if (newBottom > usableHeight) {
@@ -756,7 +737,6 @@ setupTextArea(el) {
     el.dataset.rows = Math.round(el.offsetHeight / ROW);
   };
 
-  // Wait until element is in DOM and visible
   requestAnimationFrame(() => {
     new ResizeObserver(observeResize).observe(el);
   });
@@ -769,46 +749,36 @@ const resizeToContent = () => {
   const ROW = this.ROW_HEIGHT;
   const minRows = 3;
   const maxHeight = this.maxAllowedHeight(el);
-  const hysteresis = 5;
+  const content = el.closest(".content");
 
   const currentRows = parseInt(el.dataset.rows || minRows, 10);
+  const originalHeight = el.style.height;
 
-  if (currentRows > minRows) {
-    el.style.height = 'auto'; // Let it shrink to content first
-  }
+  el.style.height = 'auto';
+  const scrollH = body.scrollHeight;
+  const requiredRows = Math.ceil(scrollH / ROW);
+  const newRows = Math.max(minRows, requiredRows);
 
-  const contentHeight = body.scrollHeight;
-
-  if (contentHeight > maxHeight) {
-    el.style.height = `${currentRows * ROW}px`;
+  if (scrollH > maxHeight) {
+    el.style.height = originalHeight; 
     body.innerHTML = prevHTML;
     this.restoreCursor(body);
     return;
   }
 
-  const rawRows = contentHeight / ROW;
-  const calculatedRows = Math.ceil(rawRows);
-  const newRows = Math.max(minRows, calculatedRows);
-
-  // Prevent flickering for small changes
-  if (Math.abs(rawRows - currentRows) < hysteresis / ROW) {
-    return;
-  }
-
   if (newRows !== currentRows) {
     el.dataset.rows = newRows;
-    el.style.height = `${newRows * ROW}px`; // Snap height to full rows
+    el.style.height = `${newRows * ROW}px`;
 
     requestAnimationFrame(() => {
-      this.reflowContent(el.closest(".content"));
+      this.reflowContent(content);
     });
+  } else {
+    el.style.height = `${currentRows * ROW}px`;
   }
 
   prevHTML = body.innerHTML;
 };
-
-
-
 
   body.addEventListener("keydown", e => {
     if (["Enter", "Backspace", "Delete"].includes(e.key)) {
@@ -826,8 +796,6 @@ const resizeToContent = () => {
 
   return;
 }
-
-
 
   if (type === "paragraph") {
     let prevHTML = body.innerHTML;
@@ -849,11 +817,10 @@ const resizeToContent = () => {
   const currentRows = parseInt(el.dataset.rows || "1", 10);
   const requiredRows = Math.ceil(scrollH / ROW);
 
-  // Get the range of the bottom line
   const range = document.createRange();
   const sel = window.getSelection();
   range.selectNodeContents(body);
-  range.collapse(false); // place cursor at end
+  range.collapse(false);
   sel.removeAllRanges();
   sel.addRange(range);
 
@@ -863,11 +830,9 @@ const resizeToContent = () => {
   const lastLineRow = Math.floor((lastLineTop - bodyTop) / ROW);
 
   if (lastLineRow < currentRows - 1 && currentRows > 3) {
-    // Shrink 1 row
     el.dataset.rows = currentRows - 1;
     el.style.height = `${(currentRows - 1) * ROW}px`;
   } else if (requiredRows !== currentRows) {
-    // Expand to fit new content
     el.dataset.rows = requiredRows;
     el.style.height = `${requiredRows * ROW}px`;
   }
@@ -887,12 +852,6 @@ const resizeToContent = () => {
     body.addEventListener("paste", e => this.sanitizePaste(e));
   }
 }
-
-
-
-
-
-
 restoreCursor(body) {
   const range = document.createRange();
   const sel = window.getSelection();
