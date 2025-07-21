@@ -29,4 +29,4 @@
 
   </div><!--container-fluid close-->
   <!-- JS Script -->
-  <script src="../../public/assets/js/accscript.js" defer></script>
+  <!-- <script src="../../public/assets/js/accscript.js" defer></script> -->
