@@ -597,11 +597,20 @@ reflowContent(content) {
 
   for (let i = 0; i < blocks.length; i++) {
     const blk = blocks[i];
-    const blkTop = parseInt(blk.style.top || 0);
-    
-    const actualHeight = Math.ceil(blk.offsetHeight / ROW) * ROW;
-    const blkBottom = blkTop + actualHeight;
+    let blkTop = parseInt(blk.style.top || 0);
 
+    // 👉 Snap top and height to grid
+    if (blkTop % ROW !== 0) {
+      blkTop = Math.round(blkTop / ROW) * ROW;
+      blk.style.top = `${blkTop}px`;
+    }
+
+    const snappedHeight = Math.ceil(blk.offsetHeight / ROW) * ROW;
+    if (blk.offsetHeight !== snappedHeight) {
+      blk.style.height = `${snappedHeight}px`;
+    }
+
+    const blkBottom = blkTop + snappedHeight;
     let cursor = blkBottom;
 
     for (let j = i + 1; j < blocks.length; j++) {
@@ -627,6 +636,7 @@ reflowContent(content) {
     }
   }
 }
+
 
 toggleStyleForSelected(cmd) {
   if (!this.selectedElement) return;
@@ -731,54 +741,56 @@ setupTextArea(el) {
 
   const type = el.dataset.type;
   const ROW = this.ROW_HEIGHT;
+  const minRows = type === "paragraph" ? 1 : 3;
+
   body.style.resize = "none";
 
   const observeResize = () => {
-    el.dataset.rows = Math.round(el.offsetHeight / ROW);
+    const snapped = Math.round(el.offsetHeight / ROW);
+    el.dataset.rows = snapped;
+    el.style.height = `${snapped * ROW}px`;
   };
 
   requestAnimationFrame(() => {
     new ResizeObserver(observeResize).observe(el);
   });
 
- if (type === "text-3") {
   let prevHTML = body.innerHTML;
-  const minRows = 3;
 
-const resizeToContent = () => {
-  const ROW = this.ROW_HEIGHT;
-  const minRows = 3;
-  const maxHeight = this.maxAllowedHeight(el);
-  const content = el.closest(".content");
+  const resizeToContent = () => {
+    const maxHeight = this.maxAllowedHeight(el);
+    const currentRows = parseInt(el.dataset.rows || minRows, 10);
 
-  const currentRows = parseInt(el.dataset.rows || minRows, 10);
-  const originalHeight = el.style.height;
+    // Shrink if necessary
+    if (currentRows > minRows) el.style.height = 'auto';
 
-  el.style.height = 'auto';
-  const scrollH = body.scrollHeight;
-  const requiredRows = Math.ceil(scrollH / ROW);
-  const newRows = Math.max(minRows, requiredRows);
+    const contentHeight = body.scrollHeight;
+    if (contentHeight > maxHeight) {
+      el.style.height = `${currentRows * ROW}px`;
+      body.innerHTML = prevHTML;
+      this.restoreCursor(body);
+      return;
+    }
 
-  if (scrollH > maxHeight) {
-    el.style.height = originalHeight; 
-    body.innerHTML = prevHTML;
-    this.restoreCursor(body);
-    return;
-  }
+    const rawRows = contentHeight / ROW;
+    const newRows = Math.max(minRows, Math.ceil(rawRows));
+    if (newRows !== currentRows) {
+      el.dataset.rows = newRows;
+      el.style.height = `${newRows * ROW}px`;
 
-  if (newRows !== currentRows) {
-    el.dataset.rows = newRows;
-    el.style.height = `${newRows * ROW}px`;
+      requestAnimationFrame(() => {
+        this.reflowContent(el.closest(".content"));
+      });
+    } else {
+      // Snap even if no row count changed
+      const snappedHeight = newRows * ROW;
+      if (el.offsetHeight !== snappedHeight) {
+        el.style.height = `${snappedHeight}px`;
+      }
+    }
 
-    requestAnimationFrame(() => {
-      this.reflowContent(content);
-    });
-  } else {
-    el.style.height = `${currentRows * ROW}px`;
-  }
-
-  prevHTML = body.innerHTML;
-};
+    prevHTML = body.innerHTML;
+  };
 
   body.addEventListener("keydown", e => {
     if (["Enter", "Backspace", "Delete"].includes(e.key)) {
@@ -793,65 +805,9 @@ const resizeToContent = () => {
   requestAnimationFrame(() => {
     this.setupGripResize(el, body);
   });
-
-  return;
 }
 
-  if (type === "paragraph") {
-    let prevHTML = body.innerHTML;
 
-    const resizeToContent = () => {
-  const maxH = this.maxAllowedHeight(el);
-  
-  const scrollH = body.scrollHeight;
-
-  if (scrollH > maxH) {
-    body.innerHTML = prevHTML;
-    this.restoreCursor(body);
-    return;
-  }
-
-  prevHTML = body.innerHTML;
-
-  const ROW = this.ROW_HEIGHT;
-  const currentRows = parseInt(el.dataset.rows || "1", 10);
-  const requiredRows = Math.ceil(scrollH / ROW);
-
-  const range = document.createRange();
-  const sel = window.getSelection();
-  range.selectNodeContents(body);
-  range.collapse(false);
-  sel.removeAllRanges();
-  sel.addRange(range);
-
-  const rects = range.getClientRects();
-  const lastLineTop = rects.length ? rects[rects.length - 1].top : body.getBoundingClientRect().top;
-  const bodyTop = body.getBoundingClientRect().top;
-  const lastLineRow = Math.floor((lastLineTop - bodyTop) / ROW);
-
-  if (lastLineRow < currentRows - 1 && currentRows > 3) {
-    el.dataset.rows = currentRows - 1;
-    el.style.height = `${(currentRows - 1) * ROW}px`;
-  } else if (requiredRows !== currentRows) {
-    el.dataset.rows = requiredRows;
-    el.style.height = `${requiredRows * ROW}px`;
-  }
-
-  this.reflowContent(el.closest(".content"));
-};
-
-
-    body.addEventListener("keydown", e => {
-      if (["Enter", "Backspace", "Delete"].includes(e.key)) {
-        prevHTML = body.innerHTML;
-        requestAnimationFrame(resizeToContent);
-      }
-    });
-
-    body.addEventListener("input", resizeToContent);
-    body.addEventListener("paste", e => this.sanitizePaste(e));
-  }
-}
 restoreCursor(body) {
   const range = document.createRange();
   const sel = window.getSelection();
