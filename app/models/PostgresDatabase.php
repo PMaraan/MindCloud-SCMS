@@ -231,6 +231,20 @@ class PostgresDatabase implements StorageInterface {
         }
     }
 
+    public function getAllPrograms() {
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT * FROM programs;
+            ");
+            $stmt->execute();
+            return['success' => true, 'db' => $stmt->fetchAll(PDO::FETCH_ASSOC)];
+        } catch (PDOException $e) {
+            return ['success' => false, 'error' => "Database error: " . $e->getMessage()];
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
     public function createUser($id_no, $fname, $mname, $lname, $email, $password, $college_short_name, $role_name) {
         try {
             // Begin transaction
