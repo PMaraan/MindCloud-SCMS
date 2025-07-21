@@ -643,3 +643,61 @@ select {
 .table-block:hover .remove-btn {
   display: block;
 }
+
+/* ============================== */
+/*     TABLE PROPERTIES BAR      */
+/* ============================== */
+.table-toolbar {
+  position: fixed;
+  top: 56px; /* directly below the main toolbar */
+  left: 0;
+  right: 0;
+  height: 44px;
+  background: #ffffff;
+  z-index: 1099; /* below .builder-header (1100), above workspace */
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  border-bottom: 1px solid #ccc;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* When visible, it shows. When not, it's hidden via JS toggling d-none */
+.table-toolbar.d-none {
+  display: none !important;
+}
+
+.table-toolbar .btn-group .btn {
+  padding: 4px 8px;
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.table-toolbar .btn i {
+  font-size: 0.9rem;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+.table-toolbar .btn {
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.table-toolbar .fw-bold {
+  font-size: 14px;
+  color: #333;
+}
+
+/* Adjust workspace to push down when sub-toolbar is visible */
+#workspace.table-toolbar-visible {
+  margin-top: 100px; /* 56px main header + 44px sub-header */
+}
+
+.table-block table {
+  height: auto !important;
+  min-height: unset !important;
+}

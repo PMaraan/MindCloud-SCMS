@@ -96,6 +96,60 @@
   </div>
 </div>
 
+<!-- TABLE PROPERTIES SUB-HEADER -->
+<div id="tableToolbar" class="table-toolbar d-none border-bottom bg-white shadow-sm py-1 px-3">
+  <div class="d-flex align-items-center gap-2">
+
+    <span class="fw-bold me-3">Table Properties</span>
+
+    <!-- Row Controls -->
+    <div class="btn-group" role="group" aria-label="Rows">
+      <button class="btn btn-sm btn-outline-secondary" data-table-cmd="AddRow">
+        <i class="bi bi-arrow-bar-down"></i> Add Row
+      </button>
+      <button class="btn btn-sm btn-outline-danger" data-table-cmd="deleteRow">
+        <i class="bi bi-trash"></i> Delete Row
+      </button>
+    </div>
+
+    <!-- Column Controls -->
+    <div class="btn-group ms-3" role="group" aria-label="Columns">
+      <button class="btn btn-sm btn-outline-secondary" data-table-cmd="addColLeft">
+        <i class="bi bi-arrow-bar-left"></i> Col Left
+      </button>
+      <button class="btn btn-sm btn-outline-secondary" data-table-cmd="addColRight">
+        <i class="bi bi-arrow-bar-right"></i> Col Right
+      </button>
+      <button class="btn btn-sm btn-outline-danger" data-table-cmd="deleteCol">
+        <i class="bi bi-trash"></i> Delete Col
+      </button>
+    </div>
+
+    <!-- Merge/Unmerge -->
+    <div class="btn-group ms-3" role="group" aria-label="Merge">
+      <button class="btn btn-sm btn-outline-primary" data-table-cmd="mergeCells">
+        <i class="bi bi-merge"></i> Merge
+      </button>
+      <button class="btn btn-sm btn-outline-warning" data-table-cmd="unmergeCells">
+        <i class="bi bi-scissors"></i> Unmerge
+      </button>
+    </div>
+
+    <div class="ms-auto d-flex gap-2">
+      <button class="btn btn-sm btn-outline-secondary" data-table-cmd="alignLeft">
+        <i class="bi bi-text-left"></i>
+      </button>
+      <button class="btn btn-sm btn-outline-secondary" data-table-cmd="alignCenter">
+        <i class="bi bi-text-center"></i>
+      </button>
+      <button class="btn btn-sm btn-outline-secondary" data-table-cmd="alignRight">
+        <i class="bi bi-text-right"></i>
+      </button>
+    </div>
+
+  </div>
+</div>
+
 <!-- WORKSPACE -->
 <div id="workspace"></div>
 

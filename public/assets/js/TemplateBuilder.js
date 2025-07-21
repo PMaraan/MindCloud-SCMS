@@ -9,6 +9,8 @@ class TemplateBuilder {
   ];
 constructor() {
   this.workspace = document.getElementById("workspace");
+  this.tableToolbar = new TableToolbar(this);
+
 
   this.ghostLine = document.createElement("div");
   this.ghostLine.className = "ghost-line";
@@ -498,7 +500,41 @@ this.workspace.addEventListener("change", e => {
 }
 
 
-  placeElement(startContent, el, y) {
+placeElement(startContent, el, y) {
+  /* ------------------------------------------------------------------
+     1️⃣  If element is a table‑block or signature‑block AND not yet
+         measured, measure it off‑screen, snap height to grid rows,
+         then recurse so the placement below uses correct rows.
+  ------------------------------------------------------------------ */
+  if (!el.dataset.measured && (el.classList.contains("table-block") ||
+                               el.classList.contains("signature-block"))) {
+    const ROW = this.ROW_HEIGHT;
+
+    // Put it off‑screen temporarily so offsetHeight is accurate
+    document.body.appendChild(el);
+    el.style.position = "absolute";
+    el.style.visibility = "hidden";
+
+    const actual = el.offsetHeight;                    // true rendered px
+    const snappedPx = Math.ceil(actual / ROW) * ROW;   // snap up to grid
+    const rows = snappedPx / ROW;
+
+    el.dataset.rows = rows;
+    el.style.height = `${snappedPx}px`;
+
+    // mark as measured so we don't re‑measure next time
+    el.dataset.measured = "true";
+
+    // clean up temporary styles and recurse for real placement
+    el.style.position = "";
+    el.style.visibility = "";
+    return this.placeElement(startContent, el, y);
+  }
+
+  /* ------------------------------------------------------------------
+     2️⃣  NORMAL placement logic (unchanged except we now have the
+         correct dataset.rows & snapped height before we start).
+  ------------------------------------------------------------------ */
   const visited = new Set();
   let content = startContent;
   let currentY = y;
@@ -508,90 +544,47 @@ this.workspace.addEventListener("change", e => {
     visited.add(content);
 
     const contentHeight = content.clientHeight;
-    const usableHeight = contentHeight - 2 * this.DROP_MARGIN;
+    const usableHeight  = contentHeight - 2 * this.DROP_MARGIN;
 
-    const initialRows = parseInt(el.dataset.rows || 1);
-    const maxRows = Math.floor(usableHeight / this.ROW_HEIGHT);
-    const insertRow = Math.max(0, Math.min(Math.floor(currentY / this.ROW_HEIGHT), maxRows - initialRows));
+    const initialRows = parseInt(el.dataset.rows || 1, 10);
+    const maxRows     = Math.floor(usableHeight / this.ROW_HEIGHT);
+    const insertRow   = Math.max(
+                          0,
+                          Math.min(Math.floor(currentY / this.ROW_HEIGHT),
+                                   maxRows - initialRows)
+                        );
+
     const topOffset = this.DROP_MARGIN + insertRow * this.ROW_HEIGHT;
-
     el.style.top = `${topOffset}px`;
-    if (!content.contains(el)) content.appendChild(el);
 
+    if (!content.contains(el)) content.appendChild(el);
     this.addRemoveButton(el);
 
+    /* ---------- push blocks below down if overlapping ---------- */
     const blocks = [...content.querySelectorAll(".element, .label-block, .paragraph-block")]
-      .filter(b => b !== el)
-      .sort((a, b) => parseInt(a.style.top || 0) - parseInt(b.style.top || 0));
+                    .filter(b => b !== el)
+                    .sort((a, b) => parseInt(a.style.top || 0) - parseInt(b.style.top || 0));
 
     let cursor = topOffset + initialRows * this.ROW_HEIGHT;
 
     for (const blk of blocks) {
-      const blkTop = parseInt(blk.style.top || 0);
-      const blkHeight = Math.ceil(blk.offsetHeight / this.ROW_HEIGHT) * this.ROW_HEIGHT;
-      const blkBottom = blkTop + blkHeight;
+      const blkTop     = parseInt(blk.style.top || 0, 10);
+      const blkHeight  = Math.ceil(blk.offsetHeight / this.ROW_HEIGHT) * this.ROW_HEIGHT;
+      const blkBottom  = blkTop + blkHeight;
 
       if (blkTop < cursor && blkBottom > topOffset) {
         blk.style.top = `${cursor}px`;
         cursor += blkHeight;
       }
 
-      if (cursor > usableHeight) {
+      const usable = content.clientHeight - this.DROP_MARGIN;
+      const newBottom = parseInt(blk.style.top, 10) + blkHeight;
+      if (newBottom > usable) {
         content.removeChild(blk);
         this.placeElement(this.getNextContent(content), blk, 0);
       }
     }
-
-    // If it's a signature-block or table-block, ensure accurate height + row mapping
-if (el.classList.contains("signature-block") || el.classList.contains("table-block")) {
-  document.body.appendChild(el); // Temporary append
-  el.style.position = "absolute";
-  el.style.visibility = "hidden";
-
-  requestAnimationFrame(() => {
-    const actualHeight = el.offsetHeight;
-    const requiredRows = Math.ceil(actualHeight / this.ROW_HEIGHT);
-    el.dataset.rows = requiredRows;
-    el.style.height = `${requiredRows * this.ROW_HEIGHT}px`;
-
-    el.style.position = "";
-    el.style.visibility = "";
-    content.appendChild(el);
-
-    requestAnimationFrame(() => {
-      this.reflowContent(content);
-      this.saveHistory();
-    });
-  });
-  return;
-}
-
-
-    break;
-  }
-
-  if (el.classList.contains("table-block")) {
-    document.body.appendChild(el); 
-    el.style.position = "absolute";
-    el.style.visibility = "hidden";
-
-    requestAnimationFrame(() => {
-      const actualHeight = el.offsetHeight;
-      const requiredRows = Math.ceil(actualHeight / this.ROW_HEIGHT);
-
-      el.dataset.rows = requiredRows;
-      el.style.height = `${requiredRows * this.ROW_HEIGHT}px`;
-
-      el.style.position = "";
-      el.style.visibility = "";
-      content.appendChild(el); // Re-append now that size is corrected
-
-      requestAnimationFrame(() => {
-        this.reflowContent(content);
-        this.saveHistory();
-      });
-    });
-    return;
+    break; // finished for this content area
   }
 }
 
@@ -683,14 +676,17 @@ alignSelectedElement(cmd) {
 
 reflowContent(content) {
   const ROW = this.ROW_HEIGHT;
+  const DROP_MARGIN = this.DROP_MARGIN;
+
   const blocks = [...content.querySelectorAll(".element, .label-block, .paragraph-block")]
     .filter(el => !el.classList.contains("dragging"))
-    .sort((a, b) => parseInt(a.style.top || 0) - parseInt(b.style.top || 0));
+    .sort((a, b) => a.offsetTop - b.offsetTop); // ✅ Use offsetTop instead of style.top
 
   for (let i = 0; i < blocks.length; i++) {
     const blk = blocks[i];
-    let blkTop = parseInt(blk.style.top || 0);
+    let blkTop = blk.offsetTop;
 
+    // Snap top
     if (blkTop % ROW !== 0) {
       blkTop = Math.round(blkTop / ROW) * ROW;
       blk.style.top = `${blkTop}px`;
@@ -719,7 +715,7 @@ reflowContent(content) {
         break;
       }
 
-      const usableHeight = content.clientHeight - this.DROP_MARGIN;
+      const usableHeight = content.clientHeight - DROP_MARGIN;
       const newBottom = parseInt(nextBlk.style.top) + nextHeight;
       if (newBottom > usableHeight) {
         content.removeChild(nextBlk);
@@ -765,12 +761,16 @@ selectElement(el) {
   if (this.selectedElement) {
     this.selectedElement.classList.remove("selected");
   }
+
   this.selectedElement = null;
 
   document.querySelectorAll('[data-cmd^="justify"], [data-cmd="bold"], [data-cmd="italic"], [data-cmd="underline"]')
     .forEach(btn => btn.classList.remove("active"));
 
-  if (!el) return;
+  if (!el) {
+    this.tableToolbar.hide();
+    return;
+  }
 
   el.classList.add("selected");
   this.selectedElement = el;
@@ -782,35 +782,35 @@ selectElement(el) {
   if (fam && this.fontFamilySel.value !== fam) {
     this.fontFamilySel.value = fam;
   }
+
   const sz = parseInt(cs.fontSize, 10);
   if (!isNaN(sz) && this.fontSizeSel.value !== String(sz)) {
     this.fontSizeSel.value = String(sz);
   }
 
-const fontStyles = {
-  bold:      ["fontWeight",    "bold"],
-  italic:    ["fontStyle",     "italic"],
-  underline: ["textDecoration","underline"]
-};
+  const fontStyles = {
+    bold:      ["fontWeight",    "bold"],
+    italic:    ["fontStyle",     "italic"],
+    underline: ["textDecoration","underline"]
+  };
 
-for (const [cmd, [prop, val]] of Object.entries(fontStyles)) {
-  const btn = document.querySelector(`[data-cmd="${cmd}"]`);
-  if (!btn) continue;
+  for (const [cmd, [prop, val]] of Object.entries(fontStyles)) {
+    const btn = document.querySelector(`[data-cmd="${cmd}"]`);
+    if (!btn) continue;
 
-  const current = cs[prop];
-  let matches = false;
+    const current = cs[prop];
+    let matches = false;
 
-if (prop === "textDecoration") {
-  matches = current.includes(val);
-} else if (prop === "fontWeight") {
-  matches = current === "bold" || parseInt(current, 10) >= 600;
-} else {
-  matches = current === val;
-}
+    if (prop === "textDecoration") {
+      matches = current.includes(val);
+    } else if (prop === "fontWeight") {
+      matches = current === "bold" || parseInt(current, 10) >= 600;
+    } else {
+      matches = current === val;
+    }
 
-
-  if (matches) btn.classList.add("active");
-}
+    if (matches) btn.classList.add("active");
+  }
 
   const align = cs.textAlign || "left";
   const cmd = align === "center" ? "justifyCenter"
@@ -818,7 +818,29 @@ if (prop === "textDecoration") {
             : "justifyLeft";
   const alignBtn = document.querySelector(`[data-cmd="${cmd}"]`);
   if (alignBtn) alignBtn.classList.add("active");
+
+  // === Table toolbar logic ===
+  if (el.classList.contains("table-block")) {
+    const table = el.querySelector("table");
+
+    // Prevent adding duplicate click listeners
+    if (!table._toolbarBound) {
+      table.addEventListener("click", e => {
+        if (e.target.tagName === "TD") {
+          this.tableToolbar.showForTable(table, e.target);
+        }
+      });
+      table._toolbarBound = true; // mark as bound
+    }
+
+    // Show toolbar now
+    const firstCell = table.querySelector("td");
+    this.tableToolbar.showForTable(table, firstCell);
+  } else {
+    this.tableToolbar.hide();
+  }
 }
+
   updatePageNumbers() {
     this.workspace.querySelectorAll(".page .footer-right").forEach((node, i) => {
       node.textContent = `Page ${i + 1}`;
@@ -958,6 +980,51 @@ redo() {
     this.rebindWorkspace(); 
   }
 }
+pushElementsDown(sourceEl) {
+  const ROW = this.ROW_HEIGHT;
+  const content = sourceEl.closest(".content");
+  if (!content) return;
+
+  const usableHeight = content.clientHeight - this.DROP_MARGIN;
+
+  let top = parseInt(sourceEl.style.top || 0, 10);
+  let height = parseInt(sourceEl.style.height || 0, 10);
+  let bottom = top + height;
+
+  const all = [...content.querySelectorAll(".element")].filter(el => el !== sourceEl);
+  all.sort((a, b) => parseInt(a.style.top || 0, 10) - parseInt(b.style.top || 0, 10));
+
+  for (let i = 0; i < all.length; i++) {
+    const el = all[i];
+    const elTop = parseInt(el.style.top || 0, 10);
+    const elHeight = parseInt(el.style.height || 0, 10);
+    const elBottom = elTop + elHeight;
+
+    if (elTop < bottom && elBottom > top) {
+      const newTop = Math.ceil(bottom / ROW) * ROW;
+
+      if (newTop + elHeight > usableHeight) {
+        content.removeChild(el);
+        this.placeElement(this.getNextContent(content), el, 0);
+        all.splice(i, 1);
+        i--;
+      } else {
+        el.style.top = `${newTop}px`;
+        bottom = newTop + elHeight;
+      }
+    } else {
+      bottom = Math.max(bottom, elBottom);
+    }
+  }
+
+  const finalBottom = parseInt(sourceEl.style.top || 0, 10) + parseInt(sourceEl.style.height || 0, 10);
+  if (finalBottom > usableHeight) {
+    content.removeChild(sourceEl);
+    this.placeElement(this.getNextContent(content), sourceEl, 0);
+  }
+}
+
+
 rebindWorkspace() {
   this.workspace.querySelectorAll(".element, .label-block, .paragraph-block").forEach(el => {
     const type = el.dataset.type;
@@ -1038,6 +1105,12 @@ setupGripResize(el, body) {
   });
 }
 
+refreshElementSize(el) {
+  const ROW = this.ROW_HEIGHT;
+  const snapped = Math.ceil(el.offsetHeight / ROW);
+  el.dataset.rows = snapped;
+  el.style.height = `${snapped * ROW}px`;
+}
 
 setupLabelInputRestrictions(labelElement) {
   const body = labelElement.querySelector(".element-body");
@@ -1152,3 +1225,211 @@ window.TemplateBuilder = TemplateBuilder;
 document.addEventListener("DOMContentLoaded", () => {
   new TemplateBuilder();
 });
+
+class TableToolbar {
+  constructor(builder) {
+    this.builder   = builder;
+    this.toolbarEl = document.getElementById("tableToolbar");
+    this.workspace = document.getElementById("workspace");
+    this.onTableChanged = () => {}; // placeholder; will be assigned by builder
+
+
+    this.table        = null;
+    this.selectedCell = null;
+
+    // Bind toolbar buttons
+    this.toolbarEl.querySelectorAll("[data-table-cmd]").forEach(btn => {
+      const cmd = btn.getAttribute("data-table-cmd");
+      btn.addEventListener("click", () => this.handleCommand(cmd));
+    });
+  }
+
+  showForTable(tableEl, cellEl = null) {
+    if (!tableEl) return;
+
+    this.table        = tableEl;
+    this.selectedCell = cellEl || tableEl.querySelector("td");
+
+    // Show toolbar
+    this.toolbarEl.classList.remove("d-none");
+    this.workspace.classList.add("table-toolbar-visible");
+
+    // Highlight selected cell
+    tableEl.querySelectorAll("td").forEach(td =>
+      td.classList.toggle("selected-cell", td === this.selectedCell)
+    );
+  }
+
+  hide() {
+    this.toolbarEl.classList.add("d-none");
+    this.workspace.classList.remove("table-toolbar-visible");
+    this.table        = null;
+    this.selectedCell = null;
+  }
+  
+updateSelectionAndRefresh() {
+  if (!this.table) return;
+
+  const allCells = this.table.querySelectorAll("td");
+  if (!allCells.length) return;
+
+  if (!this.selectedCell || !this.table.contains(this.selectedCell)) {
+    this.selectedCell = allCells[0];
+  }
+
+  // Bind cell clicks
+  allCells.forEach(td => {
+    td.onclick = () => this.showForTable(this.table, td);
+  });
+
+  const container = this.table.closest(".element");
+  if (!container || !this.builder) return;
+
+  // === 🧼 Cleanup accidental siblings
+  while (this.table.nextSibling) {
+    this.table.parentNode.removeChild(this.table.nextSibling);
+  }
+
+  // === 📏 Wait for layout, then snap container to exact table height
+  requestAnimationFrame(() => {
+    const tableHeight = this.table.offsetHeight;
+    const snappedRows = Math.ceil(tableHeight / this.builder.ROW_HEIGHT);
+    const snappedHeight = snappedRows * this.builder.ROW_HEIGHT;
+
+    container.dataset.rows = snappedRows;
+    container.style.height = `${snappedHeight}px`;
+
+    // 💥 Push others down and reflow
+    this.builder.pushElementsDown(container);
+    this.builder.placeElement(container);
+    this.showForTable(this.table, this.selectedCell);
+
+    requestAnimationFrame(() => this.builder.reflowContent());
+
+    this.onTableChanged?.();
+  });
+}
+
+
+ handleCommand(cmd) {
+  if (!this.table || !this.selectedCell) return;
+
+  const rowIndex  = this.selectedCell.parentElement.rowIndex;
+  const cellIndex = this.selectedCell.cellIndex;
+
+  switch (cmd) {
+    case "AddRow":
+      this.insertRow(rowIndex + 1);
+      break;
+
+    case "deleteRow":
+      this.deleteRow(rowIndex);
+      break;
+
+    case "addColLeft":
+      this.insertColumn(cellIndex);
+      break;
+    case "addColRight":
+      this.insertColumn(cellIndex + 1);
+      break;
+    case "deleteCol":
+      this.deleteColumn(cellIndex);
+      break;
+
+    default:
+      console.warn("Unhandled table command:", cmd);
+  }
+}
+
+insertRow(atIndex) {
+  const tbody = this.table.querySelector("tbody") || this.table;
+  const refRow = tbody.rows[0];
+  if (!refRow) return;
+
+  const container = this.table.closest(".element");
+  const content = container.closest(".content");
+  const usableHeight = content.clientHeight - this.builder.DROP_MARGIN;
+
+  const rowHeight = refRow.offsetHeight || this.builder.ROW_HEIGHT;
+  const predictedBottom = parseInt(container.style.top || 0, 10) + container.offsetHeight + rowHeight;
+
+  if (predictedBottom > usableHeight) {
+    console.warn("Cannot insert row: table would exceed page height.");
+    return;
+  }
+
+  const newRow = refRow.cloneNode(true);
+  Array.from(newRow.cells).forEach(cell => cell.innerHTML = "");
+  tbody.insertBefore(newRow, tbody.rows[atIndex] || null);
+
+  this.updateSelectionAndRefresh();
+}
+
+
+deleteRow(rowIndex) {
+  const tbody = this.table.querySelector("tbody") || this.table;
+  if (tbody.rows.length <= 1) return;
+
+  // Step 1: Delete the row
+  tbody.deleteRow(rowIndex);
+
+  const container = this.table.closest(".element");
+  const page = container.closest(".page");
+  const content = page.querySelector(".content");
+  const ROW = this.builder.ROW_HEIGHT;
+
+  // Step 2: Wait for DOM to update
+  requestAnimationFrame(() => {
+    // Step 3: Measure actual table height
+    const tableHeight = this.table.offsetHeight;
+
+    // Step 4: Snap and apply new height to container
+    const newRows = Math.max(1, Math.ceil(tableHeight / ROW));
+    container.dataset.rows = newRows;
+    container.style.height = `${newRows * ROW}px`;
+
+    // Step 5: Reflow and shift elements below
+    this.builder.pushElementsDown(container);
+    this.builder.reflowContent(content);
+
+    this.updateSelectionAndRefresh();
+    this.onTableChanged?.();
+  });
+}
+rebindTableCellEvents() {
+  const allCells = this.table.querySelectorAll("td");
+  allCells.forEach(td => {
+    td.onclick = () => this.showForTable(this.table, td);
+  });
+}
+
+
+insertColumn(atIndex) {
+  const rows = this.table.rows;
+  for (const row of rows) {
+    const newCell = row.insertCell(atIndex);
+    newCell.setAttribute("contenteditable", "true"); // ✅
+    newCell.innerHTML = ""; // Optional: placeholder
+  }
+
+  this.rebindTableCellEvents();
+  this.updateSelectionAndRefresh();
+}
+
+
+deleteColumn(cellIndex) {
+  const rows = this.table.rows;
+  if (rows.length && rows[0].cells.length > 1) {
+    for (const row of rows) {
+      if (row.cells[cellIndex]) {
+        row.deleteCell(cellIndex);
+      }
+    }
+
+    this.rebindTableCellEvents();
+    this.updateSelectionAndRefresh();
+  }
+}
+
+}
+
