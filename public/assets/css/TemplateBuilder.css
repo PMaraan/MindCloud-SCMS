@@ -306,21 +306,19 @@ select {
 /* ============================== */
 /*       BUILDER ELEMENTS        */
 /* ============================== */
-.element,
-.label-block,
-.paragraph-block {
+.element {
   position: absolute;
   left: 32px;
   width: calc(100% - 32px);
   box-sizing: border-box;
   padding: 4px 8px;
-  border: 1px dashed #555;
   background: #fff;
   border-radius: 4px;
   resize: vertical;
   margin: 0;
   line-height: 1.2;
   overflow: visible;
+   border: 1.5px solid #555 !important;
 }
 
 .element {
@@ -346,13 +344,14 @@ select {
 }
 
 
-.label-block {
+.label-block,
+.paragraph-block {
   font-weight: 600;
-  border: none !important;
-  background: transparent !important;
-  box-shadow: none !important;
-
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
+
 
 .label-block .element-body {
   white-space: normal;
@@ -360,11 +359,24 @@ select {
   text-overflow: unset;
   max-height: none;
   text-align: left;
+
+}
+.label-block:not(.selected),
+.paragraph-block:not(.selected) {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
+.label-block.selected,
+.paragraph-block.selected {
+  border: 1.5px solid #007bff;
+  background: #e9f5ff;
+  box-shadow: inset 0 0 0 2px #007bff;
+}
 /* ---------- TABLE BLOCK ---------- */
-.table-block {                /* same footprint & border as .element */
-  border: 1px dashed #555;
+.table-block {               
+  border: 1px solid #555;
   background: #fff;
 }
 
@@ -378,10 +390,9 @@ select {
   border: 1px solid #bbb;
   padding: 2px 4px;
   min-width: 40px;
-  word-break: break-word;     /* keep text from overflowing */
+  word-break: break-word; 
 }
 
-/* selected state is inherited from .element.selected */
 
 
 /* ============================== */
@@ -443,20 +454,14 @@ select {
   padding: 2px;
 }
 
-/* No outline for paragraph */
-.paragraph-block {
-  border: none !important;
-  background: transparent !important;
-  box-shadow: none !important;
-}
 .signature-block {
   position: absolute;
   left: 32px;
-  width: calc(100% - 64px); /* matches other .element blocks with left + right padding */
+  width: calc(100% - 64px);
   box-sizing: border-box;
   padding: 4px 8px;
   background: #fff;
-  border: 1px dashed #555;
+  border: 1px solid #555;
   border-radius: 4px;
   resize: vertical;
   line-height: 1.2;
@@ -467,12 +472,10 @@ select {
 }
 
 
-
 .signature-table {
   width: fit-content;
   max-width: 100%;
 }
-
 
 
 .signature-table td {
@@ -489,7 +492,6 @@ select {
   margin: 4px auto;
   max-width: 100%;
 }
-/* Remove (X) Button on Hover */
 .element:hover .remove-btn,
 .label-block:hover .remove-btn,
 .paragraph-block:hover .remove-btn,
