@@ -177,6 +177,9 @@ this.workspace.addEventListener("change", e => {
       if (!type) return;
       e.dataTransfer.effectAllowed = "move";
       e.dataTransfer.setData("text/plain", type);
+        const rawType = e.dataTransfer.getData("text/plain")
+               || e.dataTransfer.getData("type");
+
     })
   );
 
@@ -255,192 +258,205 @@ this.workspace.addEventListener("change", e => {
     return content;
   }
 
+  
   handleDrop(e) {
   e.preventDefault();
 
-  const type        = e.dataTransfer.getData("text/plain") || e.dataTransfer.getData("type");
+  const type = e.dataTransfer.getData("text/plain") || e.dataTransfer.getData("type");
   if (!type) return;
 
   const isLabel     = type === "label";
+  const isTextField = type === "text-field"; 
   const isText3     = type === "text-3";
   const isParagraph = type === "paragraph";
   const isTable     = type === "table";
   const isSignature = type === "signature";
 
   const el = document.createElement("div");
-  el.className =
-        isLabel      ? "label-block"
-      : isText3      ? "element text-3"
-      : isParagraph  ? "paragraph-block"
-      : isTable      ? "element table-block"
-      : isSignature  ? "element signature-block"
-      : /* default */ "element";
-
   el.dataset.type = type;
-  el.classList.add("signature-block", "element");
-el.style.left = "32px";
-el.style.width = "calc(100% - 32px)";
-el.style.boxSizing = "border-box";
-el.style.padding = "4px 8px";
-el.style.margin = "0";
-el.style.border = "1px dashed #555";
-el.style.background = "#fff";
+  el.classList.add("element");
 
+  if (isLabel || isTextField) {
+    el.classList.add("label-block");
+   if (isTextField) el.classList.add("text-field");
+   }
+  if (isText3) el.classList.add("text-3");
+  if (isParagraph) el.classList.add("paragraph-block");
+  if (isTable) el.classList.add("table-block");
+  if (isSignature) el.classList.add("signature-block");
 
-  let body;               
-  let startRows = 1;        
+  const body = document.createElement(
+    isTable || isSignature ? "table" : "div"
+  );
+  body.className = "element-body";
+  body.contentEditable = !isTable && !isSignature;
 
-  if (isTable) {
-    body = document.createElement("table");
-    body.className      = "element-body";
-    body.contentEditable = false;
+  if (isLabel || isTextField) {
+  body.textContent = "Label text";
+  body.style.whiteSpace = "nowrap";
 
+  // Apply selected font and size
+  const font = this.fontFamilySel?.value || this.defaultFontFamily;
+  const size = this.fontSizeSel?.value || this.defaultFontSize;
+  body.style.fontFamily = font;
+  body.style.fontSize = `${size}px`;
+
+  el.appendChild(body);
+  el.style.height = `${this.ROW_HEIGHT}px`;
+  el.dataset.rows = 1;
+} else if (isText3 || isParagraph) {
+  body.textContent = isText3 ? "Text block" : "Paragraph text";
+
+  const font = this.fontFamilySel?.value || this.defaultFontFamily;
+  const size = this.fontSizeSel?.value || this.defaultFontSize;
+  body.style.fontFamily = font;
+  body.style.fontSize = `${size}px`;
+
+  el.appendChild(body);
+  el.dataset.rows = isText3 ? 3 : 1;
+  el.style.height = `${parseInt(el.dataset.rows) * this.ROW_HEIGHT}px`;
+}
+ else if (isTable) {
     for (let i = 0; i < 3; i++) {
       const tr = document.createElement("tr");
       for (let j = 0; j < 3; j++) {
         const td = document.createElement("td");
+        td.textContent = " ";
         td.contentEditable = true;
-        td.textContent     = " ";
-        td.style.minWidth  = "60px";
-        td.style.padding   = "4px";
         tr.appendChild(td);
       }
       body.appendChild(tr);
     }
+    el.appendChild(body);
 
-    el.addEventListener("mousedown", ev => { ev.stopPropagation(); this.selectElement(el); });
+} else if (isSignature) {
+  el.classList.add("signature-block");
+  body.innerHTML = ""; // Clear in case reused
 
-  } else if (isSignature) {
-  body = document.createElement("table");
-  body.className = "element-body signature-table";
-  body.contentEditable = false;
-
-  const row1 = document.createElement("tr");
-  const row2 = document.createElement("tr"); 
+  const table = document.createElement("table");
+  table.className = "signature-table";
+  const row = document.createElement("tr");
 
   for (let i = 0; i < 4; i++) {
-    const sigCell = document.createElement("td");
-    sigCell.style.cssText = `
-      width: 180px;
-      min-height: 70px;
-      height: 70px;
-      text-align: center;
-      vertical-align: middle;
-      padding: 6px;
-    `;
+    const cell = document.createElement("td");
+    cell.className = "signature-cell";
 
-    const fileInput = document.createElement("input");
-    fileInput.type = "file";
-    fileInput.accept = "image/*";
-    fileInput.style.display = "none";
+    // --- Image container ---
+    const imgWrapper = document.createElement("div");
+    imgWrapper.className = "signature-img-wrapper";
 
     const img = document.createElement("img");
-    img.alt = "Signature";
-    img.style.cssText = `
-      max-height: 50px;
-      max-width: 100%;
-      display: none;
-    `;
+    img.className = "signature-img";
+    img.style.display = "none";
+    imgWrapper.appendChild(img);
 
-    const uploadBtn = document.createElement("button");
-    uploadBtn.type = "button";
-    uploadBtn.className = "btn btn-sm btn-outline-secondary";
-    uploadBtn.textContent = "Upload Signature";
+    // Upload button inside wrapper
+    const btn = document.createElement("button");
+    btn.textContent = "Upload";
+    btn.className = "upload-btn inside-wrapper";
 
-    uploadBtn.onclick = () => fileInput.click();
-    fileInput.onchange = () => {
-      if (fileInput.files[0]) {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.style.display = "none";
+
+    btn.onclick = () => input.click();
+    input.onchange = () => {
+      if (input.files[0]) {
         const reader = new FileReader();
         reader.onload = () => {
           img.src = reader.result;
           img.style.display = "block";
-          uploadBtn.style.display = "none";
+          btn.style.display = "none";
+          imgWrapper.classList.add("filled"); // ✅ Remove dashed border
         };
-        reader.readAsDataURL(fileInput.files[0]);
+        reader.readAsDataURL(input.files[0]);
       }
     };
 
-    sigCell.appendChild(fileInput);
-    sigCell.appendChild(img);
-    sigCell.appendChild(uploadBtn);
-    row1.appendChild(sigCell);
+    imgWrapper.appendChild(btn); // Add upload button inside image wrapper
 
-    const infoCell = document.createElement("td");
-    infoCell.style.cssText = `
-      padding: 6px;
-      font-size: 12px;
-      line-height: 1.3;
-    `;
+    // Signature line and fields
+    const line = document.createElement("div");
+    line.className = "signature-line";
 
     const name = document.createElement("div");
     name.contentEditable = true;
     name.textContent = "Name";
+    name.className = "signature-label";
 
     const date = document.createElement("div");
     date.contentEditable = true;
     date.textContent = "Date";
+    date.className = "signature-label";
 
     const role = document.createElement("div");
     role.contentEditable = true;
     role.textContent = "Role";
+    role.className = "signature-label";
 
-    for (const part of [name, date, role]) {
-      part.style.cssText = `
-        border-bottom: 1px solid #ccc;
-        margin-bottom: 4px;
-        padding: 2px;
-        min-height: 18px;
-      `;
-    }
+    // Prevent overflow and newlines
+    [name, date, role].forEach(label => {
+      label.addEventListener("keydown", e => {
+        if (e.key === "Enter") e.preventDefault();
 
-    infoCell.appendChild(name);
-    infoCell.appendChild(date);
-    infoCell.appendChild(role);
-    row2.appendChild(infoCell);
+        const range = document.createRange();
+        range.selectNodeContents(label);
+        const rect = range.getBoundingClientRect();
+        const parentRect = label.parentElement.getBoundingClientRect();
+        const buffer = 8;
+
+        if (
+          rect.width > parentRect.width - buffer &&
+          !["Backspace", "Delete", "ArrowLeft", "ArrowRight"].includes(e.key)
+        ) {
+          e.preventDefault();
+          label.style.border = "1px solid red";
+          setTimeout(() => (label.style.border = "none"), 200);
+        }
+      });
+
+      label.addEventListener("paste", e => {
+        e.preventDefault();
+        const pastedText = (e.clipboardData || window.clipboardData).getData("text").trim();
+        document.execCommand("insertText", false, pastedText);
+      });
+    });
+
+    // Append everything to the cell
+    cell.appendChild(imgWrapper);
+    cell.appendChild(input); // hidden input
+    cell.appendChild(line);
+    cell.appendChild(name);
+    cell.appendChild(date);
+    cell.appendChild(role);
+
+    row.appendChild(cell);
   }
 
-  body.appendChild(row1);
-  body.appendChild(row2);
+  table.appendChild(row);
+  body.appendChild(table);
   el.appendChild(body);
-const actualHeight = el.offsetHeight;
-document.body.removeChild(el);
 
-const requiredRows = Math.ceil(actualHeight / this.ROW_HEIGHT);
-el.dataset.rows = requiredRows;
-el.style.height = requiredRows * this.ROW_HEIGHT + "px";
+  // Temporary sizing using double RAF for accuracy
+  document.body.appendChild(el);
+  el.style.position = "absolute";
+  el.style.visibility = "hidden";
 
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const actualHeight = el.offsetHeight;
+      const requiredRows = Math.ceil(actualHeight / this.ROW_HEIGHT);
+      el.dataset.rows = requiredRows;
+      el.style.height = requiredRows * this.ROW_HEIGHT + "px";
 
-  el.addEventListener("mousedown", (ev) => {
-    ev.stopPropagation();
-    this.selectElement(el);
+      el.style.position = "";
+      el.style.visibility = "";
+      document.body.removeChild(el);
+    });
   });
+}
 
-  } else {
-    body = document.createElement("div");
-    body.className = "element-body";
-    body.contentEditable = true;
-    body.textContent     = isLabel ? "Label text" : "Editable text";
-
-    body.style.fontFamily = this.defaultFontFamily;
-    body.style.fontSize   = this.defaultFontSize + "px";
-  }
-
-  el.appendChild(body);
-
-  if (isTable || isSignature) {
-    document.body.appendChild(el);
-    startRows = Math.ceil(el.offsetHeight / this.ROW_HEIGHT);
-    document.body.removeChild(el);
-  } else if (isText3) {
-    startRows = 3;
-  }
-
-  el.dataset.rows = startRows;
-  el.style.height = startRows * this.ROW_HEIGHT + "px";
-
-  if (!isLabel && !isTable && !isSignature) {
-    this.setupTextArea(el);
-  }
 
   const grip = document.createElement("div");
   grip.className = "drag-handle";
@@ -449,73 +465,136 @@ el.style.height = requiredRows * this.ROW_HEIGHT + "px";
 
   const content = e.currentTarget;
   const insertY = e.offsetY;
-  this.placeElement(content, el, insertY);
-  this.makeMovable(el);
+  el.style.top = `${insertY}px`;
+  el.style.left = "32px";
+  el.style.width = "calc(100% - 32px)";
+  el.style.boxSizing = "border-box";
+  el.style.position = "absolute";
 
-  if (isLabel) {
-    this.applyLabelSuggestion(el);
+  // Append to content
+  this.placeElement(content, el, insertY);
+  if (isText3 || isParagraph) {
+  this.setupTextArea(el);
+
+  // Force initial resize to fit current font + content
+  const resizeEvt = new Event("input");
+  el.querySelector(".element-body").dispatchEvent(resizeEvt);
+}
+
+
+  // Init
+  this.makeMovable(el);
+  this.addRemoveButton(el);
+  this.selectElement(el);
+
+  if (isLabel || isTextField) {
     this.setupLabelInputRestrictions(el);
+    this.applyLabelSuggestion(el);
+  } else if (isText3 || isParagraph) {
+    this.setupTextArea(el);
   }
 
-  this.selectElement(el);
-  this.skipNextClick = true;
-
   this.saveHistory();
-
 }
 
 
   placeElement(startContent, el, y) {
-    const visited = new Set();
-    let content = startContent;
-    let currentY = y;
+  const visited = new Set();
+  let content = startContent;
+  let currentY = y;
 
-    while (true) {
-      if (visited.has(content)) return;
-      visited.add(content);
+  while (true) {
+    if (visited.has(content)) return;
+    visited.add(content);
 
-      const contentH = content.clientHeight;
-      const usableH = contentH - 2 * this.DROP_MARGIN;
-      const rows = parseInt(el.dataset.rows || 1);
-      const maxRows = Math.floor(usableH / this.ROW_HEIGHT);
-      let insertRow = Math.max(0, Math.min(Math.floor(currentY / this.ROW_HEIGHT), maxRows - rows));
+    const contentHeight = content.clientHeight;
+    const usableHeight = contentHeight - 2 * this.DROP_MARGIN;
 
-      el.style.top = this.DROP_MARGIN + insertRow * this.ROW_HEIGHT + "px";
-      if (!content.contains(el)) content.appendChild(el);
-      this.addRemoveButton(el); 
+    const initialRows = parseInt(el.dataset.rows || 1);
+    const maxRows = Math.floor(usableHeight / this.ROW_HEIGHT);
+    const insertRow = Math.max(0, Math.min(Math.floor(currentY / this.ROW_HEIGHT), maxRows - initialRows));
+    const topOffset = this.DROP_MARGIN + insertRow * this.ROW_HEIGHT;
 
-      const blocks = [...content.querySelectorAll(".element, .label-block, .paragraph-block")]
-        .filter(b => b !== el)
-        .sort((a, b) => parseInt(a.style.top || 0) - parseInt(b.style.top || 0));
+    el.style.top = `${topOffset}px`;
+    if (!content.contains(el)) content.appendChild(el);
 
-      let cursor = parseInt(el.style.top) + rows * this.ROW_HEIGHT;
-      for (const blk of blocks) {
-        const blkTop = parseInt(blk.style.top || 0);
-        const blkHeight = Math.ceil(blk.offsetHeight / this.ROW_HEIGHT) * this.ROW_HEIGHT;
-        if (blkTop < cursor && blkTop + blkHeight > parseInt(el.style.top)) {
-          blk.style.top = cursor + "px";
-          cursor += blkHeight;
-        }
-        if (parseInt(blk.style.top) + blkHeight > contentH - this.DROP_MARGIN) {
-          content.removeChild(blk);
-          this.placeElement(this.getNextContent(content), blk, 0);
-        }
+    this.addRemoveButton(el);
+
+    const blocks = [...content.querySelectorAll(".element, .label-block, .paragraph-block")]
+      .filter(b => b !== el)
+      .sort((a, b) => parseInt(a.style.top || 0) - parseInt(b.style.top || 0));
+
+    let cursor = topOffset + initialRows * this.ROW_HEIGHT;
+
+    for (const blk of blocks) {
+      const blkTop = parseInt(blk.style.top || 0);
+      const blkHeight = Math.ceil(blk.offsetHeight / this.ROW_HEIGHT) * this.ROW_HEIGHT;
+      const blkBottom = blkTop + blkHeight;
+
+      if (blkTop < cursor && blkBottom > topOffset) {
+        blk.style.top = `${cursor}px`;
+        cursor += blkHeight;
       }
 
-      const elBottom = parseInt(el.style.top) + rows * this.ROW_HEIGHT;
-      if (elBottom > contentH - this.DROP_MARGIN) {
-        content.removeChild(el);
-        content = this.getNextContent(content);
-        currentY = 0;
-        continue;
+      if (cursor > usableHeight) {
+        content.removeChild(blk);
+        this.placeElement(this.getNextContent(content), blk, 0);
       }
-      
-
-      break;
-      
     }
-    
+
+    // If it's a signature-block or table-block, ensure accurate height + row mapping
+if (el.classList.contains("signature-block") || el.classList.contains("table-block")) {
+  document.body.appendChild(el); // Temporary append
+  el.style.position = "absolute";
+  el.style.visibility = "hidden";
+
+  requestAnimationFrame(() => {
+    const actualHeight = el.offsetHeight;
+    const requiredRows = Math.ceil(actualHeight / this.ROW_HEIGHT);
+    el.dataset.rows = requiredRows;
+    el.style.height = `${requiredRows * this.ROW_HEIGHT}px`;
+
+    el.style.position = "";
+    el.style.visibility = "";
+    content.appendChild(el);
+
+    requestAnimationFrame(() => {
+      this.reflowContent(content);
+      this.saveHistory();
+    });
+  });
+  return;
+}
+
+
+    break;
   }
+
+  if (el.classList.contains("table-block")) {
+    document.body.appendChild(el); 
+    el.style.position = "absolute";
+    el.style.visibility = "hidden";
+
+    requestAnimationFrame(() => {
+      const actualHeight = el.offsetHeight;
+      const requiredRows = Math.ceil(actualHeight / this.ROW_HEIGHT);
+
+      el.dataset.rows = requiredRows;
+      el.style.height = `${requiredRows * this.ROW_HEIGHT}px`;
+
+      el.style.position = "";
+      el.style.visibility = "";
+      content.appendChild(el); // Re-append now that size is corrected
+
+      requestAnimationFrame(() => {
+        this.reflowContent(content);
+        this.saveHistory();
+      });
+    });
+    return;
+  }
+}
+
 
   addRemoveButton(el) {
   const btn = document.createElement("button");
@@ -604,7 +683,6 @@ alignSelectedElement(cmd) {
 
 reflowContent(content) {
   const ROW = this.ROW_HEIGHT;
-
   const blocks = [...content.querySelectorAll(".element, .label-block, .paragraph-block")]
     .filter(el => !el.classList.contains("dragging"))
     .sort((a, b) => parseInt(a.style.top || 0) - parseInt(b.style.top || 0));
@@ -618,7 +696,10 @@ reflowContent(content) {
       blk.style.top = `${blkTop}px`;
     }
 
-    const snappedHeight = Math.ceil(blk.offsetHeight / ROW) * ROW;
+    const blkIsLabel = blk.classList.contains("label-block");
+    let snappedHeight = Math.ceil(blk.offsetHeight / ROW) * ROW;
+    if (blkIsLabel && snappedHeight < ROW) snappedHeight = ROW;
+
     if (blk.offsetHeight !== snappedHeight) {
       blk.style.height = `${snappedHeight}px`;
     }
@@ -874,7 +955,7 @@ redo() {
   if (next) {
     this.undoStack.push(next);
     this.workspace.innerHTML = next;
-    this.rebindWorkspace();
+    this.rebindWorkspace(); 
   }
 }
 rebindWorkspace() {
@@ -882,8 +963,13 @@ rebindWorkspace() {
     const type = el.dataset.type;
     this.addRemoveButton(el);
     this.makeMovable(el);
-    if (type === "label") this.setupLabelInputRestrictions(el);
-    if (type === "text-3" || type === "paragraph") this.setupTextArea(el);
+    if (type === "label" || el.classList.contains("label-block")) {
+      this.setupLabelInputRestrictions(el);
+      this.applyLabelSuggestion(el);
+    }
+    if (type === "text-3" || type === "paragraph") {
+      this.setupTextArea(el);
+    }
   });
 
   this.workspace.querySelectorAll(".content").forEach(content => {
