@@ -1,7 +1,7 @@
 <?php
   $db = new PostgresDatabase(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS);
   $colleges = $db->getAllColleges(); // connect to data controller in the future
-
+  echo print_r($colleges);
 ?>
 
   <!-- Colleges -->
@@ -19,7 +19,7 @@
 
     <!-------------------Edit College Modal---------------------->
     <?php
-      //include_once __DIR__ . '/Roles_includes/EditRoleModal.php';
+      include_once __DIR__ . '/Colleges_includes/EditCollegeModal.php';
     ?>
 
     <!-- College Table -->
@@ -29,4 +29,4 @@
 
   </div><!--container-fluid close-->
   <!-- JS Script -->
-  <!--<script src="../../public/assets/js/Colleges.js" defer></script>-->
+  <script src="../../public/assets/js/Colleges.js" defer></script>

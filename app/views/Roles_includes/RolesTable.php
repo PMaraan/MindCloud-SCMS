@@ -12,7 +12,7 @@
             <th></th>
         </tr>
         </thead>
-        <tbody id="table-body">
+        <tbody id="table-body" class="">
             
             <?php foreach ($roles as $role): echo "<!--show roles table-->"; ?>
             <tr>

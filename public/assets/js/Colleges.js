@@ -1,4 +1,4 @@
-console.log("✅ Roles.js LOADED");
+console.log("✅ Colleges.js LOADED");
 
 // add event listener for modals
 function initializeModals() {
@@ -43,9 +43,10 @@ initializeModals();
 
 // Helper function to fill in the edit modal
 function populateEditModal(button, modal) {
-  modal.querySelector('#editRoleId').value = button.getAttribute('data-role-id') || '';
-  modal.querySelector('#editRoleName').value = button.getAttribute('data-role-name') || '';
-  modal.querySelector('#editRoleLevel').value = button.getAttribute('data-role-level') || '';
+  modal.querySelector('#editCollegeId').value = button.getAttribute('data-college-id') || '';
+  modal.querySelector('#editCollegeShortName').value = button.getAttribute('data-college-short-name') || '';
+  modal.querySelector('#editCollegeName').value = button.getAttribute('data-college-name') || '';
+  modal.querySelector('#editDeanName').value = button.getAttribute('data-dean-name') || '';
 }
 
 
@@ -57,6 +58,29 @@ function populateDeleteModal(button, modal) {
 }
 
 
+
+
+
+// Search filter function
+document.getElementById("search").addEventListener("input", function (e) {
+  const value = e.target.value.toLowerCase();
+  const rows = document.querySelectorAll("#table-body tr");
+
+  rows.forEach(row => {
+    const id = row.children[0].textContent.toLowerCase();
+    const email = row.children[1].textContent.toLowerCase();
+    const firstName = row.children[2].textContent.toLowerCase();
+    const lastName = row.children[4].textContent.toLowerCase();
+
+    const matches =
+      id.includes(value) ||
+      email.includes(value) ||
+      firstName.includes(value) ||
+      lastName.includes(value);
+
+    row.style.display = matches ? "" : "none";
+  });
+});
 
 //let editMode = false;
 
@@ -83,23 +107,5 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// Search filter function
-document.getElementById("search").addEventListener("input", function (e) {
-  const value = e.target.value.toLowerCase();
-  const rows = document.querySelectorAll("#table-body tr");
-
-  rows.forEach(row => {
-    const roleId = row.children[0].textContent.toLowerCase();
-    const roleName = row.children[1].textContent.toLowerCase();
-    const level = row.children[2].textContent.toLowerCase();
-
-    const matches =
-      roleId.includes(value) ||
-      roleName.includes(value) ||
-      level.includes(value);
-
-    row.style.display = matches ? "" : "none";
-  });
-});
 
 console.log("Roles JS file is loading");
