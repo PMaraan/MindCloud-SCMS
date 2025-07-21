@@ -17,7 +17,8 @@ class ContentController {
   // JS file mappings for each page
   private $js_map = [
     'Templates'    => '../../public/assets/js/Templates.js',
-    'Colleges'      => '../../public/assets/js/CollegeRoles.js',
+    //'Colleges'      => '../../public/assets/js/CollegeRoles.js',
+    'Colleges'      => '../../public/assets/js/Colleges.js', //temporary; for mvp only
     'Faculty'      => '../../public/assets/js/FacultyRoles.js',
     'TemplateBuilder' => '../../public/assets/js/TemplateBuilder.js'
     //'add_college'  => '../../public/assets/js/FacultyRoles.js',
@@ -30,7 +31,8 @@ class ContentController {
     'default'      => 'DefaultWorkspace.php',
     'Accounts'     => 'Accounts2.php',
     'Roles'        => 'Roles.php',
-    'Colleges'     => 'CollegeRoles.php',
+    //'Colleges'     => 'CollegeRoles.php',
+    'Colleges'     => 'Colleges.php', //temporary; for mvp only
     'Faculty'      => 'CollegeFacultyRoles.php',
     'Programs'     => 'Programs.php',
     'Courses'      => 'Courses.php',

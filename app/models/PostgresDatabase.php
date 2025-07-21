@@ -189,6 +189,34 @@ class PostgresDatabase implements StorageInterface {
         return array_keys($groups); // e.g., ['accounts', 'college', 'templates']
     }
 
+    public function getAllColleges() {
+        $stmt = $this->pdo->prepare("
+            SELECT 
+                c.college_id,
+                c.short_name,
+                c.name AS college_name,
+                c.dean,
+                CONCAT(u.fname, ' ', COALESCE(u.mname || ' ', ''), u.lname) AS dean_name
+            FROM colleges c
+            LEFT JOIN users u ON c.dean = u.id_no
+            ORDER BY c.college_id
+        ");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getAllDeans() {
+        $stmt = $this->pdo->prepare("
+            SELECT u.*
+            FROM users u
+            JOIN user_roles ur ON u.id_no = ur.id_no
+            JOIN roles r ON ur.role_id = r.role_id
+            WHERE r.name = ?
+        ");
+        $stmt->execute(['Dean']);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function createUser($id_no, $fname, $mname, $lname, $email, $password, $college_short_name, $role_name) {
         try {
             // Begin transaction
@@ -368,6 +396,19 @@ class PostgresDatabase implements StorageInterface {
                 WHERE role_id = ?
             ");
             $stmt->execute([$role_name, $role_level, $role_id]);
+            return ['success' => true];
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    public function createCollege($college_short_name, $college_name, $dean) {
+        try {
+            $stmt = $this->pdo->prepare("
+                INSERT INTO colleges (short_name, name, dean)
+                VALUES (?, ?, ?)
+            ");
+            $stmt->execute([$college_short_name, $college_name, $dean]);
             return ['success' => true];
         } catch (Exception $e) {
             return ['success' => false, 'error' => $e->getMessage()];

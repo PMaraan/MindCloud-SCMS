@@ -108,6 +108,27 @@ switch ($type) {
                     exit;
                 }
                 break;
+            case 'createCollege':                
+                $college_short_name = $_POST['college_short_name'];
+                $college_name = $_POST['college_name']; 
+                $dean = $_POST['college_dean'];
+                //$result = $controller->createRole($role_name, $role_level);
+                //response
+                try {
+                    $result = $controller->createCollege($college_short_name, $college_name, $dean);
+                    echo json_encode(['success' => true, 'message' => 'Role created successfully.']);
+                } catch (Exception $e) {
+                    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+                }
+                if($result['success']){
+                    header("Location: ../app/views/Dashboard2.php?status=success&message=" . urlencode("College created successfully."));
+                    exit;
+                }else{
+                    $error = $result['error'] ?? 'Unknown error';
+                    header("Location: ../app/views/Dashboard2.php?status=error&message=" . urlencode($error));
+                    exit;
+                }
+                break;
             default:
                 http_response_code(400);
                 echo json_encode(['error' => 'Invalid action!']);

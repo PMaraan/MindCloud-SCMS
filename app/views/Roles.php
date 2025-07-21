@@ -4,7 +4,7 @@
 
 ?>
 
-  <!-- Accounts -->
+  <!-- Roles -->
   <div class="container-fluid"> <!--container-fluid open-->
     <h2>Roles</h2>
     <!-- Search + Edit Controls -->
@@ -12,17 +12,17 @@
       include_once __DIR__ . '/Roles_includes/SearchBar.php';
     ?>
 
-    <!-- Create User -->
+    <!-- Create Role -->
     <?php
       include_once __DIR__ . '/Roles_includes/CreateRoleModal.php';
     ?>
 
-    <!-------------------Edit User Modal---------------------->
+    <!-------------------Edit Role Modal---------------------->
     <?php
       include_once __DIR__ . '/Roles_includes/EditRoleModal.php';
     ?>
 
-    <!-- Accounts Table -->
+    <!-- Role Table -->
     <?php
       include_once __DIR__ . '/Roles_includes/RolesTable.php'
     ?>

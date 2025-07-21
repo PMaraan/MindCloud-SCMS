@@ -60,6 +60,17 @@ class DataController {
         }
     }
 
+    public function createCollege($college_short_name, $college_name, $dean) {
+        try {                 
+            return $this->db->createCollege($college_short_name, $college_name, $dean);
+        } catch (PDOException $e) {
+            // Database or logic-level error
+            return ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
     public function setRoleChangesUsingID($role_id, $role_name, $role_level) {
         try {
             $role_id = intval($role_id);
