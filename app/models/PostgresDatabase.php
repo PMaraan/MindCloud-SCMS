@@ -207,7 +207,7 @@ class PostgresDatabase implements StorageInterface {
 
     public function getAllDeans() {
         $stmt = $this->pdo->prepare("
-            SELECT u.*
+            SELECT u.id_no, u.fname, u.mname, u.lname, u.email
             FROM users u
             JOIN user_roles ur ON u.id_no = ur.id_no
             JOIN roles r ON ur.role_id = r.role_id
@@ -413,6 +413,20 @@ class PostgresDatabase implements StorageInterface {
         } catch (Exception $e) {
             return ['success' => false, 'error' => $e->getMessage()];
         }
+    }
+
+    public function setCollegeInfo($college_id, $college_short_name, $college_name, $college_dean) {
+        try {
+        $stmt = $this->pdo->prepare("
+            UPDATE colleges
+            SET short_name = ?, name = ?, dean = ?
+            WHERE college_id = ?
+        ");
+        $stmt->execute([$college_short_name, $college_name, $college_dean, $college_id]);
+        return ['success' => true];
+    } catch (Exception $e) {
+        return ['success' => false, 'error' => $e->getMessage()];
+    }
     }
 
     public function connect() {

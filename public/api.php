@@ -129,6 +129,29 @@ switch ($type) {
                     exit;
                 }
                 break;
+            case 'setCollegeInfo':
+                //forward to data controller
+                $college_id = $_POST['college_id'];
+                $college_short_name = $_POST['college_short_name'];
+                $college_name = $_POST['college_name'];
+                //$dean_name = $_POST['dean_name']; //doesn't need
+                $college_dean = $_POST['college_dean'];
+                try {
+                    $result = $controller->setCollegeInfo($college_id, $college_short_name, $college_name, $college_dean);
+                    echo json_encode(['success' => true, 'message' => 'User saved successfully.']);
+                } catch (Exception $e) {
+                    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+                }
+                
+                if ($result['success']){
+                    header("Location: ../app/views/Dashboard2.php?status=success&message=" . urlencode("College updated successfully."));
+                    exit;
+                }else {
+                    $error = $result['error'] ?? 'Unknown error';
+                    header("Location: ../app/views/Dashboard2.php?status=error&message=" . urlencode($error));
+                    exit;
+                }
+                break;
             default:
                 http_response_code(400);
                 echo json_encode(['error' => 'Invalid action!']);

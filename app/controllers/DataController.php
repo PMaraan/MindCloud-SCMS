@@ -84,6 +84,28 @@ class DataController {
         }
     }
 
+    public function setCollegeInfo($college_id, $college_short_name, $college_name, $college_dean) {
+        try {
+            $college_id = intval($college_id);
+            return $this->db->setCollegeInfo($college_id, $college_short_name, $college_name, $college_dean);
+        } catch (PDOException $e) {
+            // Database or logic-level error
+            return ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    public function getAllDeans() {
+        try {
+            return $this->db->getAllDeans();
+        } catch (PDOException $e) {
+            // Database or logic-level error
+            return ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
 }
 
 /*
