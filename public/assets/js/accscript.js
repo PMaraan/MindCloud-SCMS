@@ -51,7 +51,7 @@ initializeModals();
 
 
 
-// Helper function to fill in the edit modal
+// Helper function to autofill in the edit modal
 function populateEditModal(button, modal) {
   modal.querySelector('#editIdNumber').value = button.getAttribute('data-id-no') || '';
   modal.querySelector('#editFirstName').value = button.getAttribute('data-fname') || '';
@@ -150,15 +150,21 @@ document.getElementById("search").addEventListener("input", function (e) {
 
   rows.forEach(row => {
     const id = row.children[0].textContent.toLowerCase();
-    const email = row.children[1].textContent.toLowerCase();
-    const firstName = row.children[2].textContent.toLowerCase();
-    const lastName = row.children[4].textContent.toLowerCase();
+    const firstName = row.children[1].textContent.toLowerCase();
+    const mi = row.children[2].textContent.toLowerCase();
+    const lastName = row.children[3].textContent.toLowerCase();
+    const email = row.children[3].textContent.toLowerCase();
+    const college = row.children[3].textContent.toLowerCase();
+    const roles = row.children[3].textContent.toLowerCase();
 
     const matches =
       id.includes(value) ||
-      email.includes(value) ||
       firstName.includes(value) ||
-      lastName.includes(value);
+      mi.includes(value) ||
+      lastName.includes(value) ||
+      email.includes(value) ||
+      college.includes(value) ||
+      roles.includes(value);
 
     row.style.display = matches ? "" : "none";
   });
