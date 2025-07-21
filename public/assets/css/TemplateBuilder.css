@@ -14,6 +14,7 @@ body {
   overflow: hidden;
 }
 
+
 /* ============================== */
 /*          TOP TOOLBAR          */
 /* ============================== */
@@ -58,18 +59,19 @@ button.active {
 .builder-header select {
   min-width: 120px;
   padding-right: 24px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .builder-header input[type="color"] {
-  padding: 0;
   width: 32px;
+  padding: 0;
+  border: none;
   background: none;
   cursor: pointer;
-  border: none;
 }
+
 
 /* ============================== */
 /*         WORKSPACE AREA        */
@@ -82,8 +84,9 @@ button.active {
   background: #f0f2f5;
 }
 
+
 /* ============================== */
-/*       SIDEBAR WRAPPER         */
+/*        SIDEBAR / PALETTE      */
 /* ============================== */
 #palette-wrapper {
   margin-top: 56px;
@@ -108,9 +111,6 @@ button.active {
   padding: 6px;
 }
 
-/* ============================== */
-/*        SIDEBAR / PALETTE      */
-/* ============================== */
 #palette {
   height: calc(100vh - 56px);
   background-color: whitesmoke;
@@ -118,11 +118,11 @@ button.active {
   box-sizing: border-box;
 }
 
-.toggle-btn{
+.toggle-btn {
   padding-left: 8px !important;
 }
 
-.sidebarToggle.toggle-btn  {
+.sidebarToggle.toggle-btn {
   border: none;
   padding: 12px;
   color: #800000;
@@ -138,18 +138,17 @@ button.active {
   border-radius: 4px;
   cursor: grab;
   user-select: none;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   transition: box-shadow 0.2s ease-in-out;
 }
 
 .draggable:hover {
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15); /* Slightly stronger on hover */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
-
 
 .draggable i {
   font-size: 1.1rem;
-  color: #800000; 
+  color: #800000;
 }
 
 select {
@@ -158,8 +157,9 @@ select {
   padding: 4px;
 }
 
+
 /* ============================== */
-/*          PAGE + CONTENT       */
+/*         PAGE STRUCTURE        */
 /* ============================== */
 .page {
   position: relative;
@@ -170,10 +170,10 @@ select {
 
 .content {
   position: absolute;
-  left: 40px;
-  right: 40px;
   top: 90px;
   bottom: 60px;
+  left: 40px;
+  right: 40px;
 }
 
 .content::before {
@@ -183,19 +183,20 @@ select {
   pointer-events: none;
 }
 
+
 /* ============================== */
-/*      HEADER + FOOTER AREA     */
+/*       HEADER & FOOTER         */
 /* ============================== */
 .header {
   position: relative;
   height: 90px;
   display: flex;
   align-items: center;
+  gap: 12px;
+  padding: 0 12px;
   background: white;
   border-bottom: 1px solid #ccc;
   box-sizing: border-box;
-  gap: 12px;
-  padding: 0 12px;
 }
 
 .header-logo {
@@ -238,20 +239,20 @@ select {
 .header-title {
   font-size: 1.4rem;
   font-weight: bold;
-  line-height: 1.3;
-  max-height: calc(1.3em * 2);
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.3;
+  max-height: calc(1.3em * 2);
 }
 
 .header-subtitle {
   font-size: 1rem;
   color: #555;
-  max-height: calc(1.2em * 2);
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  max-height: calc(1.2em * 2);
 }
 
 .footer {
@@ -269,21 +270,29 @@ select {
 }
 
 .footer-left {
-  outline: none;
   color: #333;
   font-style: italic;
+  outline: none;
 }
 
 .footer-right {
   color: #333;
 }
 
-#sendTemplateBtn {
+
+/* ============================== */
+/*     FOOTER ACTION BUTTONS     */
+/* ============================== */
+#sendTemplateBtn,
+#saveTemplateBtn {
   background-color: transparent;
   border: none;
-  color: #0d6efd;
-  transition: all 0.2s ease-in-out;
   font-size: 18px;
+  transition: all 0.2s ease-in-out;
+}
+
+#sendTemplateBtn {
+  color: #0d6efd;
 }
 
 #sendTemplateBtn:hover {
@@ -292,17 +301,12 @@ select {
 }
 
 #saveTemplateBtn {
-  background-color: transparent;
-  border: none;
   color: green;
-  transition: all 0.2s ease-in-out;
-  font-size: 18px;
 }
 
 #saveTemplateBtn:hover {
   background-color: lightgreen;
 }
-
 /* ============================== */
 /*       BUILDER ELEMENTS        */
 /* ============================== */
@@ -310,18 +314,13 @@ select {
   position: absolute;
   left: 32px;
   width: calc(100% - 32px);
-  box-sizing: border-box;
-  padding: 4px 8px;
   background: #fff;
   border-radius: 4px;
-  resize: vertical;
+  box-sizing: border-box;
   margin: 0;
-  line-height: 1.2;
+  padding: 0;
   overflow: visible;
-   border: 1.5px solid #555 !important;
-}
-
-.element {
+  line-height: 1.2;
   transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 
@@ -341,12 +340,22 @@ select {
   overflow-y: hidden;
   word-break: break-word;
   white-space: pre-wrap;
+  box-sizing: border-box;
 }
 
 
-.label-block,
-.paragraph-block {
+/* ============================== */
+/*     LABEL & PARAGRAPH BLOCK   */
+/* ============================== */
+.label-block {
   font-weight: 600;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.paragraph-block {
+  font-weight: normal;
   background: transparent;
   border: none;
   box-shadow: none;
@@ -354,13 +363,55 @@ select {
 
 
 .label-block .element-body {
-  white-space: normal;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: 100%;
+  padding: 4px 6px;
+  text-align: left;
   overflow: visible;
+  white-space: normal;
   text-overflow: unset;
   max-height: none;
-  text-align: left;
-
 }
+
+.paragraph-block .element-body {
+  padding: 6px 6px 4px;
+  line-height: 1.4;
+  vertical-align: top;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+/* Match outer border and background of text-field */
+.element[data-type="text-3"] {
+  border: none !important;
+  background: transparent;
+  box-sizing: border-box;
+  padding: 0;
+}
+
+/* Match inner input style of .text-field */
+.element[data-type="text-3"] .element-body {
+  border: 1px solid #999;
+  border-radius: 4px;
+  padding: 4px 6px;
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  background: white;
+  font-weight: normal;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-y: hidden;
+}
+
+/* Match focus outline */
+.element[data-type="text-3"] .element-body:focus {
+  outline: 2px solid #0d6efd;
+}
+
+
 .label-block:not(.selected),
 .paragraph-block:not(.selected) {
   border: none !important;
@@ -368,14 +419,37 @@ select {
   box-shadow: none !important;
 }
 
-.label-block.selected,
-.paragraph-block.selected {
-  border: 1.5px solid #007bff;
-  background: #e9f5ff;
-  box-shadow: inset 0 0 0 2px #007bff;
+
+/* ============================== */
+/*         TEXT FIELD            */
+/* ============================== */
+.text-field {
+  border: 1.5px solid #444 !important;
+  border-radius: 4px;
+  background: #fff;
+  box-sizing: border-box;
+  padding: 0;
 }
-/* ---------- TABLE BLOCK ---------- */
-.table-block {               
+
+.text-field .element-body {
+  border: 1px solid #999;
+  border-radius: 4px;
+  padding: 4px 6px;
+  height: 100%;
+  width: 100%;
+  background: white;
+  font-weight: normal;
+}
+
+.text-field .element-body:focus {
+  outline: 2px solid #0d6efd;
+}
+
+
+/* ============================== */
+/*         TABLE BLOCK           */
+/* ============================== */
+.table-block {
   border: 1px solid #555;
   background: #fff;
 }
@@ -390,13 +464,101 @@ select {
   border: 1px solid #bbb;
   padding: 2px 4px;
   min-width: 40px;
-  word-break: break-word; 
+  word-break: break-word;
 }
 
 
+/* ============================== */
+/*       SIGNATURE BLOCK         */
+/* ============================== */
+.signature-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  text-align: center;
+}
+
+.signature-cell {
+  padding: 8px;
+  height: 120px;
+  overflow: hidden;
+  justify-content: center;
+  vertical-align: center;
+}
+
+.signature-img-wrapper {
+  position: relative;
+  height: 60px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+  border: 1px dashed #aaa;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.signature-img-wrapper.filled {
+  border: none;
+}
+
+.signature-img {
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.signature-line {
+  width: 100%;
+  height: 1px;
+  background: #333;
+  margin: 8px 0;
+}
+
+.signature-label,
+.signature-cell div[contenteditable] {
+  font-size: 12px;
+  margin: 2px 0;
+  outline: none;
+  cursor: text;
+  min-height: 1em;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  text-align: center;
+}
+
+.signature-cell input[type="file"] {
+  display: none;
+}
+
+.signature-cell .upload-btn,
+.upload-btn.inside-wrapper {
+  font-size: 12px;
+  padding: 2px 6px;
+  display: block;
+  margin: 4px auto;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.upload-btn.inside-wrapper {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+}
+
 
 /* ============================== */
-/*          DRAG HANDLE          */
+/*         DRAG HANDLE           */
 /* ============================== */
 .drag-handle,
 .paragraph-block .drag-handle {
@@ -404,7 +566,6 @@ select {
   left: -24px;
   top: 0;
   width: 24px;
-  height: auto;
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -413,7 +574,10 @@ select {
   z-index: 1000;
   cursor: grab;
   padding: 0;
-  margin: 0;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
 }
 
 .drag-handle i {
@@ -421,12 +585,9 @@ select {
   font-size: 1rem;
 }
 
-.drag-handle:active {
-  cursor: grabbing;
-}
 
 /* ============================== */
-/*          GHOST LINE           */
+/*         GHOST LINE            */
 /* ============================== */
 .ghost-line {
   position: fixed;
@@ -437,8 +598,9 @@ select {
   transition: top 0.05s ease, left 0.05s ease, width 0.05s ease;
 }
 
+
 /* ============================== */
-/*       RESIZE HANDLE           */
+/*        RESIZE HANDLE          */
 /* ============================== */
 .resize-handle {
   height: 8px;
@@ -446,67 +608,17 @@ select {
   margin-top: 2px;
   user-select: none;
 }
-/* Solid outline for text-3 */
-.element[data-type="text-3"] {
-  border: 1.5px solid #444;
-  border-radius: 4px;
-  box-sizing: border-box;
-  padding: 2px;
-}
-
-.signature-block {
-  position: absolute;
-  left: 32px;
-  width: calc(100% - 64px);
-  box-sizing: border-box;
-  padding: 4px 8px;
-  background: #fff;
-  border: 1px solid #555;
-  border-radius: 4px;
-  resize: vertical;
-  line-height: 1.2;
-  overflow: visible;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
 
 
-.signature-table {
-  width: fit-content;
-  max-width: 100%;
-}
-
-
-.signature-table td {
-  padding: 6px;
-  vertical-align: middle;
-  text-align: center;
-  word-break: break-word;
-}
-
-.signature-table button,
-.signature-table input,
-.signature-table img {
-  display: block;
-  margin: 4px auto;
-  max-width: 100%;
-}
-.element:hover .remove-btn,
-.label-block:hover .remove-btn,
-.paragraph-block:hover .remove-btn,
-.signature-block:hover .remove-btn,
-.table-block:hover .remove-btn {
-  display: block;
-}
-
+/* ============================== */
+/*         REMOVE BUTTON         */
+/* ============================== */
 .remove-btn {
   position: absolute;
   top: 4px;
   right: 4px;
   z-index: 10;
   background: transparent;
-  color: darkred;
   border: none;
   border-radius: 50%;
   font-size: 20px;
@@ -514,6 +626,7 @@ select {
   height: 20px;
   line-height: 17px;
   text-align: center;
+  color: rgb(235, 129, 129);
   cursor: pointer;
   display: none;
   padding: 0;
@@ -521,4 +634,12 @@ select {
 
 .remove-btn:hover {
   color: red;
+}
+
+.element:hover .remove-btn,
+.label-block:hover .remove-btn,
+.paragraph-block:hover .remove-btn,
+.signature-block:hover .remove-btn,
+.table-block:hover .remove-btn {
+  display: block;
 }
