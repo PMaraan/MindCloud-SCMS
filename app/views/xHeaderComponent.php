@@ -1,9 +1,12 @@
 <!-- header component -->
 <nav class="navbar px-3 sticky-top">
   <div class="container-fluid">
-    <a class="navbar-brand" href="#">LPU-SCMS</a>
+    <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+      <img src="../../public/assets/images/logo_lpu.png" alt="LPU Icon" class="lpu-icon">
+      <span class="brand-text">LPU-SCMS</span>
+    </a>
     <ul class="navbar-nav ms-auto d-flex flex-row">
-       <li class="nav-item me-4">
+      <li class="nav-item me-4">
         <a class="header-link" href="#" title="Notifications">
           <i class="bi bi-bell fs-4"></i>
         </a>
