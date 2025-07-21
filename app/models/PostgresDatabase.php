@@ -179,9 +179,11 @@ class PostgresDatabase implements StorageInterface {
                 case '1': $groups['Accounts'] = true; break;
                 case '2': $groups['Roles'] = true; break;
                 case '3': $groups['Colleges'] = true; break;
-                case '4': $groups['Courses'] = true; break;
-                case '5': $groups['Templates'] = true; break;
-                case '6': $groups['Syllabus'] = true; break;
+                case '4': $groups['Programs'] = true; break;
+                case '5': $groups['Courses'] = true; break;
+                case '6': $groups['Faculty'] = true; break;
+                case '7': $groups['Templates'] = true; break;
+                case '8': $groups['Syllabus'] = true; break;
                 default: break;
             }
         }
@@ -221,6 +223,20 @@ class PostgresDatabase implements StorageInterface {
         try {
             $stmt = $this->pdo->prepare("
                 SELECT * FROM courses;
+            ");
+            $stmt->execute();
+            return['success' => true, 'db' => $stmt->fetchAll(PDO::FETCH_ASSOC)];
+        } catch (PDOException $e) {
+            return ['success' => false, 'error' => "Database error: " . $e->getMessage()];
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    public function getAllPrograms() {
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT * FROM programs;
             ");
             $stmt->execute();
             return['success' => true, 'db' => $stmt->fetchAll(PDO::FETCH_ASSOC)];
