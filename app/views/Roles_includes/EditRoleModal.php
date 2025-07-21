@@ -30,7 +30,7 @@
         </div>
 
         <div class="modal-footer">
-          <button type="submit" class="btn btn-primary save-btn" id="setAccountChangesUsingID" name="action" value="setAccountChangesUsingID" data-action="setAccountChangesUsingID">
+          <button type="submit" class="btn btn-primary edit-btn" id="setRoleChangesUsingID" name="action" value="setRoleChangesUsingID" data-action="setAccountChangesUsingID">
             Save changes
           </button>
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>

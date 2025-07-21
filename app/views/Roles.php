@@ -19,7 +19,7 @@
 
     <!-------------------Edit User Modal---------------------->
     <?php
-      //include_once __DIR__ . '/Roles_includes/EditRoleModal.php';
+      include_once __DIR__ . '/Roles_includes/EditRoleModal.php';
     ?>
 
     <!-- Accounts Table -->
@@ -29,4 +29,4 @@
 
   </div><!--container-fluid close-->
   <!-- JS Script -->
-  <script src="../../public/assets/js/accscript.js" defer></script>
+  <script src="../../public/assets/js/Roles.js" defer></script>
