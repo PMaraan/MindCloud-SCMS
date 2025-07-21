@@ -1,37 +1,50 @@
+body {
+  background-color: #f5f5f5;
+}
+
 #template-list {
-  /* Align items top-left */
   align-items: flex-start;
 }
 
+.template-card.opacity-0 {
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
 .template-card {
-  width: 150px;
-  height: 200px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
+  width: 214px; /*was 150*/
+  height: 260px; /*was 200*/
   background: white;
-  cursor: pointer;
-  transition: box-shadow 0.3s ease, border-color 0.3s ease;
-  display: flex !important; /* override if needed */
-  justify-content: center !important;
-  align-items: center !important;
-  color: #555;
-  font-weight: bold;
-  user-select: none;
-  text-align: center;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  transition: box-shadow 0.3s ease;
+  overflow: hidden;
+  transition: opacity 0.4s ease;
 }
 
 .template-card:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  border-color: #aaa;
-  color: #222;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
-.add-template {
-  font-size: 5rem;
-  color: #999;
-  font-weight: 300;
+.template-card span.display-1 {
+  font-size: 4rem;
 }
 
-.add-template:hover {
-  color: #555;
+.status-badge {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+}
+
+.template-footer {
+  background-color: #680404;
+  padding: 0.5rem;
+  font-size: 0.9rem;
 }
