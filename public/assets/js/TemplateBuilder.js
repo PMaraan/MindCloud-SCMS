@@ -7,28 +7,43 @@ class TemplateBuilder {
     [1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'], [100, 'C'],
     [90, 'XC'], [50, 'L'], [40, 'XL'], [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']
   ];
-  constructor() {
-    this.workspace = document.getElementById("workspace");
-    this.ghostLine = document.createElement("div");
-    this.ghostLine.className = "ghost-line";
-    this.ghostLine.style.display = "none";
-    this.workspace.appendChild(this.ghostLine);
-      this.defaultFontFamily = "Arial";
-  this.defaultFontSize   = 12;               
+constructor() {
+  this.workspace = document.getElementById("workspace");
+
+  this.ghostLine = document.createElement("div");
+  this.ghostLine.className = "ghost-line";
+  this.ghostLine.style.display = "none";
+  this.workspace.appendChild(this.ghostLine);
+
+  this.defaultFontFamily = "Arial";
+  this.defaultFontSize   = 12;
   this.fontFamilySel     = document.getElementById("fontFamily");
   this.fontSizeSel       = document.getElementById("fontSize");
-    this.paperSel = document.getElementById("paperSize");
-    this.selectedElement = null;
-    this.skipNextClick = false;
+  this.paperSel          = document.getElementById("paperSize");
 
-    this.currentLogoSrc = null;
-    this.logoLoaded = false;
-    this.globalFooterText = "Footer Text";
+  this.selectedElement   = null;
+  this.skipNextClick     = false;
 
-    this.createPage();
-    this.attachEventListeners();
-    
-  }
+  this.currentLogoSrc    = null;
+  this.logoLoaded        = false;
+  this.globalFooterText  = "Footer Text";
+
+  // Undo/Redo history stacks
+  this.undoStack = [];
+  this.redoStack = [];
+  this.maxHistory = 7;
+
+  // Setup
+  this.createPage();
+  this.attachEventListeners();
+
+  this.saveHistory(); // Initial state capture
+
+  // Bind Undo/Redo buttons
+  document.querySelector('[data-cmd="undo"]')?.addEventListener("click", () => this.undo());
+  document.querySelector('[data-cmd="redo"]')?.addEventListener("click", () => this.redo());
+}
+
   attachEventListeners() {
      ["justifyLeft", "justifyCenter", "justifyRight"].forEach(cmd => {
   const btn = document.querySelector(`[data-cmd="${cmd}"]`);
@@ -805,6 +820,8 @@ setupTextArea(el) {
   requestAnimationFrame(() => {
     this.setupGripResize(el, body);
   });
+  body.addEventListener("input", () => this.saveHistory());
+
 }
 
 
@@ -827,6 +844,53 @@ sanitizePaste(e) {
   e.preventDefault();
   const text = (e.clipboardData || window.clipboardData).getData("text").replace(/[\r\n]+/g, " ");
   document.execCommand("insertText", false, text);
+}
+saveHistory() {
+  const state = this.workspace.innerHTML;
+  const last = this.undoStack[this.undoStack.length - 1];
+
+  if (state === last) return; // avoid duplicate saves
+
+  this.undoStack.push(state);
+  if (this.undoStack.length > this.maxHistory) this.undoStack.shift();
+
+  // Clear redo history when new action happens
+  this.redoStack = [];
+}
+undo() {
+  if (this.undoStack.length <= 1) return;
+
+  const current = this.undoStack.pop();
+  this.redoStack.push(current);
+
+  const prev = this.undoStack[this.undoStack.length - 1];
+  if (prev) {
+    this.workspace.innerHTML = prev;
+    this.rebindWorkspace();
+  }
+}
+
+redo() {
+  if (this.redoStack.length === 0) return;
+
+  const next = this.redoStack.pop();
+  if (next) {
+    this.undoStack.push(next);
+    this.workspace.innerHTML = next;
+    this.rebindWorkspace();
+  }
+}
+rebindWorkspace() {
+  this.workspace.querySelectorAll(".element, .label-block, .paragraph-block").forEach(el => {
+    const type = el.dataset.type;
+    this.addRemoveButton(el);
+    this.makeMovable(el);
+
+    if (type === "label") this.setupLabelInputRestrictions(el);
+    if (type === "text-3" || type === "paragraph") this.setupTextArea(el);
+  });
+
+  this.updatePageNumbers();
 }
 
 setupGripResize(el, body) {
@@ -980,6 +1044,8 @@ setupLabelInputRestrictions(labelElement) {
     return val;
   }
 }
+
+
 
 window.TemplateBuilder = TemplateBuilder;
 
