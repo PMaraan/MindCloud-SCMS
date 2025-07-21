@@ -258,7 +258,6 @@ this.workspace.addEventListener("change", e => {
   handleDrop(e) {
   e.preventDefault();
 
-  /* -------- identify element type -------- */
   const type        = e.dataTransfer.getData("text/plain") || e.dataTransfer.getData("type");
   if (!type) return;
 
@@ -268,7 +267,6 @@ this.workspace.addEventListener("change", e => {
   const isTable     = type === "table";
   const isSignature = type === "signature";
 
-  /* -------- create the shell -------- */
   const el = document.createElement("div");
   el.className =
         isLabel      ? "label-block"
@@ -404,7 +402,6 @@ el.style.background = "#fff";
   body.appendChild(row1);
   body.appendChild(row2);
   el.appendChild(body);
-document.body.appendChild(el);
 const actualHeight = el.offsetHeight;
 document.body.removeChild(el);
 
@@ -450,7 +447,6 @@ el.style.height = requiredRows * this.ROW_HEIGHT + "px";
   grip.innerHTML = "<i class='bi bi-grip-vertical'></i>";
   el.prepend(grip);
 
-  /* -------- place element in current content -------- */
   const content = e.currentTarget;
   const insertY = e.offsetY;
   this.placeElement(content, el, insertY);
@@ -463,6 +459,9 @@ el.style.height = requiredRows * this.ROW_HEIGHT + "px";
 
   this.selectElement(el);
   this.skipNextClick = true;
+
+  this.saveHistory();
+
 }
 
 
@@ -614,7 +613,6 @@ reflowContent(content) {
     const blk = blocks[i];
     let blkTop = parseInt(blk.style.top || 0);
 
-    // 👉 Snap top and height to grid
     if (blkTop % ROW !== 0) {
       blkTop = Math.round(blkTop / ROW) * ROW;
       blk.style.top = `${blkTop}px`;
@@ -849,12 +847,11 @@ saveHistory() {
   const state = this.workspace.innerHTML;
   const last = this.undoStack[this.undoStack.length - 1];
 
-  if (state === last) return; // avoid duplicate saves
+  if (state === last) return;
 
   this.undoStack.push(state);
   if (this.undoStack.length > this.maxHistory) this.undoStack.shift();
 
-  // Clear redo history when new action happens
   this.redoStack = [];
 }
 undo() {
@@ -885,13 +882,30 @@ rebindWorkspace() {
     const type = el.dataset.type;
     this.addRemoveButton(el);
     this.makeMovable(el);
-
     if (type === "label") this.setupLabelInputRestrictions(el);
     if (type === "text-3" || type === "paragraph") this.setupTextArea(el);
   });
 
+  this.workspace.querySelectorAll(".content").forEach(content => {
+    content.addEventListener("dragover", e => e.preventDefault());
+    content.addEventListener("drop", e => {
+      if (e._processed) return;
+      e._processed = true;
+      e.preventDefault();
+      this.handleDrop(e);
+    });
+  });
+
+  if (!this.ghostLine || !this.workspace.contains(this.ghostLine)) {
+    this.ghostLine = document.createElement("div");
+    this.ghostLine.className = "ghost-line";
+    this.ghostLine.style.display = "none";
+    this.workspace.appendChild(this.ghostLine);
+  }
+
   this.updatePageNumbers();
 }
+
 
 setupGripResize(el, body) {
   const grip = document.createElement("div");
