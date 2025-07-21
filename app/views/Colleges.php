@@ -1,7 +1,7 @@
 <?php
   $db = new PostgresDatabase(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS);
   $colleges = $db->getAllColleges(); // connect to data controller in the future
-  echo print_r($colleges);
+  
 ?>
 
   <!-- Colleges -->

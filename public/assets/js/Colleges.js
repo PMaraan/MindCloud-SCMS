@@ -41,12 +41,12 @@ initializeModals();
 
 
 
-// Helper function to fill in the edit modal
+// Helper function to autofill in the edit modal
 function populateEditModal(button, modal) {
   modal.querySelector('#editCollegeId').value = button.getAttribute('data-college-id') || '';
   modal.querySelector('#editCollegeShortName').value = button.getAttribute('data-college-short-name') || '';
   modal.querySelector('#editCollegeName').value = button.getAttribute('data-college-name') || '';
-  modal.querySelector('#editDeanName').value = button.getAttribute('data-dean-name') || '';
+  modal.querySelector('#editDeanName').value = button.getAttribute('data-dean') || '';
 }
 
 
