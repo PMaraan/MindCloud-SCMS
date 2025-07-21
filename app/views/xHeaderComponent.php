@@ -4,17 +4,17 @@
     <a class="navbar-brand" href="#">LPU-SCMS</a>
     <ul class="navbar-nav ms-auto d-flex flex-row">
        <li class="nav-item me-4">
-        <a class="nav-link" href="#" title="Settings">
+        <a class="header-link" href="#" title="Notifications">
           <i class="bi bi-bell fs-4"></i>
         </a>
       </li>
       <li class="nav-item me-4">
-        <a class="nav-link" href="#" title="Settings">
+        <a class="header-link" href="#" title="Settings">
           <i class="bi bi-gear fs-4"></i>
         </a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" href=<?="$basePath/app/lib/logout.php"?> title="Logout">
+        <a class="header-link" href="<?= "$basePath/app/lib/logout.php" ?>" title="Logout">
           <i class="bi bi-box-arrow-right fs-4"></i>
         </a>
       </li>

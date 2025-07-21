@@ -20,17 +20,14 @@
   color: white !important;
 }
 
-.navbar .nav-link i {
+/* UPDATED: Use .header-link instead of .nav-link */
+.header-link i {
   display: inline-block !important;
-  transition: color 0.2s !important;
-  transition: transform 0.3s ease, color 0.3s ease !important;
+  transition: color 0.2s, transform 0.3s ease !important;
   color: white !important;
 }
 
-.navbar .nav-link:hover i {
+.header-link:hover i {
   color: #bbbbbb !important;
   transform: scale(1.2) !important;
 }
-
-
-

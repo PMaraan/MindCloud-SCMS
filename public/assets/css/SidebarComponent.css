@@ -1,4 +1,4 @@
-
+/* Layout */
 .wrapper {
   display: flex;
   height: 100vh;
@@ -6,13 +6,23 @@
   position: relative;
 }
 
+.main-content {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px;
+  height: 100vh;
+}
+
+/* Sidebar base */
 .sidebar {
   width: 250px;
   background-color: white;
   transition: width 0.3s ease, transform 0.3s ease;
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
   position: relative;
-  padding: 20px 0 0 0;
+  padding-top: 20px;
   z-index: 1000;
 }
 
@@ -21,6 +31,7 @@
   overflow: hidden;
 }
 
+/* Sidebar fade animation group */
 .fade-group {
   opacity: 1;
   pointer-events: auto;
@@ -35,6 +46,7 @@
   transition: opacity 0.1s ease, transform 0.1s ease;
 }
 
+/* Sidebar image/profile */
 .sidebar-img-wrapper {
   width: 120px;
   height: 120px;
@@ -52,6 +64,7 @@
 
 .profile-section {
   margin: 0 10px 10px 10px;
+  text-align: center;
 }
 
 .profile-name {
@@ -65,7 +78,8 @@
   color: #666;
 }
 
-.linkstyle {
+/* Sidebar navigation links */
+.nav-link {
   background-color: #fffcfc;
   color: black;
   box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
@@ -76,24 +90,25 @@
   transition: background-color 0.3s, color 0.3s ease;
 }
 
-.linkstyle.active {
-  background-color: #900404 !important;
-  color: white !important;
-}
-
-.linkstyle:hover {
+.nav-link:hover {
   background-color: rgb(204, 104, 104);
   color: white;
 }
-.main-content {
-  flex: 1;
-  min-width: 0;
-  overflow-y: auto;
-  padding: 20px;
-  height: 100vh;
+
+/* Active state overrides */
+.nav-link.active,
+.nav-link.active:focus,
+.nav-link.active:visited,
+.nav-link.active:hover,
+.nav-link:focus,
+.nav-link:active {
+  background-color: #900404 !important;
+  color: white !important;
+  text-decoration: none !important;
+  outline: none;
 }
 
-
+/* Toggle button */
 .toggle-wrapper {
   position: absolute;
   top: 15px;
@@ -107,11 +122,11 @@
   background-color: transparent;
   border: none;
   padding: 8px 12px;
-  border-radius: 4px;
   box-shadow: none;
+  cursor: pointer;
 }
 
-
+/* Responsive sidebar behavior */
 @media (max-width: 768px) {
   .wrapper {
     flex-direction: row;

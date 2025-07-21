@@ -23,6 +23,8 @@
     <ul class="nav flex-column">
       <?php
       // Get user permissions
+      // Mock permissions (bypass database)
+//$permissionGroups = ['Accounts', 'Roles', 'Colleges', 'Faculty', 'Programs', 'Courses', 'Templates', 'Syllabus'];
       require_once __DIR__ . '/../models/PostgresDatabase.php'; // Load the database model
       $pdo = new PostgresDatabase(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS);
       $permissionGroups = $pdo->getPermissionGroupsByUser($_SESSION['user_id']);
