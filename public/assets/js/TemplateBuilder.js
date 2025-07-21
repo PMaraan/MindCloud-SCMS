@@ -7,28 +7,43 @@ class TemplateBuilder {
     [1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'], [100, 'C'],
     [90, 'XC'], [50, 'L'], [40, 'XL'], [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']
   ];
-  constructor() {
-    this.workspace = document.getElementById("workspace");
-    this.ghostLine = document.createElement("div");
-    this.ghostLine.className = "ghost-line";
-    this.ghostLine.style.display = "none";
-    this.workspace.appendChild(this.ghostLine);
-      this.defaultFontFamily = "Arial";
-  this.defaultFontSize   = 12;                 // <— NEW
+constructor() {
+  this.workspace = document.getElementById("workspace");
+
+  this.ghostLine = document.createElement("div");
+  this.ghostLine.className = "ghost-line";
+  this.ghostLine.style.display = "none";
+  this.workspace.appendChild(this.ghostLine);
+
+  this.defaultFontFamily = "Arial";
+  this.defaultFontSize   = 12;
   this.fontFamilySel     = document.getElementById("fontFamily");
   this.fontSizeSel       = document.getElementById("fontSize");
-    this.paperSel = document.getElementById("paperSize");
-    this.selectedElement = null;
-    this.skipNextClick = false;
+  this.paperSel          = document.getElementById("paperSize");
 
-    this.currentLogoSrc = null;
-    this.logoLoaded = false;
-    this.globalFooterText = "Footer Text";
+  this.selectedElement   = null;
+  this.skipNextClick     = false;
 
-    this.createPage();
-    this.attachEventListeners();
-    
-  }
+  this.currentLogoSrc    = null;
+  this.logoLoaded        = false;
+  this.globalFooterText  = "Footer Text";
+
+  // Undo/Redo history stacks
+  this.undoStack = [];
+  this.redoStack = [];
+  this.maxHistory = 7;
+
+  // Setup
+  this.createPage();
+  this.attachEventListeners();
+
+  this.saveHistory(); // Initial state capture
+
+  // Bind Undo/Redo buttons
+  document.querySelector('[data-cmd="undo"]')?.addEventListener("click", () => this.undo());
+  document.querySelector('[data-cmd="redo"]')?.addEventListener("click", () => this.redo());
+}
+
   attachEventListeners() {
      ["justifyLeft", "justifyCenter", "justifyRight"].forEach(cmd => {
   const btn = document.querySelector(`[data-cmd="${cmd}"]`);
@@ -89,36 +104,30 @@ class TemplateBuilder {
   });
 
 this.fontSizeSel.addEventListener("change", () => {
-  const size = parseInt(this.fontSizeSel.value, 10) || 12;
-  this.defaultFontSize = size;
+  const newSize = parseInt(this.fontSizeSel.value, 10) || 12;
+  this.defaultFontSize = newSize;
 
-  if (this.selectedElement) {
-    const target = this.getEditableBody(this.selectedElement);
+  if (!this.selectedElement) return;
 
-    if (
-      target.classList.contains("header-title") ||
-      target.classList.contains("header-subtitle")
-    ) return;
+  const body = this.getEditableBody(this.selectedElement);
 
-    target.style.fontSize = size + "px";
+  if (body.classList.contains("header-title") ||
+      body.classList.contains("header-subtitle")) return;
 
-    const el = this.selectedElement;
-    const style = window.getComputedStyle(target);
-    const fontSize = parseInt(style.fontSize, 10);
-    const lineHeight = fontSize * 1.5;
-    const rows = Math.ceil(lineHeight / this.ROW_HEIGHT);
-    const newHeight = rows * this.ROW_HEIGHT;
+  body.style.fontSize = `${newSize}px`;
 
+  const el = this.selectedElement;
+  const ROW = this.ROW_HEIGHT;
+
+  const forceResize = () => {
+    const scrollH = body.scrollHeight;
+    const rows     = Math.max(3, Math.ceil(scrollH / ROW)); 
     el.dataset.rows = rows;
-    el.style.height = newHeight + "px";
+    el.style.height = rows * ROW + "px";
+    this.reflowContent(el.closest(".content"));
+  };
 
-    if (el.classList.contains("label-block")) {
-      const content = el.closest(".content");
-      this.reflowContent(content);
-    } else {
-      this.autoResize(el); 
-    }
-  }
+  requestAnimationFrame(forceResize);  
 });
 
   this.workspace.addEventListener("input", e => {
@@ -143,7 +152,6 @@ this.fontSizeSel.addEventListener("change", () => {
 this.workspace.addEventListener("change", e => {
   const input = e.target;
   
-  // Only process if input[type='file'] AND inside a .header-logo container
   if (input.matches("input[type='file']") && input.files[0] && input.closest(".header-logo")) {
     const reader = new FileReader();
     reader.onload = () => {
@@ -281,10 +289,9 @@ el.style.border = "1px dashed #555";
 el.style.background = "#fff";
 
 
-  let body;                 // will hold the element content
-  let startRows = 1;        // default row footprint
+  let body;               
+  let startRows = 1;        
 
-  /* -------- content for tables -------- */
   if (isTable) {
     body = document.createElement("table");
     body.className      = "element-body";
@@ -303,20 +310,17 @@ el.style.background = "#fff";
       body.appendChild(tr);
     }
 
-    /* click‑through selection */
     el.addEventListener("mousedown", ev => { ev.stopPropagation(); this.selectElement(el); });
 
-  /* -------- content for signature block -------- */
   } else if (isSignature) {
   body = document.createElement("table");
   body.className = "element-body signature-table";
   body.contentEditable = false;
 
-  const row1 = document.createElement("tr"); // Row for image upload
-  const row2 = document.createElement("tr"); // Row for name/date/role
+  const row1 = document.createElement("tr");
+  const row2 = document.createElement("tr"); 
 
   for (let i = 0; i < 4; i++) {
-    // === Signature Cell ===
     const sigCell = document.createElement("td");
     sigCell.style.cssText = `
       width: 180px;
@@ -363,7 +367,6 @@ el.style.background = "#fff";
     sigCell.appendChild(uploadBtn);
     row1.appendChild(sigCell);
 
-    // === Info Cell (Name, Date, Role) ===
     const infoCell = document.createElement("td");
     infoCell.style.cssText = `
       padding: 6px;
@@ -401,12 +404,10 @@ el.style.background = "#fff";
   body.appendChild(row1);
   body.appendChild(row2);
   el.appendChild(body);
-  // Temporarily add to body to measure accurate height
 document.body.appendChild(el);
 const actualHeight = el.offsetHeight;
 document.body.removeChild(el);
 
-// Calculate how many rows it needs to occupy
 const requiredRows = Math.ceil(actualHeight / this.ROW_HEIGHT);
 el.dataset.rows = requiredRows;
 el.style.height = requiredRows * this.ROW_HEIGHT + "px";
@@ -429,9 +430,7 @@ el.style.height = requiredRows * this.ROW_HEIGHT + "px";
 
   el.appendChild(body);
 
-  /* -------- determine initial height / rows -------- */
   if (isTable || isSignature) {
-    // measure off‑screen to snap to grid
     document.body.appendChild(el);
     startRows = Math.ceil(el.offsetHeight / this.ROW_HEIGHT);
     document.body.removeChild(el);
@@ -442,12 +441,10 @@ el.style.height = requiredRows * this.ROW_HEIGHT + "px";
   el.dataset.rows = startRows;
   el.style.height = startRows * this.ROW_HEIGHT + "px";
 
-  /* -------- textarea logic for text‑3 / paragraph -------- */
   if (!isLabel && !isTable && !isSignature) {
     this.setupTextArea(el);
   }
 
-  /* -------- drag handle -------- */
   const grip = document.createElement("div");
   grip.className = "drag-handle";
   grip.innerHTML = "<i class='bi bi-grip-vertical'></i>";
@@ -587,6 +584,7 @@ el.style.height = requiredRows * this.ROW_HEIGHT + "px";
       document.addEventListener("mouseup", onUp);
     });
   }
+  
 alignSelectedElement(cmd) {
   if (!this.selectedElement) return;
 
@@ -606,33 +604,45 @@ alignSelectedElement(cmd) {
 }
 
 reflowContent(content) {
+  const ROW = this.ROW_HEIGHT;
+
   const blocks = [...content.querySelectorAll(".element, .label-block, .paragraph-block")]
+    .filter(el => !el.classList.contains("dragging"))
     .sort((a, b) => parseInt(a.style.top || 0) - parseInt(b.style.top || 0));
 
   for (let i = 0; i < blocks.length; i++) {
     const blk = blocks[i];
-    const blkTop = parseInt(blk.style.top || 0);
-    const blkRows = parseInt(blk.dataset.rows || 1);
-    const blkHeight = blkRows * this.ROW_HEIGHT;
+    let blkTop = parseInt(blk.style.top || 0);
 
-    let cursor = blkTop + blkHeight;
+    // 👉 Snap top and height to grid
+    if (blkTop % ROW !== 0) {
+      blkTop = Math.round(blkTop / ROW) * ROW;
+      blk.style.top = `${blkTop}px`;
+    }
+
+    const snappedHeight = Math.ceil(blk.offsetHeight / ROW) * ROW;
+    if (blk.offsetHeight !== snappedHeight) {
+      blk.style.height = `${snappedHeight}px`;
+    }
+
+    const blkBottom = blkTop + snappedHeight;
+    let cursor = blkBottom;
 
     for (let j = i + 1; j < blocks.length; j++) {
       const nextBlk = blocks[j];
       const nextTop = parseInt(nextBlk.style.top || 0);
-      const nextRows = parseInt(nextBlk.dataset.rows || 1);
-      const nextHeight = nextRows * this.ROW_HEIGHT;
+      const nextHeight = Math.ceil(nextBlk.offsetHeight / ROW) * ROW;
 
       if (nextTop < cursor) {
-        nextBlk.style.top = cursor + "px";
+        nextBlk.style.top = `${cursor}px`;
         cursor += nextHeight;
       } else {
         break;
       }
 
-      const contentHeight = content.clientHeight - this.DROP_MARGIN;
+      const usableHeight = content.clientHeight - this.DROP_MARGIN;
       const newBottom = parseInt(nextBlk.style.top) + nextHeight;
-      if (newBottom > contentHeight) {
+      if (newBottom > usableHeight) {
         content.removeChild(nextBlk);
         this.placeElement(this.getNextContent(content), nextBlk, 0);
         blocks.splice(j, 1);
@@ -641,6 +651,8 @@ reflowContent(content) {
     }
   }
 }
+
+
 toggleStyleForSelected(cmd) {
   if (!this.selectedElement) return;
 
@@ -696,10 +708,6 @@ selectElement(el) {
     this.fontSizeSel.value = String(sz);
   }
 
-document.querySelectorAll('[data-cmd="bold"],[data-cmd="italic"],[data-cmd="underline"]').forEach(btn =>
-  btn.classList.remove("active")
-);
-
 const fontStyles = {
   bold:      ["fontWeight",    "bold"],
   italic:    ["fontStyle",     "italic"],
@@ -738,295 +746,199 @@ if (prop === "textDecoration") {
     });
   }
 
+ getEditableBody(el) {
+    return el.querySelector(".element-body, .header-title, .header-subtitle, .footer-left") || el;
+  }
+
 setupTextArea(el) {
   const body = el.querySelector(".element-body");
   if (!body) return;
 
   const type = el.dataset.type;
   const ROW = this.ROW_HEIGHT;
-  const maxAllowedHeight = () => {
-    const content     = el.closest(".content");
-    const elementTop  = parseInt(el.style.top || 0);
-    return content.offsetHeight - this.DROP_MARGIN - elementTop;
+  const minRows = type === "paragraph" ? 1 : 3;
+
+  body.style.resize = "none";
+
+  const observeResize = () => {
+    const snapped = Math.round(el.offsetHeight / ROW);
+    el.dataset.rows = snapped;
+    el.style.height = `${snapped * ROW}px`;
   };
 
-  body.style.resize = "none";            
-  new ResizeObserver(() => {
-    el.dataset.rows = Math.round(el.offsetHeight / ROW);
-  }).observe(el);
+  requestAnimationFrame(() => {
+    new ResizeObserver(observeResize).observe(el);
+  });
 
-  if (type === "paragraph") {
-    let prevHTML = body.innerHTML;
+  let prevHTML = body.innerHTML;
 
-    const restore = () => {
-      const r = document.createRange(), s = getSelection();
-      r.selectNodeContents(body); r.collapse(false);
-      s.removeAllRanges();  s.addRange(r);
-    };
+  const resizeToContent = () => {
+    const maxHeight = this.maxAllowedHeight(el);
+    const currentRows = parseInt(el.dataset.rows || minRows, 10);
 
-    const reflow = () => {
-      const h  = body.scrollHeight,
-            mh = maxAllowedHeight();
-      if (h > mh) { body.innerHTML = prevHTML;  restore(); return; }
-      prevHTML      = body.innerHTML;
-      const rows    = Math.ceil(h / ROW);
-      el.dataset.rows = rows;
-      el.style.height = rows * ROW + "px";
-    };
+    // Shrink if necessary
+    if (currentRows > minRows) el.style.height = 'auto';
 
-    body.addEventListener("keydown", e => {
-      if (["Enter","Backspace","Delete"].includes(e.key)) prevHTML = body.innerHTML;
-    });
-    body.addEventListener("input",  reflow);
-    body.addEventListener("paste",  e => {
-      e.preventDefault();
-      document.execCommand("insertText", false,
-        (e.clipboardData||window.clipboardData).getData("text").replace(/[\r\n]+/g," "));
-    });
-    return;                     
-  }
-  if (type === "text-3") {
-    let prevHTML = body.innerHTML;
-
-    const restore = () => {
-      const r = document.createRange(), s = getSelection();
-      r.selectNodeContents(body); r.collapse(false);
-      s.removeAllRanges();  s.addRange(r);
-    };
-
-    const overflowed = () => body.scrollHeight > maxAllowedHeight();
-
-    const checkInput = () => {
-      if (overflowed()) { body.innerHTML = prevHTML; restore(); }
-      else              { prevHTML = body.innerHTML; }
-    };
-
-    body.addEventListener("keydown", e => {
-      if (["Enter","Backspace","Delete"].includes(e.key)) prevHTML = body.innerHTML;
-      if (e.key === "Enter") setTimeout(checkInput, 0);
-    });
-    body.addEventListener("input", checkInput);
-    body.addEventListener("paste", e => {
-      e.preventDefault();
-      document.execCommand("insertText", false,
-        (e.clipboardData||window.clipboardData).getData("text").replace(/[\r\n]+/g," "));
-    });
-
-    const grip = document.createElement("div");
-grip.className = "resize-handle";
-el.appendChild(grip);
-
-grip.addEventListener("mousedown", startEvt => {
-  startEvt.preventDefault();
-
-  const startY = startEvt.clientY;
-  const startHeight = el.offsetHeight;
-  const scrollHeightAtStart = body.scrollHeight;
-
-  const onMove = mv => {
-    const delta = mv.clientY - startY;
-    let newHeight = startHeight + delta;
-
-    const maxH = maxAllowedHeight();
-    const minH = scrollHeightAtStart; 
-
-    if (newHeight < minH) {
-      newHeight = Math.ceil(minH / this.ROW_HEIGHT) * this.ROW_HEIGHT;
+    const contentHeight = body.scrollHeight;
+    if (contentHeight > maxHeight) {
+      el.style.height = `${currentRows * ROW}px`;
+      body.innerHTML = prevHTML;
+      this.restoreCursor(body);
+      return;
     }
 
-    if (newHeight > maxH) {
-      newHeight = Math.floor(maxH / this.ROW_HEIGHT) * this.ROW_HEIGHT;
+    const rawRows = contentHeight / ROW;
+    const newRows = Math.max(minRows, Math.ceil(rawRows));
+    if (newRows !== currentRows) {
+      el.dataset.rows = newRows;
+      el.style.height = `${newRows * ROW}px`;
+
+      requestAnimationFrame(() => {
+        this.reflowContent(el.closest(".content"));
+      });
+    } else {
+      // Snap even if no row count changed
+      const snappedHeight = newRows * ROW;
+      if (el.offsetHeight !== snappedHeight) {
+        el.style.height = `${snappedHeight}px`;
+      }
     }
 
-    const rows = Math.round(newHeight / this.ROW_HEIGHT);
-    el.dataset.rows = rows;
-    el.style.height = `${newHeight}px`;
-    body.style.height = "100%";
-
-    const content = el.closest(".content");
-    this.reflowContent(content);
+    prevHTML = body.innerHTML;
   };
 
-  const onUp = () => {
-    document.removeEventListener("mousemove", onMove);
-    document.removeEventListener("mouseup", onUp);
-  };
+  body.addEventListener("keydown", e => {
+    if (["Enter", "Backspace", "Delete"].includes(e.key)) {
+      prevHTML = body.innerHTML;
+      requestAnimationFrame(resizeToContent);
+    }
+  });
 
-  document.addEventListener("mousemove", onMove);
-  document.addEventListener("mouseup", onUp);
-});
+  body.addEventListener("input", resizeToContent);
+  body.addEventListener("paste", e => this.sanitizePaste(e));
 
-    return;               
-  }
+  requestAnimationFrame(() => {
+    this.setupGripResize(el, body);
+  });
+  body.addEventListener("input", () => this.saveHistory());
+
 }
 
 
-
- getEditableBody(el) {
-    return el.querySelector(".element-body, .header-title, .header-subtitle, .footer-left") || el;
-  }
-
-autoResize(el) {
-  const body = this.getEditableBody(el);
-  const style = window.getComputedStyle(body);
-  const fontSize = parseInt(style.fontSize, 10);
-  const padding = parseInt(style.paddingTop || 0) + parseInt(style.paddingBottom || 0);
-
-  const type = el.dataset.type;
-
-  const minHeight = Math.ceil(fontSize * 1.5 + padding);
-  const scrollHeight = body.scrollHeight;
-
-  let newHeight = Math.max(minHeight, scrollHeight);
-
-  const rows = Math.ceil(newHeight / this.ROW_HEIGHT);
-  const snappedHeight = rows * this.ROW_HEIGHT;
-
-  el.style.height = `${snappedHeight}px`;
-
-  if (type === "text-3") {
- 
-let prevHTML = body.innerHTML;
-
-const restoreCursor = () => {
+restoreCursor(body) {
   const range = document.createRange();
   const sel = window.getSelection();
   range.selectNodeContents(body);
   range.collapse(false);
   sel.removeAllRanges();
   sel.addRange(range);
-};
+}
 
-const maxAllowedHeight = () => {
+maxAllowedHeight(el) {
   const content = el.closest(".content");
-  const contentHeight = content.offsetHeight;
   const elementTop = parseInt(el.style.top || 0);
-  return contentHeight - this.DROP_MARGIN - elementTop;
-};
+  return content.offsetHeight - this.DROP_MARGIN - elementTop;
+}
 
-body.addEventListener("keydown", e => {
-  const allowedKeys = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Tab"];
-  if (allowedKeys.includes(e.key)) return;
-
-  prevHTML = body.innerHTML;
-
-  const scrollH = body.scrollHeight;
-  const maxH = maxAllowedHeight();
-
-  if (scrollH >= maxH) {
-    if (e.key === "Backspace" || e.key === "Delete") return;
-    e.preventDefault();
-  }
-});
-body.addEventListener("input", () => {
-  const scrollH = body.scrollHeight;
-  const maxH = maxAllowedHeight();
-
-  if (scrollH > maxH) {
-    body.innerHTML = prevHTML;
-    restoreCursor();
-  } else {
-    prevHTML = body.innerHTML;
-    const rows = Math.ceil(scrollH / this.ROW_HEIGHT);
-    el.dataset.rows = rows;
-    el.style.height = `${rows * this.ROW_HEIGHT}px`;
-  }
-});
-body.addEventListener("paste", e => {
+sanitizePaste(e) {
   e.preventDefault();
   const text = (e.clipboardData || window.clipboardData).getData("text").replace(/[\r\n]+/g, " ");
   document.execCommand("insertText", false, text);
-});
-const grip = document.createElement("div");
-grip.className = "resize-handle";
-el.appendChild(grip);
-
-grip.addEventListener("mousedown", startEvt => {
-  startEvt.preventDefault();
-
-  const startY = startEvt.clientY;
-  const startHeight = el.offsetHeight;
-
-  const onMove = mv => {
-    const delta = mv.clientY - startY;
-    let newRows = Math.max(1, Math.round((startHeight + delta) / this.ROW_HEIGHT));
-    let newH = newRows * this.ROW_HEIGHT;
-
-    const maxH = maxAllowedHeight();
-    if (newH > maxH) newH = Math.floor(maxH / this.ROW_HEIGHT) * this.ROW_HEIGHT;
-
-    el.dataset.rows = Math.round(newH / this.ROW_HEIGHT);
-    el.style.height = newH + "px";
-    body.style.height = "100%";
-
-    const content = el.closest(".content");
-    this.reflowContent(content);
-  };
-
-  const onUp = () => {
-    document.removeEventListener("mousemove", onMove);
-    document.removeEventListener("mouseup", onUp);
-  };
-
-  document.addEventListener("mousemove", onMove);
-  document.addEventListener("mouseup", onUp);
-});
-  return;
 }
-if (type === "paragraph") {
-  let prevHTML = body.innerHTML;
+saveHistory() {
+  const state = this.workspace.innerHTML;
+  const last = this.undoStack[this.undoStack.length - 1];
 
-  const restoreCursor = () => {
-    const range = document.createRange();
-    const sel = window.getSelection();
-    range.selectNodeContents(body);
-    range.collapse(false);
-    sel.removeAllRanges();
-    sel.addRange(range);
-  };
+  if (state === last) return; // avoid duplicate saves
 
-  const maxAllowedHeight = () => {
-    const content = el.closest(".content");
-    const contentHeight = content.offsetHeight;
-    const elementTop = parseInt(el.style.top || 0);
-    return contentHeight - this.DROP_MARGIN - elementTop;
-  };
+  this.undoStack.push(state);
+  if (this.undoStack.length > this.maxHistory) this.undoStack.shift();
 
-  const resizeToContent = () => {
-    const scrollH = body.scrollHeight;
-    const maxH = maxAllowedHeight();
+  // Clear redo history when new action happens
+  this.redoStack = [];
+}
+undo() {
+  if (this.undoStack.length <= 1) return;
 
-    if (scrollH > maxH) {
-      body.innerHTML = prevHTML;
-      restoreCursor();
-      return;
-    }
+  const current = this.undoStack.pop();
+  this.redoStack.push(current);
 
-    const newRows = Math.max(1, Math.ceil(scrollH / this.ROW_HEIGHT));
-    el.dataset.rows = newRows;
-    el.style.height = `${newRows * this.ROW_HEIGHT}px`;
-    prevHTML = body.innerHTML;
-  };
+  const prev = this.undoStack[this.undoStack.length - 1];
+  if (prev) {
+    this.workspace.innerHTML = prev;
+    this.rebindWorkspace();
+  }
+}
 
-  body.addEventListener("keydown", e => {
-    if (e.key === "Enter" || e.key === "Backspace" || e.key === "Delete") {
-      prevHTML = body.innerHTML;
-    }
+redo() {
+  if (this.redoStack.length === 0) return;
+
+  const next = this.redoStack.pop();
+  if (next) {
+    this.undoStack.push(next);
+    this.workspace.innerHTML = next;
+    this.rebindWorkspace();
+  }
+}
+rebindWorkspace() {
+  this.workspace.querySelectorAll(".element, .label-block, .paragraph-block").forEach(el => {
+    const type = el.dataset.type;
+    this.addRemoveButton(el);
+    this.makeMovable(el);
+
+    if (type === "label") this.setupLabelInputRestrictions(el);
+    if (type === "text-3" || type === "paragraph") this.setupTextArea(el);
   });
 
-  body.addEventListener("input", resizeToContent);
+  this.updatePageNumbers();
+}
 
-  body.addEventListener("paste", e => {
-    e.preventDefault();
-    const text = (e.clipboardData || window.clipboardData).getData("text").replace(/[\r\n]+/g, " ");
-    document.execCommand("insertText", false, text);
+setupGripResize(el, body) {
+  const grip = document.createElement("div");
+  grip.className = "resize-handle";
+  el.appendChild(grip);
+
+  grip.addEventListener("mousedown", startEvt => {
+    startEvt.preventDefault();
+
+    const startY = startEvt.clientY;
+    const startHeight = el.offsetHeight;
+    const scrollHeightAtStart = body.scrollHeight;
+
+    const onMove = mv => {
+      const delta = mv.clientY - startY;
+      let newHeight = startHeight + delta;
+
+      const maxH = this.maxAllowedHeight(el);
+      const minH = scrollHeightAtStart;
+
+      if (newHeight < minH) {
+        newHeight = Math.ceil(minH / this.ROW_HEIGHT) * this.ROW_HEIGHT;
+      }
+      if (newHeight > maxH) {
+        newHeight = Math.floor(maxH / this.ROW_HEIGHT) * this.ROW_HEIGHT;
+      }
+
+      const rows = Math.round(newHeight / this.ROW_HEIGHT);
+      el.dataset.rows = rows;
+      el.style.height = `${newHeight}px`;
+      body.style.height = "100%";
+
+      const content = el.closest(".content");
+      this.reflowContent(content);
+    };
+
+    const onUp = () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
   });
-
-  return;
 }
 
 
-}
 setupLabelInputRestrictions(labelElement) {
   const body = labelElement.querySelector(".element-body");
   if (!body) return;
@@ -1037,29 +949,22 @@ setupLabelInputRestrictions(labelElement) {
     if (e.key === "Enter") e.preventDefault();
   });
 
-  body.addEventListener("paste", e => {
-    e.preventDefault();
-    const text = (e.clipboardData || window.clipboardData).getData("text").replace(/[\r\n]+/g, " ");
-    document.execCommand("insertText", false, text);
-  });
+  body.addEventListener("paste", e => this.sanitizePaste(e));
 
-  body.addEventListener("input", e => {
+  body.addEventListener("input", () => {
     body.style.whiteSpace = "nowrap";
 
     if (body.scrollWidth > body.clientWidth) {
       body.innerText = prevText;
-      const range = document.createRange();
-      const sel = window.getSelection();
-      range.selectNodeContents(body);
-      range.collapse(false);
-      sel.removeAllRanges();
-      sel.addRange(range);
+      this.restoreCursor(body);
     } else {
       prevText = body.innerText;
     }
+
     body.style.whiteSpace = "";
   });
 }
+
   applyLabelSuggestion(newLabel) {
     const labels = [...newLabel.parentElement.querySelectorAll(".label-block")]
       .filter(l => l !== newLabel)
@@ -1139,6 +1044,8 @@ setupLabelInputRestrictions(labelElement) {
     return val;
   }
 }
+
+
 
 window.TemplateBuilder = TemplateBuilder;
 
