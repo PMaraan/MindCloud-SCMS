@@ -23,7 +23,7 @@ body {
   justify-content: flex-end;
   transition: box-shadow 0.3s ease;
   overflow: hidden;
-  transition: opacity 0.4s ease;
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 .template-card:hover {
@@ -48,3 +48,4 @@ body {
   padding: 0.5rem;
   font-size: 0.9rem;
 }
+
