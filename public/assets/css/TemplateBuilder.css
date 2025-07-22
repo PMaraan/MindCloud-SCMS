@@ -481,7 +481,9 @@ table.element-table td {
   line-height: 1.2;
   height: auto;
   min-height: 0 !important;   /* ✅ allow shrinking */
+  direction: ltr;
 }
+
 td .resizer {
   background: transparent;
 }

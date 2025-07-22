@@ -1555,15 +1555,35 @@ insertRow(atIndex) {
   const newRow = this.table.insertRow(atIndex);
   const refCells = Array.from(refRow.cells);
 
-  refCells.forEach(refCell => {
-    const newCell = newRow.insertCell();
+  for (let i = 0; i < refCells.length; i++) {
+    const refCell = refCells[i];
+    const newCell = document.createElement("td");
+
     newCell.setAttribute("contenteditable", "true");
     newCell.innerHTML = "";
-    newCell.style.width = refCell.style.width || (100 / refCells.length + "%");
-  });
+    newCell.removeAttribute("dir");
+    newCell.style.direction = "ltr";
+    newCell.style.unicodeBidi = "plaintext";
+
+    if (refCell) {
+      const computed = getComputedStyle(refCell);
+      newCell.style.width         = refCell.offsetWidth + "px";
+      newCell.style.padding       = computed.padding;
+      newCell.style.border        = computed.border;
+      newCell.style.verticalAlign = computed.verticalAlign;
+      newCell.style.lineHeight    = computed.lineHeight;
+      newCell.style.boxSizing     = computed.boxSizing;
+      newCell.style.overflowWrap  = computed.overflowWrap;
+      newCell.style.wordBreak     = computed.wordBreak;
+      newCell.style.textAlign     = computed.textAlign;
+    }
+
+    newRow.appendChild(newCell);
+  }
 
   this.updateSelectionAndRefresh();
 }
+
 deleteRow(rowIndex) {
   const tbody = this.table.querySelector("tbody") || this.table;
   if (tbody.rows.length <= 1) {
@@ -1590,8 +1610,6 @@ deleteRow(rowIndex) {
     this.onTableChanged?.();
   });
 }
-
-
 insertColumn(atIndex) {
   const rows = this.table.rows;
   if (!rows.length) return;
@@ -1606,34 +1624,52 @@ insertColumn(atIndex) {
   const index = Math.max(0, Math.min(atIndex, currentCols));
 
   for (const row of rows) {
-    const newCell = row.insertCell(index);
+    const ref = row.cells[index - 1] || row.cells[index] || row.cells[0];
+    const newCell = document.createElement("td");
+
     newCell.setAttribute("contenteditable", "true");
+    newCell.removeAttribute("dir");
+    newCell.removeAttribute("style");
     newCell.innerHTML = "";
 
-    // Copy width from adjacent cell
-    const neighbor = row.cells[index - 1] || row.cells[index + 1];
-    if (neighbor) {
-      newCell.style.width = neighbor.offsetWidth + "px";
+    if (ref) {
+      const computed = getComputedStyle(ref);
+      newCell.style.width         = ref.offsetWidth + "px";
+      newCell.style.padding       = computed.padding;
+      newCell.style.border        = computed.border;
+      newCell.style.verticalAlign = computed.verticalAlign;
+      newCell.style.lineHeight    = computed.lineHeight;
+      newCell.style.boxSizing     = computed.boxSizing;
+      newCell.style.overflowWrap  = computed.overflowWrap;
+      newCell.style.wordBreak     = computed.wordBreak;
     } else {
       newCell.style.width = "100px";
     }
+
+    row.insertBefore(newCell, row.cells[index]);
+
+    // Force layout direction
+    requestAnimationFrame(() => {
+      newCell.style.direction = "ltr";
+      newCell.style.unicodeBidi = "plaintext";
+      newCell.style.textAlign = "left";
+    });
   }
 
-  // Normalize widths (percent-based)
+  // Normalize all column widths
   const total = this.table.rows[0].cells.length;
   const pct = (100 / total) + "%";
   for (const row of rows) {
-    Array.from(row.cells).forEach(cell => cell.style.width = pct);
+    Array.from(row.cells).forEach(cell => {
+      cell.style.width = pct;
+    });
   }
 
   this.table.style.tableLayout = "fixed";
+  this.rebindTableCellEvents();
   this.updateSelectionAndRefresh();
 }
 
-
-/* =========================================================== */
-/*  ROBUST  DELETE‑COLUMN  —  keeps working every time         */
-/* =========================================================== */
 deleteColumn(passedIndex = null) {
   const rows = this.table.rows;
   const colTotal = rows[0]?.cells.length || 0;
@@ -1670,11 +1706,28 @@ deleteColumn(passedIndex = null) {
   const newCols   = rows[0].cells.length;              // after deletion
   const pctWidth  = (100 / newCols) + "%";
 
-  for (const row of rows) {
-    Array.from(row.cells).forEach(cell => {
-      cell.style.width = pctWidth;
-    });
+for (const row of rows) {
+  const cloneSource = row.cells[index + 1] || row.cells[index - 1] || row.cells[0];
+
+  let newCell;
+  if (cloneSource) {
+    newCell = cloneSource.cloneNode(false); // shallow clone (no innerHTML)
+    newCell.innerHTML = "";
+  } else {
+    newCell = document.createElement("td");
+    newCell.setAttribute("contenteditable", "true");
+    newCell.style.width = "100px";
   }
+
+  // Ensure it’s clean and editable
+  newCell.setAttribute("contenteditable", "true");
+  newCell.removeAttribute("dir");  // remove if inherited wrongly
+  newCell.style.direction = "ltr";
+  newCell.style.unicodeBidi = "plaintext";
+
+  row.insertBefore(newCell, row.cells[index]);
+}
+
 
   /* 7️⃣  Re‑bind click & resizer handlers for the new cells */
   this.rebindTableCellEvents();
@@ -1686,3 +1739,4 @@ deleteColumn(passedIndex = null) {
 
 
 }
+
