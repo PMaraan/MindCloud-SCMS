@@ -1228,26 +1228,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
 class TableToolbar {
   constructor(builder) {
-    this.builder   = builder;
+    this.builder = builder;
     this.toolbarEl = document.getElementById("tableToolbar");
     this.workspace = document.getElementById("workspace");
-    this.onTableChanged = () => {}; // placeholder; will be assigned by builder
+    this.onTableChanged = () => {};
 
-
-    this.table        = null;
+    this.table = null;
     this.selectedCell = null;
 
-    // Bind toolbar buttons
+    // Handle toolbar commands
     this.toolbarEl.querySelectorAll("[data-table-cmd]").forEach(btn => {
       const cmd = btn.getAttribute("data-table-cmd");
       btn.addEventListener("click", () => this.handleCommand(cmd));
+    });
+
+    // 🔍 Watch selected table for height changes (text growth, font size, etc.)
+    this.resizeObserver = new ResizeObserver(() => {
+      this.resnapAndReflow();
     });
   }
 
   showForTable(tableEl, cellEl = null) {
     if (!tableEl) return;
 
-    this.table        = tableEl;
+    this.table = tableEl;
     this.selectedCell = cellEl || tableEl.querySelector("td");
 
     // Show toolbar
@@ -1258,16 +1262,21 @@ class TableToolbar {
     tableEl.querySelectorAll("td").forEach(td =>
       td.classList.toggle("selected-cell", td === this.selectedCell)
     );
+
+    // (Re)observe for height changes
+    this.resizeObserver.disconnect();
+    this.resizeObserver.observe(this.table);
   }
 
   hide() {
     this.toolbarEl.classList.add("d-none");
     this.workspace.classList.remove("table-toolbar-visible");
-    this.table        = null;
+    this.table = null;
     this.selectedCell = null;
+    this.resizeObserver.disconnect(); // Prevent leaks
   }
-  
-updateSelectionAndRefresh() {
+
+ updateSelectionAndRefresh() {
   if (!this.table) return;
 
   const allCells = this.table.querySelectorAll("td");
@@ -1285,67 +1294,90 @@ updateSelectionAndRefresh() {
   const container = this.table.closest(".element");
   if (!container || !this.builder) return;
 
-  // === 🧼 Cleanup accidental siblings
+  // Clean up accidental siblings
   while (this.table.nextSibling) {
     this.table.parentNode.removeChild(this.table.nextSibling);
   }
 
- requestAnimationFrame(() => {
-  // 🧱 1. Force all rows to snap to ROW_HEIGHT
-  Array.from(this.table.rows).forEach(row => {
-    row.style.height = `${this.builder.ROW_HEIGHT}px`;
+  requestAnimationFrame(() => {
+    const ROW = this.builder.ROW_HEIGHT;
+
+    // 🧱 Snap each row
+    Array.from(this.table.rows).forEach(row => {
+      row.style.height = `${ROW}px`;
+    });
+
+    // 📏 Update container height
+    const rowCount = this.table.rows.length;
+    container.dataset.rows = rowCount;
+    container.style.height = `${rowCount * ROW}px`;
+
+    // 💥 Reflow content
+    this.builder.pushElementsDown(container);
+    this.builder.reflowContent(container.closest(".content"));
+
+    // 🔵 Refresh highlight
+    this.showForTable(this.table, this.selectedCell);
+
+    this.onTableChanged?.();
   });
-
-  // 📏 2. Snap container height to # of rows
-  const rowCount = this.table.rows.length;
-  const snappedHeight = rowCount * this.builder.ROW_HEIGHT;
-
-  container.dataset.rows = rowCount;
-  container.style.height = `${snappedHeight}px`;
-
-  // 💥 3. Push down/reflow
-  this.builder.pushElementsDown(container);
-  this.builder.placeElement(container);
-  this.showForTable(this.table, this.selectedCell);
-
-  requestAnimationFrame(() => this.builder.reflowContent());
-  this.onTableChanged?.();
-});
-
 }
 
+  resnapAndReflow() {
+    if (!this.table) return;
 
- handleCommand(cmd) {
-  if (!this.table || !this.selectedCell) return;
+    const ROW = this.builder.ROW_HEIGHT;
 
-  const rowIndex  = this.selectedCell.parentElement.rowIndex;
-  const cellIndex = this.selectedCell.cellIndex;
+    // Snap each row's height
+    Array.from(this.table.rows).forEach(row => {
+      const snapped = Math.ceil(row.offsetHeight / ROW) * ROW;
+      row.style.height = snapped + "px";
+    });
 
-  switch (cmd) {
-    case "AddRow":
-      this.insertRow(rowIndex + 1);
-      break;
+    const container = this.table.closest(".element");
+    if (!container) return;
 
-    case "deleteRow":
-      this.deleteRow(rowIndex);
-      break;
+   const snappedTableH = Math.round(this.table.offsetHeight / ROW) * ROW;
+container.dataset.rows = snappedTableH / ROW;
+container.style.height = snappedTableH + "px";
 
-    case "addColLeft":
-      this.insertColumn(cellIndex);
-      break;
-    case "addColRight":
-      this.insertColumn(cellIndex + 1);
-      break;
-    case "deleteCol":
-      this.deleteColumn(cellIndex);
-      break;
 
-    default:
-      console.warn("Unhandled table command:", cmd);
+    const content = container.closest(".content");
+    this.builder.pushElementsDown(container);
+    this.builder.reflowContent(content);
+
+    this.showForTable(this.table, this.selectedCell);
+    this.builder.saveHistory?.();
   }
-}
 
-insertRow(atIndex) {
+  handleCommand(cmd) {
+    if (!this.table || !this.selectedCell) return;
+
+    const rowIndex = this.selectedCell.parentElement.rowIndex;
+    const cellIndex = this.selectedCell.cellIndex;
+
+    switch (cmd) {
+      case "AddRow":
+        this.insertRow(rowIndex + 1);
+        break;
+      case "deleteRow":
+        this.deleteRow(rowIndex);
+        break;
+      case "addColLeft":
+        this.insertColumn(cellIndex);
+        break;
+      case "addColRight":
+        this.insertColumn(cellIndex + 1);
+        break;
+      case "deleteCol":
+        this.deleteColumn(cellIndex);
+        break;
+      default:
+        console.warn("Unhandled table command:", cmd);
+    }
+  }
+
+  insertRow(atIndex) {
   const tbody = this.table.querySelector("tbody") || this.table;
   const refRow = tbody.rows[0];
   if (!refRow) return;
@@ -1354,8 +1386,7 @@ insertRow(atIndex) {
   const content = container.closest(".content");
   const usableHeight = content.clientHeight - this.builder.DROP_MARGIN;
 
-  const rowHeight = refRow.offsetHeight || this.builder.ROW_HEIGHT;
-  const predictedBottom = parseInt(container.style.top || 0, 10) + container.offsetHeight + rowHeight;
+  const predictedBottom = parseInt(container.style.top || 0, 10) + container.offsetHeight + this.builder.ROW_HEIGHT;
 
   if (predictedBottom > usableHeight) {
     console.warn("Cannot insert row: table would exceed page height.");
@@ -1374,66 +1405,67 @@ deleteRow(rowIndex) {
   const tbody = this.table.querySelector("tbody") || this.table;
   if (tbody.rows.length <= 1) return;
 
-  // Step 1: Delete the row
   tbody.deleteRow(rowIndex);
 
   const container = this.table.closest(".element");
-  const page = container.closest(".page");
-  const content = page.querySelector(".content");
+  const content = container.closest(".content");
+
+requestAnimationFrame(() => {
   const ROW = this.builder.ROW_HEIGHT;
 
-  // Step 2: Wait for DOM to update
-  requestAnimationFrame(() => {
-    // Step 3: Measure actual table height
-    const tableHeight = this.table.offsetHeight;
-
-    // Step 4: Snap and apply new height to container
-    const newRows = Math.max(1, Math.ceil(tableHeight / ROW));
-    container.dataset.rows = newRows;
-    container.style.height = `${newRows * ROW}px`;
-
-    // Step 5: Reflow and shift elements below
-    this.builder.pushElementsDown(container);
-    this.builder.reflowContent(content);
-
-    this.updateSelectionAndRefresh();
-    this.onTableChanged?.();
+  // ✅ Force each row to match 25px
+  Array.from(this.table.rows).forEach(row => {
+    row.style.height = `${ROW}px`;
+    Array.from(row.cells).forEach(cell => {
+      cell.style.height = `${ROW}px`;
+      cell.style.lineHeight = `${ROW}px`;
+    });
   });
-}
-rebindTableCellEvents() {
-  const allCells = this.table.querySelectorAll("td");
-  allCells.forEach(td => {
-    td.onclick = () => this.showForTable(this.table, td);
-  });
-}
 
+  // ✅ Match container height
+  const rowCount = this.table.rows.length;
+  const containerHeight = rowCount * ROW;
+  container.dataset.rows = rowCount;
+  container.style.height = `${containerHeight}px`;
 
-insertColumn(atIndex) {
-  const rows = this.table.rows;
-  for (const row of rows) {
-    const newCell = row.insertCell(atIndex);
-    newCell.setAttribute("contenteditable", "true"); // ✅
-    newCell.innerHTML = ""; // Optional: placeholder
-  }
+  // ✅ Force reflow
+  this.builder.pushElementsDown(container);
+  this.builder.reflowContent(container.closest(".content"));
+  this.showForTable(this.table, this.selectedCell);
+});
 
-  this.rebindTableCellEvents();
-  this.updateSelectionAndRefresh();
 }
 
-
-deleteColumn(cellIndex) {
-  const rows = this.table.rows;
-  if (rows.length && rows[0].cells.length > 1) {
+  insertColumn(atIndex) {
+    const rows = this.table.rows;
     for (const row of rows) {
-      if (row.cells[cellIndex]) {
-        row.deleteCell(cellIndex);
-      }
+      const newCell = row.insertCell(atIndex);
+      newCell.setAttribute("contenteditable", "true");
+      newCell.innerHTML = "";
     }
 
     this.rebindTableCellEvents();
     this.updateSelectionAndRefresh();
   }
-}
 
-}
+  deleteColumn(cellIndex) {
+    const rows = this.table.rows;
+    if (rows.length && rows[0].cells.length > 1) {
+      for (const row of rows) {
+        if (row.cells[cellIndex]) {
+          row.deleteCell(cellIndex);
+        }
+      }
 
+      this.rebindTableCellEvents();
+      this.updateSelectionAndRefresh();
+    }
+  }
+
+  rebindTableCellEvents() {
+    const allCells = this.table.querySelectorAll("td");
+    allCells.forEach(td => {
+      td.onclick = () => this.showForTable(this.table, td);
+    });
+  }
+}

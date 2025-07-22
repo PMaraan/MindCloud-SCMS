@@ -453,30 +453,34 @@ select {
   background: #fff;
 }
 
-.table-block table {
+/* Base table layout */
+.table-block table,
+table.element-table {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
+  border-spacing: 0;
+  margin: 0;
+  padding: 0;
 }
 
-.table-block td {
+/* Align rows to 25px grid */
+.table-block table tr,
+table.element-table tr {
+  height: 25px;           /* 🔄 Match ROW_HEIGHT */
+  line-height: 1.2;       /* Keep text tight */
+}
+
+.table-block td,
+table.element-table td {
+  height: 25px;           /* 🔄 Match ROW_HEIGHT */
   border: 1px solid #bbb;
-  padding: 2px 4px;
+  padding: 0 4px;
+  box-sizing: border-box;
   min-width: 40px;
   word-break: break-word;
-}
-table.element-table {
-  border-collapse: collapse;
-  table-layout: fixed;
-}
-table.element-table tr, 
-table.element-table td {
-  height: 30px; /* match your ROW_HEIGHT */
-  padding: 0;
-  border: 1px solid #ccc;
-  box-sizing: border-box;
-  line-height: 30px;
   vertical-align: middle;
+  line-height: 1.2;
   overflow: hidden;
 }
 
