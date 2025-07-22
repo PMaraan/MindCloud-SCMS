@@ -2,33 +2,65 @@
 .wrapper {
   display: flex;
   height: 100vh;
-  overflow: auto;
+  overflow: hidden; /* Prevent double scrollbars */
   position: relative;
 }
 
-.main-content {
-  flex: 1;
-  min-width: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 20px;
-  height: 100vh;
-}
-
-/* Sidebar base */
+/* Fixed Sidebar */
 .sidebar {
+  position: fixed;
+  top: 64px; /* match your header height */
+  left: 0;
+  height: calc(100vh - 64px); /* subtract header height */
   width: 250px;
   background-color: white;
   transition: width 0.3s ease, transform 0.3s ease;
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-  position: relative;
   padding-top: 20px;
   z-index: 1000;
+  overflow-y: auto;
 }
 
+/* Collapsed Sidebar */
 .sidebar.collapsed {
   width: 0;
   overflow: hidden;
+}
+
+/* Main content */
+.main-content {
+  flex: 1;
+  min-width: 0;
+  margin-left: 250px; /* space for sidebar */
+  padding: 0, 8px;
+  width: calc(100% - 250px); /* prevent overflow */
+  height: calc(100vh - 64px); /* fill remaining vertical space */
+  overflow-y: auto;
+  overflow-x: hidden;
+  transition: margin-left 0.3s ease, width 0.3s ease;
+}
+
+/* When sidebar is collapsed */
+body.sidebar-collapsed .main-content {
+  margin-left: 0 !important;
+  width: 100% !important;
+}
+
+/* Toggle Button */
+.toggle-wrapper {
+  position: fixed;
+  top: 72px; /* header height + buffer */
+  left: 16px;
+  z-index: 1100;
+}
+
+.toggle-btn {
+  color: #900404;
+  font-size: 1.5rem;
+  background-color: transparent;
+  border: none;
+  padding: 8px 12px;
+  cursor: pointer;
 }
 
 /* Sidebar fade animation group */
@@ -108,24 +140,6 @@
   outline: none;
 }
 
-/* Toggle button */
-.toggle-wrapper {
-  position: absolute;
-  top: 15px;
-  left: 15px;
-  z-index: 1500;
-}
-
-.toggle-btn {
-  color: #900404;
-  font-size: 1.5rem;
-  background-color: transparent;
-  border: none;
-  padding: 8px 12px;
-  box-shadow: none;
-  cursor: pointer;
-}
-
 /* Responsive sidebar behavior */
 @media (max-width: 768px) {
   .wrapper {
@@ -147,6 +161,10 @@
 
   .main-content {
     width: 100%;
-    padding: 20px;
+    margin-left: 0;
+  }
+
+  body.sidebar-collapsed .main-content {
+    width: 100% !important;
   }
 }

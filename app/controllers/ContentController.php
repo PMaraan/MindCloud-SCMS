@@ -8,7 +8,8 @@ class ContentController {
     'Templates'    => '../../public/assets/css/Templates.css',
     'Colleges'      => '../../public/assets/css/CollegeRoles.css',
     'Faculty'      => '../../public/assets/css/FacultyRoles.css',
-    'TemplateBuilder' => '../../public/assets/css/TemplateBuilder.css'
+    'TemplateBuilder' => '../../public/assets/css/TemplateBuilder.css',
+    'Syllabus' => '../../public/assets/css/Syllabus.css',
     //'add_college'  => '../../public/assets/css/FacultyRoles.css',
     //'view_roles'   => '../../public/assets/css/ViewRoles.css',
     //'edit_college' => '../../public/assets/css/FacultyRoles.css',
@@ -22,10 +23,12 @@ class ContentController {
     //'Colleges'      => '../../public/assets/js/CollegeRoles.js',
     'Colleges'      => '../../public/assets/js/Colleges.js', //temporary; for mvp only
     'Faculty'      => '../../public/assets/js/FacultyRoles.js',
+    'Syllabus'     => '../../public/assets/js/Syllabus.js',
     'TemplateBuilder' => '../../public/assets/js/TemplateBuilder.js'
     //'add_college'  => '../../public/assets/js/FacultyRoles.js',
     //'view_roles'   => '../../public/assets/js/ViewRoles.js',
     //'edit_college' => '../../public/assets/js/FacultyRoles.js',
+    
   ];
 
   // Content mapping (used to locate the correct PHP file for each page)
@@ -39,7 +42,7 @@ class ContentController {
     'Courses'      => 'Courses.php',
     'Faculty'      => 'CollegeFacultyRoles.php',    
     'Templates'    => 'Templates.php',
-    'Syllabus'     => 'SyllabusForRevision.php',
+    'Syllabus'     => 'Syllabus.php',
     'TemplateBuilder' => 'TemplateBuilder.php',
     //'approve'      => '#',                      
     //'note'         => '#',                      

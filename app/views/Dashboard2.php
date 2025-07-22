@@ -27,7 +27,6 @@ if (isset($_GET['status']) && isset($_GET['message'])): ?>
 //$_SESSION['college_id'] = 'TESTCOL';
 //$_SESSION['role'] = 'Developer';
 
-
 // Load dynamic content using the ContentController
 $page = $_POST['page'] ?? 'default';
 //echo "Dashboard2.php: page value = $page";
@@ -63,7 +62,8 @@ $content_file = $resources['content'];
     <link rel="stylesheet" href="<?= $css_file ?>">
   <?php endif; ?>
 </head>
-<body>
+<body style="background-color: #f8f4f4;">
+
 
 <?php include_once __DIR__ . '/xHeaderComponent.php'; // Load header component ?>
 

@@ -1,39 +1,41 @@
-// Toggle sidebar collapsed class when the toggle button is clicked
-const toggleBtn = document.getElementById('toggleBtn');
-const sidebar = document.getElementById('sidebar');
+// === Sidebar toggle ===
+const toggleBtn  = document.getElementById('toggleBtn');
+const sidebar    = document.getElementById('sidebar');
+const body       = document.body;
 
 toggleBtn.addEventListener('click', () => {
-  sidebar.classList.toggle('collapsed'); // Collapse or expand sidebar
+  sidebar.classList.toggle('collapsed');       // Collapse / expand sidebar
+  body.classList.toggle('sidebar-collapsed');  // Tell CSS the new state
 });
 
 
-// Highlight nav-link based on current file path
-document.addEventListener("DOMContentLoaded", function () {
-  const currentPath = window.location.pathname.split("/").pop(); // Get current filename (e.g., "template_menu.php")
-  const navLinks = document.querySelectorAll(".nav-link"); // Select all sidebar nav links
+// === Highlight active nav‑link ===
+document.addEventListener('DOMContentLoaded', () => {
+  const navLinks = document.querySelectorAll('.nav-link');
 
-  navLinks.forEach((link) => {
-    const linkPath = link.getAttribute("href"); // Get link href
-    if (linkPath === currentPath) {
-      link.classList.add("active"); // Highlight if it matches current file
-    } else {
-      link.classList.remove("active"); // Remove highlight otherwise
+  /*--- 1. Match by current file name (e.g. dashboard.php) ---*/
+  const currentFile = window.location.pathname.split('/').pop();
+
+  navLinks.forEach(link => {
+    const fileName = (link.getAttribute('href') || '').split('/').pop();
+    if (fileName === currentFile) {
+      link.classList.add('active');
     }
   });
-});
 
+  /*--- 2. Match by ?page= query parameter (e.g. ?page=index) ---*/
+  const params   = new URLSearchParams(window.location.search);
+  const pageSlug = params.get('page');               // null if not present
 
-// Highlight nav-link based on query parameter (e.g., ?page=index)
-document.addEventListener("DOMContentLoaded", () => {
-  const urlParams = new URLSearchParams(window.location.search); // Parse query string
-  const page = urlParams.get("page") || "index"; // Get 'page' param, default to "index"
-  const links = document.querySelectorAll(".nav-link.linkstyle"); // Target nav links with 'linkstyle' class
-
-  links.forEach(link => {
-    if (link.href.includes("page=" + page)) {
-      link.classList.add("active"); // Add active class if URL matches
-    } else {
-      link.classList.remove("active"); // Otherwise remove it
-    }
-  });
+  if (pageSlug) {
+    navLinks.forEach(link => {
+      // Match either data-page attribute or href that contains page=
+      if (
+        link.dataset.page === pageSlug ||
+        link.href.includes(`page=${pageSlug}`)
+      ) {
+        link.classList.add('active');
+      }
+    });
+  }
 });

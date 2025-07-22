@@ -24,7 +24,7 @@
       <?php
       // Get user permissions
       // Mock permissions (bypass database)
-//$permissionGroups = ['Accounts', 'Roles', 'Colleges', 'Faculty', 'Programs', 'Courses', 'Templates', 'Syllabus'];
+      //$permissionGroups = ['Accounts', 'Roles', 'Colleges', 'Faculty', 'Programs', 'Courses', 'Templates', 'Syllabus'];
       require_once __DIR__ . '/../models/PostgresDatabase.php'; // Load the database model
       $pdo = new PostgresDatabase(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS);
       $permissionGroups = $pdo->getPermissionGroupsByUser($_SESSION['user_id']);
@@ -71,8 +71,11 @@
 
 <!-- Sidebar Component Script-->
 <script>
-  document.getElementById("toggleBtn").addEventListener("click", function () {
-    document.getElementById("sidebar").classList.toggle("collapsed");
+ document.getElementById("toggleBtn").addEventListener("click", function () {
+  const sidebar = document.getElementById("sidebar");
+  sidebar.classList.toggle("collapsed");
+  document.body.classList.toggle("sidebar-collapsed");
+
   });
   /*
   document.querySelectorAll('.nav-link').forEach(link => {
