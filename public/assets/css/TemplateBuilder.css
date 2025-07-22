@@ -450,7 +450,6 @@ select {
 /*         TABLE BLOCK           */
 /* ============================== */
 .table-block {
-  border: 1px solid #555;
   background: #fff;
 }
 
