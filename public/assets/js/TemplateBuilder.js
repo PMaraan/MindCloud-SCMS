@@ -1227,6 +1227,7 @@ window.TemplateBuilder = TemplateBuilder;
 document.addEventListener("DOMContentLoaded", () => {
   new TemplateBuilder();
 });
+
 class TableToolbar {
   constructor(builder) {
     this.builder = builder;
@@ -1294,20 +1295,94 @@ class TableToolbar {
   }
 
   rebindTableCellEvents() {
-    this.table.querySelectorAll("td").forEach(td => {
-      td.onclick = () => this.showForTable(this.table, td);
+  this.table.querySelectorAll("td").forEach(td => {
+    td.onclick = () => this.showForTable(this.table, td);
 
-      td.onkeydown = (e) => {
-        if (td.classList.contains("locked-cell")) {
-          const blocked = ["Enter", "Tab"];
-          const isCtrlFontIncrease = (e.ctrlKey || e.metaKey) && (e.key === "+" || e.key === "=");
-          if (blocked.includes(e.key) || isCtrlFontIncrease) {
-            e.preventDefault();
-          }
-        }
-      };
-    });
-  }
+    // Prevent certain keys when locked
+    td.onkeydown = (e) => {
+      if (td.classList.contains("locked-cell")) {
+        const blocked = ["Enter", "Tab"];
+        const isCtrlFontIncrease = (e.ctrlKey || e.metaKey) && (e.key === "+" || e.key === "=");
+        if (blocked.includes(e.key) || isCtrlFontIncrease) e.preventDefault();
+      }
+    };
+
+    // === Resizer Setup ===
+    if (!td.querySelector(".resizer") && td.cellIndex < td.parentElement.cells.length - 1) {
+      const resizer = document.createElement("div");
+      resizer.className = "resizer";
+      td.style.position = "relative";
+      resizer.style.cssText = `
+        position: absolute;
+        top: 0; right: 0;
+        width: 5px;
+        height: 100%;
+        cursor: col-resize;
+        z-index: 10;
+      `;
+      td.appendChild(resizer);
+
+      resizer.addEventListener("mousedown", (e) => this.startColumnResize(e, td));
+    }
+  });
+}
+startColumnResize(e, td) {
+  e.preventDefault();
+
+  const table = this.table; // 🔧 Moved this up before it's used
+  const colIndex = td.cellIndex;
+  const startX = e.clientX;
+
+  const rows = Array.from(table.rows);
+  const leftCells = rows.map(row => row.cells[colIndex]);
+  const rightCells = rows.map(row => row.cells[colIndex + 1]);
+
+  const leftStartWidths = leftCells.map(cell => cell.offsetWidth);
+  const rightStartWidths = rightCells.map(cell => cell?.offsetWidth || 0);
+
+  const minCellWidth = 40;
+  const tableWidth = table.offsetWidth;
+
+  const onMouseMove = (moveEvt) => {
+    const deltaX = moveEvt.clientX - startX;
+
+   const maxDeltaLeft = leftStartWidths[0] - minCellWidth;
+const maxDeltaRight = rightStartWidths[0] - minCellWidth;
+
+// Clamp how far you can drag in either direction
+const clampedDelta = Math.max(-maxDeltaLeft, Math.min(deltaX, maxDeltaRight));
+
+const newLeft = leftStartWidths[0] + clampedDelta;
+const newRight = rightStartWidths[0] - clampedDelta;
+
+
+    // Enforce total width constraint for the two columns being resized
+    const totalAllowed = leftStartWidths[0] + rightStartWidths[0];
+    if (newLeft + newRight > totalAllowed) {
+      const scale = totalAllowed / (newLeft + newRight);
+      newLeft *= scale;
+      newRight *= scale;
+    }
+
+    for (let i = 0; i < rows.length; i++) {
+      if (leftCells[i])  leftCells[i].style.width = `${newLeft}px`;
+      if (rightCells[i]) rightCells[i].style.width = `${newRight}px`;
+    }
+
+    this.refreshSelectionOutline(table.closest(".element"));
+  };
+
+  const onMouseUp = () => {
+    document.removeEventListener("mousemove", onMouseMove);
+    document.removeEventListener("mouseup", onMouseUp);
+    this.builder?.saveHistory?.();
+    this.resnapAndReflow();
+  };
+
+  document.addEventListener("mousemove", onMouseMove);
+  document.addEventListener("mouseup", onMouseUp);
+}
+
 
   lockCellEditing() {
     if (!this.table) return;
@@ -1428,103 +1503,186 @@ class TableToolbar {
     }
   }
 
-  handleCommand(cmd) {
-    if (!this.table || !this.selectedCell) return;
+ handleCommand(cmd) {
+  if (!this.table) return;
 
-    const rowIndex = this.selectedCell.parentElement.rowIndex;
-    const cellIndex = this.selectedCell.cellIndex;
-
-    switch (cmd) {
-      case "AddRow":
-        this.insertRow(rowIndex + 1);
-        break;
-      case "deleteRow":
-        this.deleteRow(rowIndex);
-        break;
-      case "addColLeft":
-        this.insertColumn(cellIndex);
-        break;
-      case "addColRight":
-        this.insertColumn(cellIndex + 1);
-        break;
-      case "deleteCol":
-        this.deleteColumn(cellIndex);
-        break;
-      default:
-        console.warn("Unhandled table command:", cmd);
-    }
+  if (!this.selectedCell) {
+    // fallback to first cell
+    this.selectedCell = this.table.querySelector("td");
+    if (!this.selectedCell) return;
   }
 
-  insertRow(atIndex) {
-    const tbody = this.table.querySelector("tbody") || this.table;
-    const refRow = tbody.rows[0];
-    if (!refRow) return;
+  const rowIndex = this.selectedCell.parentElement.rowIndex;
+  const cellIndex = this.selectedCell.cellIndex;
 
-    const container = this.table.closest(".element");
-    const content = container.closest(".content");
-    const usableHeight = content.clientHeight - this.builder.DROP_MARGIN;
+  switch (cmd) {
+    case "AddRow":
+      this.insertRow(rowIndex + 1);
+      break;
+    case "deleteRow":
+      this.deleteRow(rowIndex);
+      break;
+    case "addColLeft":
+      this.insertColumn(cellIndex);
+      break;
+    case "addColRight":
+      this.insertColumn(cellIndex + 1);
+      break;
+    case "deleteCol":
+      this.deleteColumn(cellIndex);
+      break;
+    default:
+      console.warn("Unhandled table command:", cmd);
+  }
+}
+insertRow(atIndex) {
+  const tbody = this.table.querySelector("tbody") || this.table;
+  const refRow = tbody.rows[0];
+  if (!refRow) return;
 
-    const rowHeight = refRow.offsetHeight || this.builder.ROW_HEIGHT;
-    const predictedBottom = parseInt(container.style.top || 0, 10) + container.offsetHeight + rowHeight;
+  const container = this.table.closest(".element");
+  const content = container.closest(".content");
+  const usableHeight = content.clientHeight - this.builder.DROP_MARGIN;
 
-    if (predictedBottom > usableHeight) {
-      console.warn("Cannot insert row: table would exceed page height.");
-      return;
-    }
+  const rowHeight = refRow.offsetHeight || this.builder.ROW_HEIGHT;
+  const predictedBottom = parseInt(container.style.top || 0, 10) + container.offsetHeight + rowHeight;
 
-    const newRow = refRow.cloneNode(true);
-    Array.from(newRow.cells).forEach(cell => {
-      cell.innerHTML = "";
-      cell.style.removeProperty("height");
-    });
-
-    tbody.insertBefore(newRow, tbody.rows[atIndex] || null);
-    requestAnimationFrame(() => this.updateSelectionAndRefresh());
+  if (predictedBottom > usableHeight) {
+    console.warn("🚫 Table would overflow page.");
+    return;
   }
 
-  deleteRow(rowIndex) {
-    const tbody = this.table.querySelector("tbody") || this.table;
-    if (tbody.rows.length <= 1) return;
+  const newRow = this.table.insertRow(atIndex);
+  const refCells = Array.from(refRow.cells);
 
-    tbody.deleteRow(rowIndex);
+  refCells.forEach(refCell => {
+    const newCell = newRow.insertCell();
+    newCell.setAttribute("contenteditable", "true");
+    newCell.innerHTML = "";
+    newCell.style.width = refCell.style.width || (100 / refCells.length + "%");
+  });
 
-    const container = this.table.closest(".element");
-    const content = container.closest(".content");
-    const ROW = this.builder.ROW_HEIGHT;
-
-    requestAnimationFrame(() => {
-      const tableHeight = this.table.offsetHeight;
-      const newRows = Math.max(1, Math.ceil(tableHeight / ROW));
-      container.dataset.rows = newRows;
-      container.style.height = `${newRows * ROW}px`;
-
-      this.builder.pushElementsDown(container);
-      this.builder.reflowContent(content);
-
-      this.updateSelectionAndRefresh();
-      this.onTableChanged?.();
-    });
+  this.updateSelectionAndRefresh();
+}
+deleteRow(rowIndex) {
+  const tbody = this.table.querySelector("tbody") || this.table;
+  if (tbody.rows.length <= 1) {
+    console.warn("🚫 Only 1 row left. Can't delete.");
+    return;
   }
 
-  insertColumn(atIndex) {
-    const rows = this.table.rows;
-    for (const row of rows) {
-      const newCell = row.insertCell(atIndex);
-      newCell.setAttribute("contenteditable", "true");
-      newCell.innerHTML = "";
-    }
+  tbody.deleteRow(rowIndex);
+
+  const container = this.table.closest(".element");
+  const content = container.closest(".content");
+  const ROW = this.builder.ROW_HEIGHT;
+
+  requestAnimationFrame(() => {
+    const tableHeight = this.table.offsetHeight;
+    const newRows = Math.max(1, Math.ceil(tableHeight / ROW));
+    container.dataset.rows = newRows;
+    container.style.height = `${newRows * ROW}px`;
+
+    this.builder.pushElementsDown(container);
+    this.builder.reflowContent(content);
+
     this.updateSelectionAndRefresh();
+    this.onTableChanged?.();
+  });
+}
+
+
+insertColumn(atIndex) {
+  const rows = this.table.rows;
+  if (!rows.length) return;
+
+  const maxCols = 7;
+  const currentCols = rows[0].cells.length;
+  if (currentCols >= maxCols) {
+    console.warn("🚫 Max 7 columns reached.");
+    return;
   }
 
-  deleteColumn(cellIndex) {
-    const rows = this.table.rows;
-    if (rows.length && rows[0].cells.length > 1) {
-      for (const row of rows) {
-        if (row.cells[cellIndex]) {
-          row.deleteCell(cellIndex);
-        }
-      }
-      this.updateSelectionAndRefresh();
+  const index = Math.max(0, Math.min(atIndex, currentCols));
+
+  for (const row of rows) {
+    const newCell = row.insertCell(index);
+    newCell.setAttribute("contenteditable", "true");
+    newCell.innerHTML = "";
+
+    // Copy width from adjacent cell
+    const neighbor = row.cells[index - 1] || row.cells[index + 1];
+    if (neighbor) {
+      newCell.style.width = neighbor.offsetWidth + "px";
+    } else {
+      newCell.style.width = "100px";
     }
   }
+
+  // Normalize widths (percent-based)
+  const total = this.table.rows[0].cells.length;
+  const pct = (100 / total) + "%";
+  for (const row of rows) {
+    Array.from(row.cells).forEach(cell => cell.style.width = pct);
+  }
+
+  this.table.style.tableLayout = "fixed";
+  this.updateSelectionAndRefresh();
+}
+
+
+/* =========================================================== */
+/*  ROBUST  DELETE‑COLUMN  —  keeps working every time         */
+/* =========================================================== */
+deleteColumn(passedIndex = null) {
+  const rows = this.table.rows;
+  const colTotal = rows[0]?.cells.length || 0;
+
+  /* 1️⃣  Never delete if only one column remains */
+  if (colTotal <= 1) {
+    console.warn("🚫  Only 1 column left — can’t delete.");
+    return;
+  }
+
+  /* 2️⃣  Decide which column to remove                        *
+   *     ‑ prefer the index we were passed                     *
+   *     ‑ else the currently‑selected cell’s column           *
+   *     ‑ else the right‑most column                          */
+  let target = passedIndex;
+  if (target == null || isNaN(target)) {
+    target = this.selectedCell ? this.selectedCell.cellIndex : colTotal - 1;
+  }
+
+  /* 3️⃣  Clamp to a safe range in case indices shifted */
+  target = Math.max(0, Math.min(target, colTotal - 1));
+
+  /* 4️⃣  Delete that column in every row (guard each row) */
+  for (const row of rows) {
+    if (target < row.cells.length) {
+      row.deleteCell(target);
+    }
+  }
+
+  /* 5️⃣  Clear the old selection (it’s now invalid) */
+  this.selectedCell = null;
+
+  /* 6️⃣  Evenly redistribute widths so the table never overflows */
+  const newCols   = rows[0].cells.length;              // after deletion
+  const pctWidth  = (100 / newCols) + "%";
+
+  for (const row of rows) {
+    Array.from(row.cells).forEach(cell => {
+      cell.style.width = pctWidth;
+    });
+  }
+
+  /* 7️⃣  Re‑bind click & resizer handlers for the new cells */
+  this.rebindTableCellEvents();
+
+  /* 8️⃣  Finish up */
+  this.table.style.tableLayout = "fixed";              // keep layout stable
+  this.updateSelectionAndRefresh();                    // redraw / reflow
+}
+
+
 }

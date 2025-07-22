@@ -13,8 +13,6 @@ body {
   height: 100vh;
   overflow: hidden;
 }
-
-
 /* ============================== */
 /*          TOP TOOLBAR          */
 /* ============================== */
@@ -484,6 +482,14 @@ table.element-table td {
   height: auto;
   min-height: 0 !important;   /* ✅ allow shrinking */
 }
+td .resizer {
+  background: transparent;
+}
+
+td:hover .resizer {
+  background: rgba(0, 0, 0, 0.05);
+}
+
 
 /* ============================== */
 /*       SIGNATURE BLOCK         */
