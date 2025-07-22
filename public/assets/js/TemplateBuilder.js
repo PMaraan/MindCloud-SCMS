@@ -837,7 +837,9 @@ selectElement(el) {
     const firstCell = table.querySelector("td");
     this.tableToolbar.showForTable(table, firstCell);
   } else {
-    this.tableToolbar.hide();
+    this.tableToolbar.hide(
+      
+    );
   }
 }
 
@@ -1225,7 +1227,6 @@ window.TemplateBuilder = TemplateBuilder;
 document.addEventListener("DOMContentLoaded", () => {
   new TemplateBuilder();
 });
-
 class TableToolbar {
   constructor(builder) {
     this.builder = builder;
@@ -1236,13 +1237,11 @@ class TableToolbar {
     this.table = null;
     this.selectedCell = null;
 
-    // Handle toolbar commands
     this.toolbarEl.querySelectorAll("[data-table-cmd]").forEach(btn => {
       const cmd = btn.getAttribute("data-table-cmd");
       btn.addEventListener("click", () => this.handleCommand(cmd));
     });
 
-    // 🔍 Watch selected table for height changes (text growth, font size, etc.)
     this.resizeObserver = new ResizeObserver(() => {
       this.resnapAndReflow();
     });
@@ -1254,18 +1253,21 @@ class TableToolbar {
     this.table = tableEl;
     this.selectedCell = cellEl || tableEl.querySelector("td");
 
-    // Show toolbar
     this.toolbarEl.classList.remove("d-none");
     this.workspace.classList.add("table-toolbar-visible");
 
-    // Highlight selected cell
-    tableEl.querySelectorAll("td").forEach(td =>
-      td.classList.toggle("selected-cell", td === this.selectedCell)
-    );
+    this.rebindTableCellEvents();
+    this.updateCellSelection();
 
-    // (Re)observe for height changes
     this.resizeObserver.disconnect();
     this.resizeObserver.observe(this.table);
+
+    // 🔒 Lock or unlock based on page limit
+    if (this.isTableAtPageLimit()) {
+      this.lockCellEditing();
+    } else {
+      this.unlockCellEditing();
+    }
   }
 
   hide() {
@@ -1273,81 +1275,157 @@ class TableToolbar {
     this.workspace.classList.remove("table-toolbar-visible");
     this.table = null;
     this.selectedCell = null;
-    this.resizeObserver.disconnect(); // Prevent leaks
+    this.resizeObserver.disconnect();
   }
 
- updateSelectionAndRefresh() {
-  if (!this.table) return;
-
-  const allCells = this.table.querySelectorAll("td");
-  if (!allCells.length) return;
-
-  if (!this.selectedCell || !this.table.contains(this.selectedCell)) {
-    this.selectedCell = allCells[0];
+  refreshSelectionOutline(container) {
+    if (!container || !container.classList.contains("selected")) return;
+    container.classList.remove("selected");
+    void container.offsetWidth; // Force reflow
+    container.classList.add("selected");
   }
 
-  // Bind cell clicks
-  allCells.forEach(td => {
-    td.onclick = () => this.showForTable(this.table, td);
-  });
+  updateCellSelection() {
+    if (!this.table || !this.selectedCell) return;
 
-  const container = this.table.closest(".element");
-  if (!container || !this.builder) return;
-
-  // Clean up accidental siblings
-  while (this.table.nextSibling) {
-    this.table.parentNode.removeChild(this.table.nextSibling);
+    this.table.querySelectorAll("td").forEach(td =>
+      td.classList.toggle("selected-cell", td === this.selectedCell)
+    );
   }
 
-  requestAnimationFrame(() => {
+  rebindTableCellEvents() {
+    this.table.querySelectorAll("td").forEach(td => {
+      td.onclick = () => this.showForTable(this.table, td);
+
+      td.onkeydown = (e) => {
+        if (td.classList.contains("locked-cell")) {
+          const blocked = ["Enter", "Tab"];
+          const isCtrlFontIncrease = (e.ctrlKey || e.metaKey) && (e.key === "+" || e.key === "=");
+          if (blocked.includes(e.key) || isCtrlFontIncrease) {
+            e.preventDefault();
+          }
+        }
+      };
+    });
+  }
+
+  lockCellEditing() {
+    if (!this.table) return;
+    this.table.querySelectorAll("td").forEach(td => {
+      td.setAttribute("contenteditable", "false");
+      td.classList.add("locked-cell");
+    });
+  }
+
+  unlockCellEditing() {
+    if (!this.table) return;
+    this.table.querySelectorAll("td").forEach(td => {
+      td.setAttribute("contenteditable", "true");
+      td.classList.remove("locked-cell");
+    });
+  }
+
+  isTableAtPageLimit() {
+    const container = this.table?.closest(".element");
+    const content = container?.closest(".content");
+    if (!container || !content) return false;
+
+    const DROP_MARGIN = this.builder.DROP_MARGIN || 20;
+    const usableHeight = content.clientHeight - DROP_MARGIN;
+    const top = parseInt(container.style.top || 0, 10);
+    const currentBottom = top + container.offsetHeight;
+
+    return currentBottom >= usableHeight;
+  }
+
+  updateSelectionAndRefresh() {
+    if (!this.table) return;
+
+    const container = this.table.closest(".element");
+    if (!container || !this.builder) return;
+
     const ROW = this.builder.ROW_HEIGHT;
 
-    // 🧱 Snap each row
     Array.from(this.table.rows).forEach(row => {
-      row.style.height = `${ROW}px`;
+      row.style.removeProperty("height");
+      row.style.removeProperty("min-height");
     });
 
-    // 📏 Update container height
-    const rowCount = this.table.rows.length;
-    container.dataset.rows = rowCount;
-    container.style.height = `${rowCount * ROW}px`;
+    Array.from(this.table.rows).forEach(row => {
+      const snapped = Math.ceil(row.offsetHeight / ROW) * ROW;
+      row.style.height = `${snapped}px`;
+    });
 
-    // 💥 Reflow content
+    const totalSnapped = Math.round(this.table.offsetHeight / ROW) * ROW;
+    container.dataset.rows = totalSnapped / ROW;
+    container.style.height = `${totalSnapped}px`;
+
+    this.rebindTableCellEvents();
+    this.updateCellSelection();
+    this.refreshSelectionOutline(container);
     this.builder.pushElementsDown(container);
-    this.builder.reflowContent(container.closest(".content"));
-
-    // 🔵 Refresh highlight
-    this.showForTable(this.table, this.selectedCell);
-
+    requestAnimationFrame(() => this.builder.reflowContent());
     this.onTableChanged?.();
-  });
-}
+
+    // Re-check page limit after refresh
+    if (this.isTableAtPageLimit()) {
+      this.lockCellEditing();
+    } else {
+      this.unlockCellEditing();
+    }
+  }
 
   resnapAndReflow() {
     if (!this.table) return;
 
     const ROW = this.builder.ROW_HEIGHT;
-
-    // Snap each row's height
-    Array.from(this.table.rows).forEach(row => {
-      const snapped = Math.ceil(row.offsetHeight / ROW) * ROW;
-      row.style.height = snapped + "px";
-    });
-
     const container = this.table.closest(".element");
     if (!container) return;
 
-   const snappedTableH = Math.round(this.table.offsetHeight / ROW) * ROW;
-container.dataset.rows = snappedTableH / ROW;
-container.style.height = snappedTableH + "px";
+    Array.from(this.table.rows).forEach(row => {
+      let maxContentHeight = 0;
+      Array.from(row.cells).forEach(cell => {
+        const clone = cell.cloneNode(true);
+        clone.style.cssText = `
+          position: absolute;
+          visibility: hidden;
+          height: auto;
+          width: ${cell.offsetWidth}px;
+          white-space: normal;
+          padding: 2px 4px;
+          box-sizing: border-box;
+          line-height: 1.2;
+        `;
+        document.body.appendChild(clone);
+        maxContentHeight = Math.max(maxContentHeight, clone.scrollHeight);
+        document.body.removeChild(clone);
+      });
 
+      const snapped = Math.max(ROW, Math.ceil(maxContentHeight / ROW) * ROW);
+      row.style.minHeight = "0";
+      row.style.height = `${snapped}px`;
+      Array.from(row.cells).forEach(cell => {
+        cell.style.height = `${snapped}px`;
+      });
+    });
 
-    const content = container.closest(".content");
+    void this.table.offsetHeight;
+    const tableHeight = this.table.offsetHeight;
+    const snappedHeight = Math.round(tableHeight / ROW) * ROW;
+    container.dataset.rows = snappedHeight / ROW;
+    container.style.height = `${snappedHeight}px`;
+
+    this.refreshSelectionOutline(container);
     this.builder.pushElementsDown(container);
-    this.builder.reflowContent(content);
-
-    this.showForTable(this.table, this.selectedCell);
+    this.builder.reflowContent(container.closest(".content"));
     this.builder.saveHistory?.();
+
+    // Recheck lock status
+    if (this.isTableAtPageLimit()) {
+      this.lockCellEditing();
+    } else {
+      this.unlockCellEditing();
+    }
   }
 
   handleCommand(cmd) {
@@ -1378,63 +1456,55 @@ container.style.height = snappedTableH + "px";
   }
 
   insertRow(atIndex) {
-  const tbody = this.table.querySelector("tbody") || this.table;
-  const refRow = tbody.rows[0];
-  if (!refRow) return;
+    const tbody = this.table.querySelector("tbody") || this.table;
+    const refRow = tbody.rows[0];
+    if (!refRow) return;
 
-  const container = this.table.closest(".element");
-  const content = container.closest(".content");
-  const usableHeight = content.clientHeight - this.builder.DROP_MARGIN;
+    const container = this.table.closest(".element");
+    const content = container.closest(".content");
+    const usableHeight = content.clientHeight - this.builder.DROP_MARGIN;
 
-  const predictedBottom = parseInt(container.style.top || 0, 10) + container.offsetHeight + this.builder.ROW_HEIGHT;
+    const rowHeight = refRow.offsetHeight || this.builder.ROW_HEIGHT;
+    const predictedBottom = parseInt(container.style.top || 0, 10) + container.offsetHeight + rowHeight;
 
-  if (predictedBottom > usableHeight) {
-    console.warn("Cannot insert row: table would exceed page height.");
-    return;
+    if (predictedBottom > usableHeight) {
+      console.warn("Cannot insert row: table would exceed page height.");
+      return;
+    }
+
+    const newRow = refRow.cloneNode(true);
+    Array.from(newRow.cells).forEach(cell => {
+      cell.innerHTML = "";
+      cell.style.removeProperty("height");
+    });
+
+    tbody.insertBefore(newRow, tbody.rows[atIndex] || null);
+    requestAnimationFrame(() => this.updateSelectionAndRefresh());
   }
 
-  const newRow = refRow.cloneNode(true);
-  Array.from(newRow.cells).forEach(cell => cell.innerHTML = "");
-  tbody.insertBefore(newRow, tbody.rows[atIndex] || null);
+  deleteRow(rowIndex) {
+    const tbody = this.table.querySelector("tbody") || this.table;
+    if (tbody.rows.length <= 1) return;
 
-  this.updateSelectionAndRefresh();
-}
+    tbody.deleteRow(rowIndex);
 
+    const container = this.table.closest(".element");
+    const content = container.closest(".content");
+    const ROW = this.builder.ROW_HEIGHT;
 
-deleteRow(rowIndex) {
-  const tbody = this.table.querySelector("tbody") || this.table;
-  if (tbody.rows.length <= 1) return;
+    requestAnimationFrame(() => {
+      const tableHeight = this.table.offsetHeight;
+      const newRows = Math.max(1, Math.ceil(tableHeight / ROW));
+      container.dataset.rows = newRows;
+      container.style.height = `${newRows * ROW}px`;
 
-  tbody.deleteRow(rowIndex);
+      this.builder.pushElementsDown(container);
+      this.builder.reflowContent(content);
 
-  const container = this.table.closest(".element");
-  const content = container.closest(".content");
-
-requestAnimationFrame(() => {
-  const ROW = this.builder.ROW_HEIGHT;
-
-  // ✅ Force each row to match 25px
-  Array.from(this.table.rows).forEach(row => {
-    row.style.height = `${ROW}px`;
-    Array.from(row.cells).forEach(cell => {
-      cell.style.height = `${ROW}px`;
-      cell.style.lineHeight = `${ROW}px`;
+      this.updateSelectionAndRefresh();
+      this.onTableChanged?.();
     });
-  });
-
-  // ✅ Match container height
-  const rowCount = this.table.rows.length;
-  const containerHeight = rowCount * ROW;
-  container.dataset.rows = rowCount;
-  container.style.height = `${containerHeight}px`;
-
-  // ✅ Force reflow
-  this.builder.pushElementsDown(container);
-  this.builder.reflowContent(container.closest(".content"));
-  this.showForTable(this.table, this.selectedCell);
-});
-
-}
+  }
 
   insertColumn(atIndex) {
     const rows = this.table.rows;
@@ -1443,8 +1513,6 @@ requestAnimationFrame(() => {
       newCell.setAttribute("contenteditable", "true");
       newCell.innerHTML = "";
     }
-
-    this.rebindTableCellEvents();
     this.updateSelectionAndRefresh();
   }
 
@@ -1456,16 +1524,7 @@ requestAnimationFrame(() => {
           row.deleteCell(cellIndex);
         }
       }
-
-      this.rebindTableCellEvents();
       this.updateSelectionAndRefresh();
     }
-  }
-
-  rebindTableCellEvents() {
-    const allCells = this.table.querySelectorAll("td");
-    allCells.forEach(td => {
-      td.onclick = () => this.showForTable(this.table, td);
-    });
   }
 }
