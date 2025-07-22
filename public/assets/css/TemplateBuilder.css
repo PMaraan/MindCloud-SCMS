@@ -466,7 +466,20 @@ select {
   min-width: 40px;
   word-break: break-word;
 }
-
+table.element-table {
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+table.element-table tr, 
+table.element-table td {
+  height: 30px; /* match your ROW_HEIGHT */
+  padding: 0;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+  line-height: 30px;
+  vertical-align: middle;
+  overflow: hidden;
+}
 
 /* ============================== */
 /*       SIGNATURE BLOCK         */

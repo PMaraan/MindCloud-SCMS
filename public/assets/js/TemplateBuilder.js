@@ -1290,24 +1290,28 @@ updateSelectionAndRefresh() {
     this.table.parentNode.removeChild(this.table.nextSibling);
   }
 
-  // === 📏 Wait for layout, then snap container to exact table height
-  requestAnimationFrame(() => {
-    const tableHeight = this.table.offsetHeight;
-    const snappedRows = Math.ceil(tableHeight / this.builder.ROW_HEIGHT);
-    const snappedHeight = snappedRows * this.builder.ROW_HEIGHT;
-
-    container.dataset.rows = snappedRows;
-    container.style.height = `${snappedHeight}px`;
-
-    // 💥 Push others down and reflow
-    this.builder.pushElementsDown(container);
-    this.builder.placeElement(container);
-    this.showForTable(this.table, this.selectedCell);
-
-    requestAnimationFrame(() => this.builder.reflowContent());
-
-    this.onTableChanged?.();
+ requestAnimationFrame(() => {
+  // 🧱 1. Force all rows to snap to ROW_HEIGHT
+  Array.from(this.table.rows).forEach(row => {
+    row.style.height = `${this.builder.ROW_HEIGHT}px`;
   });
+
+  // 📏 2. Snap container height to # of rows
+  const rowCount = this.table.rows.length;
+  const snappedHeight = rowCount * this.builder.ROW_HEIGHT;
+
+  container.dataset.rows = rowCount;
+  container.style.height = `${snappedHeight}px`;
+
+  // 💥 3. Push down/reflow
+  this.builder.pushElementsDown(container);
+  this.builder.placeElement(container);
+  this.showForTable(this.table, this.selectedCell);
+
+  requestAnimationFrame(() => this.builder.reflowContent());
+  this.onTableChanged?.();
+});
+
 }
 
 
