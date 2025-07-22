@@ -707,8 +707,3 @@ table.element-table td {
   font-size: 14px;
   color: #333;
 }
-
-/* Adjust workspace to push down when sub-toolbar is visible */
-#workspace.table-toolbar-visible {
-  margin-top: 100px; /* 56px main header + 44px sub-header */
-}

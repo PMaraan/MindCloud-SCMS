@@ -1227,7 +1227,6 @@ window.TemplateBuilder = TemplateBuilder;
 document.addEventListener("DOMContentLoaded", () => {
   new TemplateBuilder();
 });
-
 class TableToolbar {
   constructor(builder) {
     this.builder = builder;
@@ -1262,6 +1261,13 @@ class TableToolbar {
 
     this.resizeObserver.disconnect();
     this.resizeObserver.observe(this.table);
+
+    // 🔒 Lock or unlock based on page limit
+    if (this.isTableAtPageLimit()) {
+      this.lockCellEditing();
+    } else {
+      this.unlockCellEditing();
+    }
   }
 
   hide() {
@@ -1290,95 +1296,137 @@ class TableToolbar {
   rebindTableCellEvents() {
     this.table.querySelectorAll("td").forEach(td => {
       td.onclick = () => this.showForTable(this.table, td);
+
+      td.onkeydown = (e) => {
+        if (td.classList.contains("locked-cell")) {
+          const blocked = ["Enter", "Tab"];
+          const isCtrlFontIncrease = (e.ctrlKey || e.metaKey) && (e.key === "+" || e.key === "=");
+          if (blocked.includes(e.key) || isCtrlFontIncrease) {
+            e.preventDefault();
+          }
+        }
+      };
     });
   }
 
- updateSelectionAndRefresh() {
-  if (!this.table) return;
+  lockCellEditing() {
+    if (!this.table) return;
+    this.table.querySelectorAll("td").forEach(td => {
+      td.setAttribute("contenteditable", "false");
+      td.classList.add("locked-cell");
+    });
+  }
 
-  const container = this.table.closest(".element");
-  if (!container || !this.builder) return;
+  unlockCellEditing() {
+    if (!this.table) return;
+    this.table.querySelectorAll("td").forEach(td => {
+      td.setAttribute("contenteditable", "true");
+      td.classList.remove("locked-cell");
+    });
+  }
 
-  const ROW = this.builder.ROW_HEIGHT;
+  isTableAtPageLimit() {
+    const container = this.table?.closest(".element");
+    const content = container?.closest(".content");
+    if (!container || !content) return false;
 
-  // Clear previous heights
-  Array.from(this.table.rows).forEach(row => {
-    row.style.removeProperty("height");
-    row.style.removeProperty("min-height");
-  });
+    const DROP_MARGIN = this.builder.DROP_MARGIN || 20;
+    const usableHeight = content.clientHeight - DROP_MARGIN;
+    const top = parseInt(container.style.top || 0, 10);
+    const currentBottom = top + container.offsetHeight;
 
-  // Snap each row's height
-  Array.from(this.table.rows).forEach(row => {
-    const snapped = Math.ceil(row.offsetHeight / ROW) * ROW;
-    row.style.height = `${snapped}px`;
-  });
+    return currentBottom >= usableHeight;
+  }
 
-  // Update container size
-  const totalSnapped = Math.round(this.table.offsetHeight / ROW) * ROW;
-  container.dataset.rows = totalSnapped / ROW;
-  container.style.height = `${totalSnapped}px`;
+  updateSelectionAndRefresh() {
+    if (!this.table) return;
 
-  this.rebindTableCellEvents();
-  this.updateCellSelection();
-  this.refreshSelectionOutline(container);
+    const container = this.table.closest(".element");
+    if (!container || !this.builder) return;
 
-  this.builder.pushElementsDown(container);
-  requestAnimationFrame(() => this.builder.reflowContent());
-  this.onTableChanged?.();
-}
+    const ROW = this.builder.ROW_HEIGHT;
 
-resnapAndReflow() {
-  if (!this.table) return;
-
-  const ROW = this.builder.ROW_HEIGHT;
-  const container = this.table.closest(".element");
-  if (!container) return;
-
-  // Resize each row based on actual visible content
-  Array.from(this.table.rows).forEach(row => {
-    let maxContentHeight = 0;
-
-    Array.from(row.cells).forEach(cell => {
-      const clone = cell.cloneNode(true);
-      clone.style.cssText = `
-        position: absolute;
-        visibility: hidden;
-        height: auto;
-        width: ${cell.offsetWidth}px;
-        white-space: normal;
-        padding: 2px 4px;
-        box-sizing: border-box;
-        line-height: 1.2;
-      `;
-      document.body.appendChild(clone);
-      maxContentHeight = Math.max(maxContentHeight, clone.scrollHeight);
-      document.body.removeChild(clone);
+    Array.from(this.table.rows).forEach(row => {
+      row.style.removeProperty("height");
+      row.style.removeProperty("min-height");
     });
 
-    const snapped = Math.max(ROW, Math.ceil(maxContentHeight / ROW) * ROW);
-    row.style.minHeight = "0"; // ✅ allow shrinking
-    row.style.height = `${snapped}px`;
-
-    Array.from(row.cells).forEach(cell => {
-      cell.style.height = `${snapped}px`;
+    Array.from(this.table.rows).forEach(row => {
+      const snapped = Math.ceil(row.offsetHeight / ROW) * ROW;
+      row.style.height = `${snapped}px`;
     });
-  });
 
-  // ✅ Force DOM to reflect row heights before measuring table height
-  void this.table.offsetHeight;
+    const totalSnapped = Math.round(this.table.offsetHeight / ROW) * ROW;
+    container.dataset.rows = totalSnapped / ROW;
+    container.style.height = `${totalSnapped}px`;
 
-  // Resize container to match total table height after shrink
-  const tableHeight = this.table.offsetHeight;
-  const snappedHeight = Math.round(tableHeight / ROW) * ROW;
-  container.dataset.rows = snappedHeight / ROW;
-  container.style.height = `${snappedHeight}px`;
+    this.rebindTableCellEvents();
+    this.updateCellSelection();
+    this.refreshSelectionOutline(container);
+    this.builder.pushElementsDown(container);
+    requestAnimationFrame(() => this.builder.reflowContent());
+    this.onTableChanged?.();
 
-  this.refreshSelectionOutline(container);
-  this.builder.pushElementsDown(container);
-  this.builder.reflowContent(container.closest(".content"));
-  this.builder.saveHistory?.();
-}
+    // Re-check page limit after refresh
+    if (this.isTableAtPageLimit()) {
+      this.lockCellEditing();
+    } else {
+      this.unlockCellEditing();
+    }
+  }
 
+  resnapAndReflow() {
+    if (!this.table) return;
+
+    const ROW = this.builder.ROW_HEIGHT;
+    const container = this.table.closest(".element");
+    if (!container) return;
+
+    Array.from(this.table.rows).forEach(row => {
+      let maxContentHeight = 0;
+      Array.from(row.cells).forEach(cell => {
+        const clone = cell.cloneNode(true);
+        clone.style.cssText = `
+          position: absolute;
+          visibility: hidden;
+          height: auto;
+          width: ${cell.offsetWidth}px;
+          white-space: normal;
+          padding: 2px 4px;
+          box-sizing: border-box;
+          line-height: 1.2;
+        `;
+        document.body.appendChild(clone);
+        maxContentHeight = Math.max(maxContentHeight, clone.scrollHeight);
+        document.body.removeChild(clone);
+      });
+
+      const snapped = Math.max(ROW, Math.ceil(maxContentHeight / ROW) * ROW);
+      row.style.minHeight = "0";
+      row.style.height = `${snapped}px`;
+      Array.from(row.cells).forEach(cell => {
+        cell.style.height = `${snapped}px`;
+      });
+    });
+
+    void this.table.offsetHeight;
+    const tableHeight = this.table.offsetHeight;
+    const snappedHeight = Math.round(tableHeight / ROW) * ROW;
+    container.dataset.rows = snappedHeight / ROW;
+    container.style.height = `${snappedHeight}px`;
+
+    this.refreshSelectionOutline(container);
+    this.builder.pushElementsDown(container);
+    this.builder.reflowContent(container.closest(".content"));
+    this.builder.saveHistory?.();
+
+    // Recheck lock status
+    if (this.isTableAtPageLimit()) {
+      this.lockCellEditing();
+    } else {
+      this.unlockCellEditing();
+    }
+  }
 
   handleCommand(cmd) {
     if (!this.table || !this.selectedCell) return;
@@ -1407,37 +1455,32 @@ resnapAndReflow() {
     }
   }
 
-insertRow(atIndex) {
-  const tbody = this.table.querySelector("tbody") || this.table;
-  const refRow = tbody.rows[0];
-  if (!refRow) return;
+  insertRow(atIndex) {
+    const tbody = this.table.querySelector("tbody") || this.table;
+    const refRow = tbody.rows[0];
+    if (!refRow) return;
 
-  const container = this.table.closest(".element");
-  const content = container.closest(".content");
-  const usableHeight = content.clientHeight - this.builder.DROP_MARGIN;
+    const container = this.table.closest(".element");
+    const content = container.closest(".content");
+    const usableHeight = content.clientHeight - this.builder.DROP_MARGIN;
 
-  const rowHeight = refRow.offsetHeight || this.builder.ROW_HEIGHT;
-  const predictedBottom = parseInt(container.style.top || 0, 10) + container.offsetHeight + rowHeight;
+    const rowHeight = refRow.offsetHeight || this.builder.ROW_HEIGHT;
+    const predictedBottom = parseInt(container.style.top || 0, 10) + container.offsetHeight + rowHeight;
 
-  if (predictedBottom > usableHeight) {
-    console.warn("Cannot insert row: table would exceed page height.");
-    return;
+    if (predictedBottom > usableHeight) {
+      console.warn("Cannot insert row: table would exceed page height.");
+      return;
+    }
+
+    const newRow = refRow.cloneNode(true);
+    Array.from(newRow.cells).forEach(cell => {
+      cell.innerHTML = "";
+      cell.style.removeProperty("height");
+    });
+
+    tbody.insertBefore(newRow, tbody.rows[atIndex] || null);
+    requestAnimationFrame(() => this.updateSelectionAndRefresh());
   }
-
-  const newRow = refRow.cloneNode(true);
-  Array.from(newRow.cells).forEach(cell => {
-    cell.innerHTML = "";
-    cell.style.removeProperty("height");
-  });
-
-  tbody.insertBefore(newRow, tbody.rows[atIndex] || null);
-
-  // Wait for DOM to settle before resizing
-  requestAnimationFrame(() => {
-    this.updateSelectionAndRefresh();
-  });
-}
-
 
   deleteRow(rowIndex) {
     const tbody = this.table.querySelector("tbody") || this.table;
@@ -1470,7 +1513,6 @@ insertRow(atIndex) {
       newCell.setAttribute("contenteditable", "true");
       newCell.innerHTML = "";
     }
-
     this.updateSelectionAndRefresh();
   }
 
@@ -1482,7 +1524,6 @@ insertRow(atIndex) {
           row.deleteCell(cellIndex);
         }
       }
-
       this.updateSelectionAndRefresh();
     }
   }
