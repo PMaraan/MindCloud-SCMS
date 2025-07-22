@@ -1552,6 +1552,10 @@ insertRow(atIndex) {
     return;
   }
 
+  // 🚫 Temporarily clear selectedCell to avoid ghost styling propagation
+  const prevSelectedCell = this.selectedCell;
+  this.selectedCell = null;
+
   const newRow = this.table.insertRow(atIndex);
   const refCells = Array.from(refRow.cells);
 
@@ -1581,6 +1585,8 @@ insertRow(atIndex) {
     newRow.appendChild(newCell);
   }
 
+  // ✅ Restore previous selection and update everything
+  this.selectedCell = prevSelectedCell;
   this.updateSelectionAndRefresh();
 }
 
@@ -1674,68 +1680,55 @@ deleteColumn(passedIndex = null) {
   const rows = this.table.rows;
   const colTotal = rows[0]?.cells.length || 0;
 
-  /* 1️⃣  Never delete if only one column remains */
   if (colTotal <= 1) {
     console.warn("🚫  Only 1 column left — can’t delete.");
     return;
   }
 
-  /* 2️⃣  Decide which column to remove                        *
-   *     ‑ prefer the index we were passed                     *
-   *     ‑ else the currently‑selected cell’s column           *
-   *     ‑ else the right‑most column                          */
-  let target = passedIndex;
-  if (target == null || isNaN(target)) {
-    target = this.selectedCell ? this.selectedCell.cellIndex : colTotal - 1;
+  let index = passedIndex;
+  if (index == null || isNaN(index)) {
+    index = this.selectedCell ? this.selectedCell.cellIndex : colTotal - 1;
   }
 
-  /* 3️⃣  Clamp to a safe range in case indices shifted */
-  target = Math.max(0, Math.min(target, colTotal - 1));
+  index = Math.max(0, Math.min(index, colTotal - 1));
 
-  /* 4️⃣  Delete that column in every row (guard each row) */
+  // Remove the column
   for (const row of rows) {
-    if (target < row.cells.length) {
-      row.deleteCell(target);
+    if (index < row.cells.length) {
+      row.deleteCell(index);
     }
   }
 
-  /* 5️⃣  Clear the old selection (it’s now invalid) */
   this.selectedCell = null;
 
-  /* 6️⃣  Evenly redistribute widths so the table never overflows */
-  const newCols   = rows[0].cells.length;              // after deletion
-  const pctWidth  = (100 / newCols) + "%";
+  // Normalize widths again
+  const newCols = rows[0]?.cells.length || 1;
+  const pctWidth = (100 / newCols) + "%";
 
-for (const row of rows) {
-  const cloneSource = row.cells[index + 1] || row.cells[index - 1] || row.cells[0];
+  for (const row of rows) {
+    Array.from(row.cells).forEach(cell => {
+      cell.style.width = pctWidth;
+    });
 
-  let newCell;
-  if (cloneSource) {
-    newCell = cloneSource.cloneNode(false); // shallow clone (no innerHTML)
-    newCell.innerHTML = "";
-  } else {
-    newCell = document.createElement("td");
-    newCell.setAttribute("contenteditable", "true");
-    newCell.style.width = "100px";
+    // Optional: If column count is uneven, ensure every row still has correct cell count
+    while (row.cells.length < newCols) {
+      const td = document.createElement("td");
+      td.setAttribute("contenteditable", "true");
+      td.innerHTML = "";
+      td.style.width = pctWidth;
+      td.style.direction = "ltr";
+      td.style.unicodeBidi = "plaintext";
+      td.style.textAlign = "left";
+      td.style.padding = "2px 4px";
+      row.appendChild(td);
+    }
   }
 
-  // Ensure it’s clean and editable
-  newCell.setAttribute("contenteditable", "true");
-  newCell.removeAttribute("dir");  // remove if inherited wrongly
-  newCell.style.direction = "ltr";
-  newCell.style.unicodeBidi = "plaintext";
-
-  row.insertBefore(newCell, row.cells[index]);
-}
-
-
-  /* 7️⃣  Re‑bind click & resizer handlers for the new cells */
   this.rebindTableCellEvents();
-
-  /* 8️⃣  Finish up */
-  this.table.style.tableLayout = "fixed";              // keep layout stable
-  this.updateSelectionAndRefresh();                    // redraw / reflow
+  this.table.style.tableLayout = "fixed";
+  this.updateSelectionAndRefresh();
 }
+
 
 
 }
