@@ -457,6 +457,7 @@ select {
 .table-block table,
 table.element-table {
   width: 100%;
+  min-height: unset !important;
   border-collapse: collapse;
   table-layout: fixed;
   border-spacing: 0;
@@ -464,25 +465,28 @@ table.element-table {
   padding: 0;
 }
 
-/* Align rows to 25px grid */
+/* Allow dynamic row height from JS; start at grid unit */
 .table-block table tr,
 table.element-table tr {
-  height: 25px;           /* 🔄 Match ROW_HEIGHT */
-  line-height: 1.2;       /* Keep text tight */
+  height: auto !important;
+  min-height: 25px;     /* 🔄 Match ROW_HEIGHT */
+  line-height: 1.2;
 }
 
+/* Cell styling */
 .table-block td,
 table.element-table td {
-  height: 25px;           /* 🔄 Match ROW_HEIGHT */
   border: 1px solid #bbb;
-  padding: 0 4px;
+  padding: 2px 4px;
   box-sizing: border-box;
   min-width: 40px;
+  min-height: 25px;     /* 🔄 Minimum row height */
+  vertical-align: top;
   word-break: break-word;
-  vertical-align: middle;
+  overflow-wrap: break-word;
   line-height: 1.2;
-  overflow: hidden;
 }
+
 
 /* ============================== */
 /*       SIGNATURE BLOCK         */
@@ -679,7 +683,6 @@ table.element-table td {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 }
 
-/* When visible, it shows. When not, it's hidden via JS toggling d-none */
 .table-toolbar.d-none {
   display: none !important;
 }
@@ -711,9 +714,4 @@ table.element-table td {
 /* Adjust workspace to push down when sub-toolbar is visible */
 #workspace.table-toolbar-visible {
   margin-top: 100px; /* 56px main header + 44px sub-header */
-}
-
-.table-block table {
-  height: auto !important;
-  min-height: unset !important;
 }
