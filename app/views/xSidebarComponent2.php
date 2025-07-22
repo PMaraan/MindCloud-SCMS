@@ -71,12 +71,19 @@
 
 <!-- Sidebar Component Script-->
 <script>
- document.getElementById("toggleBtn").addEventListener("click", function () {
+document.getElementById("toggleBtn").addEventListener("click", function () {
   const sidebar = document.getElementById("sidebar");
   sidebar.classList.toggle("collapsed");
   document.body.classList.toggle("sidebar-collapsed");
+});
 
+document.querySelectorAll('.nav-link').forEach(link => {
+  link.addEventListener('click', function (e) {
+    e.preventDefault();
+    document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+    this.classList.add('active');
   });
+});
   /*
   document.querySelectorAll('.nav-link').forEach(link => {
     link.addEventListener('click', function (e) {
