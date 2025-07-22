@@ -3,11 +3,12 @@
     ?>
     
     <!-- Button trigger for create user modal -->
-     <div class="container container-fluid">
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createRoleModal">
-            Create Role
-        </button>
-     </div>
+    <div class="container mt-3 mb-3 px-0 d-flex justify-content-end">
+  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createRoleModal">
+    Create Role
+  </button>
+</div>
+
 
     <!-------------------Create Role Modal------------------------------>
     <div class="modal" id="createRoleModal" tabindex="-1"><!--createRoleModal open-->

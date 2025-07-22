@@ -3,11 +3,14 @@
     ?>
     
     <!-- Button trigger for create user modal -->
-     <div class="container container-fluid">
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createUserModal">
-            Create Account
-        </button>
-     </div>
+   <div class="container mt-3 mb-3 px-0 d-flex justify-content-end">
+  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createUserModal">
+    Create Account
+  </button>
+</div>
+
+
+
 
     <!-------------------Create User Modal------------------------------>
     <div class="modal" id="createUserModal" tabindex="-1"><!--createUserModal open-->

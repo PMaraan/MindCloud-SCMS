@@ -3,11 +3,12 @@
     ?>
     
     <!-- Button trigger for create user modal -->
-     <div class="container container-fluid">
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createCollegeModal">
-            Create College
-        </button>
-     </div>
+     <div class="container mt-3 mb-3 px-0 d-flex justify-content-end">
+  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createCollegeModal">
+    Create College
+  </button>
+</div>
+
 
     <!-------------------Create College Modal------------------------------>
     <div class="modal" id="createCollegeModal" tabindex="-1"><!--createRoleModal open-->
