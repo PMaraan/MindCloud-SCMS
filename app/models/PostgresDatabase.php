@@ -25,7 +25,7 @@ class PostgresDatabase implements StorageInterface {
         // Check if email and password match
         if ($user && password_verify($password, $user['password'])) {
             // Retrieve user role
-            $stmtRole = $this->pdo->prepare("SELECT r.role_id, r.name AS role_name
+            $stmtRole = $this->pdo->prepare("SELECT r.role_id, r.role_name
                                         FROM user_roles ur
                                         JOIN roles r ON ur.role_id = r.role_id                                        
                                         WHERE ur.id_no = ?");
@@ -33,7 +33,7 @@ class PostgresDatabase implements StorageInterface {
             $userRole = $stmtRole->fetch();
 
             // Retrieve user college (if present)
-            $stmtCollege = $this->pdo->prepare("SELECT c.short_name, c.name AS college_name
+            $stmtCollege = $this->pdo->prepare("SELECT c.short_name, c.college_name
                                         FROM user_roles ur
                                         JOIN colleges c ON ur.college_id = c.college_id                                        
                                         WHERE ur.id_no = ?");
@@ -86,7 +86,7 @@ class PostgresDatabase implements StorageInterface {
                 u.lname,
                 u.email,
                 c.short_name AS college_short_name,
-                r.name AS role_name
+                r.role_name
             FROM users u
             JOIN user_roles ur ON u.id_no = ur.id_no
             JOIN roles r ON ur.role_id = r.role_id
@@ -105,7 +105,7 @@ class PostgresDatabase implements StorageInterface {
                 u.mname,
                 u.lname,
                 u.email,
-                r.name AS role_name,
+                r.role_name,
                 c.short_name AS college_short_name
             FROM users u
             JOIN user_roles ur ON u.id_no = ur.id_no
@@ -121,7 +121,7 @@ class PostgresDatabase implements StorageInterface {
     public function getAllUsersWithRoles() {
         $stmt = $this->pdo->prepare("
             SELECT u.id_no, u.email, u.fname, u.mname, u.lname,
-                STRING_AGG(r.name, ', ') AS roles
+                STRING_AGG(r.role_name, ', ') AS roles
             FROM users u
             LEFT JOIN user_roles ur ON u.id_no = ur.id_no
             LEFT JOIN roles r ON ur.role_id = r.role_id
@@ -146,7 +146,7 @@ class PostgresDatabase implements StorageInterface {
 
     public function getAllRoleNames(){
         $stmt = $this->pdo->prepare("
-            SELECT name as role_name FROM roles
+            SELECT role_name FROM roles
             ORDER BY role_id DESC;
         ");
         $stmt->execute();
@@ -163,7 +163,7 @@ class PostgresDatabase implements StorageInterface {
 
     public function getPermissionGroupsByUser($id_no) {
         $stmt = $this->pdo->prepare("
-            SELECT p.permission_id, p.name
+            SELECT p.permission_id, p.permission_name
             FROM user_roles ur
             JOIN role_permissions rp ON ur.role_id = rp.role_id
             JOIN permissions p ON rp.permission_id = p.permission_id
@@ -196,7 +196,7 @@ class PostgresDatabase implements StorageInterface {
             SELECT 
                 c.college_id,
                 c.short_name,
-                c.name AS college_name,
+                c.college_name,
                 c.dean,
                 CONCAT(u.fname, ' ', COALESCE(u.mname || ' ', ''), u.lname) AS dean_name
             FROM colleges c
@@ -213,9 +213,21 @@ class PostgresDatabase implements StorageInterface {
             FROM users u
             JOIN user_roles ur ON u.id_no = ur.id_no
             JOIN roles r ON ur.role_id = r.role_id
-            WHERE r.name = ?
+            WHERE r.role_name = ?
         ");
         $stmt->execute(['Dean']);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getAllChairs() {
+        $stmt = $this->pdo->prepare("
+            SELECT u.id_no, u.fname, u.mname, u.lname, u.email
+            FROM users u
+            JOIN user_roles ur ON u.id_no = ur.id_no
+            JOIN roles r ON ur.role_id = r.role_id
+            WHERE r.role_name = ?
+        ");
+        $stmt->execute(['Chair']);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
@@ -276,7 +288,7 @@ class PostgresDatabase implements StorageInterface {
 
             // Step 3: Get role_id from role_name
             $stmt3 = $this->pdo->prepare("
-                SELECT role_id FROM roles WHERE name = ?
+                SELECT role_id FROM roles WHERE role_name = ?
             ");
             $stmt3->execute([$role_name]);
             $role = $stmt3->fetch(PDO::FETCH_ASSOC);
@@ -343,7 +355,7 @@ class PostgresDatabase implements StorageInterface {
                 SET role_id = (
                     SELECT role_id
                     FROM roles
-                    WHERE name = ?
+                    WHERE role_name = ?
                 )
                 WHERE id_no = ?
             ");
@@ -407,7 +419,7 @@ class PostgresDatabase implements StorageInterface {
     public function createRole($role_name, $role_level) {
         try {
             $stmt = $this->pdo->prepare("
-                INSERT INTO roles (name, level)
+                INSERT INTO roles (role_name, role_level)
                 VALUES (?, ?)
             ");
             $stmt->execute([$role_name, $role_level]);
@@ -422,7 +434,7 @@ class PostgresDatabase implements StorageInterface {
         try {
             $stmt = $this->pdo->prepare("
                 UPDATE roles
-                SET name = ?, level = ?
+                SET role_name = ?, role_level = ?
                 WHERE role_id = ?
             ");
             $stmt->execute([$role_name, $role_level, $role_id]);
@@ -435,7 +447,7 @@ class PostgresDatabase implements StorageInterface {
     public function createCollege($college_short_name, $college_name, $dean) {
         try {
             $stmt = $this->pdo->prepare("
-                INSERT INTO colleges (short_name, name, dean)
+                INSERT INTO colleges (short_name, college_name, dean)
                 VALUES (?, ?, ?)
             ");
             $stmt->execute([$college_short_name, $college_name, $dean]);
@@ -449,7 +461,7 @@ class PostgresDatabase implements StorageInterface {
         try {
         $stmt = $this->pdo->prepare("
             UPDATE colleges
-            SET short_name = ?, name = ?, dean = ?
+            SET short_name = ?, college_name = ?, dean = ?
             WHERE college_id = ?
         ");
         $stmt->execute([$college_short_name, $college_name, $college_dean, $college_id]);

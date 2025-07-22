@@ -19,7 +19,7 @@
 
     <!-- Create Program -->
     <?php
-      //include_once __DIR__ . '/Programs_includes/CreateProgramModal.php';
+      include_once __DIR__ . '/Programs_includes/CreateProgramModal.php';
     ?>
 
     <!-------------------Edit Program Modal---------------------->
