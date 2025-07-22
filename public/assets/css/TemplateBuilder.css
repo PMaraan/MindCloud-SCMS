@@ -342,6 +342,10 @@ select {
   white-space: pre-wrap;
   box-sizing: border-box;
 }
+.table-block.element {
+  min-height: 0 !important;
+  height: auto !important;
+}
 
 
 /* ============================== */
@@ -441,23 +445,19 @@ select {
   font-weight: normal;
 }
 
-.text-field .element-body:focus {
-  outline: 2px solid #0d6efd;
-}
-
-
 /* ============================== */
 /*         TABLE BLOCK           */
 /* ============================== */
 .table-block {
   background: #fff;
+  padding: 0;
+  margin: 0;
+  border: none;
 }
 
-/* Base table layout */
 .table-block table,
 table.element-table {
   width: 100%;
-  min-height: unset !important;
   border-collapse: collapse;
   table-layout: fixed;
   border-spacing: 0;
@@ -465,28 +465,25 @@ table.element-table {
   padding: 0;
 }
 
-/* Allow dynamic row height from JS; start at grid unit */
-.table-block table tr,
+/* Allow JS-driven height, but start from 0 */
+.table-block tr,
 table.element-table tr {
-  height: auto !important;
-  min-height: 25px;     /* 🔄 Match ROW_HEIGHT */
-  line-height: 1.2;
+  height: auto;
+  min-height: 0 !important;   /* ✅ allow shrinking */
 }
 
-/* Cell styling */
 .table-block td,
 table.element-table td {
   border: 1px solid #bbb;
   padding: 2px 4px;
   box-sizing: border-box;
-  min-width: 40px;
-  min-height: 25px;     /* 🔄 Minimum row height */
   vertical-align: top;
   word-break: break-word;
   overflow-wrap: break-word;
   line-height: 1.2;
+  height: auto;
+  min-height: 0 !important;   /* ✅ allow shrinking */
 }
-
 
 /* ============================== */
 /*       SIGNATURE BLOCK         */
