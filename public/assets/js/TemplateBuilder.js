@@ -1237,6 +1237,7 @@ class TableToolbar {
 
     this.table = null;
     this.selectedCell = null;
+    this.selectedCells = new Set();
 
     this.toolbarEl.querySelectorAll("[data-table-cmd]").forEach(btn => {
       const cmd = btn.getAttribute("data-table-cmd");
@@ -1271,43 +1272,101 @@ class TableToolbar {
     }
   }
 
-  hide() {
-    this.toolbarEl.classList.add("d-none");
-    this.workspace.classList.remove("table-toolbar-visible");
-    this.table = null;
-    this.selectedCell = null;
-    this.resizeObserver.disconnect();
+ hide() {
+  this.toolbarEl.classList.add("d-none");
+  this.workspace.classList.remove("table-toolbar-visible");
+
+  // 🧼 Clear any lingering multi-selected cells
+  if (this.table) {
+    this.table.querySelectorAll("td").forEach(td => {
+      td.classList.remove("multi-selected");
+      td.classList.remove("selected-cell");
+    });
   }
 
-  refreshSelectionOutline(container) {
-    if (!container || !container.classList.contains("selected")) return;
-    container.classList.remove("selected");
-    void container.offsetWidth; // Force reflow
+  this.table = null;
+  this.selectedCell = null;
+  this.selectedCells.clear();
+  this.resizeObserver.disconnect();
+}
+
+
+refreshSelectionOutline(container) {
+  if (!container) return;
+
+  // ✅ Only apply outline if there's more than 1 selected cell
+  if (this.selectedCells.size > 1) {
     container.classList.add("selected");
+  } else {
+    container.classList.remove("selected");
   }
+}
 
-  updateCellSelection() {
-    if (!this.table || !this.selectedCell) return;
 
-    this.table.querySelectorAll("td").forEach(td =>
-      td.classList.toggle("selected-cell", td === this.selectedCell)
-    );
-  }
+updateCellSelection() {
+  if (!this.table) return;
 
-  rebindTableCellEvents() {
   this.table.querySelectorAll("td").forEach(td => {
-    td.onclick = () => this.showForTable(this.table, td);
+    td.classList.toggle("multi-selected", this.selectedCells.has(td));
+    td.classList.toggle("selected-cell", td === this.selectedCell);
+  });
+}
 
-    // Prevent certain keys when locked
+rebindTableCellEvents() {
+  if (!this.table) return;
+
+  const rows = Array.from(this.table.rows);
+  const getPosition = (cell) => ({
+    row: cell.parentElement.rowIndex,
+    col: cell.cellIndex
+  });
+
+  this.table.querySelectorAll("td").forEach(td => {
+   td.onclick = (e) => {
+  const pos = getPosition(td);
+
+  if (e.shiftKey && this.anchorCell) {
+    // Shift+Click → Select block
+    const start = getPosition(this.anchorCell);
+    const [minRow, maxRow] = [start.row, pos.row].sort((a, b) => a - b);
+    const [minCol, maxCol] = [start.col, pos.col].sort((a, b) => a - b);
+
+    this.selectedCells.clear();
+
+    for (let r = minRow; r <= maxRow; r++) {
+      const row = rows[r];
+      if (!row) continue;
+      for (let c = minCol; c <= maxCol; c++) {
+        const cell = row.cells[c];
+        if (cell) this.selectedCells.add(cell);
+      }
+    }
+
+    this.selectedCell = td; // last clicked cell
+    // ⚠️ DO NOT change anchorCell here
+  } else {
+    // Regular click → set anchor
+    this.anchorCell = td;
+    this.selectedCell = td;
+
+    this.selectedCells.clear();
+    this.selectedCells.add(td);
+  }
+
+  this.updateCellSelection();
+  this.refreshSelectionOutline(this.table.closest(".element"));
+};
+
+
     td.onkeydown = (e) => {
       if (td.classList.contains("locked-cell")) {
         const blocked = ["Enter", "Tab"];
-        const isCtrlFontIncrease = (e.ctrlKey || e.metaKey) && (e.key === "+" || e.key === "=");
-        if (blocked.includes(e.key) || isCtrlFontIncrease) e.preventDefault();
+        if (blocked.includes(e.key) || ((e.ctrlKey || e.metaKey) && ["+", "="].includes(e.key))) {
+          e.preventDefault();
+        }
       }
     };
 
-    // === Resizer Setup ===
     if (!td.querySelector(".resizer") && td.cellIndex < td.parentElement.cells.length - 1) {
       const resizer = document.createElement("div");
       resizer.className = "resizer";
@@ -1321,11 +1380,12 @@ class TableToolbar {
         z-index: 10;
       `;
       td.appendChild(resizer);
-
-      resizer.addEventListener("mousedown", (e) => this.startColumnResize(e, td));
+      resizer.addEventListener("mousedown", e => this.startColumnResize(e, td));
     }
   });
 }
+
+
 startColumnResize(e, td) {
   e.preventDefault();
 
@@ -1476,7 +1536,10 @@ const newRight = rightStartWidths[0] - clampedDelta;
         document.body.removeChild(clone);
       });
 
-      const snapped = Math.max(ROW, Math.ceil(maxContentHeight / ROW) * ROW);
+if (maxContentHeight < 5) maxContentHeight = ROW;
+
+const snapped = Math.ceil(maxContentHeight / ROW) * ROW;
+
       row.style.minHeight = "0";
       row.style.height = `${snapped}px`;
       Array.from(row.cells).forEach(cell => {
@@ -1533,6 +1596,13 @@ const newRight = rightStartWidths[0] - clampedDelta;
       break;
     default:
       console.warn("Unhandled table command:", cmd);
+     case "mergeCells":
+  this.mergeSelectedCells();
+  break;
+case "unmergeCells":
+  this.unmergeSelectedCell();
+  break;
+
   }
 }
 insertRow(atIndex) {
@@ -1552,7 +1622,6 @@ insertRow(atIndex) {
     return;
   }
 
-  // 🚫 Temporarily clear selectedCell to avoid ghost styling propagation
   const prevSelectedCell = this.selectedCell;
   this.selectedCell = null;
 
@@ -1561,13 +1630,14 @@ insertRow(atIndex) {
 
   for (let i = 0; i < refCells.length; i++) {
     const refCell = refCells[i];
-    const newCell = document.createElement("td");
+    const newCell = newRow.insertCell(-1); // add to end
 
     newCell.setAttribute("contenteditable", "true");
-    newCell.innerHTML = "";
+    newCell.textContent = ""; // ✅ Guarantees caret and layout correctness
     newCell.removeAttribute("dir");
     newCell.style.direction = "ltr";
     newCell.style.unicodeBidi = "plaintext";
+    newCell.style.textAlign = "left";
 
     if (refCell) {
       const computed = getComputedStyle(refCell);
@@ -1579,16 +1649,126 @@ insertRow(atIndex) {
       newCell.style.boxSizing     = computed.boxSizing;
       newCell.style.overflowWrap  = computed.overflowWrap;
       newCell.style.wordBreak     = computed.wordBreak;
-      newCell.style.textAlign     = computed.textAlign;
     }
-
-    newRow.appendChild(newCell);
   }
 
-  // ✅ Restore previous selection and update everything
   this.selectedCell = prevSelectedCell;
   this.updateSelectionAndRefresh();
 }
+
+mergeSelectedCells() {
+  if (!this.table || this.selectedCells.size <= 1) return;
+
+  const selected = Array.from(this.selectedCells);
+  const rows = Array.from(this.table.rows);
+
+  // Step 1: Determine bounding box of selection
+  let minRow = Infinity, maxRow = -1, minCol = Infinity, maxCol = -1;
+  const selectedMap = new Set();
+
+  for (const cell of selected) {
+    const row = cell.parentElement.rowIndex;
+    const col = cell.cellIndex;
+    selectedMap.add(`${row},${col}`);
+    minRow = Math.min(minRow, row);
+    maxRow = Math.max(maxRow, row);
+    minCol = Math.min(minCol, col);
+    maxCol = Math.max(maxCol, col);
+  }
+
+  // Step 2: Check if all cells within bounding box are selected
+  let allCovered = true;
+  for (let r = minRow; r <= maxRow; r++) {
+    const row = rows[r];
+    for (let c = minCol; c <= maxCol; c++) {
+      const key = `${r},${c}`;
+      const cell = row.cells[c];
+      if (!selectedMap.has(key) || !cell.classList.contains("multi-selected")) {
+        allCovered = false;
+        break;
+      }
+    }
+    if (!allCovered) break;
+  }
+
+  if (!allCovered) {
+    alert("⚠️ Please select a full rectangular block of cells to merge.");
+    return;
+  }
+
+  // Step 3: Perform merge
+  const rowspan = maxRow - minRow + 1;
+  const colspan = maxCol - minCol + 1;
+  const targetCell = rows[minRow].cells[minCol];
+
+  targetCell.rowSpan = rowspan;
+  targetCell.colSpan = colspan;
+  targetCell.classList.remove("multi-selected");
+
+  for (let r = minRow; r <= maxRow; r++) {
+    const row = rows[r];
+    for (let c = maxCol; c >= minCol; c--) {
+      const cell = row.cells[c];
+      if (cell !== targetCell) row.deleteCell(c);
+    }
+  }
+
+  this.selectedCells.clear();
+  this.selectedCell = targetCell;
+  this.updateSelectionAndRefresh();
+}
+unmergeSelectedCell() {
+  if (!this.selectedCell || !this.table) return;
+
+  const td = this.selectedCell;
+  const row = td.parentElement.rowIndex;
+  const col = td.cellIndex;
+
+  const rowspan = td.rowSpan || 1;
+  const colspan = td.colSpan || 1;
+
+  if (rowspan === 1 && colspan === 1) {
+    console.warn("⚠️ Cell is not merged.");
+    return;
+  }
+
+  td.removeAttribute("rowSpan");
+  td.removeAttribute("colSpan");
+
+  // Add missing cells to restore the original grid
+  for (let r = row; r < row + rowspan; r++) {
+    const targetRow = this.table.rows[r];
+    if (!targetRow) continue;
+
+    for (let c = col; c < col + colspan; c++) {
+      if (r === row && c === col) continue; // Skip original cell
+
+      const newCell = targetRow.insertCell(c);
+      newCell.setAttribute("contenteditable", "true");
+      newCell.textContent = "";
+
+      newCell.style.direction = "ltr";
+      newCell.style.unicodeBidi = "plaintext";
+      newCell.style.textAlign = "left";
+      newCell.style.padding = "2px 4px";
+
+      // Optional: copy visual style
+      const ref = td;
+      const computed = getComputedStyle(ref);
+      newCell.style.width         = ref.offsetWidth + "px";
+      newCell.style.border        = computed.border;
+      newCell.style.verticalAlign = computed.verticalAlign;
+      newCell.style.lineHeight    = computed.lineHeight;
+      newCell.style.boxSizing     = computed.boxSizing;
+      newCell.style.overflowWrap  = computed.overflowWrap;
+      newCell.style.wordBreak     = computed.wordBreak;
+    }
+  }
+
+  this.rebindTableCellEvents();
+  this.updateSelectionAndRefresh();
+}
+
 
 deleteRow(rowIndex) {
   const tbody = this.table.querySelector("tbody") || this.table;
@@ -1616,6 +1796,95 @@ deleteRow(rowIndex) {
     this.onTableChanged?.();
   });
 }
+rebindTableCellEvents() {
+  if (!this.table) return;
+
+  const rows = Array.from(this.table.rows);
+  const getPosition = (cell) => ({
+    row: cell.parentElement.rowIndex,
+    col: cell.cellIndex
+  });
+
+  this.table.querySelectorAll("td").forEach(td => {
+    td.onclick = (e) => {
+  const pos = getPosition(td);
+
+  if (e.shiftKey && this.anchorCell) {
+    // Shift + Click → Multi-select
+    const start = getPosition(this.anchorCell);
+    const [minRow, maxRow] = [start.row, pos.row].sort((a, b) => a - b);
+    const [minCol, maxCol] = [start.col, pos.col].sort((a, b) => a - b);
+
+    this.selectedCells.clear();
+    this.table.querySelectorAll("td").forEach(cell => {
+      cell.classList.remove("multi-selected", "selected-cell");
+    });
+
+    for (let r = minRow; r <= maxRow; r++) {
+      const row = rows[r];
+      if (!row) continue;
+      for (let c = minCol; c <= maxCol; c++) {
+        const cell = row.cells[c];
+        if (cell) {
+          cell.classList.add("multi-selected");
+          this.selectedCells.add(cell);
+        }
+      }
+    }
+
+    this.selectedCell = td;
+    td.classList.add("selected-cell");
+
+    this.updateCellSelection();
+    this.refreshSelectionOutline(this.table.closest(".element")); // ✅ Only here
+  } else {
+    // Regular click → single select
+    this.anchorCell = td;
+    this.selectedCell = td;
+
+    this.selectedCells.clear();
+    this.table.querySelectorAll("td").forEach(cell => {
+      cell.classList.remove("multi-selected", "selected-cell");
+    });
+
+    td.classList.add("multi-selected", "selected-cell");
+    this.selectedCells.add(td);
+
+    this.updateCellSelection();
+    // ❌ Do NOT refreshSelectionOutline here
+    this.showForTable(this.table, td);
+  }
+};
+
+
+    td.onkeydown = (e) => {
+      if (td.classList.contains("locked-cell")) {
+        const blocked = ["Enter", "Tab"];
+        if (blocked.includes(e.key) || ((e.ctrlKey || e.metaKey) && ["+", "="].includes(e.key))) {
+          e.preventDefault();
+        }
+      }
+    };
+
+    if (!td.querySelector(".resizer") && td.cellIndex < td.parentElement.cells.length - 1) {
+      const resizer = document.createElement("div");
+      resizer.className = "resizer";
+      td.style.position = "relative";
+      resizer.style.cssText = `
+        position: absolute;
+        top: 0; right: 0;
+        width: 5px;
+        height: 100%;
+        cursor: col-resize;
+        z-index: 10;
+      `;
+      td.appendChild(resizer);
+      resizer.addEventListener("mousedown", e => this.startColumnResize(e, td));
+    }
+  });
+}
+
+
 insertColumn(atIndex) {
   const rows = this.table.rows;
   if (!rows.length) return;
@@ -1631,12 +1900,14 @@ insertColumn(atIndex) {
 
   for (const row of rows) {
     const ref = row.cells[index - 1] || row.cells[index] || row.cells[0];
-    const newCell = document.createElement("td");
+    const newCell = row.insertCell(index);  // ✅ insert at correct index
 
     newCell.setAttribute("contenteditable", "true");
+    newCell.textContent = ""; // ✅ fixes caret issue
     newCell.removeAttribute("dir");
-    newCell.removeAttribute("style");
-    newCell.innerHTML = "";
+    newCell.style.direction = "ltr";
+    newCell.style.unicodeBidi = "plaintext";
+    newCell.style.textAlign = "left";
 
     if (ref) {
       const computed = getComputedStyle(ref);
@@ -1651,18 +1922,8 @@ insertColumn(atIndex) {
     } else {
       newCell.style.width = "100px";
     }
-
-    row.insertBefore(newCell, row.cells[index]);
-
-    // Force layout direction
-    requestAnimationFrame(() => {
-      newCell.style.direction = "ltr";
-      newCell.style.unicodeBidi = "plaintext";
-      newCell.style.textAlign = "left";
-    });
   }
 
-  // Normalize all column widths
   const total = this.table.rows[0].cells.length;
   const pct = (100 / total) + "%";
   for (const row of rows) {

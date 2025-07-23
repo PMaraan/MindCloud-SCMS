@@ -6,6 +6,12 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
   <link href="../../public/assets/css/TemplateBuilder.css" rel="stylesheet">
+  <style>
+    td.multi-selected {
+      outline: 2px dashed #007bff;
+      background-color: #eaf3ff;
+    }
+  </style>
 </head>
 <body>
 
@@ -127,7 +133,7 @@
 
     <!-- Merge/Unmerge -->
     <div class="btn-group ms-3" role="group" aria-label="Merge">
-      <button class="btn btn-sm btn-outline-primary" data-table-cmd="mergeCells">
+      <button class="btn btn-sm btn-outline-primary" data-table-cmd="merge">
         <i class="bi bi-merge"></i> Merge
       </button>
       <button class="btn btn-sm btn-outline-warning" data-table-cmd="unmergeCells">
