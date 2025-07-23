@@ -38,7 +38,7 @@
         'Programs' => 'Programs',
         'Courses' => 'Courses',
         'Templates' => 'Templates',
-        'Syllabus' => 'Syllabus'
+        'Syllabus' => 'AllSyllabus' //'Syllabus'
       ];
       // Display the sidebar tabs that the user has permissions to
       foreach ($mapper as $key => $href) {

@@ -10,6 +10,7 @@ class ContentController {
     'Faculty'      => '../../public/assets/css/FacultyRoles.css',
     'TemplateBuilder' => '../../public/assets/css/TemplateBuilder.css',
     'Syllabus' => '../../public/assets/css/Syllabus.css',
+    'AllSyllabus' => '../../public/assets/css/AllSyllabus.css',
     //'add_college'  => '../../public/assets/css/FacultyRoles.css',
     //'view_roles'   => '../../public/assets/css/ViewRoles.css',
     //'edit_college' => '../../public/assets/css/FacultyRoles.css',
@@ -24,6 +25,7 @@ class ContentController {
     'Colleges'      => '../../public/assets/js/Colleges.js', //temporary; for mvp only
     'Faculty'      => '../../public/assets/js/FacultyRoles.js',
     'Syllabus'     => '../../public/assets/js/Syllabus.js',
+    'AllSyllabus'     => '../../public/assets/js/AllSyllabus.js',
     'TemplateBuilder' => '../../public/assets/js/TemplateBuilder.js'
     //'add_college'  => '../../public/assets/js/FacultyRoles.js',
     //'view_roles'   => '../../public/assets/js/ViewRoles.js',
@@ -43,6 +45,7 @@ class ContentController {
     'Faculty'      => 'CollegeFacultyRoles.php',    
     'Templates'    => 'Templates.php',
     'Syllabus'     => 'Syllabus.php',
+    'AllSyllabus'     => 'AllSyllabus.php',
     'TemplateBuilder' => 'TemplateBuilder.php',
     //'approve'      => '#',                      
     //'note'         => '#',                      
