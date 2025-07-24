@@ -18,9 +18,9 @@
         </thead>
         <tbody id="table-body">
             
-            <?php foreach ($users as $user): echo "<!--show users table-->"; ?>
+            <?php foreach ($users as $user): echo "<!--show users table--> "; ?>
             <tr>
-                <td><?= htmlspecialchars($user['id_no']) ?></td>                
+                <td><?= htmlspecialchars($user['id_no']) ?></td>
                 <td><?= htmlspecialchars($user['fname']) ?></td>
                 <td><?= htmlspecialchars($user['mname']) ?></td>
                 <td><?= htmlspecialchars($user['lname']) ?></td>

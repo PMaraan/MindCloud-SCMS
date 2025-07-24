@@ -6,6 +6,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 require_once __DIR__ . '/../../config/config.php'; // Load environment variables
+require_once __DIR__ . '/../controllers/DataController.php';
 require_once __DIR__ . '/../controllers/ContentController.php'; // Dynamically control the content
 require_once __DIR__ . '/../models/PostgresDatabase.php';
 

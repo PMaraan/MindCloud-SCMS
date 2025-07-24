@@ -1,7 +1,17 @@
 <?php
+/*
   $db = new PostgresDatabase(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS);
   //$users = $db->getAllUsersWithRoles();
   $users = $db->getAllUsersAccountInfo();
+*/
+  $db = new DataController();
+  $query = $db->getAllUsers(); // connect to data controller in the future
+  if ($query && $query['success']) {
+    $users = $query['db'];
+  } else {
+    $error = $query['error'] ?? 'Unknown error';
+    echo "<script>alert('Error: " . addslashes($error) . "');</script>";    
+  }
 ?>
 
   <!-- Accounts -->

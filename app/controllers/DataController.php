@@ -12,6 +12,17 @@ class DataController {
         $this->db = new PostgresDatabase(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS);
     }
 
+    public function getAllUsers() {
+        try {
+            //validate role here ...
+            return ['success' => true, 'db' => $this->db->getAllUsersAccountInfo()];
+        } catch (PDOException $e) {
+            return ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => 'Error: '. $e->getMessage()];
+        }
+    }
+
     public function getUserInfoById($id_no) {
         return $this->db->getUserWithRoleAndCollegeUsingID($id_no); // You can rename this
     }

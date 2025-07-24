@@ -68,6 +68,20 @@ class PostgresDatabase implements StorageInterface {
         }    
     }
 
+    public function getAllUsers() {
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT * FROM users
+            ");
+            $stmt->execute();
+            return ['success' => true, 'db' => $stmt->fetchAll(PDO::FETCH_ASSOC)];
+        } catch (PDOException $e) {
+            return ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => 'Error: ' . $e->getMessage()];
+        }
+    }
+
     public function getAllRoles() {
         $stmt = $this->pdo->prepare("
             SELECT * FROM roles
@@ -78,23 +92,23 @@ class PostgresDatabase implements StorageInterface {
     }
 
     public function getAllUsersAccountInfo() {
-        $stmt = $this->pdo->prepare("
-            SELECT 
-                u.id_no,
-                u.fname,
-                u.mname,
-                u.lname,
-                u.email,
-                c.short_name AS college_short_name,
-                r.role_name
-            FROM users u
-            JOIN user_roles ur ON u.id_no = ur.id_no
-            JOIN roles r ON ur.role_id = r.role_id
-            LEFT JOIN colleges c ON ur.college_id = c.college_id
-            ORDER BY u.id_no ASC
-        ");
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $stmt = $this->pdo->prepare("
+                SELECT 
+                    u.id_no,
+                    u.fname,
+                    u.mname,
+                    u.lname,
+                    u.email,
+                    c.short_name AS college_short_name,
+                    r.role_name
+                FROM users u
+                JOIN user_roles ur ON u.id_no = ur.id_no
+                JOIN roles r ON ur.role_id = r.role_id
+                LEFT JOIN colleges c ON ur.college_id = c.college_id
+                ORDER BY u.id_no ASC
+            ");
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);        
     }
 
     public function getUserWithRoleAndCollegeUsingID($id_no) {
