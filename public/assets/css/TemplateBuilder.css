@@ -681,45 +681,143 @@ td.multi-selected {
 /*     TABLE PROPERTIES BAR      */
 /* ============================== */
 .table-toolbar {
+  padding: 8px;
   position: fixed;
-  top: 56px; /* directly below the main toolbar */
+  top: 56px;
   left: 0;
   right: 0;
-  height: 44px;
-  background: #ffffff;
-  z-index: 1099; /* below .builder-header (1100), above workspace */
+  height: auto;
+  background: #f9f9f9; /* light gray for contrast */
+  z-index: 1099;
   display: flex;
+  justify-content: center;
   align-items: center;
-  padding: 0 16px;
-  border-bottom: 1px solid #ccc;
-  transition: transform 0.2s ease, opacity 0.2s ease;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid #dee2e6;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
 .table-toolbar.d-none {
   display: none !important;
 }
+.table-toolbar .btn-group {
+  gap: 16px;
+}
 
 .table-toolbar .btn-group .btn {
-  padding: 4px 8px;
   font-size: 13px;
-  line-height: 1.2;
-}
-
-.table-toolbar .btn i {
-  font-size: 0.9rem;
-  vertical-align: middle;
-  margin-right: 4px;
-}
-
-.table-toolbar .btn {
-  white-space: nowrap;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.table-toolbar .fw-bold {
-  font-size: 14px;
+  border-radius: 0;
+  border-top: none;
+  border-bottom: none;
+  border-left: 1px solid #ccc;
+  border-right: 1px solid #ccc;
+  background-color: #fff;
+  position: relative;
+  overflow: hidden;
   color: #333;
+
+  transition:
+    background 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    color 0.25s ease-in-out,
+    box-shadow 0.35s ease-in-out,
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.3s ease-in-out;
+}
+
+.table-toolbar .btn-group .btn:hover {
+  background: linear-gradient(145deg, #e4ecf3, #ffffff);
+  border-color: #adb5bd;
+  color: #212529;
+  transform: scale(1.035);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 6px 12px rgba(0, 0, 0, 0.08),
+    0 0 0 1px rgba(173, 181, 189, 0.35);
+}
+
+.table-toolbar .btn-group .btn:hover i,
+.table-toolbar .btn-group .btn:hover span {
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.85);
+}
+
+/* Optional: animated light sweep */
+.table-toolbar .btn-group .btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -75%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: skewX(-20deg);
+  pointer-events: none;
+}
+
+.table-toolbar .btn-group .btn:hover::after {
+  animation: smoothShine 1.2s ease forwards;
+}
+
+@keyframes smoothShine {
+  0% {
+    left: -75%;
+  }
+  100% {
+    left: 125%;
+  }
+}
+/* Base icon style */
+.table-toolbar .btn i {
+  color: #6c757d;
+  transition: color 0.3s ease-in-out, text-shadow 0.3s ease-in-out, transform 0.2s ease;
+}
+
+/* Individual icon colors based on command */
+.table-toolbar .btn[data-table-cmd="AddRow"] i {
+  color: #28a745; /* Green */
+}
+
+.table-toolbar .btn[data-table-cmd="deleteRow"] i {
+  color: #dc3545; /* Red */
+}
+
+.table-toolbar .btn[data-table-cmd="addColLeft"] i,
+.table-toolbar .btn[data-table-cmd="addColRight"] i {
+  color: #17a2b8; /* Teal */
+}
+
+.table-toolbar .btn[data-table-cmd="deleteCol"] i {
+  color: #dc3545; /* Red */
+}
+
+.table-toolbar .btn[data-table-cmd="merge"] i {
+  color: #6f42c1; /* Purple */
+}
+
+.table-toolbar .btn[data-table-cmd="unmergeCells"] i {
+  color: #fd7e14; /* Orange */
+}
+
+/* Hover effects */
+.table-toolbar .btn:hover i {
+  filter: brightness(1.25);
+  text-shadow: 0 2px 3px rgba(255, 255, 255, 0.85);
+  transform: scale(1.1);
+}
+.modal-content {
+  border-radius: 1rem;
+}
+
+.modal-title {
+  font-weight: 600;
+  font-size: 1.25rem;
+}
+
+.modal-footer .btn {
+  font-weight: 500;
 }
