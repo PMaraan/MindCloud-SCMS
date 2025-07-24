@@ -24,10 +24,10 @@
       <?php
       // Get user permissions
       // Mock permissions (bypass database)
-      //$permissionGroups = ['Accounts', 'Roles', 'Colleges', 'Faculty', 'Programs', 'Courses', 'Templates', 'Syllabus'];
+      $permissionGroups = ['Accounts', 'Roles', 'Colleges', 'Faculty', 'Programs', 'Courses', 'Templates', 'Syllabus'];
       require_once __DIR__ . '/../models/PostgresDatabase.php'; // Load the database model
-      $pdo = new PostgresDatabase(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS);
-      $permissionGroups = $pdo->getPermissionGroupsByUser($_SESSION['user_id']);
+      //$pdo = new PostgresDatabase(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS);
+      //$permissionGroups = $pdo->getPermissionGroupsByUser($_SESSION['user_id']);
 
       $mapper = [
         // key is the actual sidebar text and value is the value of the $_POST['page'] for mapping in ContentController

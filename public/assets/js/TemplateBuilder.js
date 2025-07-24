@@ -84,9 +84,23 @@ constructor() {
       current.contains(e.target) &&
       (e.target.closest(".element-body") || e.target.closest(".element"))
     ) return;
-  
-    const el = e.target.closest(".element, .label-block, .paragraph-block");
-    this.selectElement(el && this.workspace.contains(el) ? el : null);
+  // Check for table-block (or element-table) click
+let clickedElement =
+  e.target.closest(".element, .label-block, .paragraph-block, .table-block");
+
+if (clickedElement && this.workspace.contains(clickedElement)) {
+  this.selectElement(clickedElement);
+
+  // If it's a table-block, also notify the table toolbar
+  if (clickedElement.classList.contains("table-block")) {
+    this.tableToolbar?.setTable(clickedElement.querySelector("table"));
+  }
+
+} else {
+  this.selectElement(null);
+  this.tableToolbar?.clearSelection(); // Optional: clears table highlighting
+}
+
   });
 
   this.fontFamilySel.addEventListener("change", () => {
@@ -1289,102 +1303,125 @@ class TableToolbar {
   this.selectedCells.clear();
   this.resizeObserver.disconnect();
 }
-
-
-refreshSelectionOutline(container) {
-  if (!container) return;
-
-  // ✅ Only apply outline if there's more than 1 selected cell
-  if (this.selectedCells.size > 1) {
-    container.classList.add("selected");
-  } else {
-    container.classList.remove("selected");
-  }
-}
-
-
 updateCellSelection() {
-  if (!this.table) return;
+  if (!this.table || !this.selectedCell) return;
 
-  this.table.querySelectorAll("td").forEach(td => {
-    td.classList.toggle("multi-selected", this.selectedCells.has(td));
-    td.classList.toggle("selected-cell", td === this.selectedCell);
-  });
-}
+  const allCells = Array.from(this.table.querySelectorAll("td"));
+  allCells.forEach(td => td.classList.remove("multi-selected", "selected-cell"));
 
-rebindTableCellEvents() {
-  if (!this.table) return;
+  // Always highlight the most recently clicked cell
+  this.selectedCell.classList.add("selected-cell");
 
-  const rows = Array.from(this.table.rows);
-  const getPosition = (cell) => ({
-    row: cell.parentElement.rowIndex,
-    col: cell.cellIndex
-  });
+  if (this.selectedCells.size <= 1) return;
 
-  this.table.querySelectorAll("td").forEach(td => {
-   td.onclick = (e) => {
-  const pos = getPosition(td);
+  // ---- Map cell placement to grid ----
+  const map = [];
+  const rowCount = this.table.rows.length;
 
-  if (e.shiftKey && this.anchorCell) {
-    // Shift+Click → Select block
-    const start = getPosition(this.anchorCell);
-    const [minRow, maxRow] = [start.row, pos.row].sort((a, b) => a - b);
-    const [minCol, maxCol] = [start.col, pos.col].sort((a, b) => a - b);
+  for (let r = 0; r < rowCount; r++) map[r] = [];
 
-    this.selectedCells.clear();
+  for (let r = 0; r < rowCount; r++) {
+    const row = this.table.rows[r];
+    let col = 0;
+    for (let c = 0; c < row.cells.length; c++) {
+      const cell = row.cells[c];
+      const rowspan = cell.rowSpan || 1;
+      const colspan = cell.colSpan || 1;
 
-    for (let r = minRow; r <= maxRow; r++) {
-      const row = rows[r];
-      if (!row) continue;
-      for (let c = minCol; c <= maxCol; c++) {
-        const cell = row.cells[c];
-        if (cell) this.selectedCells.add(cell);
-      }
-    }
+      // Skip over filled positions
+      while (map[r][col]) col++;
 
-    this.selectedCell = td; // last clicked cell
-    // ⚠️ DO NOT change anchorCell here
-  } else {
-    // Regular click → set anchor
-    this.anchorCell = td;
-    this.selectedCell = td;
-
-    this.selectedCells.clear();
-    this.selectedCells.add(td);
-  }
-
-  this.updateCellSelection();
-  this.refreshSelectionOutline(this.table.closest(".element"));
-};
-
-
-    td.onkeydown = (e) => {
-      if (td.classList.contains("locked-cell")) {
-        const blocked = ["Enter", "Tab"];
-        if (blocked.includes(e.key) || ((e.ctrlKey || e.metaKey) && ["+", "="].includes(e.key))) {
-          e.preventDefault();
+      for (let i = 0; i < rowspan; i++) {
+        for (let j = 0; j < colspan; j++) {
+          map[r + i][col + j] = cell;
         }
       }
-    };
 
-    if (!td.querySelector(".resizer") && td.cellIndex < td.parentElement.cells.length - 1) {
-      const resizer = document.createElement("div");
-      resizer.className = "resizer";
-      td.style.position = "relative";
-      resizer.style.cssText = `
-        position: absolute;
-        top: 0; right: 0;
-        width: 5px;
-        height: 100%;
-        cursor: col-resize;
-        z-index: 10;
-      `;
-      td.appendChild(resizer);
-      resizer.addEventListener("mousedown", e => this.startColumnResize(e, td));
+      col += colspan;
     }
+  }
+
+  // ---- Determine selection rectangle ----
+  let top = Infinity, left = Infinity, bottom = -1, right = -1;
+  for (const cell of this.selectedCells) {
+    const pos = this.getCellCoordinates(cell);
+    if (!pos) continue;
+
+    const rowspan = cell.rowSpan || 1;
+    const colspan = cell.colSpan || 1;
+
+    top = Math.min(top, pos.row);
+    left = Math.min(left, pos.col);
+    bottom = Math.max(bottom, pos.row + rowspan - 1);
+    right = Math.max(right, pos.col + colspan - 1);
+  }
+
+  // ---- Select all unique cells in the rectangle ----
+  const selected = new Set();
+
+  for (let r = top; r <= bottom; r++) {
+    for (let c = left; c <= right; c++) {
+      const cell = map[r]?.[c];
+      if (cell) selected.add(cell);
+    }
+  }
+
+  // Clear and apply correct selection
+  this.selectedCells.clear();
+  selected.forEach(cell => {
+    cell.classList.add("multi-selected");
+    this.selectedCells.add(cell);
   });
 }
 
+
+getCellCoordinates(targetCell) {
+  for (let r = 0; r < this.table.rows.length; r++) {
+    let col = 0;
+    const row = this.table.rows[r];
+    for (let c = 0; c < row.cells.length; c++) {
+      const cell = row.cells[c];
+      const rowspan = cell.rowSpan || 1;
+      const colspan = cell.colSpan || 1;
+
+      if (cell === targetCell) {
+        return { row: r, col };
+      }
+
+      col += colspan;
+    }
+  }
+  return null;
+}
+
+getCellAt(rowIndex, colIndex) {
+  const map = [];
+  const rowCount = this.table.rows.length;
+
+  for (let i = 0; i < rowCount; i++) map[i] = [];
+
+  for (let r = 0; r < rowCount; r++) {
+    const row = this.table.rows[r];
+    let col = 0;
+    for (let c = 0; c < row.cells.length; c++) {
+      const cell = row.cells[c];
+      const rowspan = cell.rowSpan || 1;
+      const colspan = cell.colSpan || 1;
+
+      while (map[r][col]) col++;
+
+      for (let i = 0; i < rowspan; i++) {
+        for (let j = 0; j < colspan; j++) {
+          map[r + i][col + j] = cell;
+        }
+      }
+
+      col += colspan;
+    }
+  }
+
+  return map[rowIndex]?.[colIndex] || null;
+}
 
 startColumnResize(e, td) {
   e.preventDefault();
@@ -1429,7 +1466,6 @@ const newRight = rightStartWidths[0] - clampedDelta;
       if (rightCells[i]) rightCells[i].style.width = `${newRight}px`;
     }
 
-    this.refreshSelectionOutline(table.closest(".element"));
   };
 
   const onMouseUp = () => {
@@ -1497,7 +1533,6 @@ const newRight = rightStartWidths[0] - clampedDelta;
 
     this.rebindTableCellEvents();
     this.updateCellSelection();
-    this.refreshSelectionOutline(container);
     this.builder.pushElementsDown(container);
     requestAnimationFrame(() => this.builder.reflowContent());
     this.onTableChanged?.();
@@ -1552,8 +1587,6 @@ const snapped = Math.ceil(maxContentHeight / ROW) * ROW;
     const snappedHeight = Math.round(tableHeight / ROW) * ROW;
     container.dataset.rows = snappedHeight / ROW;
     container.style.height = `${snappedHeight}px`;
-
-    this.refreshSelectionOutline(container);
     this.builder.pushElementsDown(container);
     this.builder.reflowContent(container.closest(".content"));
     this.builder.saveHistory?.();
@@ -1605,56 +1638,92 @@ case "unmergeCells":
 
   }
 }
-insertRow(atIndex) {
-  const tbody = this.table.querySelector("tbody") || this.table;
-  const refRow = tbody.rows[0];
-  if (!refRow) return;
 
-  const container = this.table.closest(".element");
-  const content = container.closest(".content");
-  const usableHeight = content.clientHeight - this.builder.DROP_MARGIN;
-
-  const rowHeight = refRow.offsetHeight || this.builder.ROW_HEIGHT;
-  const predictedBottom = parseInt(container.style.top || 0, 10) + container.offsetHeight + rowHeight;
-
-  if (predictedBottom > usableHeight) {
-    console.warn("🚫 Table would overflow page.");
-    return;
-  }
-
-  const prevSelectedCell = this.selectedCell;
-  this.selectedCell = null;
-
-  const newRow = this.table.insertRow(atIndex);
-  const refCells = Array.from(refRow.cells);
-
-  for (let i = 0; i < refCells.length; i++) {
-    const refCell = refCells[i];
-    const newCell = newRow.insertCell(-1); // add to end
-
-    newCell.setAttribute("contenteditable", "true");
-    newCell.textContent = ""; // ✅ Guarantees caret and layout correctness
-    newCell.removeAttribute("dir");
-    newCell.style.direction = "ltr";
-    newCell.style.unicodeBidi = "plaintext";
-    newCell.style.textAlign = "left";
-
-    if (refCell) {
-      const computed = getComputedStyle(refCell);
-      newCell.style.width         = refCell.offsetWidth + "px";
-      newCell.style.padding       = computed.padding;
-      newCell.style.border        = computed.border;
-      newCell.style.verticalAlign = computed.verticalAlign;
-      newCell.style.lineHeight    = computed.lineHeight;
-      newCell.style.boxSizing     = computed.boxSizing;
-      newCell.style.overflowWrap  = computed.overflowWrap;
-      newCell.style.wordBreak     = computed.wordBreak;
+getCellAt(rowIndex, colIndex) {
+  const rows = Array.from(this.table.rows);
+  let realCol = 0;
+  for (const cell of rows[rowIndex]?.cells || []) {
+    const span = cell.colSpan || 1;
+    if (realCol <= colIndex && colIndex < realCol + span) {
+      return cell;
     }
+    realCol += span;
+  }
+  return null;
+}
+
+getColumnCount() {
+  const rows = this.table.rows;
+  let maxCols = 0;
+  for (const row of rows) {
+    let count = 0;
+    for (const cell of row.cells) {
+      count += cell.colSpan || 1;
+    }
+    maxCols = Math.max(maxCols, count);
+  }
+  return maxCols;
+}
+initializeCell(cell) {
+  cell.contentEditable = "true";
+
+  // Clear any inherited or buggy state
+  cell.innerHTML = ""; // More reliable than textContent for ensuring true emptiness
+
+  // Force LTR writing direction and reset bidi
+  cell.style.direction = "ltr";
+  cell.style.unicodeBidi = "plaintext";
+  cell.style.textAlign = "left";
+
+  // Add a zero-width space to ensure cursor anchors properly
+  // without visually affecting layout
+  cell.innerHTML = "&#8203;";  // Unicode U+200B (zero-width space)
+
+  // Rebind click-to-select event
+  cell.addEventListener("mousedown", (e) => {
+    if (!e.shiftKey) this.clearMultiSelection();
+    this.selectCell(cell, e.shiftKey);
+    e.stopPropagation();
+  });
+}
+
+
+insertRow(below = false) {
+  if (!this.selectedCell) return;
+  const selectedRow = this.selectedCell.parentElement;
+  const rowIndex = Array.from(selectedRow.parentElement.children).indexOf(selectedRow);
+  const insertIndex = below ? rowIndex + 1 : rowIndex;
+
+  const colCount = this.getColumnCount();
+  const newRow = this.table.insertRow(insertIndex);
+
+  let colIndex = 0;
+  while (colIndex < colCount) {
+    const aboveIndex = insertIndex - 1;
+    const cellAbove = this.getCellAt(aboveIndex, colIndex);
+
+    const newCell = document.createElement("td");
+
+    if (cellAbove && cellAbove.rowSpan > 1 && aboveIndex >= 0) {
+      // Check if the cell above spans into the new row
+      const isSpanning = aboveIndex + cellAbove.rowSpan > insertIndex;
+      if (isSpanning) {
+        cellAbove.rowSpan += 1;
+        colIndex += cellAbove.colSpan || 1;
+        continue;
+      }
+    }
+
+    this.initializeCell(newCell);
+    newRow.appendChild(newCell);
+    colIndex++;
   }
 
-  this.selectedCell = prevSelectedCell;
-  this.updateSelectionAndRefresh();
+  this.rebindTableCellEvents(); // 🔁 Ensure new row is wired up
+  this.builder.reflowTable(this.table);
+  this.builder.pushHistory();
 }
+
 
 mergeSelectedCells() {
   if (!this.table || this.selectedCells.size <= 1) return;
@@ -1769,93 +1838,118 @@ unmergeSelectedCell() {
   this.updateSelectionAndRefresh();
 }
 
-
 deleteRow(rowIndex) {
-  const tbody = this.table.querySelector("tbody") || this.table;
-  if (tbody.rows.length <= 1) {
-    console.warn("🚫 Only 1 row left. Can't delete.");
-    return;
+  const rows = Array.from(this.table.rows);
+  if (rows.length <= 1) return; // Prevent deleting the last row
+
+  const rowToDelete = rows[rowIndex];
+  if (!rowToDelete) return;
+
+  // Adjust rowSpan of affected cells above
+  for (let i = 0; i < rowToDelete.cells.length; i++) {
+    const cell = rowToDelete.cells[i];
+    const colIndex = cell.cellIndex;
+
+    const aboveCell = this.getCellAt(rowIndex - 1, colIndex);
+    if (aboveCell && aboveCell.rowSpan > 1) {
+      aboveCell.rowSpan -= 1;
+    }
   }
 
-  tbody.deleteRow(rowIndex);
+  this.table.deleteRow(rowIndex);
 
-  const container = this.table.closest(".element");
-  const content = container.closest(".content");
-  const ROW = this.builder.ROW_HEIGHT;
+  // Reset selected cell to a nearby valid one
+  const fallbackRow = this.table.rows[Math.max(0, rowIndex - 1)];
+  if (fallbackRow && fallbackRow.cells.length > 0) {
+    this.selectedCell = fallbackRow.cells[0];
+    this.selectedCells.clear();
+    this.selectedCells.add(this.selectedCell);
+  } else {
+    this.selectedCell = null;
+    this.selectedCells.clear();
+  }
 
-  requestAnimationFrame(() => {
-    const tableHeight = this.table.offsetHeight;
-    const newRows = Math.max(1, Math.ceil(tableHeight / ROW));
-    container.dataset.rows = newRows;
-    container.style.height = `${newRows * ROW}px`;
-
-    this.builder.pushElementsDown(container);
-    this.builder.reflowContent(content);
-
-    this.updateSelectionAndRefresh();
-    this.onTableChanged?.();
-  });
+  this.updateCellSelection();
+  this.builder.reflowTable(this.table);
+  this.builder.pushHistory();
 }
+
 rebindTableCellEvents() {
   if (!this.table) return;
 
   const rows = Array.from(this.table.rows);
-  const getPosition = (cell) => ({
-    row: cell.parentElement.rowIndex,
-    col: cell.cellIndex
-  });
+
+  const getPosition = (cell) => {
+    const row = cell.parentElement.rowIndex;
+    let col = 0;
+    let found = false;
+    for (const c of cell.parentElement.cells) {
+      if (c === cell) {
+        found = true;
+        break;
+      }
+      col += c.colSpan || 1;
+    }
+    return { row, col };
+  };
+
+  const getCellBox = (cell) => {
+    const { row, col } = getPosition(cell);
+    return {
+      top: row,
+      left: col,
+      bottom: row + (cell.rowSpan || 1) - 1,
+      right: col + (cell.colSpan || 1) - 1
+    };
+  };
 
   this.table.querySelectorAll("td").forEach(td => {
     td.onclick = (e) => {
-  const pos = getPosition(td);
+      const box = getCellBox(td);
 
-  if (e.shiftKey && this.anchorCell) {
-    // Shift + Click → Multi-select
-    const start = getPosition(this.anchorCell);
-    const [minRow, maxRow] = [start.row, pos.row].sort((a, b) => a - b);
-    const [minCol, maxCol] = [start.col, pos.col].sort((a, b) => a - b);
+      if (e.shiftKey && this.anchorCell) {
+        const anchorBox = getCellBox(this.anchorCell);
 
-    this.selectedCells.clear();
-    this.table.querySelectorAll("td").forEach(cell => {
-      cell.classList.remove("multi-selected", "selected-cell");
-    });
+        const minRow = Math.min(anchorBox.top, box.top);
+        const maxRow = Math.max(anchorBox.bottom, box.bottom);
+        const minCol = Math.min(anchorBox.left, box.left);
+        const maxCol = Math.max(anchorBox.right, box.right);
 
-    for (let r = minRow; r <= maxRow; r++) {
-      const row = rows[r];
-      if (!row) continue;
-      for (let c = minCol; c <= maxCol; c++) {
-        const cell = row.cells[c];
-        if (cell) {
-          cell.classList.add("multi-selected");
-          this.selectedCells.add(cell);
-        }
+        this.selectedCells.clear();
+        this.table.querySelectorAll("td").forEach(cell => {
+          cell.classList.remove("multi-selected", "selected-cell");
+
+          const b = getCellBox(cell);
+          if (
+            b.top >= minRow && b.bottom <= maxRow &&
+            b.left >= minCol && b.right <= maxCol
+          ) {
+            cell.classList.add("multi-selected");
+            this.selectedCells.add(cell);
+          }
+        });
+
+        this.selectedCell = td;
+        td.classList.add("selected-cell");
+
+        this.updateCellSelection();
+      } else {
+        // Regular click – clear others, select only this cell
+        this.anchorCell = td;
+        this.selectedCell = td;
+        this.selectedCells.clear();
+
+        this.table.querySelectorAll("td").forEach(cell =>
+          cell.classList.remove("multi-selected", "selected-cell")
+        );
+
+        td.classList.add("multi-selected", "selected-cell");
+        this.selectedCells.add(td);
+
+        this.updateCellSelection();
+        this.showForTable(this.table, td);
       }
-    }
-
-    this.selectedCell = td;
-    td.classList.add("selected-cell");
-
-    this.updateCellSelection();
-    this.refreshSelectionOutline(this.table.closest(".element")); // ✅ Only here
-  } else {
-    // Regular click → single select
-    this.anchorCell = td;
-    this.selectedCell = td;
-
-    this.selectedCells.clear();
-    this.table.querySelectorAll("td").forEach(cell => {
-      cell.classList.remove("multi-selected", "selected-cell");
-    });
-
-    td.classList.add("multi-selected", "selected-cell");
-    this.selectedCells.add(td);
-
-    this.updateCellSelection();
-    // ❌ Do NOT refreshSelectionOutline here
-    this.showForTable(this.table, td);
-  }
-};
-
+    };
 
     td.onkeydown = (e) => {
       if (td.classList.contains("locked-cell")) {
@@ -1866,6 +1960,7 @@ rebindTableCellEvents() {
       }
     };
 
+    // Add column resizer
     if (!td.querySelector(".resizer") && td.cellIndex < td.parentElement.cells.length - 1) {
       const resizer = document.createElement("div");
       resizer.className = "resizer";
@@ -1902,12 +1997,7 @@ insertColumn(atIndex) {
     const ref = row.cells[index - 1] || row.cells[index] || row.cells[0];
     const newCell = row.insertCell(index);  // ✅ insert at correct index
 
-    newCell.setAttribute("contenteditable", "true");
-    newCell.textContent = ""; // ✅ fixes caret issue
-    newCell.removeAttribute("dir");
-    newCell.style.direction = "ltr";
-    newCell.style.unicodeBidi = "plaintext";
-    newCell.style.textAlign = "left";
+    this.initializeCell(newCell); // ✅ use standardized cell init
 
     if (ref) {
       const computed = getComputedStyle(ref);
@@ -1989,8 +2079,6 @@ deleteColumn(passedIndex = null) {
   this.table.style.tableLayout = "fixed";
   this.updateSelectionAndRefresh();
 }
-
-
 
 }
 

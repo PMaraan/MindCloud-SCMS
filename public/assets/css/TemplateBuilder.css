@@ -496,6 +496,10 @@ td.multi-selected {
   background-color: #eaf3ff;
 }
 
+.table-block.selected-table {
+  outline: 2px solid #3b82f6; /* blue border */
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
 
 /* ============================== */
 /*       SIGNATURE BLOCK         */
