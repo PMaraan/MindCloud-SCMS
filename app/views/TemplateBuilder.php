@@ -156,7 +156,10 @@
 
 </body>
 </html>
-<!-- ISSUE TEMPLATE MODAL CODE >:( TOO TIRED TO PUT IN NEW FILE -->
+
+<!--------------------------------------------------------
+ISSUE TEMPLATE MODAL CODE >:( TOO TIRED TO PUT IN NEW FILE 
+---------------------------------------------------------->
 <div class="modal fade" id="issueTemplateModal" tabindex="-1" aria-labelledby="issueTemplateModalLabel" aria-hidden="true"> <!-- ID: issueTemplateModal -->
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content border-0 rounded-3 shadow">
