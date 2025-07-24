@@ -174,33 +174,21 @@ ISSUE TEMPLATE MODAL CODE >:( TOO TIRED TO PUT IN NEW FILE
       <div class="modal-body pt-0">
         <form id="issueTemplateForm" class="row g-3"> <!-- ID: issueTemplateForm -->
 
-          <!-- Program Dropdown -->
-          <!-- Expected Value: "BSCS", "BSIT", "BSIS" -->
-          <div class="col-md-6">
-            <label for="programSelect" class="form-label">Program</label>
-            <select class="form-select" id="programSelect" required> <!-- ID: programSelect -->
-              <option disabled selected>Select Program</option>
-              <option value="BSCS">PROGRAM 1</option>
-              <option value="BSIT">PROGRAM 2</option>
-              <option value="BSIS">PROGRAM 3</option>
-            </select>
-          </div>
-
-          <!-- Course Dropdown -->
-          <!-- Expected Value: Course code like "CS101", "IT202", etc. -->
-          <div class="col-md-6">
-            <label for="courseSelect" class="form-label">Course</label>
-            <select class="form-select" id="courseSelect" required> <!-- ID: courseSelect -->
-              <option disabled selected>Select Course</option>
-              <option value="CS101">COURSE 1</option>
-              <option value="IT202">COURSE 2</option>
-              <option value="IS303">COURSE 3</option>
-            </select>
+          <!-- College Field -->
+          <!-- Editable field with datalist suggestions -->
+          <div class="col-12">
+            <label for="collegeInput" class="form-label">College</label>
+            <input type="text" id="collegeInput" class="form-control" list="collegeSuggestions" placeholder="Enter college name" required> <!-- ID: collegeInput -->
+            <datalist id="collegeSuggestions"> <!-- ID: collegeSuggestions -->
+              <option value="College of Computer Science">
+              <option value="College of Business">
+              <option value="College of Education">
+              <option value="College of Arts and Sciences">
+            </datalist>
           </div>
 
           <!-- Professors Input -->
           <!-- Accepts comma-separated professor names -->
-          <!-- Will be parsed into array on submit -->
           <div class="col-12">
             <label for="professorsInput" class="form-label">Professors</label>
             <input type="text" id="professorsInput" class="form-control" placeholder="Enter professor names, separated by commas" required> <!-- ID: professorsInput -->
@@ -235,8 +223,7 @@ ISSUE TEMPLATE MODAL CODE >:( TOO TIRED TO PUT IN NEW FILE
     });
 
     document.getElementById('confirmIssueBtn').addEventListener('click', () => { // ID: confirmIssueBtn
-      const program = document.getElementById('programSelect').value; // ID: programSelect
-      const course = document.getElementById('courseSelect').value;   // ID: courseSelect
+      const college = document.getElementById('collegeInput').value.trim(); // ID: collegeInput
 
       // Parse comma-separated professor names from input
       const rawInput = document.getElementById('professorsInput').value || ""; // ID: professorsInput
@@ -245,8 +232,7 @@ ISSUE TEMPLATE MODAL CODE >:( TOO TIRED TO PUT IN NEW FILE
                                  .filter(name => name.length > 0);
 
       const payload = {
-        program,
-        course,
+        college,
         professors
       };
 
