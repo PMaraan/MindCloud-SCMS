@@ -323,15 +323,18 @@ select {
 }
 
 .element.selected,
+.text-field.element.selected .element-body,
+.signature-block.element.selected,
 .label-block.selected,
 .paragraph-block.selected,
 .table-block.element.selected {
   border-color: #007bff;
   background-color: #e9f5ff;
-  box-shadow: inset 0 0 0 2px #007bff;
+  box-shadow: inset 0 0 0 1px #007bff;
 }
 
 .element-body {
+  padding: 0px 5px;
   width: 100%;
   min-height: 100%;
   outline: none;
@@ -391,23 +394,9 @@ select {
   padding: 0;
 }
 
-/* Match inner input style of .text-field */
-.element[data-type="text-3"] .element-body {
-  border: 1px solid #999;
-  border-radius: 4px;
-  height: 100%;
-  width: 100%;
-  box-sizing: border-box;
-  background: white;
-  font-weight: normal;
-  white-space: pre-wrap;
-  word-break: break-word;
-  overflow-y: hidden;
-}
-
 /* Match focus outline */
 .element[data-type="text-3"] .element-body:focus {
-  outline: 2px solid #0d6efd;
+  outline: 1px solid #0d6efd;
 }
 
 
@@ -423,7 +412,6 @@ select {
 /*         TEXT FIELD            */
 /* ============================== */
 .text-field {
-  border: 1.5px solid #444 !important;
   border-radius: 4px;
   background: #fff;
   box-sizing: border-box;
@@ -489,11 +477,6 @@ td:hover .resizer {
 td.multi-selected {
   outline: 2px dashed #007bff;
   background-color: #eaf3ff;
-}
-
-.table-block.selected-table {
-  outline: 2px solid #3b82f6; /* blue border */
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
 }
 
 /* ============================== */
@@ -643,12 +626,11 @@ td.multi-selected {
 /* ============================== */
 .remove-btn {
   position: absolute;
-  top: 4px;
-  right: 4px;
+  top: 1px;
+  right: 1px;
   z-index: 10;
   background: transparent;
   border: none;
-  border-radius: 50%;
   font-size: 20px;
   width: 20px;
   height: 20px;

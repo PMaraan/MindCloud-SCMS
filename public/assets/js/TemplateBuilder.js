@@ -356,7 +356,6 @@ updatePageNumbers() {
 placeElement(startContent, el, y) {
   const ROW = this.ROW_HEIGHT;
 
-  // 1️⃣ Handle first-time height measurement and row snapping
   if (!el.dataset.measured &&
       (el.classList.contains("table-block") || el.classList.contains("signature-block"))) {
 
@@ -377,7 +376,6 @@ placeElement(startContent, el, y) {
     return this.placeElement(startContent, el, y);
   }
 
-  // 2️⃣ Standard element placement
   const visited = new Set();
   let content = startContent;
   let currentY = y;
@@ -405,7 +403,6 @@ placeElement(startContent, el, y) {
 
     this.addRemoveButton(el);
 
-    // 3️⃣ Push any overlapping blocks downward
     const blocks = Array.from(content.querySelectorAll(".element, .label-block, .paragraph-block"))
       .filter(b => b !== el)
       .sort((a, b) => parseInt(a.style.top || 0, 10) - parseInt(b.style.top || 0, 10));
@@ -994,91 +991,152 @@ setupTextArea(el) {
   const type = el.dataset.type;
   const ROW = this.ROW_HEIGHT;
   const minRows = type === "paragraph" ? 1 : 3;
-  const maxHeight = this.maxAllowedHeight(el);
 
   body.style.resize = "none";
-  body.style.overflow = "hidden"; // Optional: prevent scrollbar
 
-  let prevText = body.innerText;
-
-  const resizeToFit = () => {
-    const clone = body.cloneNode(true);
-    clone.style.visibility = "hidden";
-    clone.style.position = "absolute";
-    clone.style.height = "auto";
-    clone.style.maxHeight = "none";
-    clone.style.whiteSpace = "pre-wrap";
-    clone.style.width = body.clientWidth + "px";
-    clone.style.pointerEvents = "none";
-
-    body.parentNode.appendChild(clone);
-    clone.innerText = body.innerText;
-
-    const newHeight = Math.min(clone.scrollHeight, maxHeight);
-    const rows = Math.max(minRows, Math.round(newHeight / ROW));
-
-    el.dataset.rows = rows;
-    el.style.height = `${rows * ROW}px`;
-
-    clone.remove();
+  const observeResize = () => {
+    const snapped = Math.round(el.offsetHeight / ROW);
+    el.dataset.rows = snapped;
+    el.style.height = `${snapped * ROW}px`;
   };
 
-  const enforceLimit = () => {
-    const clone = body.cloneNode(true);
-    clone.style.visibility = "hidden";
-    clone.style.position = "absolute";
-    clone.style.height = "auto";
-    clone.style.maxHeight = "none";
-    clone.style.whiteSpace = "pre-wrap";
-    clone.style.width = body.clientWidth + "px";
-    clone.style.pointerEvents = "none";
+  requestAnimationFrame(() => {
+    new ResizeObserver(observeResize).observe(el);
+  });
 
-    body.parentNode.appendChild(clone);
-    clone.innerText = body.innerText;
+  let prevHTML = body.innerHTML;
 
-    if (clone.scrollHeight > maxHeight) {
-      body.innerText = prevText;
+  const resizeToContent = () => {
+    const maxHeight = this.maxAllowedHeight(el);
+    const currentRows = parseInt(el.dataset.rows || minRows, 10);
+
+    // Allow shrink
+    if (currentRows > minRows) el.style.height = "auto";
+
+    const contentHeight = body.scrollHeight;
+
+    if (contentHeight > maxHeight) {
+      el.style.height = `${currentRows * ROW}px`;
+      body.innerHTML = prevHTML;
       this.restoreCursor(body);
-    } else {
-      prevText = body.innerText;
-      resizeToFit();
+      return;
     }
 
-    clone.remove();
+    const rawRows = contentHeight / ROW;
+    const newRows = Math.max(minRows, Math.ceil(rawRows));
+    if (newRows !== currentRows) {
+      el.dataset.rows = newRows;
+      el.style.height = `${newRows * ROW}px`;
+      requestAnimationFrame(() => {
+        this.reflowContent(el.closest(".content"));
+      });
+    } else {
+      // Snap height to grid even if row count didn't change
+      const snappedHeight = newRows * ROW;
+      if (el.offsetHeight !== snappedHeight) {
+        el.style.height = `${snappedHeight}px`;
+      }
+    }
+
+    prevHTML = body.innerHTML;
   };
 
-  const resizeObserver = new ResizeObserver(() => {
-    this.reflowContent(); // Adjust nearby elements after height change
-  });
-  resizeObserver.observe(el);
-
-  body.addEventListener("keydown", (e) => {
+  body.addEventListener("keydown", e => {
     if (["Enter", "Backspace", "Delete"].includes(e.key)) {
-      requestAnimationFrame(() => {
-        enforceLimit();
-        this.saveHistory();
-      });
+      prevHTML = body.innerHTML;
+      requestAnimationFrame(resizeToContent);
     }
   });
 
   body.addEventListener("input", () => {
-    enforceLimit();
+    resizeToContent();
     this.saveHistory();
   });
 
-  body.addEventListener("paste", (e) => {
+  body.addEventListener("paste", e => {
     this.sanitizePaste(e);
-    requestAnimationFrame(() => {
-      enforceLimit();
-      this.saveHistory();
-    });
+    requestAnimationFrame(resizeToContent);
   });
 
-  // Initial fit
   requestAnimationFrame(() => {
-    resizeToFit();
+    this.setupGripResize(el, body);
+    resizeToContent(); // Ensure it's initialized correctly
+  });
+}
+setupLabelAndTextFieldResize(el) {
+  const body = el.querySelector(".element-body");
+  if (!body) return;
+
+  const ROW = this.ROW_HEIGHT;
+  const minRows = 1;
+  const type = el.dataset.type;
+
+  // Prevent manual resizing
+  body.style.resize = "none";
+
+  // Initial observation
+  requestAnimationFrame(() => {
+    new ResizeObserver(() => {
+      const snapped = Math.round(el.offsetHeight / ROW);
+      el.dataset.rows = snapped;
+      el.style.height = `${snapped * ROW}px`;
+    }).observe(el);
+  });
+
+  let prevHTML = body.innerHTML;
+
+  const resizeToFitContent = () => {
+    const maxHeight = this.maxAllowedHeight(el);
+    const currentRows = parseInt(el.dataset.rows || minRows, 10);
+
+    // Reset height to shrink first
+    if (currentRows > minRows) {
+      el.style.height = "auto";
+    }
+
+    const contentHeight = body.scrollHeight;
+
+    if (contentHeight > maxHeight) {
+      el.style.height = `${currentRows * ROW}px`;
+      body.innerHTML = prevHTML;
+      this.restoreCursor(body);
+      return;
+    }
+
+    const rawRows = contentHeight / ROW;
+    const newRows = Math.max(minRows, Math.ceil(rawRows));
+
+    if (newRows !== currentRows) {
+      el.dataset.rows = newRows;
+      el.style.height = `${newRows * ROW}px`;
+      requestAnimationFrame(() => {
+        this.reflowContent(el.closest(".content"));
+      });
+    } else {
+      // Force snap to grid if needed
+      const snapped = newRows * ROW;
+      if (el.offsetHeight !== snapped) {
+        el.style.height = `${snapped}px`;
+      }
+    }
+
+    prevHTML = body.innerHTML;
+  };
+
+  body.addEventListener("input", resizeToFitContent);
+  body.addEventListener("keydown", e => {
+    if (["Enter", "Backspace", "Delete"].includes(e.key)) {
+      prevHTML = body.innerHTML;
+      requestAnimationFrame(resizeToFitContent);
+    }
+  });
+  body.addEventListener("paste", e => this.sanitizePaste(e));
+
+  requestAnimationFrame(() => {
     this.setupGripResize(el, body);
   });
+
+  body.addEventListener("input", () => this.saveHistory());
 }
 setupLabelInputRestrictions(labelElement) {
   const body = labelElement.querySelector(".element-body");
