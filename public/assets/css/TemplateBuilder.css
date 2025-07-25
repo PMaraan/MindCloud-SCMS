@@ -369,7 +369,6 @@ select {
   align-items: center;
   justify-content: flex-start;
   height: 100%;
-  padding: 4px 6px;
   text-align: left;
   overflow: visible;
   white-space: normal;
@@ -378,7 +377,6 @@ select {
 }
 
 .paragraph-block .element-body {
-  padding: 6px 6px 4px;
   line-height: 1.4;
   vertical-align: top;
   word-break: break-word;
@@ -397,7 +395,6 @@ select {
 .element[data-type="text-3"] .element-body {
   border: 1px solid #999;
   border-radius: 4px;
-  padding: 4px 6px;
   height: 100%;
   width: 100%;
   box-sizing: border-box;
@@ -436,7 +433,6 @@ select {
 .text-field .element-body {
   border: 1px solid #999;
   border-radius: 4px;
-  padding: 4px 6px;
   height: 100%;
   width: 100%;
   background: white;
@@ -473,7 +469,6 @@ table.element-table tr {
 .table-block td,
 table.element-table td {
   border: 1px solid #bbb;
-  padding: 2px 4px;
   box-sizing: border-box;
   vertical-align: top;
   word-break: break-word;
