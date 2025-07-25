@@ -994,61 +994,89 @@ setupTextArea(el) {
   const type = el.dataset.type;
   const ROW = this.ROW_HEIGHT;
   const minRows = type === "paragraph" ? 1 : 3;
+  const maxHeight = this.maxAllowedHeight(el);
 
   body.style.resize = "none";
-  let prevHTML = body.innerHTML;
+  body.style.overflow = "hidden"; // Optional: prevent scrollbar
 
-  const resizeToContent = () => {
-    const maxHeight = this.maxAllowedHeight(el);
-    const currentRows = parseInt(el.dataset.rows || minRows, 10);
+  let prevText = body.innerText;
 
-    if (currentRows > minRows) el.style.height = 'auto';
+  const resizeToFit = () => {
+    const clone = body.cloneNode(true);
+    clone.style.visibility = "hidden";
+    clone.style.position = "absolute";
+    clone.style.height = "auto";
+    clone.style.maxHeight = "none";
+    clone.style.whiteSpace = "pre-wrap";
+    clone.style.width = body.clientWidth + "px";
+    clone.style.pointerEvents = "none";
 
-    const contentHeight = body.scrollHeight;
-    if (contentHeight > maxHeight) {
-      el.style.height = `${currentRows * ROW}px`;
-      body.innerHTML = prevHTML;
-      this.restoreCursor(body);
-      return;
-    }
+    body.parentNode.appendChild(clone);
+    clone.innerText = body.innerText;
 
-    const newRows = Math.max(minRows, Math.ceil(contentHeight / ROW));
-    if (newRows !== currentRows) {
-      el.dataset.rows = newRows;
-      el.style.height = `${newRows * ROW}px`;
-      requestAnimationFrame(() => this.reflowContent(el.closest(".content")));
-    } else {
-      // Snap height even if row count hasn't changed
-      const snapped = newRows * ROW;
-      if (el.offsetHeight !== snapped) el.style.height = `${snapped}px`;
-    }
+    const newHeight = Math.min(clone.scrollHeight, maxHeight);
+    const rows = Math.max(minRows, Math.round(newHeight / ROW));
 
-    prevHTML = body.innerHTML;
-  };
-
-  // Observe resize externally (e.g., from grip drag)
-  const resizeObserver = new ResizeObserver(() => {
-    const rows = Math.round(el.offsetHeight / ROW);
     el.dataset.rows = rows;
     el.style.height = `${rows * ROW}px`;
+
+    clone.remove();
+  };
+
+  const enforceLimit = () => {
+    const clone = body.cloneNode(true);
+    clone.style.visibility = "hidden";
+    clone.style.position = "absolute";
+    clone.style.height = "auto";
+    clone.style.maxHeight = "none";
+    clone.style.whiteSpace = "pre-wrap";
+    clone.style.width = body.clientWidth + "px";
+    clone.style.pointerEvents = "none";
+
+    body.parentNode.appendChild(clone);
+    clone.innerText = body.innerText;
+
+    if (clone.scrollHeight > maxHeight) {
+      body.innerText = prevText;
+      this.restoreCursor(body);
+    } else {
+      prevText = body.innerText;
+      resizeToFit();
+    }
+
+    clone.remove();
+  };
+
+  const resizeObserver = new ResizeObserver(() => {
+    this.reflowContent(); // Adjust nearby elements after height change
   });
   resizeObserver.observe(el);
 
-  body.addEventListener("keydown", e => {
+  body.addEventListener("keydown", (e) => {
     if (["Enter", "Backspace", "Delete"].includes(e.key)) {
-      prevHTML = body.innerHTML;
-      requestAnimationFrame(resizeToContent);
+      requestAnimationFrame(() => {
+        enforceLimit();
+        this.saveHistory();
+      });
     }
   });
 
   body.addEventListener("input", () => {
-    resizeToContent();
+    enforceLimit();
     this.saveHistory();
   });
 
-  body.addEventListener("paste", e => this.sanitizePaste(e));
+  body.addEventListener("paste", (e) => {
+    this.sanitizePaste(e);
+    requestAnimationFrame(() => {
+      enforceLimit();
+      this.saveHistory();
+    });
+  });
 
+  // Initial fit
   requestAnimationFrame(() => {
+    resizeToFit();
     this.setupGripResize(el, body);
   });
 }
@@ -1056,28 +1084,41 @@ setupLabelInputRestrictions(labelElement) {
   const body = labelElement.querySelector(".element-body");
   if (!body) return;
 
-  let previousText = body.innerText;
+  let prevText = body.innerText;
 
-  // Prevent line breaks
   body.addEventListener("keydown", (e) => {
     if (e.key === "Enter") e.preventDefault();
   });
 
-  // Sanitize pasted content
-  body.addEventListener("paste", (e) => this.sanitizePaste(e));
+  body.addEventListener("paste", (e) => {
+    this.sanitizePaste(e);
+    requestAnimationFrame(() => enforceLimit());
+  });
 
-  // Prevent text overflow
-  body.addEventListener("input", () => {
-    body.style.whiteSpace = "nowrap";
+  const enforceLimit = () => {
+    const clone = body.cloneNode(true);
+    clone.style.visibility = "hidden";
+    clone.style.position = "absolute";
+    clone.style.whiteSpace = "nowrap";
+    clone.style.width = body.clientWidth + "px";
+    clone.style.maxWidth = "none";
+    clone.style.pointerEvents = "none";
+    body.parentNode.appendChild(clone);
 
-    if (body.scrollWidth > body.clientWidth) {
-      body.innerText = previousText;
+    clone.innerText = body.innerText;
+
+    if (clone.scrollWidth > body.clientWidth) {
+      body.innerText = prevText;
       this.restoreCursor(body);
     } else {
-      previousText = body.innerText;
+      prevText = body.innerText;
     }
 
-    body.style.whiteSpace = "";
+    clone.remove();
+  };
+
+  body.addEventListener("input", () => {
+    enforceLimit();
   });
 }
 alignSelectedElement(cmd) {
