@@ -1,0 +1,58 @@
+/* account-details.css */
+
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #f9f9f9;
+}
+
+.container {
+  max-width: 600px;
+}
+
+h3 {
+  font-weight: 600;
+}
+
+.card {
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  box-shadow: 0 1px 6px rgba(60, 64, 67, 0.1);
+}
+
+.card-header {
+  font-weight: 600;
+  background-color: #fff;
+  border-bottom: 1px solid #ddd;
+}
+
+.form-label {
+  font-weight: 500;
+}
+
+.form-control {
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.btn-primary {
+  background-color: #1a73e8;
+  border: none;
+  padding: 10px 24px;
+  font-weight: 500;
+  border-radius: 20px;
+}
+
+.btn-primary:hover {
+  background-color: #1558b0;
+}
+
+.btn-secondary {
+  border-radius: 20px;
+  padding: 10px 24px;
+}
+
+.mb-3 label::after {
+  content: " ⓘ";
+  color: #aaa;
+  font-size: 0.9rem;
+}
