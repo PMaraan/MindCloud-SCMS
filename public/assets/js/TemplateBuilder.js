@@ -356,26 +356,52 @@ updatePageNumbers() {
 placeElement(startContent, el, y) {
   const ROW = this.ROW_HEIGHT;
 
-  if (!el.dataset.measured &&
-      (el.classList.contains("table-block") || el.classList.contains("signature-block"))) {
+  const isResizableSingleLine =
+    el.classList.contains("label-block") ||
+    el.classList.contains("text-field");
 
+  const isSignature = el.classList.contains("signature-block");
+
+  const isAutoResizable =
+    el.classList.contains("table-block") ||
+    isSignature ||
+    isResizableSingleLine;
+
+  const body = el.querySelector(".element-body");
+
+  // Step 1: Measure and set height if needed
+  if (isAutoResizable) {
     document.body.appendChild(el);
     el.style.position = "absolute";
     el.style.visibility = "hidden";
+    el.style.height = "auto";
+    if (body) body.style.height = "auto";
 
-    const actualHeight = el.offsetHeight;
-    const snappedHeight = this.snapToGrid(actualHeight);
-    const rows = snappedHeight / ROW;
+    // ⚠️ Patch: Correct signature height handling
+    let measuredHeight;
+    if (isSignature) {
+      const canvas = el.querySelector("canvas");
+      measuredHeight = canvas ? canvas.offsetHeight : el.scrollHeight;
+    } else {
+      measuredHeight = el.scrollHeight;
+    }
+
+    const snapped = this.snapToGrid(measuredHeight);
+    const rows = Math.max(1, Math.ceil(snapped / ROW));
 
     el.dataset.rows = rows;
-    el.style.height = `${snappedHeight}px`;
-    el.dataset.measured = "true";
+    el.style.height = `${snapped}px`;
+    if (body) body.style.height = `${snapped}px`;
 
     el.style.position = "";
     el.style.visibility = "";
-    return this.placeElement(startContent, el, y);
+
+    if (el.parentElement === document.body) {
+      document.body.removeChild(el);
+    }
   }
 
+  // Step 2: Find where to place
   const visited = new Set();
   let content = startContent;
   let currentY = y;
@@ -397,11 +423,13 @@ placeElement(startContent, el, y) {
     const topOffset = this.DROP_MARGIN + insertRow * ROW;
     el.style.top = `${topOffset}px`;
 
+    // Step 3: Append to content
     if (!content.contains(el)) {
       content.appendChild(el);
     }
 
     this.addRemoveButton(el);
+    this.makeMovable(el);
 
     const blocks = Array.from(content.querySelectorAll(".element, .label-block, .paragraph-block"))
       .filter(b => b !== el)
@@ -427,6 +455,15 @@ placeElement(startContent, el, y) {
         this.placeElement(this.getNextContent(content), blk, 0);
       }
     }
+
+    // Step 4: Watch for font changes
+    if (isResizableSingleLine && !el.__resizeObserverAttached) {
+      this.setupAutoResizeSingleLine(el);
+      el.__resizeObserverAttached = true;
+    }
+
+    // Step 5: Restore selection highlight
+    this.selectElement(el);
 
     break;
   }
@@ -811,14 +848,25 @@ rebindWorkspace() {
       this.setupTextArea(el);
     }
 
-    // Snap all elements to the grid on rebind
+    // Resizing based on actual height
+    const isResizableSingleLine =
+      el.classList.contains("label-block") ||
+      el.classList.contains("text-field");
+
+    if (isResizableSingleLine) {
+      const height = this.snapToGrid(el.offsetHeight);
+      const rows = height / this.ROW_HEIGHT;
+      el.dataset.rows = rows;
+      el.style.height = `${height}px`;
+    }
+
+    // Snap all elements to the grid
     const top = parseInt(el.style.top || 0, 10);
     const height = parseInt(el.style.height || 0, 10);
     el.style.top = `${Math.round(top / this.ROW_HEIGHT) * this.ROW_HEIGHT}px`;
     el.style.height = `${Math.round(height / this.ROW_HEIGHT) * this.ROW_HEIGHT}px`;
   });
 
-  // Reattach drag+drop listeners
   this.workspace.querySelectorAll(".content").forEach(content => {
     content.addEventListener("dragover", e => e.preventDefault());
 
@@ -830,7 +878,6 @@ rebindWorkspace() {
     });
   });
 
-  // Ensure ghost line exists
   if (!this.ghostLine || !this.workspace.contains(this.ghostLine)) {
     this.ghostLine = document.createElement("div");
     this.ghostLine.className = "ghost-line";
@@ -840,9 +887,14 @@ rebindWorkspace() {
 
   this.updatePageNumbers();
 }
+
 selectElement(el) {
   if (this.selectedElement) {
     this.selectedElement.classList.remove("selected");
+
+    // Disable user-select for previously selected element
+    const prevBody = this.selectedElement.querySelector(".element-body");
+    if (prevBody) prevBody.style.userSelect = "none";
   }
 
   this.selectedElement = null;
@@ -858,13 +910,18 @@ selectElement(el) {
   el.classList.add("selected");
   this.selectedElement = el;
 
+  // ✅ Enable user-select only for selected element
+  const body = el.querySelector(".element-body, .header-title, .header-subtitle, .footer-left") || el;
+  if (body && body.classList.contains("element-body")) {
+    body.style.userSelect = "text";
+  }
+
   // Snap position of selected element (optional: for visual alignment)
   const top  = parseInt(el.style.top || 0, 10);
   const left = parseInt(el.style.left || 0, 10);
   el.style.top  = `${this.snapToGrid(top)}px`;
   el.style.left = `${this.snapToGrid(left)}px`;
 
-  const body = el.querySelector(".element-body, .header-title, .header-subtitle, .footer-left") || el;
   const cs = window.getComputedStyle(body);
 
   const fam = cs.fontFamily.split(",")[0].replace(/["']/g, "").trim();
@@ -927,6 +984,7 @@ selectElement(el) {
     this.tableToolbar.hide();
   }
 }
+
 toggleStyleForSelected(cmd) {
   if (!this.selectedElement) return;
 
@@ -1063,6 +1121,26 @@ setupTextArea(el) {
     resizeToContent(); // Ensure it's initialized correctly
   });
 }
+setupAutoResizeSingleLine(el) {
+  const ROW = this.ROW_HEIGHT;
+  const body = el.querySelector(".element-body");
+  if (!body) return;
+
+  const resize = () => {
+    el.style.height = "auto";
+    body.style.height = "auto";
+    const h = this.snapToGrid(el.scrollHeight);
+    el.style.height = `${h}px`;
+    body.style.height = `${h}px`;
+    el.dataset.rows = h / ROW;
+  };
+
+  const observer = new ResizeObserver(resize);
+  observer.observe(body);
+}
+
+
+
 setupLabelAndTextFieldResize(el) {
   const body = el.querySelector(".element-body");
   if (!body) return;
