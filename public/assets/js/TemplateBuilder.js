@@ -681,6 +681,10 @@ makeMovable(el) {
   const grip = el.querySelector(".drag-handle");
   if (!grip) return;
 
+  // Prevent the grip itself from being draggable or duplicated
+  grip.setAttribute("draggable", "false");
+  grip.addEventListener("dragstart", e => e.preventDefault());
+
   grip.addEventListener("mousedown", startEvt => {
     this.selectElement(el);
     startEvt.preventDefault();
@@ -727,6 +731,7 @@ makeMovable(el) {
     document.addEventListener("mouseup", onUp);
   });
 }
+
 reflowContent(content) {
   const ROW = this.ROW_HEIGHT;
   const DROP_MARGIN = this.DROP_MARGIN;
