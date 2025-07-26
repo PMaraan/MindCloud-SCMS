@@ -55,58 +55,6 @@ constructor() {
 snapToGrid(value) {
   return Math.round(value / this.SNAP_GRID_SIZE) * this.SNAP_GRID_SIZE;
 } 
-setupGripResize(el, body) {
-  const grip = document.createElement("div");
-  grip.className = "resize-handle";
-  el.appendChild(grip);
-
-  grip.addEventListener("mousedown", startEvt => {
-    startEvt.preventDefault();
-
-    const startY = startEvt.clientY;
-    const startHeight = el.offsetHeight;
-    const scrollHeightAtStart = body.scrollHeight;
-
-    const onMove = mv => {
-      const delta = mv.clientY - startY;
-      let newHeight = startHeight + delta;
-
-      const maxH = this.maxAllowedHeight(el);
-      const minH = Math.max(scrollHeightAtStart, this.ROW_HEIGHT);
-
-      // Clamp height to allowed range
-      newHeight = Math.max(minH, Math.min(maxH, newHeight));
-
-      // Snap to nearest row height
-      newHeight = Math.round(newHeight / this.ROW_HEIGHT) * this.ROW_HEIGHT;
-
-      // Apply new height and row metadata
-      const rows = Math.round(newHeight / this.ROW_HEIGHT);
-      el.dataset.rows = rows;
-      el.style.height = `${newHeight}px`;
-
-      // Ensure the body stretches full height to prevent shrinking
-      body.style.height = "100%";
-
-      // Reflow the content on the same page
-      const content = el.closest(".content");
-      this.reflowContent(content);
-    };
-
-    const onUp = () => {
-      // Final snap and reflow, in case user let go mid-grid
-      this.snapToGrid(el);
-      const content = el.closest(".content");
-      this.reflowContent(content);
-
-      document.removeEventListener("mousemove", onMove);
-      document.removeEventListener("mouseup", onUp);
-    };
-
-    document.addEventListener("mousemove", onMove);
-    document.addEventListener("mouseup", onUp);
-  });
-}
 attachEventListeners() {
   ["justifyLeft", "justifyCenter", "justifyRight"].forEach(cmd => {
     const btn = document.querySelector(`[data-cmd="${cmd}"]`);
@@ -731,7 +679,6 @@ makeMovable(el) {
     document.addEventListener("mouseup", onUp);
   });
 }
-
 reflowContent(content) {
   const ROW = this.ROW_HEIGHT;
   const DROP_MARGIN = this.DROP_MARGIN;
@@ -892,7 +839,6 @@ rebindWorkspace() {
 
   this.updatePageNumbers();
 }
-
 selectElement(el) {
   if (this.selectedElement) {
     this.selectedElement.classList.remove("selected");
@@ -989,7 +935,6 @@ selectElement(el) {
     this.tableToolbar.hide();
   }
 }
-
 toggleStyleForSelected(cmd) {
   if (!this.selectedElement) return;
 
@@ -1143,9 +1088,6 @@ setupAutoResizeSingleLine(el) {
   const observer = new ResizeObserver(resize);
   observer.observe(body);
 }
-
-
-
 setupLabelAndTextFieldResize(el) {
   const body = el.querySelector(".element-body");
   if (!body) return;
