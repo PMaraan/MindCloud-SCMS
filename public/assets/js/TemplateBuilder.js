@@ -2186,61 +2186,77 @@ mergeSelectedCells() {
   if (!this.table || this.selectedCells.size <= 1) return;
 
   const selected = Array.from(this.selectedCells);
+  const rows = Array.from(this.table.rows);
 
-  // Compute bounding rectangle
-  let minRow = Infinity, maxRow = -1;
-  let minCol = Infinity, maxCol = -1;
+  // Step 1: Build virtual cell map
+  const map = [];
+  for (let r = 0; r < rows.length; r++) map[r] = [];
+  
+  for (let r = 0; r < rows.length; r++) {
+    const row = rows[r];
+    let col = 0;
 
-  for (const cell of selected) {
-    const row = cell.parentElement.rowIndex;
-    const col = cell.cellIndex;
+    for (const cell of row.cells) {
+      while (map[r][col]) col++;
+      const rowspan = cell.rowSpan || 1;
+      const colspan = cell.colSpan || 1;
 
-    if (row < minRow) minRow = row;
-    if (row > maxRow) maxRow = row;
-    if (col < minCol) minCol = col;
-    if (col > maxCol) maxCol = col;
+      for (let i = 0; i < rowspan; i++) {
+        for (let j = 0; j < colspan; j++) {
+          map[r + i][col + j] = cell;
+        }
+      }
+
+      col += colspan;
+    }
   }
 
-  const rowspan = maxRow - minRow + 1;
-  const colspan = maxCol - minCol + 1;
+  // Step 2: Determine bounding box of selection
+  let minRow = Infinity, maxRow = -1, minCol = Infinity, maxCol = -1;
 
-  // Check that all expected cells are selected
-  let allSelected = true;
-  for (let r = minRow; r <= maxRow; r++) {
-    const row = this.table.rows[r];
-    for (let c = minCol; c <= maxCol; c++) {
-      const cell = row.cells[c];
-      if (!cell || !this.selectedCells.has(cell)) {
-        allSelected = false;
-        break;
+  for (const cell of selected) {
+    for (let r = 0; r < map.length; r++) {
+      for (let c = 0; c < map[r].length; c++) {
+        if (map[r][c] === cell) {
+          minRow = Math.min(minRow, r);
+          maxRow = Math.max(maxRow, r);
+          minCol = Math.min(minCol, c);
+          maxCol = Math.max(maxCol, c);
+        }
       }
     }
-    if (!allSelected) break;
   }
 
-  if (!allSelected) {
-    alert("⚠️ You must select a full rectangle of adjacent cells.");
-    return;
+  // Step 3: Check if all cells in bounding box are part of the selection
+  const coveredCells = new Set();
+  for (let r = minRow; r <= maxRow; r++) {
+    for (let c = minCol; c <= maxCol; c++) {
+      const cell = map[r][c];
+      if (!cell || !this.selectedCells.has(cell)) {
+        alert("⚠️ Please select a full rectangle of cells to merge.");
+        return;
+      }
+      coveredCells.add(cell);
+    }
   }
 
-  const baseCell = this.table.rows[minRow].cells[minCol];
-  baseCell.rowSpan = rowspan;
-  baseCell.colSpan = colspan;
+  // Step 4: Merge into the top-left cell
+  const targetCell = map[minRow][minCol];
+  targetCell.rowSpan = maxRow - minRow + 1;
+  targetCell.colSpan = maxCol - minCol + 1;
 
-  // Remove other cells
-  for (const cell of selected) {
-    if (cell !== baseCell && cell.parentElement) {
+  // Remove other cells from DOM
+  for (const cell of coveredCells) {
+    if (cell !== targetCell) {
       cell.parentElement.removeChild(cell);
     }
   }
 
-  // Reset selection
+  // Cleanup
   this.selectedCells.clear();
-  this.selectedCell = baseCell;
-  this.updateCellSelection();
+  this.selectedCell = targetCell;
+  this.updateSelectionAndRefresh();
 }
-
-
 unmergeSelectedCell() {
   if (!this.selectedCell || !this.table) return;
 
