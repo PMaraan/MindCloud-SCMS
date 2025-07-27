@@ -1721,53 +1721,43 @@ resnapAndReflow() {
     this.unlockCellEditing();
   }
 }
-handleCommand(cmd) {
+ handleCommand(cmd) {
   if (!this.table) return;
 
   if (!this.selectedCell) {
-    // Fallback to first cell if none selected
+    // fallback to first cell
     this.selectedCell = this.table.querySelector("td");
     if (!this.selectedCell) return;
   }
 
-  // Use grid-aware coordinate lookup
-  const pos = this.getCellCoordinates(this.selectedCell);
-  if (!pos) return;
-
-  const { row, col } = pos;
+  const rowIndex = this.selectedCell.parentElement.rowIndex;
+  const cellIndex = this.selectedCell.cellIndex;
 
   switch (cmd) {
     case "AddRow":
-      this.insertRow(row + 1);
+      this.insertRow(rowIndex + 1);
       break;
-
     case "deleteRow":
-      this.deleteRow(row);
+      this.deleteRow(rowIndex);
       break;
-
     case "addColLeft":
-      this.insertColumn(col);
+      this.insertColumn(cellIndex);
       break;
-
     case "addColRight":
-      this.insertColumn(col + 1);
+      this.insertColumn(cellIndex + 1);
       break;
-
     case "deleteCol":
-      this.deleteColumn(col);
+      this.deleteColumn(cellIndex);
       break;
-
-    case "mergeCells":
-      this.mergeSelectedCells();
-      break;
-
-    case "unmergeCells":
-      this.unmergeSelectedCell();
-      break;
-
     default:
       console.warn("Unhandled table command:", cmd);
-      break;
+     case "mergeCells":
+  this.mergeSelectedCells();
+  break;
+case "unmergeCells":
+  this.unmergeSelectedCell();
+  break;
+
   }
 }
 getCellCoordinates(targetCell) {
@@ -2193,73 +2183,64 @@ deleteColumn(passedIndex = null) {
   this.builder.saveHistory?.();
 }
 mergeSelectedCells() {
-  if (!this.table || this.selectedCells.size <= 1) {
-    alert("Please select at least two cells to merge.");
-    return;
-  }
+  if (!this.table || this.selectedCells.size <= 1) return;
 
   const selected = Array.from(this.selectedCells);
-  const rows = Array.from(this.table.rows);
 
+  // Compute bounding rectangle
   let minRow = Infinity, maxRow = -1;
   let minCol = Infinity, maxCol = -1;
-  const selectedMap = new Set();
 
   for (const cell of selected) {
-    const pos = this.getCellCoordinates(cell);
-    if (!pos) continue;
+    const row = cell.parentElement.rowIndex;
+    const col = cell.cellIndex;
 
-    const { row, col } = pos;
-    minRow = Math.min(minRow, row);
-    maxRow = Math.max(maxRow, row);
-    minCol = Math.min(minCol, col);
-    maxCol = Math.max(maxCol, col);
-
-    selectedMap.add(`${row},${col}`);
-  }
-
-  // Ensure full rectangle is selected
-  for (let r = minRow; r <= maxRow; r++) {
-    for (let c = minCol; c <= maxCol; c++) {
-      const key = `${r},${c}`;
-      const cell = this.getCellAt(r, c);
-      if (!selectedMap.has(key) || !cell || !this.selectedCells.has(cell)) {
-        alert("Please select a full rectangular block of adjacent cells.");
-        return;
-      }
-    }
+    if (row < minRow) minRow = row;
+    if (row > maxRow) maxRow = row;
+    if (col < minCol) minCol = col;
+    if (col > maxCol) maxCol = col;
   }
 
   const rowspan = maxRow - minRow + 1;
   const colspan = maxCol - minCol + 1;
-  const target = this.getCellAt(minRow, minCol);
-  if (!target) return;
 
-  // Merge span
-  target.rowSpan = rowspan;
-  target.colSpan = colspan;
-  target.classList.remove("multi-selected");
-
-  // Remove other cells in selection (right-to-left)
+  // Check that all expected cells are selected
+  let allSelected = true;
   for (let r = minRow; r <= maxRow; r++) {
-    const row = rows[r];
-    for (let c = maxCol; c >= minCol; c--) {
-      const cell = this.getCellAt(r, c);
-      if (cell && cell !== target && row.contains(cell)) {
-        row.deleteCell(cell.cellIndex);
+    const row = this.table.rows[r];
+    for (let c = minCol; c <= maxCol; c++) {
+      const cell = row.cells[c];
+      if (!cell || !this.selectedCells.has(cell)) {
+        allSelected = false;
+        break;
       }
+    }
+    if (!allSelected) break;
+  }
+
+  if (!allSelected) {
+    alert("⚠️ You must select a full rectangle of adjacent cells.");
+    return;
+  }
+
+  const baseCell = this.table.rows[minRow].cells[minCol];
+  baseCell.rowSpan = rowspan;
+  baseCell.colSpan = colspan;
+
+  // Remove other cells
+  for (const cell of selected) {
+    if (cell !== baseCell && cell.parentElement) {
+      cell.parentElement.removeChild(cell);
     }
   }
 
-  // Finalize selection
+  // Reset selection
   this.selectedCells.clear();
-  this.selectedCell = target;
+  this.selectedCell = baseCell;
   this.updateCellSelection();
-
-  // Optional: Refresh
-  this.builder?.reflowTable?.(this.table);
-  this.builder?.saveHistory?.();
 }
+
+
 unmergeSelectedCell() {
   if (!this.selectedCell || !this.table) return;
 
