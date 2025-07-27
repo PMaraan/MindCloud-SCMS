@@ -1411,176 +1411,415 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 class TableToolbar {
-  constructor(builder) {
+ constructor(builder) {
     this.builder = builder;
     this.toolbarEl = document.getElementById("tableToolbar");
     this.workspace = document.getElementById("workspace");
-    this.onTableChanged = () => {};
 
     this.table = null;
     this.selectedCell = null;
     this.selectedCells = new Set();
 
+    this.onTableChanged = () => {};
+
+    // Bind toolbar button commands
     this.toolbarEl.querySelectorAll("[data-table-cmd]").forEach(btn => {
       const cmd = btn.getAttribute("data-table-cmd");
       btn.addEventListener("click", () => this.handleCommand(cmd));
     });
 
-    this.resizeObserver = new ResizeObserver(() => {
-      this.resnapAndReflow();
-    });
-  }
+    // Auto-resnap when resized
+    this.resizeObserver = new ResizeObserver(() => this.resnapAndReflow());
+}
+showForTable(tableEl, cellEl = null) {
+  if (!tableEl) return;
 
-  showForTable(tableEl, cellEl = null) {
-    if (!tableEl) return;
+  this.table = tableEl;
+  this.selectedCell = cellEl || tableEl.querySelector("td");
 
-    this.table = tableEl;
-    this.selectedCell = cellEl || tableEl.querySelector("td");
+  // Show toolbar and update workspace class
+  this.toolbarEl.classList.remove("d-none");
+  this.workspace.classList.add("table-toolbar-visible");
 
-    this.toolbarEl.classList.remove("d-none");
-    this.workspace.classList.add("table-toolbar-visible");
+  // Rebind events and update UI
+  this.rebindTableCellEvents();
+  this.updateCellSelection();
 
-    this.rebindTableCellEvents();
-    this.updateCellSelection();
+  // Observe table size changes (e.g., for snapping or layout recalculations)
+  this.resizeObserver.disconnect();
+  this.resizeObserver.observe(this.table);
 
-    this.resizeObserver.disconnect();
-    this.resizeObserver.observe(this.table);
-
-    // 🔒 Lock or unlock based on page limit
-    if (this.isTableAtPageLimit()) {
-      this.lockCellEditing();
-    } else {
-      this.unlockCellEditing();
-    }
-  }
-
- hide() {
+  // Optional: Lock editing if table violates grid rules or page limits
+  const isLocked = typeof this.isTableAtPageLimit === "function" && this.isTableAtPageLimit();
+  isLocked ? this.lockCellEditing() : this.unlockCellEditing();
+}
+hide() {
+  // Hide toolbar and cleanup workspace styling
   this.toolbarEl.classList.add("d-none");
   this.workspace.classList.remove("table-toolbar-visible");
 
-  // 🧼 Clear any lingering multi-selected cells
+  // Clear selection states from table cells
   if (this.table) {
     this.table.querySelectorAll("td").forEach(td => {
-      td.classList.remove("multi-selected");
-      td.classList.remove("selected-cell");
+      td.classList.remove("multi-selected", "selected-cell");
     });
   }
 
+  // Reset state
   this.table = null;
   this.selectedCell = null;
   this.selectedCells.clear();
   this.resizeObserver.disconnect();
 }
-updateCellSelection() {
-  if (!this.table || !this.selectedCell) return;
+isTableAtPageLimit() {
+  const container = this.table?.closest(".element");
+  const content = container?.closest(".content");
+  if (!container || !content) return false;
 
-  const allCells = Array.from(this.table.querySelectorAll("td"));
-  allCells.forEach(td => td.classList.remove("multi-selected", "selected-cell"));
+  const ROW = this.builder.ROW_HEIGHT;
+  const DROP_MARGIN = this.builder.DROP_MARGIN || 20;
 
-  // Always highlight the most recently clicked cell
-  this.selectedCell.classList.add("selected-cell");
+  const usableHeight = content.clientHeight - DROP_MARGIN;
 
-  if (this.selectedCells.size <= 1) return;
+  const containerTop = parseInt(container.style.top || "0", 10);
+  const containerHeight = parseInt(container.style.height || "0", 10);
 
-  // ---- Map cell placement to grid ----
-  const map = [];
-  const rowCount = this.table.rows.length;
+  const bottomEdge = containerTop + containerHeight;
 
-  for (let r = 0; r < rowCount; r++) map[r] = [];
+  return bottomEdge >= usableHeight;
+}
+lockCellEditing() {
+  if (!this.table) return;
+  this.table.classList.add("locked");
 
-  for (let r = 0; r < rowCount; r++) {
-    const row = this.table.rows[r];
-    let col = 0;
-    for (let c = 0; c < row.cells.length; c++) {
-      const cell = row.cells[c];
-      const rowspan = cell.rowSpan || 1;
-      const colspan = cell.colSpan || 1;
-
-      // Skip over filled positions
-      while (map[r][col]) col++;
-
-      for (let i = 0; i < rowspan; i++) {
-        for (let j = 0; j < colspan; j++) {
-          map[r + i][col + j] = cell;
-        }
-      }
-
-      col += colspan;
-    }
-  }
-
-  // ---- Determine selection rectangle ----
-  let top = Infinity, left = Infinity, bottom = -1, right = -1;
-  for (const cell of this.selectedCells) {
-    const pos = this.getCellCoordinates(cell);
-    if (!pos) continue;
-
-    const rowspan = cell.rowSpan || 1;
-    const colspan = cell.colSpan || 1;
-
-    top = Math.min(top, pos.row);
-    left = Math.min(left, pos.col);
-    bottom = Math.max(bottom, pos.row + rowspan - 1);
-    right = Math.max(right, pos.col + colspan - 1);
-  }
-
-  // ---- Select all unique cells in the rectangle ----
-  const selected = new Set();
-
-  for (let r = top; r <= bottom; r++) {
-    for (let c = left; c <= right; c++) {
-      const cell = map[r]?.[c];
-      if (cell) selected.add(cell);
-    }
-  }
-
-  // Clear and apply correct selection
-  this.selectedCells.clear();
-  selected.forEach(cell => {
-    cell.classList.add("multi-selected");
-    this.selectedCells.add(cell);
+  const allCells = this.table.querySelectorAll("td");
+  allCells.forEach(cell => {
+    cell.setAttribute("contenteditable", "false");
+    cell.classList.add("locked-cell");
   });
 }
+unlockCellEditing() {
+  if (!this.table) return;
+  this.table.classList.remove("locked");
 
+  const allCells = this.table.querySelectorAll("td");
+  allCells.forEach(cell => {
+    cell.setAttribute("contenteditable", "true");
+    cell.classList.remove("locked-cell");
+  });
+}
+rebindTableCellEvents() {
+  if (!this.table) return;
 
-getCellCoordinates(targetCell) {
-  for (let r = 0; r < this.table.rows.length; r++) {
+  const allCells = Array.from(this.table.querySelectorAll("td"));
+
+  const getPosition = (cell) => {
+    const row = cell.parentElement.rowIndex;
     let col = 0;
-    const row = this.table.rows[r];
-    for (let c = 0; c < row.cells.length; c++) {
-      const cell = row.cells[c];
-      const rowspan = cell.rowSpan || 1;
-      const colspan = cell.colSpan || 1;
+    for (const c of cell.parentElement.cells) {
+      if (c === cell) break;
+      col += c.colSpan || 1;
+    }
+    return { row, col };
+  };
+
+  const getCellBox = (cell) => {
+    const { row, col } = getPosition(cell);
+    const rowSpan = cell.rowSpan || 1;
+    const colSpan = cell.colSpan || 1;
+    return {
+      top: row,
+      left: col,
+      bottom: row + rowSpan - 1,
+      right: col + colSpan - 1
+    };
+  };
+
+  allCells.forEach(td => {
+    // 🔘 Cell Click Handler (Shift-select & Single-select)
+    td.onclick = (e) => {
+      const currentBox = getCellBox(td);
+
+      if (e.shiftKey && this.anchorCell) {
+        const anchorBox = getCellBox(this.anchorCell);
+
+        const minRow = Math.min(anchorBox.top, currentBox.top);
+        const maxRow = Math.max(anchorBox.bottom, currentBox.bottom);
+        const minCol = Math.min(anchorBox.left, currentBox.left);
+        const maxCol = Math.max(anchorBox.right, currentBox.right);
+
+        this.selectedCells.clear();
+        allCells.forEach(cell => {
+          cell.classList.remove("multi-selected", "selected-cell");
+
+          const box = getCellBox(cell);
+          const isWithin = (
+            box.top >= minRow && box.bottom <= maxRow &&
+            box.left >= minCol && box.right <= maxCol
+          );
+
+          if (isWithin) {
+            cell.classList.add("multi-selected");
+            this.selectedCells.add(cell);
+          }
+        });
+
+        this.selectedCell = td;
+        td.classList.add("selected-cell");
+        this.updateCellSelection();
+      } else {
+        // 🖱️ Regular click
+        this.anchorCell = td;
+        this.selectedCell = td;
+        this.selectedCells.clear();
+
+        allCells.forEach(cell =>
+          cell.classList.remove("multi-selected", "selected-cell")
+        );
+
+        td.classList.add("multi-selected", "selected-cell");
+        this.selectedCells.add(td);
+
+        this.updateCellSelection();
+        this.showForTable(this.table, td);
+      }
+    };
+
+    // ⛔ Disable edits on locked cells
+    td.onkeydown = (e) => {
+      if (!td.classList.contains("locked-cell")) return;
+      if (
+        ["Enter", "Tab"].includes(e.key) ||
+        ((e.ctrlKey || e.metaKey) && ["+", "="].includes(e.key))
+      ) {
+        e.preventDefault();
+      }
+    };
+
+    // ↔️ Add column resizer if not the last cell in the row
+    const isLastCell = td.cellIndex >= td.parentElement.cells.length - 1;
+    if (!isLastCell && !td.querySelector(".resizer")) {
+      const resizer = document.createElement("div");
+      resizer.className = "resizer";
+      td.style.position = "relative";
+
+      Object.assign(resizer.style, {
+        position: "absolute",
+        top: "0", right: "0",
+        width: "5px",
+        height: "100%",
+        cursor: "col-resize",
+        zIndex: "10"
+      });
+
+      td.appendChild(resizer);
+      resizer.addEventListener("mousedown", e => this.startColumnResize(e, td));
+    }
+  });
+}
+updateSelectionAndRefresh() {
+  if (!this.table) return;
+
+  const container = this.table.closest(".element");
+  if (!container || !this.builder) return;
+
+  const ROW = this.builder.ROW_HEIGHT;
+
+  // 🔄 Step 1: Reset existing row heights
+  Array.from(this.table.rows).forEach(row => {
+    row.style.removeProperty("height");
+    row.style.removeProperty("min-height");
+  });
+
+  // 📏 Step 2: Snap each row's height to nearest grid unit
+  Array.from(this.table.rows).forEach(row => {
+    const snapped = Math.ceil(row.offsetHeight / ROW) * ROW;
+    row.style.height = `${snapped}px`;
+  });
+
+  // 🧮 Step 3: Update container's row data and height
+  const totalSnapped = Math.round(this.table.offsetHeight / ROW) * ROW;
+  container.dataset.rows = totalSnapped / ROW;
+  container.style.height = `${totalSnapped}px`;
+
+  // 🔁 Step 4: Rebind cell events & update selection visuals
+  this.rebindTableCellEvents();
+  this.updateCellSelection();
+
+  // 📦 Step 5: Reflow the layout with correct spacing
+  this.builder.pushElementsDown(container);
+  requestAnimationFrame(() => this.builder.reflowContent());
+
+  // 🛠️ Optional callback hook for table updates
+  this.onTableChanged?.();
+
+  // 🚫 Step 6: Lock editing if table hits page limit
+  if (this.isTableAtPageLimit()) {
+    this.lockCellEditing();
+  } else {
+    this.unlockCellEditing();
+  }
+}
+resnapAndReflow() {
+  if (!this.table) return;
+
+  const ROW = this.builder.ROW_HEIGHT;
+  const container = this.table.closest(".element");
+  if (!container) return;
+
+  // Resize each row based on the tallest cell content
+  Array.from(this.table.rows).forEach(row => {
+    let maxContentHeight = 0;
+
+    Array.from(row.cells).forEach(cell => {
+      const clone = cell.cloneNode(true);
+      clone.style.cssText = `
+        position: absolute;
+        visibility: hidden;
+        height: auto;
+        width: ${cell.offsetWidth}px;
+        white-space: normal;
+        padding: 2px 4px;
+        box-sizing: border-box;
+        line-height: 1.2;
+      `;
+      document.body.appendChild(clone);
+      maxContentHeight = Math.max(maxContentHeight, clone.scrollHeight);
+      document.body.removeChild(clone);
+    });
+
+    // Prevent 0-height glitch
+    if (maxContentHeight < 5) maxContentHeight = ROW;
+
+    const snapped = Math.ceil(maxContentHeight / ROW) * ROW;
+
+    row.style.minHeight = "0";
+    row.style.height = `${snapped}px`;
+
+    Array.from(row.cells).forEach(cell => {
+      cell.style.height = `${snapped}px`;
+    });
+  });
+
+  // Force layout update
+  void this.table.offsetHeight;
+
+  const tableHeight = this.table.offsetHeight;
+  const snappedHeight = Math.round(tableHeight / ROW) * ROW;
+
+  container.dataset.rows = snappedHeight / ROW;
+  container.style.height = `${snappedHeight}px`;
+
+  this.builder.pushElementsDown(container);
+  this.builder.reflowContent(container.closest(".content"));
+  this.builder.saveHistory?.();
+
+  // Lock or unlock table based on page constraints
+  if (this.isTableAtPageLimit()) {
+    this.lockCellEditing();
+  } else {
+    this.unlockCellEditing();
+  }
+}
+handleCommand(cmd) {
+  if (!this.table) return;
+
+  if (!this.selectedCell) {
+    // Fallback to first cell if none selected
+    this.selectedCell = this.table.querySelector("td");
+    if (!this.selectedCell) return;
+  }
+
+  // Use grid-aware coordinate lookup
+  const pos = this.getCellCoordinates(this.selectedCell);
+  if (!pos) return;
+
+  const { row, col } = pos;
+
+  switch (cmd) {
+    case "AddRow":
+      this.insertRow(row + 1);
+      break;
+
+    case "deleteRow":
+      this.deleteRow(row);
+      break;
+
+    case "addColLeft":
+      this.insertColumn(col);
+      break;
+
+    case "addColRight":
+      this.insertColumn(col + 1);
+      break;
+
+    case "deleteCol":
+      this.deleteColumn(col);
+      break;
+
+    case "mergeCells":
+      this.mergeSelectedCells();
+      break;
+
+    case "unmergeCells":
+      this.unmergeSelectedCell();
+      break;
+
+    default:
+      console.warn("Unhandled table command:", cmd);
+      break;
+  }
+}
+getCellCoordinates(targetCell) {
+  if (!this.table || !targetCell) return null;
+
+  const rows = Array.from(this.table.rows);
+
+  for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+    let colIndex = 0;
+    const row = rows[rowIndex];
+
+    for (const cell of row.cells) {
+      const colSpan = cell.colSpan || 1;
 
       if (cell === targetCell) {
-        return { row: r, col };
+        return { row: rowIndex, col: colIndex };
       }
 
-      col += colspan;
+      colIndex += colSpan;
     }
   }
-  return null;
+
+  return null; // Cell not found
 }
-
 getCellAt(rowIndex, colIndex) {
+  if (!this.table) return null;
+
   const map = [];
-  const rowCount = this.table.rows.length;
+  const rows = Array.from(this.table.rows);
 
-  for (let i = 0; i < rowCount; i++) map[i] = [];
+  for (let r = 0; r < rows.length; r++) {
+    map[r] = [];
+  }
 
-  for (let r = 0; r < rowCount; r++) {
-    const row = this.table.rows[r];
+  for (let r = 0; r < rows.length; r++) {
+    const row = rows[r];
     let col = 0;
-    for (let c = 0; c < row.cells.length; c++) {
-      const cell = row.cells[c];
+
+    for (const cell of row.cells) {
       const rowspan = cell.rowSpan || 1;
       const colspan = cell.colSpan || 1;
 
+      // Find the next free column slot in the map
       while (map[r][col]) col++;
 
+      // Fill in the map with references to the current cell
       for (let i = 0; i < rowspan; i++) {
         for (let j = 0; j < colspan; j++) {
-          map[r + i][col + j] = cell;
+          const rr = r + i;
+          const cc = col + j;
+          if (!map[rr]) map[rr] = [];
+          map[rr][cc] = cell;
         }
       }
 
@@ -1589,248 +1828,6 @@ getCellAt(rowIndex, colIndex) {
   }
 
   return map[rowIndex]?.[colIndex] || null;
-}
-
-startColumnResize(e, td) {
-  e.preventDefault();
-
-  const table = this.table; // 🔧 Moved this up before it's used
-  const colIndex = td.cellIndex;
-  const startX = e.clientX;
-
-  const rows = Array.from(table.rows);
-  const leftCells = rows.map(row => row.cells[colIndex]);
-  const rightCells = rows.map(row => row.cells[colIndex + 1]);
-
-  const leftStartWidths = leftCells.map(cell => cell.offsetWidth);
-  const rightStartWidths = rightCells.map(cell => cell?.offsetWidth || 0);
-
-  const minCellWidth = 40;
-  const tableWidth = table.offsetWidth;
-
-  const onMouseMove = (moveEvt) => {
-    const deltaX = moveEvt.clientX - startX;
-
-   const maxDeltaLeft = leftStartWidths[0] - minCellWidth;
-const maxDeltaRight = rightStartWidths[0] - minCellWidth;
-
-// Clamp how far you can drag in either direction
-const clampedDelta = Math.max(-maxDeltaLeft, Math.min(deltaX, maxDeltaRight));
-
-const newLeft = leftStartWidths[0] + clampedDelta;
-const newRight = rightStartWidths[0] - clampedDelta;
-
-
-    // Enforce total width constraint for the two columns being resized
-    const totalAllowed = leftStartWidths[0] + rightStartWidths[0];
-    if (newLeft + newRight > totalAllowed) {
-      const scale = totalAllowed / (newLeft + newRight);
-      newLeft *= scale;
-      newRight *= scale;
-    }
-
-    for (let i = 0; i < rows.length; i++) {
-      if (leftCells[i])  leftCells[i].style.width = `${newLeft}px`;
-      if (rightCells[i]) rightCells[i].style.width = `${newRight}px`;
-    }
-
-  };
-
-  const onMouseUp = () => {
-    document.removeEventListener("mousemove", onMouseMove);
-    document.removeEventListener("mouseup", onMouseUp);
-    this.builder?.saveHistory?.();
-    this.resnapAndReflow();
-  };
-
-  document.addEventListener("mousemove", onMouseMove);
-  document.addEventListener("mouseup", onMouseUp);
-}
-
-
-  lockCellEditing() {
-    if (!this.table) return;
-    this.table.querySelectorAll("td").forEach(td => {
-      td.setAttribute("contenteditable", "false");
-      td.classList.add("locked-cell");
-    });
-  }
-
-  unlockCellEditing() {
-    if (!this.table) return;
-    this.table.querySelectorAll("td").forEach(td => {
-      td.setAttribute("contenteditable", "true");
-      td.classList.remove("locked-cell");
-    });
-  }
-
-  isTableAtPageLimit() {
-    const container = this.table?.closest(".element");
-    const content = container?.closest(".content");
-    if (!container || !content) return false;
-
-    const DROP_MARGIN = this.builder.DROP_MARGIN || 20;
-    const usableHeight = content.clientHeight - DROP_MARGIN;
-    const top = parseInt(container.style.top || 0, 10);
-    const currentBottom = top + container.offsetHeight;
-
-    return currentBottom >= usableHeight;
-  }
-
-  updateSelectionAndRefresh() {
-    if (!this.table) return;
-
-    const container = this.table.closest(".element");
-    if (!container || !this.builder) return;
-
-    const ROW = this.builder.ROW_HEIGHT;
-
-    Array.from(this.table.rows).forEach(row => {
-      row.style.removeProperty("height");
-      row.style.removeProperty("min-height");
-    });
-
-    Array.from(this.table.rows).forEach(row => {
-      const snapped = Math.ceil(row.offsetHeight / ROW) * ROW;
-      row.style.height = `${snapped}px`;
-    });
-
-    const totalSnapped = Math.round(this.table.offsetHeight / ROW) * ROW;
-    container.dataset.rows = totalSnapped / ROW;
-    container.style.height = `${totalSnapped}px`;
-
-    this.rebindTableCellEvents();
-    this.updateCellSelection();
-    this.builder.pushElementsDown(container);
-    requestAnimationFrame(() => this.builder.reflowContent());
-    this.onTableChanged?.();
-
-    // Re-check page limit after refresh
-    if (this.isTableAtPageLimit()) {
-      this.lockCellEditing();
-    } else {
-      this.unlockCellEditing();
-    }
-  }
-
-  resnapAndReflow() {
-    if (!this.table) return;
-
-    const ROW = this.builder.ROW_HEIGHT;
-    const container = this.table.closest(".element");
-    if (!container) return;
-
-    Array.from(this.table.rows).forEach(row => {
-      let maxContentHeight = 0;
-      Array.from(row.cells).forEach(cell => {
-        const clone = cell.cloneNode(true);
-        clone.style.cssText = `
-          position: absolute;
-          visibility: hidden;
-          height: auto;
-          width: ${cell.offsetWidth}px;
-          white-space: normal;
-          padding: 2px 4px;
-          box-sizing: border-box;
-          line-height: 1.2;
-        `;
-        document.body.appendChild(clone);
-        maxContentHeight = Math.max(maxContentHeight, clone.scrollHeight);
-        document.body.removeChild(clone);
-      });
-
-if (maxContentHeight < 5) maxContentHeight = ROW;
-
-const snapped = Math.ceil(maxContentHeight / ROW) * ROW;
-
-      row.style.minHeight = "0";
-      row.style.height = `${snapped}px`;
-      Array.from(row.cells).forEach(cell => {
-        cell.style.height = `${snapped}px`;
-      });
-    });
-
-    void this.table.offsetHeight;
-    const tableHeight = this.table.offsetHeight;
-    const snappedHeight = Math.round(tableHeight / ROW) * ROW;
-    container.dataset.rows = snappedHeight / ROW;
-    container.style.height = `${snappedHeight}px`;
-    this.builder.pushElementsDown(container);
-    this.builder.reflowContent(container.closest(".content"));
-    this.builder.saveHistory?.();
-
-    // Recheck lock status
-    if (this.isTableAtPageLimit()) {
-      this.lockCellEditing();
-    } else {
-      this.unlockCellEditing();
-    }
-  }
-
- handleCommand(cmd) {
-  if (!this.table) return;
-
-  if (!this.selectedCell) {
-    // fallback to first cell
-    this.selectedCell = this.table.querySelector("td");
-    if (!this.selectedCell) return;
-  }
-
-  const rowIndex = this.selectedCell.parentElement.rowIndex;
-  const cellIndex = this.selectedCell.cellIndex;
-
-  switch (cmd) {
-    case "AddRow":
-      this.insertRow(rowIndex + 1);
-      break;
-    case "deleteRow":
-      this.deleteRow(rowIndex);
-      break;
-    case "addColLeft":
-      this.insertColumn(cellIndex);
-      break;
-    case "addColRight":
-      this.insertColumn(cellIndex + 1);
-      break;
-    case "deleteCol":
-      this.deleteColumn(cellIndex);
-      break;
-    default:
-      console.warn("Unhandled table command:", cmd);
-     case "mergeCells":
-  this.mergeSelectedCells();
-  break;
-case "unmergeCells":
-  this.unmergeSelectedCell();
-  break;
-
-  }
-}
-
-getCellAt(rowIndex, colIndex) {
-  const rows = Array.from(this.table.rows);
-  let realCol = 0;
-  for (const cell of rows[rowIndex]?.cells || []) {
-    const span = cell.colSpan || 1;
-    if (realCol <= colIndex && colIndex < realCol + span) {
-      return cell;
-    }
-    realCol += span;
-  }
-  return null;
-}
-
-getColumnCount() {
-  const rows = this.table.rows;
-  let maxCols = 0;
-  for (const row of rows) {
-    let count = 0;
-    for (const cell of row.cells) {
-      count += cell.colSpan || 1;
-    }
-    maxCols = Math.max(maxCols, count);
-  }
-  return maxCols;
 }
 initializeCell(cell) {
   cell.contentEditable = "true";
@@ -1854,166 +1851,209 @@ initializeCell(cell) {
     e.stopPropagation();
   });
 }
+updateCellSelection() {
+  if (!this.table || !this.selectedCell) return;
 
+  // 🧼 Clear all previous selection states
+  this.table.querySelectorAll("td").forEach(td =>
+    td.classList.remove("multi-selected", "selected-cell")
+  );
 
-insertRow(below = false) {
-  if (!this.selectedCell) return;
-  const selectedRow = this.selectedCell.parentElement;
-  const rowIndex = Array.from(selectedRow.parentElement.children).indexOf(selectedRow);
-  const insertIndex = below ? rowIndex + 1 : rowIndex;
+  // 🎯 Always highlight the most recently clicked cell
+  this.selectedCell.classList.add("selected-cell");
 
-  const colCount = this.getColumnCount();
-  const newRow = this.table.insertRow(insertIndex);
+  if (this.selectedCells.size <= 1) return;
 
-  let colIndex = 0;
-  while (colIndex < colCount) {
-    const aboveIndex = insertIndex - 1;
-    const cellAbove = this.getCellAt(aboveIndex, colIndex);
-
-    const newCell = document.createElement("td");
-
-    if (cellAbove && cellAbove.rowSpan > 1 && aboveIndex >= 0) {
-      // Check if the cell above spans into the new row
-      const isSpanning = aboveIndex + cellAbove.rowSpan > insertIndex;
-      if (isSpanning) {
-        cellAbove.rowSpan += 1;
-        colIndex += cellAbove.colSpan || 1;
-        continue;
-      }
-    }
-
-    this.initializeCell(newCell);
-    newRow.appendChild(newCell);
-    colIndex++;
-  }
-
-  this.rebindTableCellEvents(); // 🔁 Ensure new row is wired up
-  this.builder.reflowTable(this.table);
-  this.builder.pushHistory();
-}
-
-
-mergeSelectedCells() {
-  if (!this.table || this.selectedCells.size <= 1) return;
-
-  const selected = Array.from(this.selectedCells);
+  // 🗺️ Step 1: Build cell grid map
+  const map = [];
   const rows = Array.from(this.table.rows);
 
-  // Step 1: Determine bounding box of selection
-  let minRow = Infinity, maxRow = -1, minCol = Infinity, maxCol = -1;
-  const selectedMap = new Set();
-
-  for (const cell of selected) {
-    const row = cell.parentElement.rowIndex;
-    const col = cell.cellIndex;
-    selectedMap.add(`${row},${col}`);
-    minRow = Math.min(minRow, row);
-    maxRow = Math.max(maxRow, row);
-    minCol = Math.min(minCol, col);
-    maxCol = Math.max(maxCol, col);
-  }
-
-  // Step 2: Check if all cells within bounding box are selected
-  let allCovered = true;
-  for (let r = minRow; r <= maxRow; r++) {
+  for (let r = 0; r < rows.length; r++) {
+    map[r] = [];
     const row = rows[r];
-    for (let c = minCol; c <= maxCol; c++) {
-      const key = `${r},${c}`;
-      const cell = row.cells[c];
-      if (!selectedMap.has(key) || !cell.classList.contains("multi-selected")) {
-        allCovered = false;
-        break;
+    let col = 0;
+
+    for (const cell of row.cells) {
+      const rowspan = cell.rowSpan || 1;
+      const colspan = cell.colSpan || 1;
+
+      // Skip already-filled slots
+      while (map[r][col]) col++;
+
+      for (let i = 0; i < rowspan; i++) {
+        for (let j = 0; j < colspan; j++) {
+          const rr = r + i;
+          const cc = col + j;
+          if (!map[rr]) map[rr] = [];
+          map[rr][cc] = cell;
+        }
       }
-    }
-    if (!allCovered) break;
-  }
 
-  if (!allCovered) {
-    alert("⚠️ Please select a full rectangular block of cells to merge.");
-    return;
-  }
-
-  // Step 3: Perform merge
-  const rowspan = maxRow - minRow + 1;
-  const colspan = maxCol - minCol + 1;
-  const targetCell = rows[minRow].cells[minCol];
-
-  targetCell.rowSpan = rowspan;
-  targetCell.colSpan = colspan;
-  targetCell.classList.remove("multi-selected");
-
-  for (let r = minRow; r <= maxRow; r++) {
-    const row = rows[r];
-    for (let c = maxCol; c >= minCol; c--) {
-      const cell = row.cells[c];
-      if (cell !== targetCell) row.deleteCell(c);
+      col += colspan;
     }
   }
 
+  // 🧮 Step 2: Compute rectangular bounds of selection
+  let top = Infinity, left = Infinity, bottom = -1, right = -1;
+
+  for (const cell of this.selectedCells) {
+    const pos = this.getCellCoordinates(cell);
+    if (!pos) continue;
+
+    const rowspan = cell.rowSpan || 1;
+    const colspan = cell.colSpan || 1;
+
+    top    = Math.min(top, pos.row);
+    left   = Math.min(left, pos.col);
+    bottom = Math.max(bottom, pos.row + rowspan - 1);
+    right  = Math.max(right, pos.col + colspan - 1);
+  }
+
+  // 🔲 Step 3: Select all unique cells in bounding box
+  const selected = new Set();
+
+  for (let r = top; r <= bottom; r++) {
+    for (let c = left; c <= right; c++) {
+      const cell = map[r]?.[c];
+      if (cell) selected.add(cell);
+    }
+  }
+
+  // ✅ Step 4: Apply selection styles
   this.selectedCells.clear();
-  this.selectedCell = targetCell;
-  this.updateSelectionAndRefresh();
+  selected.forEach(cell => {
+    cell.classList.add("multi-selected");
+    this.selectedCells.add(cell);
+  });
 }
-unmergeSelectedCell() {
-  if (!this.selectedCell || !this.table) return;
+getColumnCount() {
+  const map = this.builder?.buildTableGrid?.(this.table);
+  if (!map || !map[0]) return 0;
+  return map[0].length;
+}
+startColumnResize(e, td) {
+  e.preventDefault();
 
-  const td = this.selectedCell;
-  const row = td.parentElement.rowIndex;
-  const col = td.cellIndex;
+  const table = this.table;
+  const colIndex = td.cellIndex;
+  const startX = e.clientX;
 
-  const rowspan = td.rowSpan || 1;
-  const colspan = td.colSpan || 1;
+  const rows = Array.from(table.rows);
+  const leftCells = rows.map(row => row.cells[colIndex]);
+  const rightCells = rows.map(row => row.cells[colIndex + 1]);
 
-  if (rowspan === 1 && colspan === 1) {
-    console.warn("⚠️ Cell is not merged.");
+  const leftStartWidths = leftCells.map(cell => cell.offsetWidth);
+  const rightStartWidths = rightCells.map(cell => cell?.offsetWidth || 0);
+
+  const MIN_WIDTH = 40;
+
+  const onMouseMove = (moveEvt) => {
+    const deltaX = moveEvt.clientX - startX;
+
+    const maxDeltaLeft = leftStartWidths[0] - MIN_WIDTH;
+    const maxDeltaRight = rightStartWidths[0] - MIN_WIDTH;
+
+    // ⛔ Clamp resizing to avoid collapsing below min width
+    const clampedDelta = Math.max(-maxDeltaLeft, Math.min(deltaX, maxDeltaRight));
+
+    let newLeft = leftStartWidths[0] + clampedDelta;
+    let newRight = rightStartWidths[0] - clampedDelta;
+
+    // 🔒 Enforce total width constraint
+    const totalAllowed = leftStartWidths[0] + rightStartWidths[0];
+    if (newLeft + newRight > totalAllowed) {
+      const scale = totalAllowed / (newLeft + newRight);
+      newLeft *= scale;
+      newRight *= scale;
+    }
+
+    // 🔁 Apply new widths
+    for (let i = 0; i < rows.length; i++) {
+      if (leftCells[i])  leftCells[i].style.width = `${newLeft}px`;
+      if (rightCells[i]) rightCells[i].style.width = `${newRight}px`;
+    }
+  };
+
+  const onMouseUp = () => {
+    document.removeEventListener("mousemove", onMouseMove);
+    document.removeEventListener("mouseup", onMouseUp);
+
+    this.builder?.saveHistory?.();
+    this.resnapAndReflow(); // ⏹️ Snap table after resize to update layout
+  };
+
+  document.addEventListener("mousemove", onMouseMove);
+  document.addEventListener("mouseup", onMouseUp);
+}
+insertRow(atIndex) {
+  const rows = this.table.rows;
+  if (!rows.length) return;
+
+  const maxRows = 50;
+  const currentRows = rows.length;
+  if (currentRows >= maxRows) {
+    console.warn("🚫 Max 50 rows reached.");
     return;
   }
 
-  td.removeAttribute("rowSpan");
-  td.removeAttribute("colSpan");
+  const insertAt = Math.max(0, Math.min(atIndex, currentRows));
+  const refRow = rows[insertAt - 1] || rows[insertAt] || rows[0];
+  const numCols = refRow?.cells.length || 1;
 
-  // Add missing cells to restore the original grid
-  for (let r = row; r < row + rowspan; r++) {
-    const targetRow = this.table.rows[r];
-    if (!targetRow) continue;
+  const newRow = this.table.insertRow(insertAt);
 
-    for (let c = col; c < col + colspan; c++) {
-      if (r === row && c === col) continue; // Skip original cell
+  for (let c = 0; c < numCols; c++) {
+    const refCell = refRow?.cells[c];
+    const newCell = newRow.insertCell();
 
-      const newCell = targetRow.insertCell(c);
-      newCell.setAttribute("contenteditable", "true");
-      newCell.textContent = "";
+    this.initializeCell(newCell); // ✅ editable, selectable
 
-      newCell.style.direction = "ltr";
-      newCell.style.unicodeBidi = "plaintext";
-      newCell.style.textAlign = "left";
-      newCell.style.padding = "2px 4px";
-
-      // Optional: copy visual style
-      const ref = td;
-      const computed = getComputedStyle(ref);
-      newCell.style.width         = ref.offsetWidth + "px";
+    if (refCell) {
+      const computed = getComputedStyle(refCell);
+      newCell.style.width         = refCell.offsetWidth + "px";
+      newCell.style.padding       = computed.padding;
       newCell.style.border        = computed.border;
       newCell.style.verticalAlign = computed.verticalAlign;
       newCell.style.lineHeight    = computed.lineHeight;
       newCell.style.boxSizing     = computed.boxSizing;
       newCell.style.overflowWrap  = computed.overflowWrap;
       newCell.style.wordBreak     = computed.wordBreak;
+    } else {
+      newCell.style.width = "100px";
     }
   }
 
+  const totalCols = rows[0].cells.length;
+  const pct = (100 / totalCols) + "%";
+  for (const row of rows) {
+    Array.from(row.cells).forEach(cell => {
+      cell.style.width = pct;
+    });
+  }
+
+  this.table.style.tableLayout = "fixed";
   this.rebindTableCellEvents();
   this.updateSelectionAndRefresh();
 }
-
 deleteRow(rowIndex) {
+  if (!this.table) return;
+
   const rows = Array.from(this.table.rows);
-  if (rows.length <= 1) return; // Prevent deleting the last row
+  if (rows.length <= 1) return; // 🚫 Prevent deleting the last row
+
+  // ✅ If no selected cell, delete the last row
+  if (rowIndex == null || rowIndex < 0) {
+    if (!this.selectedCell) {
+      rowIndex = rows.length - 1;
+    } else {
+      rowIndex = this.selectedCell.parentElement?.rowIndex ?? rows.length - 1;
+    }
+  }
 
   const rowToDelete = rows[rowIndex];
   if (!rowToDelete) return;
 
-  // Adjust rowSpan of affected cells above
+  // 🔁 Adjust rowSpan of cells above the row being deleted
   for (let i = 0; i < rowToDelete.cells.length; i++) {
     const cell = rowToDelete.cells[i];
     const colIndex = cell.cellIndex;
@@ -2026,7 +2066,7 @@ deleteRow(rowIndex) {
 
   this.table.deleteRow(rowIndex);
 
-  // Reset selected cell to a nearby valid one
+  // 🧭 Reset selected cell to a nearby valid one
   const fallbackRow = this.table.rows[Math.max(0, rowIndex - 1)];
   if (fallbackRow && fallbackRow.cells.length > 0) {
     this.selectedCell = fallbackRow.cells[0];
@@ -2038,116 +2078,11 @@ deleteRow(rowIndex) {
   }
 
   this.updateCellSelection();
-  this.builder.reflowTable(this.table);
-  this.builder.pushHistory();
+  this.resnapAndReflow();
+  this.builder.pushElementsDown(this.table.closest(".element"));
+  this.builder.reflowContent(this.table.closest(".content"));
+  this.builder.saveHistory?.();
 }
-
-rebindTableCellEvents() {
-  if (!this.table) return;
-
-  const rows = Array.from(this.table.rows);
-
-  const getPosition = (cell) => {
-    const row = cell.parentElement.rowIndex;
-    let col = 0;
-    let found = false;
-    for (const c of cell.parentElement.cells) {
-      if (c === cell) {
-        found = true;
-        break;
-      }
-      col += c.colSpan || 1;
-    }
-    return { row, col };
-  };
-
-  const getCellBox = (cell) => {
-    const { row, col } = getPosition(cell);
-    return {
-      top: row,
-      left: col,
-      bottom: row + (cell.rowSpan || 1) - 1,
-      right: col + (cell.colSpan || 1) - 1
-    };
-  };
-
-  this.table.querySelectorAll("td").forEach(td => {
-    td.onclick = (e) => {
-      const box = getCellBox(td);
-
-      if (e.shiftKey && this.anchorCell) {
-        const anchorBox = getCellBox(this.anchorCell);
-
-        const minRow = Math.min(anchorBox.top, box.top);
-        const maxRow = Math.max(anchorBox.bottom, box.bottom);
-        const minCol = Math.min(anchorBox.left, box.left);
-        const maxCol = Math.max(anchorBox.right, box.right);
-
-        this.selectedCells.clear();
-        this.table.querySelectorAll("td").forEach(cell => {
-          cell.classList.remove("multi-selected", "selected-cell");
-
-          const b = getCellBox(cell);
-          if (
-            b.top >= minRow && b.bottom <= maxRow &&
-            b.left >= minCol && b.right <= maxCol
-          ) {
-            cell.classList.add("multi-selected");
-            this.selectedCells.add(cell);
-          }
-        });
-
-        this.selectedCell = td;
-        td.classList.add("selected-cell");
-
-        this.updateCellSelection();
-      } else {
-        // Regular click – clear others, select only this cell
-        this.anchorCell = td;
-        this.selectedCell = td;
-        this.selectedCells.clear();
-
-        this.table.querySelectorAll("td").forEach(cell =>
-          cell.classList.remove("multi-selected", "selected-cell")
-        );
-
-        td.classList.add("multi-selected", "selected-cell");
-        this.selectedCells.add(td);
-
-        this.updateCellSelection();
-        this.showForTable(this.table, td);
-      }
-    };
-
-    td.onkeydown = (e) => {
-      if (td.classList.contains("locked-cell")) {
-        const blocked = ["Enter", "Tab"];
-        if (blocked.includes(e.key) || ((e.ctrlKey || e.metaKey) && ["+", "="].includes(e.key))) {
-          e.preventDefault();
-        }
-      }
-    };
-
-    // Add column resizer
-    if (!td.querySelector(".resizer") && td.cellIndex < td.parentElement.cells.length - 1) {
-      const resizer = document.createElement("div");
-      resizer.className = "resizer";
-      td.style.position = "relative";
-      resizer.style.cssText = `
-        position: absolute;
-        top: 0; right: 0;
-        width: 5px;
-        height: 100%;
-        cursor: col-resize;
-        z-index: 10;
-      `;
-      td.appendChild(resizer);
-      resizer.addEventListener("mousedown", e => this.startColumnResize(e, td));
-    }
-  });
-}
-
-
 insertColumn(atIndex) {
   const rows = this.table.rows;
   if (!rows.length) return;
@@ -2194,24 +2129,28 @@ insertColumn(atIndex) {
   this.rebindTableCellEvents();
   this.updateSelectionAndRefresh();
 }
-
 deleteColumn(passedIndex = null) {
-  const rows = this.table.rows;
+  const rows = this.table?.rows;
+  if (!rows || rows.length === 0) return;
+
   const colTotal = rows[0]?.cells.length || 0;
 
   if (colTotal <= 1) {
-    console.warn("🚫  Only 1 column left — can’t delete.");
+    console.warn("🚫 Only 1 column left — can’t delete.");
     return;
   }
 
+  // Get the column index to delete
   let index = passedIndex;
   if (index == null || isNaN(index)) {
-    index = this.selectedCell ? this.selectedCell.cellIndex : colTotal - 1;
+    index = this.selectedCell
+      ? this.selectedCell.cellIndex
+      : colTotal - 1;
   }
 
   index = Math.max(0, Math.min(index, colTotal - 1));
 
-  // Remove the column
+  // Delete the column at that index
   for (const row of rows) {
     if (index < row.cells.length) {
       row.deleteCell(index);
@@ -2219,8 +2158,9 @@ deleteColumn(passedIndex = null) {
   }
 
   this.selectedCell = null;
+  this.selectedCells.clear();
 
-  // Normalize widths again
+  // Normalize column widths
   const newCols = rows[0]?.cells.length || 1;
   const pctWidth = (100 / newCols) + "%";
 
@@ -2229,7 +2169,7 @@ deleteColumn(passedIndex = null) {
       cell.style.width = pctWidth;
     });
 
-    // Optional: If column count is uneven, ensure every row still has correct cell count
+    // Ensure all rows have the same number of columns
     while (row.cells.length < newCols) {
       const td = document.createElement("td");
       td.setAttribute("contenteditable", "true");
@@ -2245,8 +2185,132 @@ deleteColumn(passedIndex = null) {
 
   this.rebindTableCellEvents();
   this.table.style.tableLayout = "fixed";
-  this.updateSelectionAndRefresh();
-}
 
+  // Layout & history
+  this.resnapAndReflow();
+  this.builder.pushElementsDown(this.table.closest(".element"));
+  this.builder.reflowContent(this.table.closest(".content"));
+  this.builder.saveHistory?.();
+}
+mergeSelectedCells() {
+  if (!this.table || this.selectedCells.size <= 1) {
+    alert("Please select at least two cells to merge.");
+    return;
+  }
+
+  const selected = Array.from(this.selectedCells);
+  const rows = Array.from(this.table.rows);
+
+  let minRow = Infinity, maxRow = -1;
+  let minCol = Infinity, maxCol = -1;
+  const selectedMap = new Set();
+
+  for (const cell of selected) {
+    const pos = this.getCellCoordinates(cell);
+    if (!pos) continue;
+
+    const { row, col } = pos;
+    minRow = Math.min(minRow, row);
+    maxRow = Math.max(maxRow, row);
+    minCol = Math.min(minCol, col);
+    maxCol = Math.max(maxCol, col);
+
+    selectedMap.add(`${row},${col}`);
+  }
+
+  // Ensure full rectangle is selected
+  for (let r = minRow; r <= maxRow; r++) {
+    for (let c = minCol; c <= maxCol; c++) {
+      const key = `${r},${c}`;
+      const cell = this.getCellAt(r, c);
+      if (!selectedMap.has(key) || !cell || !this.selectedCells.has(cell)) {
+        alert("Please select a full rectangular block of adjacent cells.");
+        return;
+      }
+    }
+  }
+
+  const rowspan = maxRow - minRow + 1;
+  const colspan = maxCol - minCol + 1;
+  const target = this.getCellAt(minRow, minCol);
+  if (!target) return;
+
+  // Merge span
+  target.rowSpan = rowspan;
+  target.colSpan = colspan;
+  target.classList.remove("multi-selected");
+
+  // Remove other cells in selection (right-to-left)
+  for (let r = minRow; r <= maxRow; r++) {
+    const row = rows[r];
+    for (let c = maxCol; c >= minCol; c--) {
+      const cell = this.getCellAt(r, c);
+      if (cell && cell !== target && row.contains(cell)) {
+        row.deleteCell(cell.cellIndex);
+      }
+    }
+  }
+
+  // Finalize selection
+  this.selectedCells.clear();
+  this.selectedCell = target;
+  this.updateCellSelection();
+
+  // Optional: Refresh
+  this.builder?.reflowTable?.(this.table);
+  this.builder?.saveHistory?.();
+}
+unmergeSelectedCell() {
+  if (!this.selectedCell || !this.table) return;
+
+  const td = this.selectedCell;
+  const { row, col } = this.getCellCoordinates(td);
+  const rowspan = td.rowSpan || 1;
+  const colspan = td.colSpan || 1;
+
+  if (rowspan === 1 && colspan === 1) {
+    console.warn("⚠️ Cell is not merged.");
+    return;
+  }
+
+  td.removeAttribute("rowSpan");
+  td.removeAttribute("colSpan");
+
+  const computed = getComputedStyle(td);
+  const width = td.offsetWidth + "px";
+
+  // Restore missing cells
+  for (let r = row; r < row + rowspan; r++) {
+    const targetRow = this.table.rows[r];
+    if (!targetRow) continue;
+
+    for (let c = col; c < col + colspan; c++) {
+      const existingCell = this.getCellAt(r, c);
+      if (existingCell && existingCell !== td) continue;
+
+      if (r === row && c === col) continue;
+
+      const insertBefore = this.getInsertBeforeCell(targetRow, c);
+      const newCell = document.createElement("td");
+      this.initializeCell(newCell);
+
+      newCell.innerHTML = "&#8203;";
+      newCell.style.width         = width;
+      newCell.style.border        = computed.border;
+      newCell.style.verticalAlign = computed.verticalAlign;
+      newCell.style.lineHeight    = computed.lineHeight;
+      newCell.style.boxSizing     = computed.boxSizing;
+      newCell.style.overflowWrap  = computed.overflowWrap;
+      newCell.style.wordBreak     = computed.wordBreak;
+
+      targetRow.insertBefore(newCell, insertBefore);
+    }
+  }
+
+  this.rebindTableCellEvents();
+  this.updateSelectionAndRefresh();
+  this.builder.reflowTable(this.table);
+  this.builder.saveHistory?.();
+}
 }
 
