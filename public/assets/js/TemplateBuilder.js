@@ -1513,79 +1513,101 @@ rebindTableCellEvents() {
 
   const allCells = Array.from(this.table.querySelectorAll("td"));
 
-  const getPosition = (cell) => {
-    const row = cell.parentElement.rowIndex;
-    let col = 0;
-    for (const c of cell.parentElement.cells) {
-      if (c === cell) break;
-      col += c.colSpan || 1;
-    }
-    return { row, col };
-  };
+  // Builds map of cell positions, spans, and boundaries
+  const buildCellMaps = () => {
+    const map = [];
+    const rows = Array.from(this.table.rows);
+    const cellData = new Map(); // cell -> { row, col, rowspan, colspan }
 
-  const getCellBox = (cell) => {
-    const { row, col } = getPosition(cell);
-    const rowSpan = cell.rowSpan || 1;
-    const colSpan = cell.colSpan || 1;
-    return {
-      top: row,
-      left: col,
-      bottom: row + rowSpan - 1,
-      right: col + colSpan - 1
-    };
+    for (let r = 0; r < rows.length; r++) map[r] = [];
+
+    for (let r = 0; r < rows.length; r++) {
+      const row = rows[r];
+      let col = 0;
+
+      for (const cell of row.cells) {
+        while (map[r][col]) col++;
+
+        const rowspan = cell.rowSpan || 1;
+        const colspan = cell.colSpan || 1;
+
+        for (let dr = 0; dr < rowspan; dr++) {
+          for (let dc = 0; dc < colspan; dc++) {
+            map[r + dr][col + dc] = cell;
+          }
+        }
+
+        cellData.set(cell, {
+          row: r,
+          col: col,
+          rowspan: rowspan,
+          colspan: colspan,
+          endRow: r + rowspan - 1,
+          endCol: col + colspan - 1
+        });
+
+        col += colspan;
+      }
+    }
+
+    return { map, cellData };
   };
 
   allCells.forEach(td => {
-    // 🔘 Cell Click Handler (Shift-select & Single-select)
     td.onclick = (e) => {
-      const currentBox = getCellBox(td);
+      const { cellData } = buildCellMaps();
+      const targetCell = td;
 
       if (e.shiftKey && this.anchorCell) {
-        const anchorBox = getCellBox(this.anchorCell);
+        const anchor = cellData.get(this.anchorCell);
+        const target = cellData.get(targetCell);
+        if (!anchor || !target) return;
 
-        const minRow = Math.min(anchorBox.top, currentBox.top);
-        const maxRow = Math.max(anchorBox.bottom, currentBox.bottom);
-        const minCol = Math.min(anchorBox.left, currentBox.left);
-        const maxCol = Math.max(anchorBox.right, currentBox.right);
+        // Full bounding box
+        const minRow = Math.min(anchor.row, target.row);
+        const maxRow = Math.max(anchor.endRow, target.endRow);
+        const minCol = Math.min(anchor.col, target.col);
+        const maxCol = Math.max(anchor.endCol, target.endCol);
+
+        // Select only fully-contained cells
+        const selected = new Set();
+        for (const [cell, info] of cellData.entries()) {
+          const isFullyInside =
+            info.row >= minRow &&
+            info.endRow <= maxRow &&
+            info.col >= minCol &&
+            info.endCol <= maxCol;
+
+          if (isFullyInside) selected.add(cell);
+        }
 
         this.selectedCells.clear();
-        allCells.forEach(cell => {
-          cell.classList.remove("multi-selected", "selected-cell");
-
-          const box = getCellBox(cell);
-          const isWithin = (
-            box.top >= minRow && box.bottom <= maxRow &&
-            box.left >= minCol && box.right <= maxCol
-          );
-
-          if (isWithin) {
-            cell.classList.add("multi-selected");
-            this.selectedCells.add(cell);
-          }
+        allCells.forEach(cell => cell.classList.remove("multi-selected", "selected-cell"));
+        selected.forEach(cell => {
+          cell.classList.add("multi-selected");
+          this.selectedCells.add(cell);
         });
 
-        this.selectedCell = td;
-        td.classList.add("selected-cell");
+        this.selectedCell = targetCell;
+        targetCell.classList.add("selected-cell");
         this.updateCellSelection();
+
       } else {
-        // 🖱️ Regular click
-        this.anchorCell = td;
-        this.selectedCell = td;
+        // Single click
+        this.anchorCell = targetCell;
+        this.selectedCell = targetCell;
         this.selectedCells.clear();
 
-        allCells.forEach(cell =>
-          cell.classList.remove("multi-selected", "selected-cell")
-        );
-
-        td.classList.add("multi-selected", "selected-cell");
-        this.selectedCells.add(td);
+        allCells.forEach(cell => cell.classList.remove("multi-selected", "selected-cell"));
+        targetCell.classList.add("multi-selected", "selected-cell");
+        this.selectedCells.add(targetCell);
 
         this.updateCellSelection();
-        this.showForTable(this.table, td);
+        this.showForTable(this.table, targetCell);
       }
     };
 
-    // ⛔ Disable edits on locked cells
+    // Prevent editing locked cells
     td.onkeydown = (e) => {
       if (!td.classList.contains("locked-cell")) return;
       if (
@@ -1596,28 +1618,25 @@ rebindTableCellEvents() {
       }
     };
 
-    // ↔️ Add column resizer if not the last cell in the row
+    // Add resizer
     const isLastCell = td.cellIndex >= td.parentElement.cells.length - 1;
     if (!isLastCell && !td.querySelector(".resizer")) {
       const resizer = document.createElement("div");
       resizer.className = "resizer";
       td.style.position = "relative";
-
       Object.assign(resizer.style, {
         position: "absolute",
         top: "0", right: "0",
-        width: "5px",
-        height: "100%",
-        cursor: "col-resize",
-        zIndex: "10"
+        width: "5px", height: "100%",
+        cursor: "col-resize", zIndex: "10"
       });
-
       td.appendChild(resizer);
       resizer.addEventListener("mousedown", e => this.startColumnResize(e, td));
     }
   });
 }
-updateSelectionAndRefresh() {
+
+dateSelectionAndRefresh() {
   if (!this.table) return;
 
   const container = this.table.closest(".element");
@@ -1916,6 +1935,33 @@ updateCellSelection() {
     this.selectedCells.add(cell);
   });
 }
+buildCellMap() {
+  const map = [];
+  const rows = Array.from(this.table?.rows || []);
+
+  for (let r = 0; r < rows.length; r++) {
+    const row = rows[r];
+    let col = 0;
+    map[r] = [];
+
+    for (const cell of row.cells) {
+      while (map[r][col]) col++;
+      const rowspan = cell.rowSpan || 1;
+      const colspan = cell.colSpan || 1;
+
+      for (let i = 0; i < rowspan; i++) {
+        for (let j = 0; j < colspan; j++) {
+          if (!map[r + i]) map[r + i] = [];
+          map[r + i][col + j] = cell;
+        }
+      }
+
+      col += colspan;
+    }
+  }
+
+  return map;
+}
 getColumnCount() {
   const map = this.builder?.buildTableGrid?.(this.table);
   if (!map || !map[0]) return 0;
@@ -2188,16 +2234,17 @@ mergeSelectedCells() {
   const selected = Array.from(this.selectedCells);
   const rows = Array.from(this.table.rows);
 
-  // Step 1: Build virtual cell map
+  // Step 1: Build virtual map
   const map = [];
   for (let r = 0; r < rows.length; r++) map[r] = [];
-  
+
   for (let r = 0; r < rows.length; r++) {
     const row = rows[r];
     let col = 0;
 
     for (const cell of row.cells) {
       while (map[r][col]) col++;
+
       const rowspan = cell.rowSpan || 1;
       const colspan = cell.colSpan || 1;
 
@@ -2211,27 +2258,30 @@ mergeSelectedCells() {
     }
   }
 
-  // Step 2: Determine bounding box of selection
+  // Step 2: Determine full bounding box based on spans
   let minRow = Infinity, maxRow = -1, minCol = Infinity, maxCol = -1;
 
   for (const cell of selected) {
     for (let r = 0; r < map.length; r++) {
       for (let c = 0; c < map[r].length; c++) {
         if (map[r][c] === cell) {
+          const spanR = (cell.rowSpan || 1);
+          const spanC = (cell.colSpan || 1);
+
           minRow = Math.min(minRow, r);
-          maxRow = Math.max(maxRow, r);
+          maxRow = Math.max(maxRow, r + spanR - 1);
           minCol = Math.min(minCol, c);
-          maxCol = Math.max(maxCol, c);
+          maxCol = Math.max(maxCol, c + spanC - 1);
         }
       }
     }
   }
 
-  // Step 3: Check if all cells in bounding box are part of the selection
+  // Step 3: Verify full rectangle is selected
   const coveredCells = new Set();
   for (let r = minRow; r <= maxRow; r++) {
     for (let c = minCol; c <= maxCol; c++) {
-      const cell = map[r][c];
+      const cell = map[r]?.[c];
       if (!cell || !this.selectedCells.has(cell)) {
         alert("⚠️ Please select a full rectangle of cells to merge.");
         return;
@@ -2240,14 +2290,13 @@ mergeSelectedCells() {
     }
   }
 
-  // Step 4: Merge into the top-left cell
+  // Step 4: Merge into top-left
   const targetCell = map[minRow][minCol];
   targetCell.rowSpan = maxRow - minRow + 1;
   targetCell.colSpan = maxCol - minCol + 1;
 
-  // Remove other cells from DOM
   for (const cell of coveredCells) {
-    if (cell !== targetCell) {
+    if (cell !== targetCell && cell.parentElement) {
       cell.parentElement.removeChild(cell);
     }
   }
@@ -2257,6 +2306,7 @@ mergeSelectedCells() {
   this.selectedCell = targetCell;
   this.updateSelectionAndRefresh();
 }
+
 unmergeSelectedCell() {
   if (!this.selectedCell || !this.table) return;
 
