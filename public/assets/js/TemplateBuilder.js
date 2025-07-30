@@ -1635,7 +1635,6 @@ rebindTableCellEvents() {
     }
   });
 }
-
 dateSelectionAndRefresh() {
   if (!this.table) return;
 
@@ -1780,27 +1779,20 @@ case "unmergeCells":
   }
 }
 getCellCoordinates(targetCell) {
-  if (!this.table || !targetCell) return null;
+  const map = this.buildCellMap();
 
-  const rows = Array.from(this.table.rows);
-
-  for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
-    let colIndex = 0;
-    const row = rows[rowIndex];
-
-    for (const cell of row.cells) {
-      const colSpan = cell.colSpan || 1;
-
-      if (cell === targetCell) {
-        return { row: rowIndex, col: colIndex };
+  for (let r = 0; r < map.length; r++) {
+    for (let c = 0; c < map[r].length; c++) {
+      if (map[r][c] === targetCell) {
+        return { row: r, col: c };
       }
-
-      colIndex += colSpan;
     }
   }
 
-  return null; // Cell not found
+  return null;
 }
+
+
 getCellAt(rowIndex, colIndex) {
   if (!this.table) return null;
 
@@ -1941,11 +1933,14 @@ buildCellMap() {
 
   for (let r = 0; r < rows.length; r++) {
     const row = rows[r];
+    if (!map[r]) map[r] = [];
+
     let col = 0;
-    map[r] = [];
 
     for (const cell of row.cells) {
+      // Skip filled virtual cells
       while (map[r][col]) col++;
+
       const rowspan = cell.rowSpan || 1;
       const colspan = cell.colSpan || 1;
 
@@ -1962,6 +1957,7 @@ buildCellMap() {
 
   return map;
 }
+
 getColumnCount() {
   const map = this.builder?.buildTableGrid?.(this.table);
   if (!map || !map[0]) return 0;
@@ -2229,135 +2225,103 @@ deleteColumn(passedIndex = null) {
   this.builder.saveHistory?.();
 }
 mergeSelectedCells() {
-  if (!this.table || this.selectedCells.size <= 1) return;
+  if (!this.table || this.selectedCells.size < 2) return;
 
-  const selected = Array.from(this.selectedCells);
-  const rows = Array.from(this.table.rows);
+  const map = this.buildCellMap();
+  const coords = Array.from(this.selectedCells).map(cell => this.getCellCoordinates(cell));
+  const rows = coords.map(c => c.row);
+  const cols = coords.map(c => c.col);
 
-  // Step 1: Build virtual map
-  const map = [];
-  for (let r = 0; r < rows.length; r++) map[r] = [];
+  const minRow = Math.min(...rows);
+  const maxRow = Math.max(...rows);
+  const minCol = Math.min(...cols);
+  const maxCol = Math.max(...cols);
 
-  for (let r = 0; r < rows.length; r++) {
-    const row = rows[r];
-    let col = 0;
-
-    for (const cell of row.cells) {
-      while (map[r][col]) col++;
-
-      const rowspan = cell.rowSpan || 1;
-      const colspan = cell.colSpan || 1;
-
-      for (let i = 0; i < rowspan; i++) {
-        for (let j = 0; j < colspan; j++) {
-          map[r + i][col + j] = cell;
-        }
-      }
-
-      col += colspan;
-    }
-  }
-
-  // Step 2: Determine full bounding box based on spans
-  let minRow = Infinity, maxRow = -1, minCol = Infinity, maxCol = -1;
-
-  for (const cell of selected) {
-    for (let r = 0; r < map.length; r++) {
-      for (let c = 0; c < map[r].length; c++) {
-        if (map[r][c] === cell) {
-          const spanR = (cell.rowSpan || 1);
-          const spanC = (cell.colSpan || 1);
-
-          minRow = Math.min(minRow, r);
-          maxRow = Math.max(maxRow, r + spanR - 1);
-          minCol = Math.min(minCol, c);
-          maxCol = Math.max(maxCol, c + spanC - 1);
-        }
-      }
-    }
-  }
-
-  // Step 3: Verify full rectangle is selected
-  const coveredCells = new Set();
+  // Check if all cells within the range are selected
   for (let r = minRow; r <= maxRow; r++) {
     for (let c = minCol; c <= maxCol; c++) {
-      const cell = map[r]?.[c];
-      if (!cell || !this.selectedCells.has(cell)) {
-        alert("⚠️ Please select a full rectangle of cells to merge.");
+      const cell = map[r][c];
+      if (!this.selectedCells.has(cell)) {
+        alert("Merge failed: all cells in the rectangle must be selected.");
         return;
       }
-      coveredCells.add(cell);
     }
   }
 
-  // Step 4: Merge into top-left
-  const targetCell = map[minRow][minCol];
-  targetCell.rowSpan = maxRow - minRow + 1;
-  targetCell.colSpan = maxCol - minCol + 1;
+  const baseCell = map[minRow][minCol];
+  baseCell.rowSpan = maxRow - minRow + 1;
+  baseCell.colSpan = maxCol - minCol + 1;
 
-  for (const cell of coveredCells) {
-    if (cell !== targetCell && cell.parentElement) {
-      cell.parentElement.removeChild(cell);
+  // Remove all other cells from the DOM
+  for (let r = minRow; r <= maxRow; r++) {
+    for (let c = minCol; c <= maxCol; c++) {
+      const cell = map[r][c];
+      if (cell !== baseCell && cell.parentElement) {
+        cell.parentElement.removeChild(cell);
+      }
     }
   }
 
-  // Cleanup
   this.selectedCells.clear();
-  this.selectedCell = targetCell;
-  this.updateSelectionAndRefresh();
+  this.selectedCells.add(baseCell);
+  this.selectedCell = baseCell;
+
+  this.updateCellSelection();
+  this.resnapAndReflow?.();
 }
-
 unmergeSelectedCell() {
-  if (!this.selectedCell || !this.table) return;
+  if (!this.table || !this.selectedCell) return;
 
-  const td = this.selectedCell;
-  const { row, col } = this.getCellCoordinates(td);
-  const rowspan = td.rowSpan || 1;
-  const colspan = td.colSpan || 1;
+  const cell = this.selectedCell;
+  const coord = this.getCellCoordinates(cell);
+  const map = this.buildCellMap();
 
-  if (rowspan === 1 && colspan === 1) {
-    console.warn("⚠️ Cell is not merged.");
-    return;
-  }
+  if (!coord) return;
 
-  td.removeAttribute("rowSpan");
-  td.removeAttribute("colSpan");
+  const { row, col } = coord;
+  const rowSpan = cell.rowSpan || 1;
+  const colSpan = cell.colSpan || 1;
 
-  const computed = getComputedStyle(td);
-  const width = td.offsetWidth + "px";
+  if (rowSpan === 1 && colSpan === 1) return;
 
-  // Restore missing cells
-  for (let r = row; r < row + rowspan; r++) {
-    const targetRow = this.table.rows[r];
-    if (!targetRow) continue;
+  // Reset main cell
+  cell.rowSpan = 1;
+  cell.colSpan = 1;
 
-    for (let c = col; c < col + colspan; c++) {
-      const existingCell = this.getCellAt(r, c);
-      if (existingCell && existingCell !== td) continue;
+  // Add missing cells around it
+  for (let r = 0; r < rowSpan; r++) {
+    const tr = this.table.rows[row + r];
 
-      if (r === row && c === col) continue;
+    let logicalCol = col;
+    for (let c = 0; c < colSpan; c++) {
+      const mapCell = map[row + r]?.[col + c];
 
-      const insertBefore = this.getInsertBeforeCell(targetRow, c);
-      const newCell = document.createElement("td");
-      this.initializeCell(newCell);
+      if (!mapCell || mapCell === cell) {
+        // Only insert a new td if this spot is now empty
+        const newTd = document.createElement("td");
+        this.initializeCell?.(newTd);
 
-      newCell.innerHTML = "&#8203;";
-      newCell.style.width         = width;
-      newCell.style.border        = computed.border;
-      newCell.style.verticalAlign = computed.verticalAlign;
-      newCell.style.lineHeight    = computed.lineHeight;
-      newCell.style.boxSizing     = computed.boxSizing;
-      newCell.style.overflowWrap  = computed.overflowWrap;
-      newCell.style.wordBreak     = computed.wordBreak;
+        // Find correct insertion index (account for spans)
+        let insertAt = 0;
+        let realCol = 0;
 
-      targetRow.insertBefore(newCell, insertBefore);
+        for (const td of tr.cells) {
+          const span = td.colSpan || 1;
+          if (realCol >= col + c) break;
+          realCol += span;
+          insertAt++;
+        }
+
+        tr.insertBefore(newTd, tr.cells[insertAt] || null);
+      }
     }
   }
 
-  this.rebindTableCellEvents();
-  this.updateSelectionAndRefresh();
-  this.builder.reflowTable(this.table);
-  this.builder.saveHistory?.();
+  this.updateCellSelection?.();
+  this.rebindTableCellEvents?.();
+  this.builder?.reflowTable?.(this.table);
+  this.builder?.saveHistory?.();
 }
+
 }
 
