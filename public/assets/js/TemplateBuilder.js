@@ -1791,8 +1791,6 @@ getCellCoordinates(targetCell) {
 
   return null;
 }
-
-
 getCellAt(rowIndex, colIndex) {
   if (!this.table) return null;
 
@@ -1853,79 +1851,36 @@ initializeCell(cell) {
   });
 }
 updateCellSelection() {
-  if (!this.table || !this.selectedCell) return;
+  if (!this.table || !this.selectedCell || !this.selectionEndCell) return;
 
-  // 🧼 Clear all previous selection states
-  this.table.querySelectorAll("td").forEach(td =>
-    td.classList.remove("multi-selected", "selected-cell")
-  );
+  const map = this.buildCellMap();
+  const start = this.getCellCoordinates(this.selectedCell);
+  const end   = this.getCellCoordinates(this.selectionEndCell);
 
-  // 🎯 Always highlight the most recently clicked cell
-  this.selectedCell.classList.add("selected-cell");
+  if (!start || !end) return;
 
-  if (this.selectedCells.size <= 1) return;
+  const rowStart = Math.min(start.row, end.row);
+  const rowEnd   = Math.max(start.row, end.row);
+  const colStart = Math.min(start.col, end.col);
+  const colEnd   = Math.max(start.col, end.col);
 
-  // 🗺️ Step 1: Build cell grid map
-  const map = [];
-  const rows = Array.from(this.table.rows);
+  const selectedSet = new Set();
 
-  for (let r = 0; r < rows.length; r++) {
-    map[r] = [];
-    const row = rows[r];
-    let col = 0;
-
-    for (const cell of row.cells) {
-      const rowspan = cell.rowSpan || 1;
-      const colspan = cell.colSpan || 1;
-
-      // Skip already-filled slots
-      while (map[r][col]) col++;
-
-      for (let i = 0; i < rowspan; i++) {
-        for (let j = 0; j < colspan; j++) {
-          const rr = r + i;
-          const cc = col + j;
-          if (!map[rr]) map[rr] = [];
-          map[rr][cc] = cell;
-        }
-      }
-
-      col += colspan;
-    }
-  }
-
-  // 🧮 Step 2: Compute rectangular bounds of selection
-  let top = Infinity, left = Infinity, bottom = -1, right = -1;
-
-  for (const cell of this.selectedCells) {
-    const pos = this.getCellCoordinates(cell);
-    if (!pos) continue;
-
-    const rowspan = cell.rowSpan || 1;
-    const colspan = cell.colSpan || 1;
-
-    top    = Math.min(top, pos.row);
-    left   = Math.min(left, pos.col);
-    bottom = Math.max(bottom, pos.row + rowspan - 1);
-    right  = Math.max(right, pos.col + colspan - 1);
-  }
-
-  // 🔲 Step 3: Select all unique cells in bounding box
-  const selected = new Set();
-
-  for (let r = top; r <= bottom; r++) {
-    for (let c = left; c <= right; c++) {
+  for (let r = rowStart; r <= rowEnd; r++) {
+    for (let c = colStart; c <= colEnd; c++) {
       const cell = map[r]?.[c];
-      if (cell) selected.add(cell);
+      if (cell) selectedSet.add(cell);
     }
   }
 
-  // ✅ Step 4: Apply selection styles
-  this.selectedCells.clear();
-  selected.forEach(cell => {
-    cell.classList.add("multi-selected");
-    this.selectedCells.add(cell);
-  });
+  // Remove previous selection
+  for (const td of this.table.querySelectorAll("td.selected")) {
+    td.classList.remove("selected");
+  }
+
+  for (const cell of selectedSet) {
+    cell.classList.add("selected");
+  }
 }
 buildCellMap() {
   const map = [];
@@ -1957,7 +1912,6 @@ buildCellMap() {
 
   return map;
 }
-
 getColumnCount() {
   const map = this.builder?.buildTableGrid?.(this.table);
   if (!map || !map[0]) return 0;
@@ -2322,6 +2276,5 @@ unmergeSelectedCell() {
   this.builder?.reflowTable?.(this.table);
   this.builder?.saveHistory?.();
 }
-
 }
 
