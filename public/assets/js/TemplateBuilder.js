@@ -1850,6 +1850,26 @@ initializeCell(cell) {
     e.stopPropagation();
   });
 }
+selectCell(cell, shiftKey = false) {
+  if (!this.table) return;
+
+  this.selectedCell = cell;
+
+  if (!shiftKey) {
+    this.selectionEndCell = null;
+
+    // Clear previous selections
+    for (const td of this.table.querySelectorAll("td.selected")) {
+      td.classList.remove("selected");
+    }
+
+    // Select only the clicked cell
+    cell.classList.add("selected");
+  } else {
+    this.selectionEndCell = cell;
+    this.updateCellSelection(); // Highlight the range
+  }
+}
 updateCellSelection() {
   if (!this.table || !this.selectedCell || !this.selectionEndCell) return;
 
@@ -2228,8 +2248,6 @@ unmergeSelectedCell() {
 
   const cell = this.selectedCell;
   const coord = this.getCellCoordinates(cell);
-  const map = this.buildCellMap();
-
   if (!coord) return;
 
   const { row, col } = coord;
@@ -2238,36 +2256,43 @@ unmergeSelectedCell() {
 
   if (rowSpan === 1 && colSpan === 1) return;
 
-  // Reset main cell
+  // Reset merged cell
   cell.rowSpan = 1;
   cell.colSpan = 1;
 
-  // Add missing cells around it
   for (let r = 0; r < rowSpan; r++) {
     const tr = this.table.rows[row + r];
+    if (!tr) continue;
 
-    let logicalCol = col;
+    let logicalCol = 0;
+
+    for (let i = 0; i < tr.cells.length; i++) {
+      const td = tr.cells[i];
+      if (td === cell) continue;
+
+      const span = td.colSpan || 1;
+      logicalCol += span;
+    }
+
+    // Insert missing cells
     for (let c = 0; c < colSpan; c++) {
-      const mapCell = map[row + r]?.[col + c];
+      const targetCol = col + c;
 
-      if (!mapCell || mapCell === cell) {
-        // Only insert a new td if this spot is now empty
-        const newTd = document.createElement("td");
-        this.initializeCell?.(newTd);
+      // Skip the original merged cell location
+      if (r === 0 && c === 0) continue;
 
-        // Find correct insertion index (account for spans)
-        let insertAt = 0;
-        let realCol = 0;
-
-        for (const td of tr.cells) {
-          const span = td.colSpan || 1;
-          if (realCol >= col + c) break;
-          realCol += span;
-          insertAt++;
-        }
-
-        tr.insertBefore(newTd, tr.cells[insertAt] || null);
+      // Rebuild real index
+      let realIndex = 0;
+      let currentCol = 0;
+      for (; realIndex < tr.cells.length; realIndex++) {
+        const span = tr.cells[realIndex].colSpan || 1;
+        if (currentCol >= targetCol) break;
+        currentCol += span;
       }
+
+      const newTd = document.createElement("td");
+      this.initializeCell?.(newTd);
+      tr.insertBefore(newTd, tr.cells[realIndex] || null);
     }
   }
 
