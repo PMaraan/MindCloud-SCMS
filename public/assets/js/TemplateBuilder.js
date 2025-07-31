@@ -1685,11 +1685,20 @@ resnapAndReflow() {
   const container = this.table.closest(".element");
   if (!container) return;
 
-  // Resize each row based on the tallest cell content
   Array.from(this.table.rows).forEach(row => {
     let maxContentHeight = 0;
 
     Array.from(row.cells).forEach(cell => {
+      // 🧼 CLEANUP GHOST <br> OR EMPTY CONTENT
+      const body = cell.querySelector(".cell-body") || cell;
+      if (
+        body.innerHTML.trim() === "<br>" ||
+        body.textContent.trim() === ""
+      ) {
+        body.innerHTML = ""; // Strip ghost content
+      }
+
+      // 👻 CLONE FOR MEASUREMENT
       const clone = cell.cloneNode(true);
       clone.style.cssText = `
         position: absolute;
@@ -1706,9 +1715,7 @@ resnapAndReflow() {
       document.body.removeChild(clone);
     });
 
-    // Prevent 0-height glitch
     if (maxContentHeight < 5) maxContentHeight = ROW;
-
     const snapped = Math.ceil(maxContentHeight / ROW) * ROW;
 
     row.style.minHeight = "0";
