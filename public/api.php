@@ -22,18 +22,36 @@ switch ($type) {
         $action = $_POST['action'];
         switch ($action) {
             case 'setAccountChangesUsingID':
-                //forward to data controller
+                // check for null values
+                if (!isset($_POST['id_no']) || $_POST['id_no'] === '') {
+                    throw new Exception("Missing or empty value for user ID");
+                }
+                if (!isset($_POST['fname']) || $_POST['fname'] === '') {
+                    throw new Exception("Missing or empty value for user First Name");
+                }
+                if (!isset($_POST['lname']) || $_POST['lname'] === '') {
+                    throw new Exception("Missing or empty value for user Last Name");
+                }
+                if (!isset($_POST['email']) || $_POST['email'] === '') {
+                    throw new Exception("Missing or empty value for user Email");
+                }
+                if (!isset($_POST['role_id']) || $_POST['role_id'] === '') {
+                    throw new Exception("Missing or empty value for user Role ID");
+                }
                 $id_no = $_POST['id_no'];
                 $fname = $_POST['fname'];
                 $mname = $_POST['mname'];
                 $lname = $_POST['lname'];
                 $email = $_POST['email'];
-                $college_short_name = $_POST['college_short_name'];
-                $role_name = $_POST['role_name'];
+                $college_id = intval($_POST['college_id']); // convert to integer
+                $role_id = intval($_POST['role_id']); // convert to integer
+                $program_id = intval($_POST['program_id']); // convert to integer
                 try {
+                    //forward to data controller
                     $result = $controller->setAccountChangesUsingID($id_no,
-                    $fname, $mname, $lname, $email, $college_short_name,$role_name);
-                    echo json_encode(['success' => true, 'message' => 'User saved successfully.']);
+                        $fname, $mname, $lname, $email, $college_id,$role_id, $program_id);
+                    //echo json_encode(['success' => true, 'message' => 'User saved successfully.']);
+                    echo json_encode($result);
                 } catch (Exception $e) {
                     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
                 }
@@ -186,6 +204,18 @@ switch ($type) {
                     http_response_code(404);
                     echo json_encode(['error' => 'User not found']);
                 }
+                break;
+            // return all programs under the selected college
+            case 'getProgramsByCollege':
+                $college_id = $_GET['college_id'] ?? null;
+
+                if (!$college_id) {
+                    echo json_encode(['success' => false, 'error' => 'Missing college ID']);
+                    exit;
+                }
+
+                $programs = $controller->getProgramsByCollege($college_id);
+                echo json_encode(['success' => true, 'programs' => $programs]);
                 break;
 
             // Add more actions as needed

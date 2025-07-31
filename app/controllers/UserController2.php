@@ -15,7 +15,7 @@ class UserController {
     }
 
     public function login($email, $password) {
-        $user = $this->db->authenticate($email, $password);
+        $user = $this->db->authenticate($email, $password); // wrong!!! the controller should be the one doing the authentication not the db
         if ($user) {
             $_SESSION['user_id'] = $user['id_no'];
             $_SESSION['username'] = $user['fname'] . " " . $user['lname'];
@@ -31,6 +31,18 @@ class UserController {
         session_destroy();
         header("Location: " . BASE_PATH . "/login");
         exit;
+    }
+
+    public function registerUser() {
+        // register a user in db
+    }
+
+    public function updatePassword($password) {
+        // hash the password and interact with db model
+    }
+
+    public function changeUserSettings() {
+        
     }
 
     public static function requireLogin() {

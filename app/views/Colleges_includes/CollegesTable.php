@@ -9,6 +9,7 @@
             <th>College ID</th>            
             <th>College Short Name</th>
             <th>College Name</th>
+            <th>Dean ID</th>
             <th>Dean</th>
             <th></th>
         </tr>
@@ -21,6 +22,7 @@
                 <td><?= htmlspecialchars($college['college_id']) ?></td>                
                 <td><?= htmlspecialchars($college['short_name']) ?></td>
                 <td><?= htmlspecialchars($college['college_name']) ?></td>
+                <td><?= htmlspecialchars($college['dean_id']) ?></td>
                 <td><?= htmlspecialchars($college['dean_name']) ?></td>
                 <td>
                     <!-- save data in the button to fetch in the edit modal -->
@@ -29,7 +31,7 @@
                     data-college-id="<?= htmlspecialchars($college['college_id']) ?>"                    
                     data-college-short-name="<?= htmlspecialchars($college['short_name']) ?>"
                     data-college-name="<?= htmlspecialchars($college['college_name']) ?>"
-                    data-dean="<?= htmlspecialchars($college['dean']) ?>"
+                    data-dean="<?= htmlspecialchars($college['dean_id']) ?>"
                     data-dean-name="<?= htmlspecialchars($college['dean_name']) ?>"
                     data-bs-toggle="modal"
                     data-bs-target="#editCollegeModal"

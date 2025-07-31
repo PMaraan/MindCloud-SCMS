@@ -44,7 +44,7 @@ class PostgresDatabase implements StorageInterface {
             session_regenerate_id(true);
             $_SESSION['username'] = $user['fname'] . " " . $user['lname'];
             $_SESSION['user_id'] = $user['id_no'];
-            $_SESSION['role_id'] = $_SESSION['role'] = $userRole['role_id'];
+            $_SESSION['role_id']  = intval($userRole['role_id']);
             $_SESSION['role'] = $userRole['role_name'];
             $_SESSION['college_id'] = $userCollege['short_name'];
             $_SESSION['college'] = $userCollege['college_name'];
@@ -68,10 +68,38 @@ class PostgresDatabase implements StorageInterface {
         }    
     }
 
+    // check if user has permission; returns true or false
+    public function checkPermission($user_id,$permission_name) {
+        $stmt = $this->pdo->prepare("
+            SELECT EXISTS (
+                SELECT 1
+                FROM user_roles ur
+                JOIN role_permissions rp ON ur.role_id = rp.role_id
+                JOIN permissions p ON rp.permission_id = p.permission_id
+                WHERE ur.id_no = ?
+                AND p.permission_name = ?
+            )
+        ");
+        $stmt->execute([$user_id, $permission_name]);
+        return $stmt->fetchColumn();
+    }
+
     public function getAllUsers() {
         try {
             $stmt = $this->pdo->prepare("
-                SELECT * FROM users
+                SELECT 
+                    u.id_no,
+                    u.fname,
+                    u.mname,
+                    u.lname,
+                    u.email,
+                    c.short_name AS college_short_name,
+                    r.role_name
+                FROM users u
+                JOIN user_roles ur ON u.id_no = ur.id_no
+                JOIN roles r ON ur.role_id = r.role_id
+                LEFT JOIN colleges c ON ur.college_id = c.college_id
+                ORDER BY u.id_no ASC
             ");
             $stmt->execute();
             return ['success' => true, 'db' => $stmt->fetchAll(PDO::FETCH_ASSOC)];
@@ -91,7 +119,7 @@ class PostgresDatabase implements StorageInterface {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function getAllUsersAccountInfo() {
+    public function getAllUsersAccountInfo() { //deprecated. delete for production
             $stmt = $this->pdo->prepare("
                 SELECT 
                     u.id_no,
@@ -99,7 +127,9 @@ class PostgresDatabase implements StorageInterface {
                     u.mname,
                     u.lname,
                     u.email,
+                    c.college_id,
                     c.short_name AS college_short_name,
+                    r.role_id,
                     r.role_name
                 FROM users u
                 JOIN user_roles ur ON u.id_no = ur.id_no
@@ -111,6 +141,16 @@ class PostgresDatabase implements StorageInterface {
             return $stmt->fetchAll(PDO::FETCH_ASSOC);        
     }
 
+    public function getProgramsByCollege($college_id) {
+        $stmt = $this->pdo->prepare("
+            SELECT program_id, program_name
+            FROM programs
+            WHERE college_id = ?
+            ORDER BY program_name
+        ");
+        $stmt->execute([$college_id]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
     public function getUserWithRoleAndCollegeUsingID($id_no) {
         $query = "
             SELECT 
@@ -169,7 +209,7 @@ class PostgresDatabase implements StorageInterface {
 
     public function getAllCollegeShortNames(){
         $stmt = $this->pdo->prepare("
-            SELECT short_name FROM colleges;
+            SELECT college_id, short_name FROM colleges;
         ");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -211,11 +251,12 @@ class PostgresDatabase implements StorageInterface {
                 c.college_id,
                 c.short_name,
                 c.college_name,
-                c.dean,
+                u.id_no AS dean_id,
                 CONCAT(u.fname, ' ', COALESCE(u.mname || ' ', ''), u.lname) AS dean_name
             FROM colleges c
-            LEFT JOIN users u ON c.dean = u.id_no
-            ORDER BY c.college_id
+            LEFT JOIN college_deans cd ON c.college_id = cd.college_id
+            LEFT JOIN users u ON cd.dean_id = u.id_no
+            ORDER BY c.college_id;
         ");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -473,16 +514,202 @@ class PostgresDatabase implements StorageInterface {
 
     public function setCollegeInfo($college_id, $college_short_name, $college_name, $college_dean) {
         try {
-        $stmt = $this->pdo->prepare("
-            UPDATE colleges
-            SET short_name = ?, college_name = ?, dean = ?
-            WHERE college_id = ?
-        ");
-        $stmt->execute([$college_short_name, $college_name, $college_dean, $college_id]);
-        return ['success' => true];
-    } catch (Exception $e) {
-        return ['success' => false, 'error' => $e->getMessage()];
+            $stmt = $this->pdo->prepare("
+                UPDATE colleges
+                SET short_name = ?, college_name = ?, dean = ?
+                WHERE college_id = ?
+            ");
+            $stmt->execute([$college_short_name, $college_name, $college_dean, $college_id]);
+            return ['success' => true];
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
     }
+
+    public function getRoleIfExists($role_id) {
+        $stmt = $this->pdo->prepare("
+            SELECT role_name
+            FROM roles
+            WHERE role_id = ?
+            LIMIT 1
+        ");
+        $stmt->execute([$role_id]);
+        return $stmt->fetchColumn();
+    }
+
+    public function getRoleLevelUsingRoleId($role_id) {
+        $stmt = $this->pdo->prepare("
+            SELECT role_level FROM roles
+            WHERE role_id = ?
+            LIMIT 1
+        ");
+        $stmt->execute([$role_id]);
+        return $stmt->fetchColumn();
+    }
+
+    public function updateDeanUser($id_no, $fname, $mname, $lname, $email, $college_id, $role_id){
+        try {
+            $this->pdo->beginTransaction();
+
+            // remove the chair record if the user is a chair previously
+            $stmt0 = $this->pdo->prepare("
+                DELETE FROM program_chairs WHERE chair_id = ?
+            ");
+            $stmt0->execute([$id_no]);
+            
+            // update user details
+            $stmt1 = $this->pdo->prepare("
+                UPDATE users
+                SET fname = ?,
+                    mname = ?,
+                    lname = ?,
+                    email = ?
+                WHERE id_no = ?
+            ");
+            $stmt1->execute([$fname, $mname, $lname, $email, $id_no]);
+
+            //update user role
+            $stmt2 = $this->pdo->prepare("
+                UPDATE user_roles
+                SET role_id = ?,
+                    college_id = ?
+                WHERE id_no = ?
+            ");
+            $stmt2->execute([$role_id, $college_id, $id_no]);
+
+            // update college and dean relationships
+            $stmt3a = $this->pdo->prepare("
+                DELETE FROM college_deans WHERE dean_id = ?
+            ");
+            $stmt3a->execute([$id_no]);
+
+            $stmt3b = $this->pdo->prepare("
+                INSERT INTO college_deans (college_id, dean_id)
+                VALUES (?, ?)
+                ON CONFLICT ON CONSTRAINT uq_collegedeans_collegeid
+                DO UPDATE SET dean_id = EXCLUDED.dean_id
+            ");
+            $stmt3b->execute([$college_id, $id_no]);
+
+            // commit if there were no errors
+            $this->pdo->commit();
+            return "Account data changed successfully!";
+        } catch(PDOException $e) {
+            // rollback if there is an error
+            $this->pdo->rollback();
+            return "Database error: " . $e->getMessage();
+        } catch(Exception $e) {
+            // rollback if there is an error
+            $this->pdo->rollback();
+            return "Error: " . $e->getMessage();
+        }
+    }
+
+    public function updateChairUser($id_no, $fname, $mname, $lname, $email, $college_id, $role_id,$program_id){
+        try {
+            $this->pdo->beginTransaction();
+
+            // remove the dean record if the user is a dean previously
+            $stmt0 = $this->pdo->prepare("
+                DELETE FROM college_deans WHERE dean_id = ?
+            ");
+            $stmt0->execute([$id_no]);
+
+            // update user details
+            $stmt1 = $this->pdo->prepare("
+                UPDATE users
+                SET fname = ?,
+                    mname = ?,
+                    lname = ?,
+                    email = ?
+                WHERE id_no = ?
+            ");
+            $stmt1->execute([$fname, $mname, $lname, $email, $id_no]);
+
+            //update user role
+            $stmt2 = $this->pdo->prepare("
+                UPDATE user_roles
+                SET role_id = ?,
+                    college_id = ?
+                WHERE id_no = ?
+            ");
+            $stmt2->execute([$role_id, $college_id, $id_no]);
+
+            // update program and chair relationships
+            $stmt3a = $this->pdo->prepare("
+                DELETE FROM program_chairs WHERE chair_id = ?
+            ");
+            $stmt3a->execute([$id_no]);
+
+            $stmt3b = $this->pdo->prepare("
+                INSERT INTO program_chairs (program_id, chair_id)
+                VALUES (?, ?)
+                ON CONFLICT ON CONSTRAINT uq_programchairs_programid
+                DO UPDATE SET chair_id = EXCLUDED.chair_id
+            ");
+            $stmt3b->execute([$college_id, $id_no]);
+
+            // commit if there were no errors
+            $this->pdo->commit();
+            return "Account data changed successfully!";
+        } catch(PDOException $e) {
+            // rollback if there is an error
+            $this->pdo->rollback();
+            return "Database error: " . $e->getMessage();
+        } catch(Exception $e) {
+            // rollback if there is an error
+            $this->pdo->rollback();
+            return "Error: " . $e->getMessage();
+        }
+    }
+
+    public function updateGenericUser($id_no,  $fname, $mname, $lname, $email, $college_id, $role_id){
+        try {
+            $this->pdo->beginTransaction();
+
+            // remove the dean or chair record to cleanup the records
+            $stmt0a = $this->pdo->prepare("
+                DELETE FROM college_deans WHERE dean_id = ?
+            ");
+            $stmt0a->execute([$id_no]);
+
+            $stmt0b = $this->pdo->prepare("
+                DELETE FROM program_chairs WHERE id_no = ?
+            ");
+            $stmt0b->execute([$id_no]);
+
+            // update user details
+            $stmt1 = $this->pdo->prepare("
+                UPDATE users
+                SET fname = ?,
+                    mname = ?,
+                    lname = ?,
+                    email = ?
+                WHERE id_no = ?
+            ");
+            $stmt1->execute([$fname, $mname, $lname, $email, $id_no]);
+
+            //update user role
+            $stmt2 = $this->pdo->prepare("
+                UPDATE user_roles
+                SET role_id = ?,
+                    college_id = ?
+                WHERE id_no = ?
+            ");
+            $stmt2->execute([$role_id, $college_id, $id_no]);
+
+            // commit if there were no errors
+            $this->pdo->commit();
+            return "Account data changed successfully!";
+        } catch(PDOException $e) {
+            // rollback if there is an error
+            $this->pdo->rollback();
+            return "Database error: " . $e->getMessage();
+        } catch(Exception $e) {
+            // rollback if there is an error
+            $this->pdo->rollback();
+            return "Error: " . $e->getMessage();
+        }
     }
 
     public function connect() {

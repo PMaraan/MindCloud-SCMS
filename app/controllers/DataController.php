@@ -31,8 +31,38 @@ class DataController {
         return $this->db->getAllRoleNames();
     }
 
+    public function getAllRoles() {
+        try {
+            return ['success' => true, 'db' => $this->db->getAllRoles()];
+        } catch (PDOException $e) {
+            // Database or logic-level error
+            return ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
+        } catch (Exception $e) {
+            // handle other errors
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
     public function getAllCollegeShortNames(){
+        //validate if the college exists here...
         return $this->db->getAllCollegeShortNames();
+    }
+
+    public function getAllColleges(){
+        //validate if the college exists here...
+        try {
+            return ['success' => true, 'db' => $this->db->getAllColleges()];
+        } catch (PDOException $e) {
+            // Database or logic-level error
+            return ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
+        } catch (Exception $e) {
+            // handle other errors
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    public function getProgramsByCollege($college_id) {
+        return $this->db->getProgramsByCollege($college_id);
     }
 
     public function createUser($id_no, $fname, $mname, $lname, $email, $college_short_name,$role_name){
@@ -48,14 +78,66 @@ class DataController {
         }
     }
 
-    public function setAccountChangesUsingID($id_no, $fname, $mname, $lname, $email, $college_short_name, $role_name) {
-        try {            
-            return $this->db->setAccountChangesUsingID($id_no, $fname, $mname, $lname, $email, $college_short_name, $role_name);
+    public function setAccountChangesUsingID($id_no, $fname, $mname, $lname, $email, $college_id, $role_id, $program_id) {
+        try {
+            // check if current user has permission to do action
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+            $userid = $_SESSION['user_id'];
+            $hasPermission = null;
+            $hasPermission = $this->db->checkPermission($userid,'AccountModification');
+            if (!$hasPermission) {
+                throw new Exception("You don't have permission to perform this action!");
+            }
+            // check if the user has a higher rank than the account being changed
+            $userRoleId = $_SESSION['role_id'];
+            $userLevel = $this->db->getRoleLevelusingRoleId($userRoleId);
+            $targetLevel = $this->db->getRoleLevelUsingRoleId($role_id);
+            if ($userLevel >= $targetLevel) {
+                throw new Exception("You don't have permission to perform this action!");
+            }
+
+            // check if role is valid
+            $role_name = $this->db->getRoleIfExists($role_id);
+            if (!$role_name) {
+                // handle error because role should not be null...
+                throw new Exception("Role not found!");
+            }
+            switch (strtolower($role_name)) {
+                case 'dean':
+                    // the role to be set is dean
+                    $result = $this->db->updateDeanUser($id_no, $fname, $mname, $lname, $email, $college_id, $role_id);
+                    break;
+                case 'chair':
+                    // chair logic goes here...
+                    $result = $this->db->updateChairUser($id_no, $fname, $mname, $lname, $email, $college_id, $role_id, $program_id);
+                    break;
+                case '':
+                    //handle error here...
+                    throw new Exception("Role not found");
+                    break;
+                default:
+                    // for values other than dean, chair, or null...
+                    $result = $this->db->updateGenericUser($id_no,  $fname, $mname, $lname, $email, $college_id, $role_id);
+                    // handle logic if user is from dean or chair role (delete the previous college or program)
+                    
+                    break;
+            }
+            // if success
+            //$result = $this->db->setAccountChangesUsingID($id_no, $fname, $mname, $lname, $email, $college_id, $role_id);
+            return ['success' => true, 'db' => $result];
+            /* example short-circuit checking code:
+            SELECT EXISTS (
+                SELECT 1 FROM colleges WHERE college_id = :id
+            )
+            */
+            
         } catch (PDOException $e) {
             // Database or logic-level error
             return ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
         } catch (Exception $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            return ['success' => false, 'error' => 'Error: ' . $e->getMessage()];
         }
     }
 

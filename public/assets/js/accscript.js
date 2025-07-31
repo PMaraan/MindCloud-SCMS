@@ -63,7 +63,7 @@ function populateEditModal(button, modal) {
   if (collegeSelect) collegeSelect.value = button.getAttribute('data-college') || '';
 
   const roleSelect = modal.querySelector('#editRole');
-  if (roleSelect) roleSelect.value = button.getAttribute('data-role') || '';
+  if (roleSelect) roleSelect.value = button.getAttribute('data-role') || ''; // mappings changed. edit this
 }
 
 
@@ -140,8 +140,58 @@ function bindEditButtons() {
 bindEditButtons();
 */
 
+// show the programs dropdown when the chair role is selected
+function toggleProgramFieldVisibility() {
+  const roleSelect = document.getElementById('editRole');
+  const collegeSelect = document.getElementById('editCollege');
+  const programContainer = document.getElementById('programContainer');
+  const programSelect = document.getElementById('editProgram');
 
+  function toggleProgramDropdown() {
+    const selectedRole = roleSelect.options[roleSelect.selectedIndex].text.toLowerCase();
+    const selectedCollegeId = collegeSelect.value;
 
+    if (selectedRole === 'chair' && selectedCollegeId) {
+      fetchPrograms(selectedCollegeId);
+      programContainer.classList.remove('d-none');
+      programSelect.setAttribute('required', 'required');
+    } else {
+      programContainer.classList.add('d-none');
+      programSelect.innerHTML = '<option value="">-- Select Program --</option>';
+      programSelect.removeAttribute('required');
+    }
+  }
+  // get all the programs under the college
+  function fetchPrograms(collegeId) {
+    fetch(`/MindCloud-SCMS/public/api.php?action=getProgramsByCollege&college_id=${encodeURIComponent(collegeId)}`)
+      .then(res => res.json())
+      .then(data => {
+        programSelect.innerHTML = '<option value="">-- Select Program --</option>';
+        if (data.success) {
+          data.programs.forEach(program => {
+            const option = document.createElement('option');
+            option.value = program.program_id;
+            option.textContent = program.program_name;
+            programSelect.appendChild(option);
+          });
+        } else {
+          console.error('Error loading programs:', data.error);
+        }
+      })
+      .catch(err => {
+        console.error('Fetch failed:', err);
+      });
+  }
+
+  // Watch for changes
+  roleSelect.addEventListener('change', toggleProgramDropdown);
+  collegeSelect.addEventListener('change', toggleProgramDropdown);
+
+  // Initial check on page load
+  toggleProgramDropdown();
+};
+
+toggleProgramFieldVisibility();
 
 // Search filter function
 document.getElementById("search").addEventListener("input", function (e) {

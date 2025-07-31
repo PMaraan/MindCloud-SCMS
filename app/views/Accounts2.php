@@ -5,7 +5,7 @@
   $users = $db->getAllUsersAccountInfo();
 */
   $db = new DataController();
-  $query = $db->getAllUsers(); // connect to data controller in the future
+  $query = $db->getAllUsers();
   if ($query && $query['success']) {
     $users = $query['db'];
   } else {

@@ -1,7 +1,12 @@
 <?php
-  $db = new PostgresDatabase(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS);
-  $colleges = $db->getAllColleges(); // connect to data controller in the future
-  
+  $db = new DataController();
+  $query = $db->getAllColleges();
+  if ($query && $query['success']) {
+    $colleges = $query['db'];
+  } else {
+    $error = $query['error'] ?? 'Unknown error';
+    echo "<script>alert('Error: " . addslashes($error) . "');</script>";    
+  }
 ?>
 
   <!-- Colleges -->

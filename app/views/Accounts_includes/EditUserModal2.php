@@ -1,7 +1,7 @@
 <!-- Edit User Modal -->
  <?php
-    require_once __DIR__ . '/../../controllers/DataController.php';
-    $db = new DataController();
+    //require_once __DIR__ . '/../../controllers/DataController.php';
+    //$db = new DataController();
  ?>
 <div class="modal fade" id="editUserModal2" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
@@ -34,14 +34,14 @@
           </div>
           <div class="mb-3">
             <label for="editCollege" class="form-label">College</label>
-            <select class="form-select" id="editCollege" name="college_short_name">
+            <select class="form-select" id="editCollege" name="college_id">
                 <!-- College options go here -->
                 <option value="">NULL</option>
                 <?php
                     $colleges = $db->getAllCollegeShortNames();
                     foreach ($colleges as $college):
                 ?>
-                <option value="<?= htmlspecialchars($college['short_name']) ?>"><?= htmlspecialchars($college['short_name']) ?></option>
+                <option value="<?= htmlspecialchars($college['college_id']) ?>"><?= htmlspecialchars($college['short_name']) ?></option>
                 <?php
                     endforeach;
                 ?>
@@ -49,18 +49,25 @@
           </div>
           <div class="mb-3">
             <label for="editRole" class="form-label required">Role</label>
-            <select class="form-select" id="editRole" name="role_name" required>
+            <select class="form-select" id="editRole" name="role_id" required>
                 <option value="">NULL</option>
                 <!-- Role options go here -->
-                 <?php 
-                    $roles = $db->getAllRoleNames();
-                    foreach($roles as $role):
-                        $role_name = $role['role_name'];
+                 <?php
+                    // validate if there are roles returned here...
+                    $roles = $db->getAllRoles();
+                    foreach($roles['db'] as $role):
+                        //$role_id = $role['role_id'];
                 ?>
-                     <option value="<?= htmlspecialchars($role_name) ?>"><?= htmlspecialchars($role_name) ?></option>
+                     <option value="<?= htmlspecialchars($role['role_id']) ?>"><?= htmlspecialchars($role['role_name']) ?></option>
                 <?php
                     endforeach;
                  ?>
+            </select>
+          </div>
+          <div class="mb-3 d-none" id="programContainer">
+            <label for="editProgram" class="form-label required">Program</label>
+            <select class="form-select" id="editProgram" name="program_id">
+              <option value="">NULL</option>
             </select>
           </div>
         </div>
