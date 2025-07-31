@@ -167,8 +167,169 @@
   });
 </script>
 
-</body>
-</html>
+<!-- JSON EXPORTER :) -->
+<script>
+  /**
+   * Extracts the current state of the template builder into a clean JSON structure.
+   * This function is responsible for collecting all dynamic user input:
+   * - header content (title, subtitle, logo),
+   * - page content (editable elements),
+   * - footer text,
+   * then packaging it into a JSON object.
+   */
+  function exportToJSON() {
+    const pages = document.querySelectorAll(".page");
+    const data = { pages: [] };
+
+    pages.forEach((page) => {
+      const header = page.querySelector(".header");
+      const footer = page.querySelector(".footer-left");
+      const content = page.querySelector(".content");
+
+      const pageData = {
+        header: {
+          // Will send logo as base64 or public image URL
+          logo: header.querySelector("img")?.src || "",
+          title: header.querySelector(".header-title")?.innerText || "",
+          subtitle: header.querySelector(".header-subtitle")?.innerText || ""
+        },
+        footer: footer?.innerText || "",
+        content: []
+      };
+
+      const elements = content.querySelectorAll(".element");
+      elements.forEach(el => {
+        const type = el.dataset.type;
+        const body = el.querySelector(".element-body");
+
+        const elementData = {
+          type,
+          text: body?.innerText || "",
+          styles: {
+            fontSize: getComputedStyle(body).fontSize,
+            textAlign: getComputedStyle(body).textAlign
+          },
+          position: {
+            top: el.style.top,
+            left: el.style.left
+          }
+        };
+
+        pageData.content.push(elementData);
+      });
+
+      data.pages.push(pageData);
+    });
+
+    return data;
+  }
+
+  // 🔘 This function is called when the user clicks "Save Template"
+  document.getElementById("saveTemplateBtn").addEventListener("click", () => {
+    const json = exportToJSON();
+
+    // ✅ Backend integration point:
+    // Replace 'save_template.php' with your backend route or controller that accepts POST JSON
+    fetch('save_template.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(json)
+    })
+    .then(res => {
+      if (!res.ok) throw new Error("Network response was not OK");
+      return res.json(); // Backend should return a JSON response
+    })
+    .then(response => {
+      console.log("✅ Template saved:", response);
+      alert("Template successfully saved.");
+    })
+    .catch(err => {
+      console.error("❌ Save failed:", err);
+      alert("Failed to save template.");
+    });
+  });
+</script>
+
+
+<!-- JSON LOADER :)-->
+<script>
+  /**
+   * Reconstructs the template builder UI using a JSON object previously saved by `exportToJSON()`.
+   * This is the core method used by the backend to populate the UI with saved data.
+   */
+  function loadFromJSON(json) {
+    const workspace = document.querySelector("#workspace");
+    if (!workspace) return;
+
+    workspace.innerHTML = ""; // Clear workspace
+
+    json.pages.forEach((pageData, pageIndex) => {
+      const page = document.createElement("div");
+      page.className = "page";
+
+      page.innerHTML = `
+        <div class="header">
+          <div class="header-logo ${pageData.header.logo ? 'has-image' : ''}" contenteditable="false">
+            <input type="file" accept="image/*" style="display:none;" />
+            <img src="${pageData.header.logo}" alt="Logo">
+          </div>
+          <div class="header-texts">
+            <div class="header-title" contenteditable="true">${pageData.header.title}</div>
+            <div class="header-subtitle" contenteditable="true">${pageData.header.subtitle}</div>
+          </div>
+        </div>
+        <div class="content"></div>
+        <div class="footer d-flex justify-content-between">
+          <div class="footer-left" contenteditable="true">${pageData.footer}</div>
+          <div class="footer-right">Page ${pageIndex + 1}</div>
+        </div>
+      `;
+
+      const content = page.querySelector(".content");
+
+      // Render each content block
+      pageData.content.forEach(elData => {
+        const el = document.createElement("div");
+        el.classList.add("element", `${elData.type}-block`);
+        el.dataset.type = elData.type;
+        el.style.position = "absolute";
+        el.style.top = elData.position.top;
+        el.style.left = elData.position.left;
+
+        el.innerHTML = `
+          <div class="element-body" contenteditable="true"
+               style="font-size:${elData.styles.fontSize}; text-align:${elData.styles.textAlign};">
+            ${elData.text}
+          </div>
+        `;
+
+        content.appendChild(el);
+      });
+
+      workspace.appendChild(page);
+    });
+
+    // Optionally rebind drag, resize, etc.
+    if (typeof templateBuilder?.enableElementDragging === "function") {
+      templateBuilder.enableElementDragging();
+    }
+    if (typeof templateBuilder?.updatePageNumbers === "function") {
+      templateBuilder.updatePageNumbers();
+    }
+  }
+
+  // ✅ Backend integration point:
+  // Replace this fetch URL with your actual backend endpoint that returns JSON (via PHP, Node, etc.)
+  // This could include a dynamic ID: /api/templates/123, /load_template.php?id=123, etc.
+  fetch("load_template.php?id=123")
+    .then(res => res.json())
+    .then(json => {
+      loadFromJSON(json); // Rehydrate template builder
+    })
+    .catch(err => {
+      console.error("❌ Failed to load template JSON:", err);
+    });
+</script>
 
 <!--------------------------------------------------------
 ISSUE TEMPLATE MODAL CODE >:( TOO TIRED TO PUT IN NEW FILE 
