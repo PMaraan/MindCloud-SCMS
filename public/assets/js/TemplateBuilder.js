@@ -1739,7 +1739,7 @@ resnapAndReflow() {
     this.unlockCellEditing();
   }
 }
- handleCommand(cmd) {
+handleCommand(cmd) {
   if (!this.table) return;
 
   if (!this.selectedCell) {
@@ -1767,16 +1767,40 @@ resnapAndReflow() {
     case "deleteCol":
       this.deleteColumn(cellIndex);
       break;
+
+    // known working fallback style
     default:
       console.warn("Unhandled table command:", cmd);
-     case "mergeCells":
-  this.mergeSelectedCells();
-  break;
-case "unmergeCells":
-  this.unmergeSelectedCell();
-  break;
 
+    case "mergeCells":
+      this.mergeSelectedCells();
+      break;
+
+    case "unmergeCells":
+      this.unmergeSelectedCell();
+      break;
+
+    case "valignTop":
+      this.setVerticalAlign("top");
+      break;
+
+    case "valignMiddle":
+      this.setVerticalAlign("middle");
+      break;
+
+    case "valignBottom":
+      this.setVerticalAlign("bottom");
+      break;
   }
+}
+setVerticalAlign(align) {
+  if (!this.table || this.selectedCells.size === 0) return;
+
+  this.selectedCells.forEach(cell => {
+    cell.style.verticalAlign = align;
+  });
+
+  this.resnapAndReflow();
 }
 getCellCoordinates(targetCell) {
   const map = this.buildCellMap();

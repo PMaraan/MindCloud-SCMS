@@ -789,6 +789,18 @@ td.multi-selected {
 .table-toolbar .btn[data-table-cmd="unmergeCells"] i {
   color: #fd7e14; /* Orange */
 }
+/* Icon colors for vertical align */
+.table-toolbar .btn[data-table-cmd="valignTop"] i {
+  color: #20c997; /* Green-teal for top */
+}
+
+.table-toolbar .btn[data-table-cmd="valignMiddle"] i {
+  color: #6c757d; /* Neutral gray for middle */
+}
+
+.table-toolbar .btn[data-table-cmd="valignBottom"] i {
+  color: #0d6efd; /* Bootstrap blue for bottom */
+}
 
 /* Hover effects */
 .table-toolbar .btn:hover i {

@@ -113,7 +113,7 @@
 </div>
 
 <!-- 🟩 TABLE PROPERTIES TOOLBAR -->
-<div id="tableToolbar" class="table-toolbar d-none"> <!-- ID: tableToolbar -->
+<div id="tableToolbar" class="table-toolbar d-none">
   <!-- Row Controls -->
   <div class="btn-group" role="group" aria-label="Rows">
     <button class="btn btn-sm btn-outline-secondary" data-table-cmd="AddRow"><i class="bi bi-arrow-bar-down"></i> Add Row</button>
@@ -132,6 +132,19 @@
     <button class="btn btn-sm btn-outline-primary" data-table-cmd="merge"><i class="bi bi-merge"></i> Merge</button>
     <button class="btn btn-sm btn-outline-warning" data-table-cmd="unmergeCells"><i class="bi bi-scissors"></i> Unmerge</button>
   </div>
+
+  <!-- Vertical Alignment Controls -->
+  <div class="btn-group" role="group" aria-label="Vertical Align">
+  <button class="btn btn-sm" data-table-cmd="valignTop" title="Align Top">
+    <i class="bi bi-align-top"></i>
+  </button>
+  <button class="btn btn-sm" data-table-cmd="valignMiddle" title="Align Middle">
+    <i class="bi bi-align-center"></i>
+  </button>
+  <button class="btn btn-sm" data-table-cmd="valignBottom" title="Align Bottom">
+    <i class="bi bi-align-bottom"></i>
+  </button>
+</div>
 </div>
 
 <!-- ⬜ WORKSPACE -->
