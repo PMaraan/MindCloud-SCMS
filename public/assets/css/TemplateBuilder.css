@@ -375,7 +375,8 @@ select {
 }
 
 .label-block .element-body {
-  display: flex;
+  display: block;
+  padding: 2px;
   align-items: center;
   justify-content: flex-start;
   height: 100%;
