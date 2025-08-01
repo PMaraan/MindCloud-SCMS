@@ -952,24 +952,34 @@ toggleStyleForSelected(cmd) {
 
   const [prop, onVal, offVal] = style;
 
-  // Normalize existing value
-  let current = target.style[prop] || "";
-  let isOn;
+  const applyToggle = (el) => {
+    const current = el.style[prop] || "";
+    let isOn;
 
-  if (prop === "textDecoration") {
-    isOn = current.includes(onVal);
-  } else if (prop === "fontWeight") {
-    isOn = current === "bold" || parseInt(current, 10) >= 600;
+    if (prop === "textDecoration") {
+      isOn = current.includes(onVal);
+    } else if (prop === "fontWeight") {
+      isOn = current === "bold" || parseInt(current, 10) >= 600;
+    } else {
+      isOn = current === onVal;
+    }
+
+    el.style[prop] = isOn ? offVal : onVal;
+  };
+
+  if (this.selectedElement.classList.contains("table-block")) {
+    const selectedCells = this.tableToolbar?.selectedCells ?? new Set();
+    const cells = selectedCells.size > 0 ? selectedCells : new Set([this.tableToolbar?.selectedCell]);
+
+    cells.forEach(cell => {
+      if (cell) applyToggle(cell);
+    });
+
   } else {
-    isOn = current === onVal;
+    applyToggle(target);
   }
 
-  target.style[prop] = isOn ? offVal : onVal;
-
-  // Re-apply toolbar state
-  this.selectElement(this.selectedElement);
-
-  // Update history
+  this.selectElement(this.selectedElement); // refresh UI state
   this.saveHistory();
 }
 sanitizePaste(e) {
@@ -1207,23 +1217,38 @@ setupLabelInputRestrictions(labelElement) {
 alignSelectedElement(cmd) {
   if (!this.selectedElement) return;
 
-  const target = this.getEditableBody(this.selectedElement);
-  if (!target) return;
-
   const alignment = {
     justifyLeft: "left",
     justifyCenter: "center",
     justifyRight: "right"
   }[cmd] || "left";
 
-  target.style.textAlign = alignment;
+  const target = this.getEditableBody(this.selectedElement);
+  if (!target) return;
 
+  // Only apply to individual selected table cells
+  if (this.selectedElement.classList.contains("table-block")) {
+    const selectedCells = this.tableToolbar?.selectedCells ?? new Set();
+    const cells = selectedCells.size > 0 ? selectedCells : new Set([this.tableToolbar?.selectedCell]);
+
+    cells.forEach(cell => {
+      if (cell) cell.style.textAlign = alignment;
+    });
+
+  } else {
+    // Apply alignment to regular element bodies (e.g., label, text field)
+    target.style.textAlign = alignment;
+  }
+
+  // Update toolbar UI
   document.querySelectorAll('[data-cmd^="justify"]').forEach(btn =>
     btn.classList.remove("active")
   );
 
   const btn = document.querySelector(`[data-cmd="${cmd}"]`);
   if (btn) btn.classList.add("active");
+
+  this.saveHistory?.();
 }
 getEditableBody(el) {
   return el.querySelector(".element-body, .header-title, .header-subtitle, .footer-left") || el;
@@ -1775,10 +1800,6 @@ handleCommand(cmd) {
       this.deleteColumn(cellIndex);
       break;
 
-    // known working fallback style
-    default:
-      console.warn("Unhandled table command:", cmd);
-
     case "mergeCells":
       this.mergeSelectedCells();
       break;
@@ -1798,6 +1819,27 @@ handleCommand(cmd) {
     case "valignBottom":
       this.setVerticalAlign("bottom");
       break;
+
+    case "alignLeft":
+    case "alignCenter":
+    case "alignRight": {
+      const align = cmd === "alignLeft"
+        ? "left"
+        : cmd === "alignCenter"
+        ? "center"
+        : "right";
+
+      const targets = this.selectedCells.size > 0 ? this.selectedCells : new Set([this.selectedCell]);
+      targets.forEach(cell => {
+        cell.style.textAlign = align;
+      });
+
+      this.resnapAndReflow();
+      break;
+    }
+
+    default:
+      console.warn("Unhandled table command:", cmd);
   }
 }
 setVerticalAlign(align) {
@@ -1805,6 +1847,15 @@ setVerticalAlign(align) {
 
   this.selectedCells.forEach(cell => {
     cell.style.verticalAlign = align;
+  });
+
+  this.resnapAndReflow();
+}
+setTextAlign(align) {
+  if (!this.table || this.selectedCells.size === 0) return;
+
+  this.selectedCells.forEach(cell => {
+    cell.style.textAlign = align;
   });
 
   this.resnapAndReflow();
