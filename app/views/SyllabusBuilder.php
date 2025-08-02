@@ -70,27 +70,38 @@
 </div>
 
 <!-- 🟩 MAIN WORKSPACE -->
-<div class="container my-5">
-  <div class="white-box p-4 shadow rounded bg-white">
-    <ul class="nav nav-tabs mb-4" id="syllabusTabs" role="tablist">
-      <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="syllabus-tab" data-bs-toggle="tab" data-bs-target="#syllabus" type="button" role="tab">Syllabus</button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" id="cilo-tab" data-bs-toggle="tab" data-bs-target="#cilo" type="button" role="tab">CILO Attachment</button>
-      </li>
-    </ul>
+<div class="container mt-5 mb-3">
 
-    <div class="tab-content" id="syllabusTabContent">
-      <div class="tab-pane fade show active" id="syllabus" role="tabpanel">
-        <div class="d-flex align-items-center justify-content-center mb-4" style="gap: 20px;">
-          <img src="../../public/assets/images/lpu-logo.png" height="150" class="flex-shrink-0">
-          <div class="text-center">
-            <h5 class="fw-bold mb-1">Lyceum of the Philippines University</h5>
-            <h6 class="fst-italic mb-0">College of Computer Studies</h6>
+  <!-- Wrapper with margin-top to create space from top toolbar -->
+  <div class="position-relative mt-4">
+
+    <!-- Tabs appear visually attached to the white box -->
+    <ul class="nav nav-tabs nav-fill w-100 position-absolute top-0 start-0 rounded-top border" id="syllabusTabs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active text-dark border" id="syllabus-tab" data-bs-toggle="tab" data-bs-target="#syllabus" type="button" role="tab">
+      Syllabus
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link text-dark border" id="cilo-tab" data-bs-toggle="tab" data-bs-target="#cilo" type="button" role="tab">
+      CILO Attachment
+    </button>
+  </li>
+</ul>
+
+    <!-- White box with padding top to fit the tabs inside -->
+    <div class="white-box p-4 pt-5 shadow rounded-bottom bg-white" style="margin-top: 2.5rem;">
+      <div class="tab-content" id="syllabusTabContent">
+        <div class="tab-pane fade show active" id="syllabus" role="tabpanel">
+          <div class="d-flex align-items-center justify-content-center mb-4" style="gap: 20px;">
+            <img src="../../public/assets/images/lpu-logo.png" height="150" class="flex-shrink-0">
+            <div class="text-center">
+              <h5 class="fw-bold mb-1">Lyceum of the Philippines University</h5>
+              <h6 class="fst-italic mb-0">College of Computer Studies</h6>
+            </div>
+            <img src="../../public/assets/images/lpu-logo.png" height="150" class="flex-shrink-0">
           </div>
-          <img src="../../public/assets/images/lpu-logo.png" height="150" class="flex-shrink-0">
-        </div>
+
 
         <div class="mb-4">
           <h4 class="fw-bold">Course Goals</h4>
@@ -119,7 +130,7 @@
       </div>
 
       <div class="tab-pane fade" id="cilo" role="tabpanel">
-        <h4 class="fw-bold mb-3">Course Intended Learning Outcomes (CILO)</h4>
+        <div class= mb-6 style="height: 3rem;"></div>
         <div class="table-responsive mb-4">
           <table class="table table-bordered text-center">
             <thead class="table-light">
