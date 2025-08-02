@@ -12,7 +12,7 @@ class DataController {
         $this->db = new PostgresDatabase(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS);
     }
 
-    public function getAllUsers() {
+    public function getAllUsersAccountInfo() {
         try {
             //validate role here ...
             return ['success' => true, 'db' => $this->db->getAllUsersAccountInfo()];
@@ -78,7 +78,7 @@ class DataController {
         }
     }
 
-    public function setAccountChangesUsingID($id_no, $fname, $mname, $lname, $email, $college_id, $role_id, $program_id) {
+    public function setAccountChangesUsingID($id_no, $fname, $mname, $lname, $email, $college_id, $role_id) {
         try {
             // check if current user has permission to do action
             if (session_status() === PHP_SESSION_NONE) {
@@ -109,10 +109,12 @@ class DataController {
                     // the role to be set is dean
                     $result = $this->db->updateDeanUser($id_no, $fname, $mname, $lname, $email, $college_id, $role_id);
                     break;
+                /*
                 case 'chair':
                     // chair logic goes here...
-                    $result = $this->db->updateChairUser($id_no, $fname, $mname, $lname, $email, $college_id, $role_id, $program_id);
+                    $result = $this->db->updateChairUser($id_no, $fname, $mname, $lname, $email, $college_id, $role_id);
                     break;
+                */
                 case '':
                     //handle error here...
                     throw new Exception("Role not found");
@@ -120,8 +122,6 @@ class DataController {
                 default:
                     // for values other than dean, chair, or null...
                     $result = $this->db->updateGenericUser($id_no,  $fname, $mname, $lname, $email, $college_id, $role_id);
-                    // handle logic if user is from dean or chair role (delete the previous college or program)
-                    
                     break;
             }
             // if success
@@ -197,6 +197,18 @@ class DataController {
             return ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
         } catch (Exception $e) {
             return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    public function getAllProgramDetails() {
+        try {
+            // insert validation here...
+            return ['success' => true, 'db' => $this->db->getAllProgramDetails()];
+        } catch (PDOException $e) {
+            // Database or logic-level error
+            return ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => 'Error: ' . $e->getMessage()];
         }
     }
 }

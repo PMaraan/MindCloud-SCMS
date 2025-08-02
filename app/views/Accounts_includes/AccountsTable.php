@@ -32,14 +32,20 @@
                     <?php endforeach; ?>
                 </td>
                 <td>
-                    <button 
+                    <!-- for autofill -->
+                    <button                     
                     class="btn btn-sm btn-outline-primary edit-btn"
-                    data-id_no="<?= htmlspecialchars($user['id_no']) ?>"                    
+                    data-id-no="<?= htmlspecialchars($user['id_no']) ?>"                    
                     data-fname="<?= htmlspecialchars($user['fname']) ?>"
                     data-mname="<?= htmlspecialchars($user['mname']) ?>"
                     data-lname="<?= htmlspecialchars($user['lname']) ?>"
                     data-email="<?= htmlspecialchars($user['email']) ?>"
-                    data-role="<?= htmlspecialchars($user['roles']) ?>"
+                    data-college-id="<?= htmlspecialchars($user['college_id']) ?>"
+                    data-college-short-name="<?= htmlspecialchars($user['college_short_name']) ?>"
+                    data-role-id="<?= htmlspecialchars($user['role_id']) ?>"
+                    data-role-name="<?= htmlspecialchars($user['role_name']) ?>"
+                    data-program-id="<?= htmlspecialchars($user['program_id']) ?>"
+                    data-program-name="<?= htmlspecialchars($user['program_name']) ?>"
                     data-bs-toggle="modal"
                     data-bs-target="#editUserModal"
                     >

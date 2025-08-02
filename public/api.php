@@ -43,13 +43,13 @@ switch ($type) {
                 $mname = $_POST['mname'];
                 $lname = $_POST['lname'];
                 $email = $_POST['email'];
-                $college_id = intval($_POST['college_id']); // convert to integer
+                $college_id = intval($_POST['college_id']) ?? ''; // convert to integer
                 $role_id = intval($_POST['role_id']); // convert to integer
-                $program_id = intval($_POST['program_id']); // convert to integer
+                //$program_id = intval($_POST['program_id']); // convert to integer
                 try {
                     //forward to data controller
                     $result = $controller->setAccountChangesUsingID($id_no,
-                        $fname, $mname, $lname, $email, $college_id,$role_id, $program_id);
+                        $fname, $mname, $lname, $email, $college_id,$role_id);
                     //echo json_encode(['success' => true, 'message' => 'User saved successfully.']);
                     echo json_encode($result);
                 } catch (Exception $e) {

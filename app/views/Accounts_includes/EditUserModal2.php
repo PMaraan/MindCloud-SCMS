@@ -64,12 +64,16 @@
                  ?>
             </select>
           </div>
+          <?php
+          /*
           <div class="mb-3 d-none" id="programContainer">
-            <label for="editProgram" class="form-label required">Program</label>
+            <label for="editProgram" class="form-label">Program</label>
             <select class="form-select" id="editProgram" name="program_id">
               <option value="">NULL</option>
             </select>
           </div>
+          */
+          ?>
         </div>
 
         <div class="modal-footer">
