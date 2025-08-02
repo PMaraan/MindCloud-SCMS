@@ -20,22 +20,24 @@ body {
 /* ============================== */
 .builder-header {
   position: fixed;
+  background-color: #670003; /* deep red */
   top: 0;
   left: 0;
   right: 0;
   height: 56px;
-  background: #f8f9fa;
-  border-bottom: 1px solid #ccc;
+  border-bottom: 1px solid #4a0000; /* darker red border */
   z-index: 1100;
   display: flex;
   justify-content: center;
   align-items: center;
   padding: 0 16px;
   flex-wrap: wrap;
+  color: #f0f0f0; /* light text color */
 }
 
 .builder-header > * {
-  margin: 0 1px;
+  margin: 0 4px; /* a bit more spacing */
+  color: #f0f0f0; /* make sure direct children text/icons inherit light color */
 }
 
 .builder-header select,
@@ -45,15 +47,12 @@ body {
   height: 32px;
   padding: 0 8px;
   font-size: 14px;
-  border: 1px solid #ccc;
+  border: 1px solid #a83a3a; /* lighter red border */
   border-radius: 4px;
   vertical-align: middle;
-}
-
-button.active {
-  background-color: #007bff;
-  color: white;
-  font-weight: bold;
+  background-color: #7a0000; /* slightly lighter red background */
+  color: #fff; /* white text */
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .builder-header select {
@@ -62,6 +61,14 @@ button.active {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+  background-color: #7a0000;
+  color: #fff;
+  border: 1px solid #a83a3a;
+}
+
+.builder-header select option {
+  background-color: white; /* white dropdown options */
+  color: black;
 }
 
 .builder-header input[type="color"] {
@@ -71,6 +78,52 @@ button.active {
   background: none;
   cursor: pointer;
 }
+
+.builder-header input[type="text"] {
+  background-color: #7a0000;
+  color: #fff;
+  border: 1px solid #a83a3a;
+}
+
+button {
+  background-color: #7a0000;
+  color: #fff;
+  border: 1px solid #a83a3a;
+  cursor: pointer;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #8b0000; /* slightly lighter on hover */
+  border-color: #cc4c4c;
+}
+
+button.active {
+  background-color: #0056b3; /* bootstrap primary blue for active */
+  color: white;
+  font-weight: bold;
+  border-color: #004085;
+}
+
+/* Icons inside buttons or header */
+.builder-header i,
+.builder-header svg {
+  color: #f0f0f0;
+  vertical-align: middle;
+}
+.builder-header select {
+  /* existing styles... */
+  -webkit-appearance: none;  /* Safari and Chrome */
+  -moz-appearance: none;     /* Firefox */
+  appearance: none;
+  background-image:
+    url("data:image/svg+xml;utf8,<svg fill='white' height='12' viewBox='0 0 24 24' width='12' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 12px 12px;
+  padding-right: 32px; /* space for arrow */
+}
+
 
 
 /* ============================== */
@@ -298,7 +351,7 @@ select {
 }
 
 #sendTemplateBtn:hover {
-  background-color: #cce5ff;
+  background-color: darkblue;
   color: #0b5ed7;
 }
 
@@ -307,7 +360,7 @@ select {
 }
 
 #saveTemplateBtn:hover {
-  background-color: lightgreen;
+  background-color: darkgreen;
 }
 /* ============================== */
 /*       BUILDER ELEMENTS        */
