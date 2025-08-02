@@ -708,6 +708,7 @@ td.multi-selected {
 
 .remove-btn:hover {
   color: red;
+  background-color: transparent !important;
 }
 
 .element:hover .remove-btn,
