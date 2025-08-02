@@ -300,17 +300,38 @@ class PostgresDatabase implements StorageInterface {
         }
     }
 
-    public function getAllPrograms() {
+    public function getAllProgramDetails() {
         try {
+            // fetch all programs from the database
             $stmt = $this->pdo->prepare("
-                SELECT * FROM programs;
+                SELECT  p.program_id, 
+                        p.program_name, 
+                        c.college_id, 
+                        c.short_name AS college_short_name, 
+                        u.id_no AS chair_id, 
+                        CONCAT(
+                            u.fname,
+                            CASE 
+                                WHEN u.mname IS NOT NULL AND u.mname <> '' THEN 
+                                    ' ' || UPPER(LEFT(u.mname, 1)) || '.'
+                                ELSE 
+                                    ''
+                            END,
+                            ' ',
+                            u.lname
+                        ) AS chair_name
+                FROM programs p
+                LEFT JOIN program_chairs pc ON p.program_id = pc.program_id
+                LEFT JOIN users u ON pc.chair_id = u.id_no
+                LEFT JOIN colleges c ON p.college_id = c.college_id
+                ORDER BY p.program_id ASC;
             ");
             $stmt->execute();
-            return['success' => true, 'db' => $stmt->fetchAll(PDO::FETCH_ASSOC)];
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            return ['success' => false, 'error' => "Database error: " . $e->getMessage()];
+            return $e->getMessage();
         } catch (Exception $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            return $e->getMessage();
         }
     }
 
@@ -568,7 +589,15 @@ class PostgresDatabase implements StorageInterface {
             ");
             $stmt1->execute([$fname, $mname, $lname, $email, $id_no]);
 
-            //update user role
+            // set the college to null for the previous dean of the college
+            $stmt1b = $this->pdo->prepare("
+                UPDATE user_roles
+                SET college_id = null
+                WHERE role_id = ? AND college_id = ? AND id_no != ?
+            ");
+            $stmt1b->execute([$role_id, $college_id, $id_no]);
+
+            //update user role and college
             $stmt2 = $this->pdo->prepare("
                 UPDATE user_roles
                 SET role_id = ?,
@@ -578,11 +607,12 @@ class PostgresDatabase implements StorageInterface {
             $stmt2->execute([$role_id, $college_id, $id_no]);
 
             // update college and dean relationships
+            // clean up old assignments if any
             $stmt3a = $this->pdo->prepare("
                 DELETE FROM college_deans WHERE dean_id = ?
             ");
             $stmt3a->execute([$id_no]);
-
+            // officially assign the new dean
             $stmt3b = $this->pdo->prepare("
                 INSERT INTO college_deans (college_id, dean_id)
                 VALUES (?, ?)
@@ -605,6 +635,7 @@ class PostgresDatabase implements StorageInterface {
         }
     }
 
+    // updateChairUser is deprecated. delete for production ...
     public function updateChairUser($id_no, $fname, $mname, $lname, $email, $college_id, $role_id,$program_id){
         try {
             $this->pdo->beginTransaction();
@@ -614,6 +645,13 @@ class PostgresDatabase implements StorageInterface {
                 DELETE FROM college_deans WHERE dean_id = ?
             ");
             $stmt0->execute([$id_no]);
+
+            // Get old college_id before updating
+            $stmtOld = $this->pdo->prepare("
+                SELECT college_id FROM user_roles WHERE id_no = ?
+            ");
+            $stmtOld->execute([$id_no]);
+            $oldCollegeId = $stmtOld->fetchColumn();
 
             // update user details
             $stmt1 = $this->pdo->prepare("
@@ -626,21 +664,32 @@ class PostgresDatabase implements StorageInterface {
             ");
             $stmt1->execute([$fname, $mname, $lname, $email, $id_no]);
 
-            //update user role
-            $stmt2 = $this->pdo->prepare("
-                UPDATE user_roles
-                SET role_id = ?,
-                    college_id = ?
-                WHERE id_no = ?
-            ");
-            $stmt2->execute([$role_id, $college_id, $id_no]);
+            // Only update user_roles and delete program_chairs if college changed
+            if ($oldCollegeId != $college_id) {
+                // Clean up old program chair records
+                $stmt2a = $this->pdo->prepare("
+                    DELETE FROM program_chairs WHERE chair_id = ?
+                ");
+                $stmt2a->execute([$id_no]);
 
-            // update program and chair relationships
-            $stmt3a = $this->pdo->prepare("
-                DELETE FROM program_chairs WHERE chair_id = ?
-            ");
-            $stmt3a->execute([$id_no]);
-
+                // Update user_roles with new college
+                $stmt2b = $this->pdo->prepare("
+                    UPDATE user_roles
+                    SET role_id = ?, college_id = ?
+                    WHERE id_no = ?
+                ");
+                $stmt2b->execute([$role_id, $college_id, $id_no]);
+            } else {
+                // Only role update if college didn't change
+                $stmt2 = $this->pdo->prepare("
+                    UPDATE user_roles
+                    SET role_id = ?
+                    WHERE id_no = ?
+                ");
+                $stmt2->execute([$role_id, $id_no]);
+            }
+            // officially assign the new chair to the program
+            /*
             $stmt3b = $this->pdo->prepare("
                 INSERT INTO program_chairs (program_id, chair_id)
                 VALUES (?, ?)
@@ -648,7 +697,7 @@ class PostgresDatabase implements StorageInterface {
                 DO UPDATE SET chair_id = EXCLUDED.chair_id
             ");
             $stmt3b->execute([$college_id, $id_no]);
-
+            */
             // commit if there were no errors
             $this->pdo->commit();
             return "Account data changed successfully!";
@@ -674,7 +723,7 @@ class PostgresDatabase implements StorageInterface {
             $stmt0a->execute([$id_no]);
 
             $stmt0b = $this->pdo->prepare("
-                DELETE FROM program_chairs WHERE id_no = ?
+                DELETE FROM program_chairs WHERE chair_id = ?
             ");
             $stmt0b->execute([$id_no]);
 

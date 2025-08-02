@@ -5,9 +5,10 @@
   $users = $db->getAllUsersAccountInfo();
 */
   $db = new DataController();
-  $query = $db->getAllUsers();
+  $query = $db->getAllUsersAccountInfo();
   if ($query && $query['success']) {
     $users = $query['db'];
+    //echo print_r($users);
   } else {
     $error = $query['error'] ?? 'Unknown error';
     echo "<script>alert('Error: " . addslashes($error) . "');</script>";    

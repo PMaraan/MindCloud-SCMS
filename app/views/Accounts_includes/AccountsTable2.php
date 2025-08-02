@@ -35,16 +35,24 @@
                     data-mname="<?= htmlspecialchars($user['mname']) ?>"
                     data-lname="<?= htmlspecialchars($user['lname']) ?>"
                     data-email="<?= htmlspecialchars($user['email']) ?>"
-                    data-college="<?= htmlspecialchars($user['college_id']) ?>"
+                    data-college-id="<?= htmlspecialchars($user['college_id']) ?>"
                     data-college-name="<?= htmlspecialchars($user['college_short_name']) ?>"
-                    data-role="<?= htmlspecialchars($user['role_id']) ?>"
+                    data-role-id="<?= htmlspecialchars($user['role_id']) ?>"
                     data-role-name="<?= htmlspecialchars($user['role_name']) ?>"
+                    <?php
+                    /*
+                    data-program-id="<?= htmlspecialchars($user['program_id']) ?>"
+                    data-program-name="<?= htmlspecialchars($user['program_name']) ?>"               
+                    */
+                    ?>
                     data-bs-toggle="modal"
                     data-bs-target="#editUserModal2"
                     data-action="edit" 
                     ><!-- action is required to be handled by js -->
                     <i class="bi bi-pencil"></i> Edit
                     </button>
+                    
+                    
                 </td>
                 
             </tr>
