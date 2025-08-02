@@ -1,0 +1,140 @@
+body {
+  margin: 0;
+  font-family: sans-serif;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: row-reverse;
+}
+
+.sidebar-wrapper {
+  width: 250px;
+  background: #222;
+  color: #fff;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.element {
+  padding: 10px;
+  background: #444;
+  border: 1px solid #555;
+  margin-bottom: 10px;
+  border-radius: 5px;
+  cursor: grab;
+  user-select: none;
+}
+
+.builder {
+  flex-grow: 1;
+  background: #f0f0f0;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.rich-editor {
+  border: 1px solid #ccc;
+  background: #fff;
+  margin-bottom: 20px;
+}
+
+.rich-toolbar {
+  background: #eee;
+  padding: 5px;
+  display: flex;
+  gap: 5px;
+  border-bottom: 1px solid #ccc;
+}
+
+.rich-toolbar button {
+  border: none;
+  background: #ddd;
+  padding: 5px 8px;
+  cursor: pointer;
+}
+
+.rich-toolbar button:hover {
+  background: #ccc;
+}
+
+.rich-content {
+  min-height: 120px;
+  padding: 10px;
+  outline: none;
+}
+.syllabus-header {
+  border: 2px dashed #aaa;
+  padding: 20px;
+  margin-bottom: 20px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.syllabus-header img {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  border: 1px solid #ccc;
+  padding: 5px;
+  background: #f8f8f8;
+}
+
+.syllabus-header-content {
+  flex-grow: 1;
+}
+
+.syllabus-header-content h2,
+.syllabus-header-content p {
+  margin: 4px 0;
+}
+
+.logo-upload-wrapper {
+  position: relative;
+  cursor: pointer;
+}
+
+.logo-upload-wrapper:hover::after {
+  content: "Click to upload logo";
+  position: absolute;
+  bottom: -18px;
+  left: 0;
+  font-size: 12px;
+  color: #666;
+}
+
+.tabs {
+  display: flex;
+  border-bottom: 2px solid #ccc;
+  margin-bottom: 10px;
+}
+
+.tab-button {
+  padding: 10px 20px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-weight: bold;
+  border-bottom: 3px solid transparent;
+}
+
+.tab-button.active {
+  border-bottom: 3px solid #8B0000; /* LPU red */
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+textarea.form-control {
+  resize: vertical;
+  font-size: 1rem;
+}
+
