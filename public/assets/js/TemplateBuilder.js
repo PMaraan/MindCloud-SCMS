@@ -1603,6 +1603,9 @@ rebindTableCellEvents() {
           if (isFullyInside) selected.add(cell);
         }
 
+        // ✅ Ensure anchorCell is selected even if coordinates map fails it
+        selected.add(this.anchorCell);
+
         this.selectedCells.clear();
         allCells.forEach(cell => cell.classList.remove("multi-selected", "selected-cell"));
 
@@ -1617,14 +1620,13 @@ rebindTableCellEvents() {
         this.updateCellSelection();
 
       } else {
-        // Normal single click
+        // Normal single click (no shift)
         this.anchorCell = targetCell;
         this.selectedCell = targetCell;
         this.selectedCells.clear();
 
         allCells.forEach(cell => cell.classList.remove("multi-selected", "selected-cell"));
 
-        // Only highlight blue border (no dashed box)
         targetCell.classList.add("selected-cell");
         this.selectedCells.add(targetCell);
 
@@ -1658,6 +1660,61 @@ rebindTableCellEvents() {
       resizer.addEventListener("mousedown", e => this.startColumnResize(e, td));
     }
   });
+}
+
+handleCommand(cmd) {
+  if (!this.table) return;
+
+  if (!this.selectedCell) {
+    // fallback to first cell
+    this.selectedCell = this.table.querySelector("td");
+    if (!this.selectedCell) return;
+  }
+
+  const rowIndex = this.selectedCell.parentElement.rowIndex;
+  const cellIndex = this.selectedCell.cellIndex;
+
+  switch (cmd) {
+    case "AddRow":
+      this.insertRow(rowIndex + 1);
+      break;
+    case "deleteRow":
+      this.deleteRow(rowIndex);
+      break;
+    case "addColLeft":
+      this.insertColumn(cellIndex);
+      break;
+    case "addColRight":
+      this.insertColumn(cellIndex + 1);
+      break;
+    case "deleteCol":
+      this.deleteColumn(cellIndex);
+      break;
+
+    // known working fallback style
+    default:
+      console.warn("Unhandled table command:", cmd);
+
+    case "mergeCells":
+      this.mergeSelectedCells();
+      break;
+
+    case "unmergeCells":
+      this.unmergeSelectedCell();
+      break;
+
+    case "valignTop":
+      this.setVerticalAlign("top");
+      break;
+
+    case "valignMiddle":
+      this.setVerticalAlign("middle");
+      break;
+
+    case "valignBottom":
+      this.setVerticalAlign("bottom");
+      break;
+  }
 }
 dateSelectionAndRefresh() {
   if (!this.table) return;
@@ -1768,60 +1825,6 @@ resnapAndReflow() {
     this.lockCellEditing();
   } else {
     this.unlockCellEditing();
-  }
-}
-handleCommand(cmd) {
-  if (!this.table) return;
-
-  if (!this.selectedCell) {
-    // fallback to first cell
-    this.selectedCell = this.table.querySelector("td");
-    if (!this.selectedCell) return;
-  }
-
-  const rowIndex = this.selectedCell.parentElement.rowIndex;
-  const cellIndex = this.selectedCell.cellIndex;
-
-  switch (cmd) {
-    case "AddRow":
-      this.insertRow(rowIndex + 1);
-      break;
-    case "deleteRow":
-      this.deleteRow(rowIndex);
-      break;
-    case "addColLeft":
-      this.insertColumn(cellIndex);
-      break;
-    case "addColRight":
-      this.insertColumn(cellIndex + 1);
-      break;
-    case "deleteCol":
-      this.deleteColumn(cellIndex);
-      break;
-
-    // known working fallback style
-    default:
-      console.warn("Unhandled table command:", cmd);
-
-    case "mergeCells":
-      this.mergeSelectedCells();
-      break;
-
-    case "unmergeCells":
-      this.unmergeSelectedCell();
-      break;
-
-    case "valignTop":
-      this.setVerticalAlign("top");
-      break;
-
-    case "valignMiddle":
-      this.setVerticalAlign("middle");
-      break;
-
-    case "valignBottom":
-      this.setVerticalAlign("bottom");
-      break;
   }
 }
 setVerticalAlign(align) {
