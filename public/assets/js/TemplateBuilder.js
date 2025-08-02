@@ -952,24 +952,34 @@ toggleStyleForSelected(cmd) {
 
   const [prop, onVal, offVal] = style;
 
-  // Normalize existing value
-  let current = target.style[prop] || "";
-  let isOn;
+  const applyToggle = (el) => {
+    const current = el.style[prop] || "";
+    let isOn;
 
-  if (prop === "textDecoration") {
-    isOn = current.includes(onVal);
-  } else if (prop === "fontWeight") {
-    isOn = current === "bold" || parseInt(current, 10) >= 600;
+    if (prop === "textDecoration") {
+      isOn = current.includes(onVal);
+    } else if (prop === "fontWeight") {
+      isOn = current === "bold" || parseInt(current, 10) >= 600;
+    } else {
+      isOn = current === onVal;
+    }
+
+    el.style[prop] = isOn ? offVal : onVal;
+  };
+
+  if (this.selectedElement.classList.contains("table-block")) {
+    const selectedCells = this.tableToolbar?.selectedCells ?? new Set();
+    const cells = selectedCells.size > 0 ? selectedCells : new Set([this.tableToolbar?.selectedCell]);
+
+    cells.forEach(cell => {
+      if (cell) applyToggle(cell);
+    });
+
   } else {
-    isOn = current === onVal;
+    applyToggle(target);
   }
 
-  target.style[prop] = isOn ? offVal : onVal;
-
-  // Re-apply toolbar state
-  this.selectElement(this.selectedElement);
-
-  // Update history
+  this.selectElement(this.selectedElement); // refresh UI state
   this.saveHistory();
 }
 sanitizePaste(e) {
@@ -1207,23 +1217,38 @@ setupLabelInputRestrictions(labelElement) {
 alignSelectedElement(cmd) {
   if (!this.selectedElement) return;
 
-  const target = this.getEditableBody(this.selectedElement);
-  if (!target) return;
-
   const alignment = {
     justifyLeft: "left",
     justifyCenter: "center",
     justifyRight: "right"
   }[cmd] || "left";
 
-  target.style.textAlign = alignment;
+  const target = this.getEditableBody(this.selectedElement);
+  if (!target) return;
 
+  // Only apply to individual selected table cells
+  if (this.selectedElement.classList.contains("table-block")) {
+    const selectedCells = this.tableToolbar?.selectedCells ?? new Set();
+    const cells = selectedCells.size > 0 ? selectedCells : new Set([this.tableToolbar?.selectedCell]);
+
+    cells.forEach(cell => {
+      if (cell) cell.style.textAlign = alignment;
+    });
+
+  } else {
+    // Apply alignment to regular element bodies (e.g., label, text field)
+    target.style.textAlign = alignment;
+  }
+
+  // Update toolbar UI
   document.querySelectorAll('[data-cmd^="justify"]').forEach(btn =>
     btn.classList.remove("active")
   );
 
   const btn = document.querySelector(`[data-cmd="${cmd}"]`);
   if (btn) btn.classList.add("active");
+
+  this.saveHistory?.();
 }
 getEditableBody(el) {
   return el.querySelector(".element-body, .header-title, .header-subtitle, .footer-left") || el;
@@ -1513,11 +1538,10 @@ rebindTableCellEvents() {
 
   const allCells = Array.from(this.table.querySelectorAll("td"));
 
-  // Builds map of cell positions, spans, and boundaries
   const buildCellMaps = () => {
     const map = [];
     const rows = Array.from(this.table.rows);
-    const cellData = new Map(); // cell -> { row, col, rowspan, colspan }
+    const cellData = new Map();
 
     for (let r = 0; r < rows.length; r++) map[r] = [];
 
@@ -1563,13 +1587,11 @@ rebindTableCellEvents() {
         const target = cellData.get(targetCell);
         if (!anchor || !target) return;
 
-        // Full bounding box
         const minRow = Math.min(anchor.row, target.row);
         const maxRow = Math.max(anchor.endRow, target.endRow);
         const minCol = Math.min(anchor.col, target.col);
         const maxCol = Math.max(anchor.endCol, target.endCol);
 
-        // Select only fully-contained cells
         const selected = new Set();
         for (const [cell, info] of cellData.entries()) {
           const isFullyInside =
@@ -1581,8 +1603,12 @@ rebindTableCellEvents() {
           if (isFullyInside) selected.add(cell);
         }
 
+        // ✅ Ensure anchorCell is selected even if coordinates map fails it
+        selected.add(this.anchorCell);
+
         this.selectedCells.clear();
         allCells.forEach(cell => cell.classList.remove("multi-selected", "selected-cell"));
+
         selected.forEach(cell => {
           cell.classList.add("multi-selected");
           this.selectedCells.add(cell);
@@ -1590,16 +1616,18 @@ rebindTableCellEvents() {
 
         this.selectedCell = targetCell;
         targetCell.classList.add("selected-cell");
+
         this.updateCellSelection();
 
       } else {
-        // Single click
+        // Normal single click (no shift)
         this.anchorCell = targetCell;
         this.selectedCell = targetCell;
         this.selectedCells.clear();
 
         allCells.forEach(cell => cell.classList.remove("multi-selected", "selected-cell"));
-        targetCell.classList.add("multi-selected", "selected-cell");
+
+        targetCell.classList.add("selected-cell");
         this.selectedCells.add(targetCell);
 
         this.updateCellSelection();
@@ -1607,7 +1635,6 @@ rebindTableCellEvents() {
       }
     };
 
-    // Prevent editing locked cells
     td.onkeydown = (e) => {
       if (!td.classList.contains("locked-cell")) return;
       if (
@@ -1618,7 +1645,6 @@ rebindTableCellEvents() {
       }
     };
 
-    // Add resizer
     const isLastCell = td.cellIndex >= td.parentElement.cells.length - 1;
     if (!isLastCell && !td.querySelector(".resizer")) {
       const resizer = document.createElement("div");
@@ -1634,6 +1660,61 @@ rebindTableCellEvents() {
       resizer.addEventListener("mousedown", e => this.startColumnResize(e, td));
     }
   });
+}
+
+handleCommand(cmd) {
+  if (!this.table) return;
+
+  if (!this.selectedCell) {
+    // fallback to first cell
+    this.selectedCell = this.table.querySelector("td");
+    if (!this.selectedCell) return;
+  }
+
+  const rowIndex = this.selectedCell.parentElement.rowIndex;
+  const cellIndex = this.selectedCell.cellIndex;
+
+  switch (cmd) {
+    case "AddRow":
+      this.insertRow(rowIndex + 1);
+      break;
+    case "deleteRow":
+      this.deleteRow(rowIndex);
+      break;
+    case "addColLeft":
+      this.insertColumn(cellIndex);
+      break;
+    case "addColRight":
+      this.insertColumn(cellIndex + 1);
+      break;
+    case "deleteCol":
+      this.deleteColumn(cellIndex);
+      break;
+
+    // known working fallback style
+    default:
+      console.warn("Unhandled table command:", cmd);
+
+    case "mergeCells":
+      this.mergeSelectedCells();
+      break;
+
+    case "unmergeCells":
+      this.unmergeSelectedCell();
+      break;
+
+    case "valignTop":
+      this.setVerticalAlign("top");
+      break;
+
+    case "valignMiddle":
+      this.setVerticalAlign("middle");
+      break;
+
+    case "valignBottom":
+      this.setVerticalAlign("bottom");
+      break;
+  }
 }
 dateSelectionAndRefresh() {
   if (!this.table) return;
@@ -1746,65 +1827,20 @@ resnapAndReflow() {
     this.unlockCellEditing();
   }
 }
-handleCommand(cmd) {
-  if (!this.table) return;
-
-  if (!this.selectedCell) {
-    // fallback to first cell
-    this.selectedCell = this.table.querySelector("td");
-    if (!this.selectedCell) return;
-  }
-
-  const rowIndex = this.selectedCell.parentElement.rowIndex;
-  const cellIndex = this.selectedCell.cellIndex;
-
-  switch (cmd) {
-    case "AddRow":
-      this.insertRow(rowIndex + 1);
-      break;
-    case "deleteRow":
-      this.deleteRow(rowIndex);
-      break;
-    case "addColLeft":
-      this.insertColumn(cellIndex);
-      break;
-    case "addColRight":
-      this.insertColumn(cellIndex + 1);
-      break;
-    case "deleteCol":
-      this.deleteColumn(cellIndex);
-      break;
-
-    // known working fallback style
-    default:
-      console.warn("Unhandled table command:", cmd);
-
-    case "mergeCells":
-      this.mergeSelectedCells();
-      break;
-
-    case "unmergeCells":
-      this.unmergeSelectedCell();
-      break;
-
-    case "valignTop":
-      this.setVerticalAlign("top");
-      break;
-
-    case "valignMiddle":
-      this.setVerticalAlign("middle");
-      break;
-
-    case "valignBottom":
-      this.setVerticalAlign("bottom");
-      break;
-  }
-}
 setVerticalAlign(align) {
   if (!this.table || this.selectedCells.size === 0) return;
 
   this.selectedCells.forEach(cell => {
     cell.style.verticalAlign = align;
+  });
+
+  this.resnapAndReflow();
+}
+setTextAlign(align) {
+  if (!this.table || this.selectedCells.size === 0) return;
+
+  this.selectedCells.forEach(cell => {
+    cell.style.textAlign = align;
   });
 
   this.resnapAndReflow();
