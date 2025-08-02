@@ -1538,11 +1538,10 @@ rebindTableCellEvents() {
 
   const allCells = Array.from(this.table.querySelectorAll("td"));
 
-  // Builds map of cell positions, spans, and boundaries
   const buildCellMaps = () => {
     const map = [];
     const rows = Array.from(this.table.rows);
-    const cellData = new Map(); // cell -> { row, col, rowspan, colspan }
+    const cellData = new Map();
 
     for (let r = 0; r < rows.length; r++) map[r] = [];
 
@@ -1588,13 +1587,11 @@ rebindTableCellEvents() {
         const target = cellData.get(targetCell);
         if (!anchor || !target) return;
 
-        // Full bounding box
         const minRow = Math.min(anchor.row, target.row);
         const maxRow = Math.max(anchor.endRow, target.endRow);
         const minCol = Math.min(anchor.col, target.col);
         const maxCol = Math.max(anchor.endCol, target.endCol);
 
-        // Select only fully-contained cells
         const selected = new Set();
         for (const [cell, info] of cellData.entries()) {
           const isFullyInside =
@@ -1608,6 +1605,7 @@ rebindTableCellEvents() {
 
         this.selectedCells.clear();
         allCells.forEach(cell => cell.classList.remove("multi-selected", "selected-cell"));
+
         selected.forEach(cell => {
           cell.classList.add("multi-selected");
           this.selectedCells.add(cell);
@@ -1615,16 +1613,19 @@ rebindTableCellEvents() {
 
         this.selectedCell = targetCell;
         targetCell.classList.add("selected-cell");
+
         this.updateCellSelection();
 
       } else {
-        // Single click
+        // Normal single click
         this.anchorCell = targetCell;
         this.selectedCell = targetCell;
         this.selectedCells.clear();
 
         allCells.forEach(cell => cell.classList.remove("multi-selected", "selected-cell"));
-        targetCell.classList.add("multi-selected", "selected-cell");
+
+        // Only highlight blue border (no dashed box)
+        targetCell.classList.add("selected-cell");
         this.selectedCells.add(targetCell);
 
         this.updateCellSelection();
@@ -1632,7 +1633,6 @@ rebindTableCellEvents() {
       }
     };
 
-    // Prevent editing locked cells
     td.onkeydown = (e) => {
       if (!td.classList.contains("locked-cell")) return;
       if (
@@ -1643,7 +1643,6 @@ rebindTableCellEvents() {
       }
     };
 
-    // Add resizer
     const isLastCell = td.cellIndex >= td.parentElement.cells.length - 1;
     if (!isLastCell && !td.querySelector(".resizer")) {
       const resizer = document.createElement("div");
@@ -1800,6 +1799,10 @@ handleCommand(cmd) {
       this.deleteColumn(cellIndex);
       break;
 
+    // known working fallback style
+    default:
+      console.warn("Unhandled table command:", cmd);
+
     case "mergeCells":
       this.mergeSelectedCells();
       break;
@@ -1819,27 +1822,6 @@ handleCommand(cmd) {
     case "valignBottom":
       this.setVerticalAlign("bottom");
       break;
-
-    case "alignLeft":
-    case "alignCenter":
-    case "alignRight": {
-      const align = cmd === "alignLeft"
-        ? "left"
-        : cmd === "alignCenter"
-        ? "center"
-        : "right";
-
-      const targets = this.selectedCells.size > 0 ? this.selectedCells : new Set([this.selectedCell]);
-      targets.forEach(cell => {
-        cell.style.textAlign = align;
-      });
-
-      this.resnapAndReflow();
-      break;
-    }
-
-    default:
-      console.warn("Unhandled table command:", cmd);
   }
 }
 setVerticalAlign(align) {
