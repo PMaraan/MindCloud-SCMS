@@ -16,6 +16,27 @@ class PostgresDatabase implements StorageInterface {
         //echo "PostgresDatabase.php: basePath2: $this->basePath <br>";                 //delete for production
     }
 
+    public function beginTransaction() {
+        if(!$this->pdo->inTransaction()){
+            return $this->pdo->beginTransaction();
+        }
+        return false; // return false if already in transaction
+    }
+
+    public function commit() {
+        if ($this->pdo->inTransaction()) {
+            return $this->pdo->commit();
+        }
+        return false; // when there is nothing to commit
+    }
+    
+    public function rollBack() {
+        if ($this->pdo->inTransaction()) {
+            return $this->pdo->rollBack();
+        }
+        return false; // when there is nothing to roll back
+    }
+
     public function authenticate($email, $password) {
         // Retrieve the user details from the database
         $stmt = $this->pdo->prepare("SELECT * FROM users WHERE email = ?");
@@ -110,10 +131,15 @@ class PostgresDatabase implements StorageInterface {
         }
     }
 
-    public function getAllRoles() {
+    public function getAllRoles($sortOrder = null) {
+        $sortOrder = strtoupper($sortOrder ?? 'ASC');
+        $allowedSorts = ['ASC', 'DESC'];
+        if (!in_array($sortOrder, $allowedSorts)) {
+            $sortOrder = 'ASC';
+        }
         $stmt = $this->pdo->prepare("
             SELECT * FROM roles
-            ORDER BY role_id
+            ORDER BY role_id $sortOrder
         ");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -204,6 +230,17 @@ class PostgresDatabase implements StorageInterface {
             ORDER BY role_id DESC;
         ");
         $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // return all roles with level higher than user level
+    public function getAllRolesWithRestrictions($level) {
+        $stmt = $this->pdo->prepare("
+            SELECT * FROM roles
+            WHERE role_level > ?
+            ORDER BY role_id DESC
+        ");
+        $stmt->execute([$level]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
@@ -335,7 +372,52 @@ class PostgresDatabase implements StorageInterface {
         }
     }
 
-    public function createUser($id_no, $fname, $mname, $lname, $email, $password, $college_short_name, $role_name) {
+    // assign new dean or replace old dean
+    public function assignDean($id_no, $college_id) {
+        $stmt = $this->pdo->prepare("
+            INSERT INTO college_deans (college_id, dean_id)
+            VALUES (?,?)
+            ON CONFLICT ON CONSTRAINT uq_collegedeans_collegeid
+            DO UPDATE SET dean_id = EXCLUDED.dean_id
+        ");
+        $stmt->execute([$college_id, $id_no]);
+        return true;
+    }
+
+    // assign a role and an optional college to the user
+    public function assignUserRoleAndCollege($id_no, $role_id, $college_id = null) {
+        $stmt = $this->pdo->prepare("
+            INSERT INTO user_roles (id_no, role_id, college_id)
+            VALUES (?,?,?)
+            ON CONFLICT (id_no, role_id)
+            DO UPDATE SET college_id = EXCLUDED.college_id
+        ");
+        $stmt->execute([$id_no, $role_id, $college_id]);
+        return true;
+    }
+
+    // cleanup college references in user roles (especially when assigning new deans)
+    public function cleanupCollegeReferences($id_no, $role_id, $college_id) {
+        $stmt = $this->pdo->prepare("
+            UPDATE user_roles
+            SET college_id = null
+            WHERE role_id = ? AND college_id = ? AND id_no != ?
+        ");
+        $stmt->execute([$role_id, $college_id, $id_no]);
+        return true;
+    }
+
+    public function createUser($id_no, $fname, $mname, $lname, $email, $password) {
+        $stmt = $this->pdo->prepare("
+            INSERT INTO users (id_no, fname, mname, lname, email, password)
+            VALUES (?,?,?,?,?,?)
+        ");
+        $stmt->execute([$id_no, $fname, $mname, $lname, $email, $password]);
+        return true;
+    }
+
+    // deprecated
+    public function createUser0($id_no, $fname, $mname, $lname, $email, $password, $college_short_name, $role_name) { // deprecated. delete for production ...
         try {
             // Begin transaction
             $this->pdo->beginTransaction();
@@ -391,6 +473,10 @@ class PostgresDatabase implements StorageInterface {
             $this->pdo->rollBack();
             return ['success' => false, 'error' => $e->getMessage()];
         }
+    }
+
+    public function createDeanUser() {
+
     }
 
     public function setAccountChangesUsingID($id_no, $fname, $mname, $lname, $email, $college_short_name, $role_name) {
@@ -568,6 +654,40 @@ class PostgresDatabase implements StorageInterface {
         return $stmt->fetchColumn();
     }
 
+    public function getRoleLevelUsingUserId($user_id) {
+        $stmt = $this->pdo->prepare("
+            SELECT r.role_level
+            FROM roles r
+            JOIN user_roles ur ON r.role_id = ur.role_id
+            WHERE ur.id_no = ?
+            ORDER BY r.role_level ASC
+            LIMIT 1
+        ");
+        $stmt->execute([$user_id]);
+        return $stmt->fetchColumn();
+    }
+
+    public function getRoleNameUsingUserId($user_id) {
+        $stmt = $this->pdo->prepare("
+            SELECT role_name from roles r
+            LEFT JOIN user_roles ur ON r.role_id = ur.role_id
+            WHERE ur.id_no = ?
+            ORDER BY role_level ASC
+            LIMIT 1
+        ");
+        $stmt->execute([$user_id]);
+        return $stmt->fetchColumn();
+    }
+
+    public function getRoleNameUsingRoleId($role_id){
+        $stmt = $this->pdo->prepare("
+            SELECT role_name from roles
+            WHERE role_id = ?
+        ");
+        $stmt->execute([$role_id]);
+        return $stmt->fetchColumn();
+    }
+
     public function updateDeanUser($id_no, $fname, $mname, $lname, $email, $college_id, $role_id){
         try {
             $this->pdo->beginTransaction();
@@ -636,7 +756,7 @@ class PostgresDatabase implements StorageInterface {
     }
 
     // updateChairUser is deprecated. delete for production ...
-    public function updateChairUser($id_no, $fname, $mname, $lname, $email, $college_id, $role_id,$program_id){
+    public function updateChairUser($id_no, $fname, $mname, $lname, $email, $college_id, $role_id){
         try {
             $this->pdo->beginTransaction();
 

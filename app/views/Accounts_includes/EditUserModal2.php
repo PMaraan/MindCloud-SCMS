@@ -37,7 +37,8 @@
             <select class="form-select" id="editCollege" name="college_id">
                 <!-- College options go here -->
                 <option value="">NULL</option>
-                <?php
+                
+                <?php                    
                     $colleges = $db->getAllCollegeShortNames();
                     foreach ($colleges as $college):
                 ?>

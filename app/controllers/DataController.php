@@ -12,6 +12,31 @@ class DataController {
         $this->db = new PostgresDatabase(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS);
     }
 
+    private function isMorePrivileged($currentUserId, $role_id){
+        // the current user is the currently logged in user
+        // the other user is the user who we do db operations to
+        $currentUserLevelRaw = $this->db->getRoleLevelUsingUserId($currentUserId);
+        $targetUserLevelRaw = $this->db->getRoleLevelUsingRoleId($role_id);
+        
+        // check if fetch failes
+        if ($currentUserLevelRaw === false || $targetUserLevelRaw === false) {
+            throw new Exception("Role level not found for one or both users.");
+        }
+
+        // cast values to int
+        $currentUserLevel = intval($currentUserLevelRaw);
+        $targetUserLevel = intval($targetUserLevelRaw);
+
+        // Admins (level 1) can act on anyone, including equal level
+        if ($currentUserLevel === 1) {
+            return true;
+        }
+
+        // the lower the level, the greater the privelege
+        // return true if current user is more priveleged
+        return $currentUserLevel < $targetUserLevel;
+    }
+
     public function getAllUsersAccountInfo() {
         try {
             //validate role here ...
@@ -43,6 +68,50 @@ class DataController {
         }
     }
 
+    // only use this for create user modal. for edit user modal, use getAllRoles()
+    public function getAllRolesWithRestrictions() {
+        try {
+            // check permissions
+             if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+            $user_id = $_SESSION['user_id'];            
+            $hasPermission = $this->db->checkPermission($user_id, 'RoleViewing');
+            
+            if (!$hasPermission) {
+                throw new Exception("You don't have permission to perform this action!");
+            }
+            
+            // check the role level. if 1, then get all roles;
+            // if above 1, get roles filtering out roles with lower levels
+            // note: the lower the level the higher the access
+            $level = intval($this->db->getRoleLevelUsingUserId($user_id));
+            
+            if ($level && $level > 0) {
+                switch($level) {
+                    case 1:
+                        // get all roles without restrictions
+                        $result = $this->db->getAllRoles('DESC');                        
+                        break;
+                    default:
+                        // get all roles with restrictions
+                        $result = $this->db->getAllRolesWithRestrictions($level);
+                        //return ['success' => true, 'db' => $result];
+                        break;
+                }
+            } else {
+                throw new Exception("Invalid role.");
+            }
+            return ['success' => true, 'db' => $result];
+        } catch (PDOException $e) {
+            // Database or logic-level error
+            return ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
+        } catch (Exception $e) {
+            // handle other errors
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
     public function getAllCollegeShortNames(){
         //validate if the college exists here...
         return $this->db->getAllCollegeShortNames();
@@ -65,16 +134,85 @@ class DataController {
         return $this->db->getProgramsByCollege($college_id);
     }
 
-    public function createUser($id_no, $fname, $mname, $lname, $email, $college_short_name,$role_name){
+    public function createUser($id_no, $fname, $mname, $lname, $email, $college_id, $role_id){
         try {
+            // check if current user has permission
+              if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+            $user_id = $_SESSION['user_id'];   
+            $hasPermission = $this->db->checkPermission($user_id, 'AccountCreation');
+            $isMorePrivileged = $this->isMorePrivileged($user_id, $role_id);
+            if(!$hasPermission || !$isMorePrivileged) {
+                throw new Exception("You don't have permission to perform this action!");
+            }
+
+            // hash the default password
             $defaultPassword = 'password';
             $password = password_hash($defaultPassword, PASSWORD_ARGON2ID);
-            return $this->db->createUser($id_no, $fname, $mname, $lname, $email, $password, $college_short_name,$role_name);
+
+            // get the role name of the target user
+            $userRoleName = $this->db->getRoleNameUsingRoleId($role_id);
+
+            // save to database depending on role
+            $role_name = strtolower($userRoleName);
+            //return ['success' => true, 'message' => $role_name];
+            switch($role_name) {
+                case 'dean':
+                    // begin transaction
+                    $this->db->beginTransaction();
+                    // save basic info
+                    $this->db->createUser($id_no, $fname, $mname, $lname, $email, $password);
+                    // clean up old dean in user roles and college deans
+                    $this->db->cleanupCollegeReferences($id_no, $role_id, $college_id);
+                    // save user role and college
+                    $this->db->assignUserRoleAndCollege($id_no, $role_id, $college_id);
+                    // officially assing the new dean
+                    $this->db->assignDean($id_no, $college_id);
+                    // commit if there are no errors
+                    $this->db->commit();
+                    //$result = $this->db->createDeanUser($id_no, $fname, $mname, $lname, $email, $college_id, $role_id);
+                    break;
+                default:
+                    // begin transaction
+                    $this->db->beginTransaction();
+                    // save basic info
+                    $this->db->createUser($id_no, $fname, $mname, $lname, $email, $password);
+                    // save user role and optional college
+                    $this->db->assignUserRoleAndCollege($id_no, $role_id, $college_id);
+                    // commit if there are no errors
+                    $this->db->commit();
+                    break;
+            }
+            //return $this->db->createUser($id_no, $fname, $mname, $lname, $email, $password, $college_id,$role_id);
+            return ['success' => true, 'message' => 'User created successfully!'];
         } catch (PDOException $e) {
             // Database or logic-level error
+            $this->db->rollBack();
             return ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
         } catch (Exception $e) {
+            $this->db->rollBack();
             return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    public function checkPermission($permission) {
+        try {
+             // check if current user has permission to do action
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+            $userid = $_SESSION['user_id'];
+            $hasPermission = null;
+            $hasPermission = $this->db->checkPermission($userid, $permission);
+            if (!$hasPermission) {
+                throw new Exception("You don't have permission to perform this action!");
+            }
+            return ['success' => true, 'hasPermission' => $hasPermission];
+        } catch (PDOException $e) {
+            return ['success' => false, 'error' => 'Database error'];
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => 'Error: ' . $e->getMessage()];
         }
     }
 
@@ -109,12 +247,12 @@ class DataController {
                     // the role to be set is dean
                     $result = $this->db->updateDeanUser($id_no, $fname, $mname, $lname, $email, $college_id, $role_id);
                     break;
-                /*
+                
                 case 'chair':
                     // chair logic goes here...
                     $result = $this->db->updateChairUser($id_no, $fname, $mname, $lname, $email, $college_id, $role_id);
                     break;
-                */
+                
                 case '':
                     //handle error here...
                     throw new Exception("Role not found");

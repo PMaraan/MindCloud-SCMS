@@ -53,6 +53,10 @@ initializeModals();
 
 // Helper function to autofill in the edit modal
 function autofillEditModal(button, modal) {
+  if (!modal) {
+    console.warn("⚠️ Modal not found. Selector was:", modalSelector);
+    return;
+  }
   modal.querySelector('#editIdNumber').value = button.getAttribute('data-id-no') || '';
   modal.querySelector('#editFirstName').value = button.getAttribute('data-fname') || '';
   modal.querySelector('#editMiddleInitial').value = button.getAttribute('data-mname') || '';

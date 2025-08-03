@@ -66,18 +66,35 @@ switch ($type) {
                 }
                 break;
             case 'createUser':
+                // check for null values
+                if (!isset($_POST['id_no']) || $_POST['id_no'] === '') {
+                    throw new Exception("Missing or empty value for user ID");
+                }
+                if (!isset($_POST['fname']) || $_POST['fname'] === '') {
+                    throw new Exception("Missing or empty value for user First Name");
+                }
+                if (!isset($_POST['lname']) || $_POST['lname'] === '') {
+                    throw new Exception("Missing or empty value for user Last Name");
+                }
+                if (!isset($_POST['email']) || $_POST['email'] === '') {
+                    throw new Exception("Missing or empty value for user Email");
+                }
+                if (!isset($_POST['role_id']) || $_POST['role_id'] === '') {
+                    throw new Exception("Missing or empty value for user Role ID");
+                }
                 $id_no = $_POST['id_no'];
                 $fname = $_POST['fname'];
                 $mname = $_POST['mname'];
                 $lname = $_POST['lname'];
                 $email = $_POST['email'];
-                $college_short_name = $_POST['college_short_name'];
-                $role_name = $_POST['role_name'];
+                $college_id = $_POST['college_id'] ?? ''; // handle null college
+                $role_id = $_POST['role_id'];
                 $result = $controller->createUser($id_no, $fname, $mname, $lname, 
-                    $email, $college_short_name,$role_name);
+                    $email, $college_id, $role_id);
                 //response
                 if($result['success']){
-                    header("Location: ../app/views/Dashboard2.php?status=success&message=" . urlencode("User created successfully."));
+                    $message = $result['message'] ?? 'Success!';
+                    header("Location: ../app/views/Dashboard2.php?status=success&message=" . urlencode($message));
                     exit;
                 }else{
                     $error = $result['error'] ?? 'Unknown error';
