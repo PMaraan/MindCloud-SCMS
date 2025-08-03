@@ -1,0 +1,100 @@
+body {
+    font-family: Arial, sans-serif;
+    background: #f7f9fb;
+    margin: 0;
+    padding: 0;
+    color: #333;
+}
+
+/* Header like notification title */
+.settings-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid #d1d5db;
+    background: #f7f9fb;
+}
+
+.settings-header h2 {
+    margin: 0;
+    font-size: 18px;
+}
+
+/* Success message */
+.success-msg {
+    background: #d4edda;
+    color: #155724;
+    padding: 10px 20px;
+    font-size: 14px;
+    margin: 10px;
+    border-radius: 5px;
+}
+
+/* Full-width form like notifications */
+.settings-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding: 20px;
+    background: #f7f9fb;
+}
+
+.profile-section {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 10px;
+}
+
+.profile-img {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #ddd;
+}
+
+.upload-btn {
+    background: #00bcd4;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    display: inline-block;
+}
+
+.upload-btn input {
+    display: none;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.form-group input {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.save-btn {
+    background: #00bcd4;
+    color: white;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 15px;
+    width: 150px;
+}
+
+.save-btn:hover {
+    background: #0097a7;
+}

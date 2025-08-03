@@ -13,6 +13,8 @@ $page_css = [
   'note' => '../../public/assets/css/ForStatus.css',
   'prepare' => '../../public/assets/css/ForStatus.css',
   'revise' => '../../public/assets/css/ForStatus.css',
+  'notification' => '../../public/assets/css/Notification.css',
+  'settings' => '../../public/assets/css/Settings.css',
 ];
 
 // JS Mappings
@@ -27,6 +29,8 @@ $page_js = [
   'note' => '../../public/assets/js/ForStatus.js',
   'prepare' => '../../public/assets/js/ForStatus.js',
   'revise' => '../../public/assets/js/ForStatus.js',
+  'notification' => '../../public/assets/js/Notification.js',
+  'settings' => '../../public/assets/js/Settings.js',
 ];
 
 // Content mapping
@@ -45,6 +49,8 @@ $allowed_pages = [
   'add_college' => 'CollegeFacultyRoles.php',
   'view_roles' => 'ViewRoles.php',
   'edit_college' => 'EditCollegeRoles.php',
+  'notification'=> 'Notification.php',
+  'settings' => 'Settings.php',
 ];
 ?>
 <!DOCTYPE html>
