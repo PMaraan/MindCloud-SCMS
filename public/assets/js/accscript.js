@@ -32,10 +32,10 @@ function initializeModals() {
     */
     switch (action) {
       case 'edit':
-        populateEditModal(button, modal);
+        autofillEditModal(button, modal);
         break;
       case 'delete':
-        populateDeleteModal(button, modal);
+        autofillDeleteModal(button, modal);
         break;
       case 'saveAccountChangesToDb':
         // call api and send modal values using post
@@ -52,23 +52,52 @@ initializeModals();
 
 
 // Helper function to autofill in the edit modal
-function populateEditModal(button, modal) {
+function autofillEditModal(button, modal) {
+  if (!modal) {
+    console.warn("⚠️ Modal not found. Selector was:", modalSelector);
+    return;
+  }
   modal.querySelector('#editIdNumber').value = button.getAttribute('data-id-no') || '';
   modal.querySelector('#editFirstName').value = button.getAttribute('data-fname') || '';
   modal.querySelector('#editMiddleInitial').value = button.getAttribute('data-mname') || '';
   modal.querySelector('#editLastName').value = button.getAttribute('data-lname') || '';
   modal.querySelector('#editEmail').value = button.getAttribute('data-email') || '';
+  //modal.querySelector('#editCollege').value = button.getAttribute('data-college-id') || '';
+  //modal.querySelector('#editRole').value = button.getAttribute('data-role-id') || '';
+  //modal.querySelector('#editProgram').value = button.getAttribute('data-program-id') || '';
 
   const collegeSelect = modal.querySelector('#editCollege');
-  if (collegeSelect) collegeSelect.value = button.getAttribute('data-college') || '';
+  if (collegeSelect) collegeSelect.value = button.getAttribute('data-college-id') || '';
 
   const roleSelect = modal.querySelector('#editRole');
-  if (roleSelect) roleSelect.value = button.getAttribute('data-role') || ''; // mappings changed. edit this
+  if (roleSelect) roleSelect.value = button.getAttribute('data-role-id') || ''; // mappings changed. edit this
+
+ /* 
+  const programSelect = modal.querySelector('#editProgram');
+  if (programSelect) programSelect.value = button.getAttribute('data-program-id') || '';
+
+  const selectedRole = roleSelect.options[roleSelect.selectedIndex].text.toLowerCase();
+  const selectedCollegeId = collegeSelect.value;
+
+  // check if role is chair then toggle the visibility of the programs field
+  const programContainer = document.getElementById('programContainer');
+  if (selectedRole === 'chair' && selectedCollegeId) {
+    fetchPrograms(selectedCollegeId); // get all of the programs under the specified college
+    programContainer.classList.remove('d-none');
+    programSelect.setAttribute('required', 'required');
+  } else {
+    programContainer.classList.add('d-none');
+    programSelect.innerHTML = '<option value="">-- Select Program --</option>';
+    programSelect.removeAttribute('required');
+  }
+*/
+
+
 }
 
 
 // Example: for delete modals
-function populateDeleteModal(button, modal) {
+function autofillDeleteModal(button, modal) {
   modal.querySelector('#deleteIdNumber').value = button.getAttribute('data-id-no') || '';
   modal.querySelector('#deleteUserName').textContent =
     `${button.getAttribute('data-fname')} ${button.getAttribute('data-lname')}`;
@@ -140,13 +169,40 @@ function bindEditButtons() {
 bindEditButtons();
 */
 
+
+// get all programs under the specified college
+/*
+function fetchPrograms(collegeId) {
+  const programSelect = document.getElementById('editProgram');
+  fetch(`/MindCloud-SCMS/public/api.php?action=getProgramsByCollege&college_id=${encodeURIComponent(collegeId)}`)
+    .then(res => res.json())
+    .then(data => {
+      programSelect.innerHTML = '<option value="">-- Select Program --</option>';
+      if (data.success) {
+        data.programs.forEach(program => {
+          const option = document.createElement('option');
+          option.value = program.program_id;
+          option.textContent = program.program_name;
+          programSelect.appendChild(option);
+        });
+      } else {
+        console.error('Error loading programs:', data.error);
+      }
+    })
+    .catch(err => {
+      console.error('Fetch failed:', err);
+    });
+}
+*/
 // show the programs dropdown when the chair role is selected
+/*
 function toggleProgramFieldVisibility() {
   const roleSelect = document.getElementById('editRole');
   const collegeSelect = document.getElementById('editCollege');
   const programContainer = document.getElementById('programContainer');
   const programSelect = document.getElementById('editProgram');
 
+  
   function toggleProgramDropdown() {
     const selectedRole = roleSelect.options[roleSelect.selectedIndex].text.toLowerCase();
     const selectedCollegeId = collegeSelect.value;
@@ -161,27 +217,8 @@ function toggleProgramFieldVisibility() {
       programSelect.removeAttribute('required');
     }
   }
-  // get all the programs under the college
-  function fetchPrograms(collegeId) {
-    fetch(`/MindCloud-SCMS/public/api.php?action=getProgramsByCollege&college_id=${encodeURIComponent(collegeId)}`)
-      .then(res => res.json())
-      .then(data => {
-        programSelect.innerHTML = '<option value="">-- Select Program --</option>';
-        if (data.success) {
-          data.programs.forEach(program => {
-            const option = document.createElement('option');
-            option.value = program.program_id;
-            option.textContent = program.program_name;
-            programSelect.appendChild(option);
-          });
-        } else {
-          console.error('Error loading programs:', data.error);
-        }
-      })
-      .catch(err => {
-        console.error('Fetch failed:', err);
-      });
-  }
+  
+  
 
   // Watch for changes
   roleSelect.addEventListener('change', toggleProgramDropdown);
@@ -192,6 +229,11 @@ function toggleProgramFieldVisibility() {
 };
 
 toggleProgramFieldVisibility();
+
+*/
+
+
+
 
 // Search filter function
 document.getElementById("search").addEventListener("input", function (e) {

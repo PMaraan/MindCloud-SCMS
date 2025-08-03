@@ -51,14 +51,14 @@
                     </div><!-- mb-2 close -->
                     <div class="mb-2"><!-- mb-2 open -->
                         <label for="createCollege" class="form-label">College</label>
-                        <select id="createCollege" class="form-select" name="college_short_name">
+                        <select id="createCollege" class="form-select" name="college_id">
                             <!-- College options go here -->
                             <option value="">NULL</option>
                             <?php
                                 $colleges = $db->getAllCollegeShortNames();
                                 foreach ($colleges as $college):
                             ?>
-                            <option value="<?= htmlspecialchars($college['short_name']) ?>"><?= htmlspecialchars($college['short_name']) ?></option>
+                            <option value="<?= htmlspecialchars($college['college_id']) ?>"><?= htmlspecialchars($college['short_name']) ?></option>
                             <?php
                                 endforeach;
                             ?>
@@ -67,17 +67,25 @@
                     <!-- Dropdown for selecting Role -->
                     <div class="mb-2"><!-- mb-2 open -->
                         <label for="createRole" class="form-label required">Role</label>
-                        <select id="createRole" class="form-select" name="role_name" required>
+                        <select id="createRole" class="form-select" name="role_id" required>
                             <option value="">NULL</option>
                             <!-- Role options go here -->
-                            <?php 
-                                $roles = $db->getAllRoleNames();
-                                foreach($roles as $role):
-                                    $role_name = $role['role_name'];
-                            ?>
-                                <option value="<?= htmlspecialchars($role_name) ?>"><?= htmlspecialchars($role_name) ?></option>
                             <?php
-                                endforeach;
+                                // use getAllRolesWithRestriction where the user only gets 
+                                // roles with a higher role_level than they are
+                                // the higher the role_level, the lower the access
+                                // this is to prevent attackers from inserting a high value
+                                // to override the admin/superadmin
+                                $rolesQuery = $db->getAllRolesWithRestrictions(); 
+                                echo print_r($rolesQuery['db']); // delete for production ...
+                                if($rolesQuery['success'] === true and isset($rolesQuery['db'])):
+                                    $roles = $rolesQuery['db'];
+                                    foreach($roles as $role):
+                            ?>
+                                <option value="<?= htmlspecialchars($role['role_id']) ?>"><?= htmlspecialchars($role['role_name']) ?></option>
+                            <?php
+                                    endforeach;
+                                endif;
                             ?>
                         </select>
                     </div><!-- mb-2 close -->

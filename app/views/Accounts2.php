@@ -5,13 +5,7 @@
   $users = $db->getAllUsersAccountInfo();
 */
   $db = new DataController();
-  $query = $db->getAllUsers();
-  if ($query && $query['success']) {
-    $users = $query['db'];
-  } else {
-    $error = $query['error'] ?? 'Unknown error';
-    echo "<script>alert('Error: " . addslashes($error) . "');</script>";    
-  }
+  
 ?>
 
   <!-- Accounts -->
@@ -24,18 +18,44 @@
 
     <!-- Create User -->
     <?php
+    // check if user has permmission to create accounts
+    $userHasPermission = $db->checkPermission('AccountCreation');
+    if ($userHasPermission['success'] === true && $userHasPermission['hasPermission'] === true) {
       include_once __DIR__ . '/Accounts_includes/CreateUserModal.php';
-    ?>
-
-    <!-------------------Edit User Modal---------------------->
-    <?php
-      include_once __DIR__ . '/Accounts_includes/EditUserModal2.php';
+    } else {
+      echo htmlspecialchars($userHasPermission['error']);
+    }
+      
     ?>
 
     <!-- Accounts Table -->
     <?php
-      include_once __DIR__ . '/Accounts_includes/AccountsTable2.php'
+    
+    // check if user has permmission to view accounts
+    $userHasPermission = $db->checkPermission('AccountViewing');
+    
+    if ($userHasPermission['success'] === true && $userHasPermission['hasPermission'] === true) {
+      include_once __DIR__ . '/Accounts_includes/AccountsTable2.php';
+    } else {
+      echo htmlspecialchars($userHasPermission['error']);
+    }
     ?>
+
+    <!-------------------Edit User Modal---------------------->
+    <?php
+    
+    // check if user has permmission to modify accounts
+    $userHasPermission = $db->checkPermission('AccountModification');
+    if ($userHasPermission['success'] === true && $userHasPermission['hasPermission'] === true) {
+      include_once __DIR__ . '/Accounts_includes/EditUserModal2.php';
+      //echo "<h1>Hello</h1>";
+    } else {
+      echo htmlspecialchars($userHasPermission['error']);
+    }
+    
+    ?>
+
+
 
   </div><!--container-fluid close-->
   <!-- JS Script -->

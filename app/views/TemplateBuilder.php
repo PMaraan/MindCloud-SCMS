@@ -50,7 +50,7 @@
 </div>
 
 <!-- 🟨 TOP TOOLBAR -->
-<div class="builder-header editor-toolbar d-flex align-items-center gap-2 p-2 border-bottom bg-light">
+<div class="builder-header editor-toolbar d-flex align-items-center gap-2 p-2 border-bottom">
   <!-- Logo -->
   <div class="position-absolute start-0 ms-2 d-flex align-items-center">
     <img src="../../public/assets/images/logo_lpu.png" alt="Logo" style="height: 64px;" />
@@ -99,7 +99,6 @@
   <!-- Undo / Redo -->
   <button class="btn btn-sm btn-outline-secondary" data-cmd="undo"><i class="bi bi-arrow-counterclockwise"></i></button>
   <button class="btn btn-sm btn-outline-secondary" data-cmd="redo"><i class="bi bi-arrow-clockwise"></i></button>
-  <button class="btn btn-sm btn-outline-secondary" id="clearFormat"><i class="bi bi-eraser"></i></button> <!-- ID: clearFormat -->
 
   <!-- Send & Save -->
   <div class="position-absolute end-0 me-3 d-flex align-items-center gap-2">
