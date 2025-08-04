@@ -102,6 +102,33 @@ switch ($type) {
                     exit;
                 }
                 break;
+            case 'deleteAccount':
+                // validate inputs
+                if (!isset($_POST['id_no']) || $_POST['id_no'] === '') {
+                    throw new Exception("Missing or empty value for user ID");
+                }if (!isset($_POST['role_id']) || $_POST['role_id'] === '') {
+                    throw new Exception("Missing or empty value for role ID");
+                }
+                $id_no = $_POST['id_no'];
+                $role_id = $_POST['role_id'];
+                try {
+                    //forward to data controller
+                    $result = $controller->deleteUserUsingID($id_no, $role_id);
+                    //echo json_encode($result);
+                } catch (Exception $e) {
+                    $result = ['success' => false, 'error' => $e->getMessage()];
+                    //echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+                }
+                
+                if ($result['success']){
+                    header("Location: ../app/views/Dashboard2.php?status=success&message=" . urlencode("User deleted successfully."));
+                    exit;
+                }else {
+                    $error = $result['error'] ?? 'Unknown error';
+                    header("Location: ../app/views/Dashboard2.php?status=error&message=" . urlencode($error));
+                    exit;
+                }
+                break;
             case 'createRole':                
                 $role_name = $_POST['role_name'];
                 $role_level = $_POST['role_level'];                

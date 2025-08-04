@@ -98,9 +98,14 @@ function autofillEditModal(button, modal) {
 
 // Example: for delete modals
 function autofillDeleteModal(button, modal) {
-  modal.querySelector('#deleteIdNumber').value = button.getAttribute('data-id-no') || '';
-  modal.querySelector('#deleteUserName').textContent =
-    `${button.getAttribute('data-fname')} ${button.getAttribute('data-lname')}`;
+  // retrieve saved data from the button
+  const idNo = button.getAttribute('data-id-no') || '';
+  const fullName = button.getAttribute('data-full-name') || 'this user';
+  const roleId = button.getAttribute('data-role-id') || '';
+  // assing values
+  modal.querySelector('#deleteIdNumber').value = idNo;
+  modal.querySelector('#deleteRoleId').value = roleId;
+  modal.querySelector('#deleteModalMessage').textContent = `Are you sure you want to delete ${fullName} with ID number ${idNo} ?`;
 }
 
 

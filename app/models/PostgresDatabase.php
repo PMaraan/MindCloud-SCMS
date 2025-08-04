@@ -475,8 +475,13 @@ class PostgresDatabase implements StorageInterface {
         }
     }
 
-    public function createDeanUser() {
-
+    public function deleteUserUsingID($id_no) {
+        $stmt = $this->pdo->prepare("
+            DELETE FROM users
+            WHERE id_no = ?
+        ");
+        $stmt->execute([$id_no]);
+        return $stmt->rowCount() > 0;
     }
 
     public function setAccountChangesUsingID($id_no, $fname, $mname, $lname, $email, $college_short_name, $role_name) {
@@ -631,6 +636,17 @@ class PostgresDatabase implements StorageInterface {
         } catch (Exception $e) {
             return ['success' => false, 'error' => $e->getMessage()];
         }
+    }
+
+    public function getRoleIdUsingUserId($id_no) {
+        $stmt = $this->pdo->prepare("
+            SELECT role_id from user_roles
+            WHERE id_no = ?
+            ORDER BY role_id ASC
+            LIMIT 1
+        ");
+        $stmt->execute([$id_no]);
+        return $stmt->fetchColumn();
     }
 
     public function getRoleIfExists($role_id) {

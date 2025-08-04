@@ -216,6 +216,35 @@ class DataController {
         }
     }
 
+    public function deleteUserUsingID($id_no) {
+        try {
+            // check if current user has permission
+              if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+            $user_id = $_SESSION['user_id'];   
+            $hasPermission = $this->db->checkPermission($user_id, 'AccountDeletion');
+            
+            $role_id = $this->db->getRoleIdUsingUserId($id_no);
+            $isMorePrivileged = $this->isMorePrivileged($user_id, $role_id);
+            if(!$hasPermission || !$isMorePrivileged) {
+                throw new Exception("You don't have permission to perform this action!");
+            }
+
+            // call the database
+            $this->db->deleteUserUsingID($id_no);
+
+            // return this if success
+            return ['success' => true, 'message' => 'User deleted successfully!'];
+        } catch (PDOException $e) {
+            // Database or logic-level error
+            return ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
+        } catch (Exception $e) {
+            // handle other Exceptions
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
     public function setAccountChangesUsingID($id_no, $fname, $mname, $lname, $email, $college_id, $role_id) {
         try {
             // check if current user has permission to do action
