@@ -145,7 +145,7 @@ class PostgresDatabase implements StorageInterface {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function getAllUsersAccountInfo() { //deprecated. delete for production
+    public function getAllUsersAccountInfo() {
             $stmt = $this->pdo->prepare("
                 SELECT 
                     u.id_no,
@@ -282,7 +282,7 @@ class PostgresDatabase implements StorageInterface {
         return array_keys($groups); // e.g., ['accounts', 'college', 'templates']
     }
 
-    public function getAllColleges() {
+    public function getAllCollegesInfo() {
         $stmt = $this->pdo->prepare("
             SELECT 
                 c.college_id,

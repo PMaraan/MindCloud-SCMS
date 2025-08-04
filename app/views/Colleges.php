@@ -1,4 +1,5 @@
 <?php
+/*
   $db = new DataController();
   $query = $db->getAllColleges();
   if ($query && $query['success']) {
@@ -7,6 +8,8 @@
     $error = $query['error'] ?? 'Unknown error';
     echo "<script>alert('Error: " . addslashes($error) . "');</script>";    
   }
+    */
+  $db = new Datacontroller();
 ?>
 
   <!-- Colleges -->
@@ -17,19 +20,48 @@
       include_once __DIR__ . '/Colleges_includes/SearchBar.php';
     ?>
 
-    <!-- Create College -->
+    <!-------------------- Create College ------------------------>
     <?php
-      include_once __DIR__ . '/Colleges_includes/CreateCollegeModal.php';
+      // check if user has permission to create colleges
+      $userHasPermission = $db->checkPermission('CollegeCreation');
+      if ($userHasPermission['success'] === true && $userHasPermission['hasPermission'] === true) {
+        include_once __DIR__ . '/Colleges_includes/CreateCollegeModal.php';
+      } else {
+        echo htmlspecialchars($userHasPermission['error']);
+      }
     ?>
 
     <!-------------------Edit College Modal---------------------->
     <?php
-      include_once __DIR__ . '/Colleges_includes/EditCollegeModal.php';
+      // check if user has permission to edit colleges
+      $userHasPermission = $db->checkPermission('CollegeModification');
+      if ($userHasPermission['success'] === true && $userHasPermission['hasPermission'] === true) {
+        include_once __DIR__ . '/Colleges_includes/EditCollegeModal.php';
+      } else {
+        echo htmlspecialchars($userHasPermission['error']);
+      }
     ?>
 
-    <!-- College Table -->
+    <!------------------- College Table ----------------------------->
     <?php
-      include_once __DIR__ . '/Colleges_includes/CollegesTable.php'
+      // check if user has permission to view colleges
+      $userHasPermission = $db->checkPermission('CollegeViewing');
+      if ($userHasPermission['success'] === true && $userHasPermission['hasPermission'] === true) {
+        include_once __DIR__ . '/Colleges_includes/CollegesTable.php';
+      } else {
+        echo htmlspecialchars($userHasPermission['error']);
+      }
+    ?>
+
+    <!-------------------Delete College Modal---------------------->
+    <?php
+      // check if user has permission to delete colleges
+      $userHasPermission = $db->checkPermission('CollegeDeletion');
+      if ($userHasPermission['success'] === true && $userHasPermission['hasPermission'] === true) {
+        include_once __DIR__ . '/Colleges_includes/DeleteCollegeModal.php';
+      } else {
+        echo htmlspecialchars($userHasPermission['error']);
+      }
     ?>
 
   </div><!--container-fluid close-->

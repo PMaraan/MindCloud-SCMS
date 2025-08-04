@@ -12,11 +12,16 @@ class DataController {
         $this->db = new PostgresDatabase(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS);
     }
 
-    private function isMorePrivileged($currentUserId, $role_id){
+    private function isMorePrivileged($currentUserId, $id_no){
+        // check if the user is editing self
+        if ($currentUserId == $id_no) {
+            throw new Exception("Operation not allowed!");
+        }
+
         // the current user is the currently logged in user
         // the other user is the user who we do db operations to
         $currentUserLevelRaw = $this->db->getRoleLevelUsingUserId($currentUserId);
-        $targetUserLevelRaw = $this->db->getRoleLevelUsingRoleId($role_id);
+        $targetUserLevelRaw = $this->db->getRoleLevelUsingUserId($id_no);
         
         // check if fetch failes
         if ($currentUserLevelRaw === false || $targetUserLevelRaw === false) {
@@ -117,10 +122,19 @@ class DataController {
         return $this->db->getAllCollegeShortNames();
     }
 
-    public function getAllColleges(){
+    public function getAllCollegesInfo(){
         //validate if the college exists here...
         try {
-            return ['success' => true, 'db' => $this->db->getAllColleges()];
+            // check if current user has permission
+              if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+            $user_id = $_SESSION['user_id'];   
+            $hasPermission = $this->db->checkPermission($user_id, 'CollegeViewing');
+            if(!$hasPermission) {
+                throw new Exception("You don't have permission to perform this action!");
+            }
+            return ['success' => true, 'db' => $this->db->getAllCollegesInfo()];
         } catch (PDOException $e) {
             // Database or logic-level error
             return ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
@@ -142,7 +156,7 @@ class DataController {
             }
             $user_id = $_SESSION['user_id'];   
             $hasPermission = $this->db->checkPermission($user_id, 'AccountCreation');
-            $isMorePrivileged = $this->isMorePrivileged($user_id, $role_id);
+            $isMorePrivileged = $this->isMorePrivileged($user_id, $id_no);
             if(!$hasPermission || !$isMorePrivileged) {
                 throw new Exception("You don't have permission to perform this action!");
             }
@@ -225,8 +239,7 @@ class DataController {
             $user_id = $_SESSION['user_id'];   
             $hasPermission = $this->db->checkPermission($user_id, 'AccountDeletion');
             
-            $role_id = $this->db->getRoleIdUsingUserId($id_no);
-            $isMorePrivileged = $this->isMorePrivileged($user_id, $role_id);
+            $isMorePrivileged = $this->isMorePrivileged($user_id, $id_no);
             if(!$hasPermission || !$isMorePrivileged) {
                 throw new Exception("You don't have permission to perform this action!");
             }

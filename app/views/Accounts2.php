@@ -18,7 +18,7 @@
 
     <!----------------------- Create User -------------------------->
     <?php
-      // check if user has permmission to create accounts
+      // check if user has permission to create accounts
       $userHasPermission = $db->checkPermission('AccountCreation');
       if ($userHasPermission['success'] === true && $userHasPermission['hasPermission'] === true) {
         include_once __DIR__ . '/Accounts_includes/CreateUserModal.php';
@@ -29,7 +29,7 @@
 
     <!------------------- Accounts Table ------------------------>
     <?php
-      // check if user has permmission to view accounts
+      // check if user has permission to view accounts
       $userHasPermission = $db->checkPermission('AccountViewing');
       
       if ($userHasPermission['success'] === true && $userHasPermission['hasPermission'] === true) {
@@ -41,7 +41,7 @@
 
     <!-------------------Edit User Modal---------------------->
     <?php
-      // check if user has permmission to modify accounts
+      // check if user has permission to modify accounts
       $userHasPermission = $db->checkPermission('AccountModification');
       if ($userHasPermission['success'] === true && $userHasPermission['hasPermission'] === true) {
         include_once __DIR__ . '/Accounts_includes/EditUserModal2.php';
@@ -53,7 +53,7 @@
 
     <!-------------------Delete User Modal---------------------->
     <?php
-      // check if user has permmission to delete accounts
+      // check if user has permission to delete accounts
       $userHasPermission = $db->checkPermission('AccountDeletion');
       if ($userHasPermission['success'] === true && $userHasPermission['hasPermission'] === true) {
         include_once __DIR__ . '/Accounts_includes/DeleteUserModal.php';
