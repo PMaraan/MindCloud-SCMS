@@ -35,6 +35,7 @@
    // ]
 //];
 
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -45,6 +46,7 @@
     <link rel="stylesheet" href="../../public/assets/css/Notification.css">
 </head>
 <body>
+
     <div class="notification-container">
         <div class="header">
             <h2>Notifications</h2>

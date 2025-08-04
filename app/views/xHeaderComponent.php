@@ -7,7 +7,7 @@
     </a>
     <ul class="navbar-nav ms-auto d-flex flex-row">
       <li class="nav-item me-4">
-        <a class="header-link" href="#" title="Notifications">
+        <a class="header-link" href="/app/views/Notification.php" title="Notifications">
           <i class="bi bi-bell fs-4"></i>
         </a>
       </li>
