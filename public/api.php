@@ -149,6 +149,46 @@ switch ($type) {
                     exit;
                 }
                 break;
+            case 'setCollegeInfo':
+                
+                try {
+                    if (!isset($_POST['college_id']) || $_POST['college_id'] === '') {
+                        throw new Exception("Missing or empty value for college ID");
+                    }
+                    if (!isset($_POST['college_short_name']) || $_POST['college_short_name'] === '') {
+                        throw new Exception("Missing or empty value for college short name");
+                    }
+                    if (!isset($_POST['college_name']) || $_POST['college_name'] === '') {
+                        throw new Exception("Missing or empty value for college name");
+                    }
+                    if (!isset($_POST['dean_id']) || $_POST['dean_id'] === '') {
+                        throw new Exception("Missing or empty value for dean ID");
+                    }
+
+                    $college_id = intval($_POST['college_id']);
+                    $college_short_name = $_POST['college_short_name'];
+                    $college_name = $_POST['college_name'];
+                    $dean_id = $_POST['dean_id'];
+                    $result = $controller->updateCollegeInfo($college_id, $college_short_name, $college_name, $dean_id);
+                    // forward to datacontroller
+                    //return['success' => true, 'message' => $controller->updateCollegeInfo($college_id, $college_short_name, $college_name, $dean_id)];
+                } catch (PDOException $e) {
+                    // database error
+                    $result = ['success' => false, 'error' => "Database error: " . $e->getMessage()];
+                } catch (Exception $e) {
+                    // other errors
+                    $result =  ['success' => false, 'error' => $e->getMessage()];
+                }
+                if($result['success']){
+                    $message = $result['message'] ?? 'Success!';
+                    header("Location: ../app/views/Dashboard2.php?status=success&message=" . urlencode($message));
+                    exit;
+                }else{
+                    $error = $result['error'] ?? 'Unknown error';
+                    header("Location: ../app/views/Dashboard2.php?status=error&message=" . urlencode($error));
+                    exit;
+                }
+                break;
             case 'setRoleChangesUsingID':
                 //forward to data controller
                 $role_id = $_POST['role_id'];
@@ -191,6 +231,7 @@ switch ($type) {
                     exit;
                 }
                 break;
+/*
             case 'setCollegeInfo':
                 //forward to data controller
                 $college_id = $_POST['college_id'];
@@ -200,9 +241,9 @@ switch ($type) {
                 $college_dean = $_POST['college_dean'];
                 try {
                     $result = $controller->setCollegeInfo($college_id, $college_short_name, $college_name, $college_dean);
-                    echo json_encode(['success' => true, 'message' => 'User saved successfully.']);
+                    //echo json_encode(['success' => true, 'message' => 'User saved successfully.']);
                 } catch (Exception $e) {
-                    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+                    //echo json_encode(['success' => false, 'message' => $e->getMessage()]);
                 }
                 
                 if ($result['success']){
@@ -214,6 +255,7 @@ switch ($type) {
                     exit;
                 }
                 break;
+                */
             default:
                 http_response_code(400);
                 echo json_encode(['error' => 'Invalid action!']);

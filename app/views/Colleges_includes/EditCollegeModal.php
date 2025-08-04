@@ -1,4 +1,4 @@
-<!-- Edit User Modal -->
+<!-- Edit College Modal -->
  <?php
     require_once __DIR__ . '/../../controllers/DataController.php';
     $db = new DataController();
@@ -28,8 +28,8 @@
           </div>
           
           <div class="mb-3">
-            <label for="editDeanName" class="form-label required">Dean</label>
-            <select id="editDeanName" class="form-select" name="college_dean" required>
+            <label for="editDeanId" class="form-label">Dean</label>
+            <select id="editDeanId" class="form-select" name="dean_id">
                 <!-- College options go here -->
                 <option value="">NULL</option>
                 <?php

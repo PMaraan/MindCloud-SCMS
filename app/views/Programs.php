@@ -10,17 +10,10 @@
   }
     */
   $db = new DataController();
-  $query = $db->getAllProgramDetails();
-  if ($query && $query['success']) {
-    //echo print_r($query); // delete for production
-    $programs = $query['db'];
-  } else {
-    $error = $query['error'] ?? 'Unknown error';
-    echo "<script>alert('Error: " . addslashes($error) . "');</script>";    
-  }
+  
 ?>
 
-  <!-- Programs -->
+  <!-------------------------- Programs -------------------------->
   <div class="container-fluid"> <!--container-fluid open-->
     <h2>Programs</h2>
     <!-- Search + Edit Controls -->
@@ -28,19 +21,50 @@
       include_once __DIR__ . '/Programs_includes/SearchBar.php';
     ?>
 
-    <!-- Create Program -->
+    <!-------------------- Create Program ----------------------->
     <?php
-      //include_once __DIR__ . '/Programs_includes/CreateProgramModal.php';
+      // check if user has permission to create colleges
+      $userHasPermission = $db->checkPermission('ProgramCreation');
+      if ($userHasPermission['success'] === true && $userHasPermission['hasPermission'] === true) {
+        include_once __DIR__ . '/Programs_includes/CreateProgramModal.php';
+      } else {
+        echo htmlspecialchars($userHasPermission['error']);
+      }
+      
     ?>
 
     <!-------------------Edit Program Modal---------------------->
     <?php
-      //include_once __DIR__ . '/Programs_includes/EditProgramModal.php';
+    // check if user has permission to edit colleges
+      $userHasPermission = $db->checkPermission('ProgramModification');
+      if ($userHasPermission['success'] === true && $userHasPermission['hasPermission'] === true) {
+        //include_once __DIR__ . '/Programs_includes/EditProgramModal.php';
+      } else {
+        echo htmlspecialchars($userHasPermission['error']);
+      }
+      
     ?>
 
-    <!-- Programs Table -->
+    <!------------------- Programs Table ------------------------>
     <?php
-      include_once __DIR__ . '/Programs_includes/ProgramsTable.php'
+      // check if user has permission to view colleges
+      $userHasPermission = $db->checkPermission('ProgramViewing');
+      if ($userHasPermission['success'] === true && $userHasPermission['hasPermission'] === true) {
+        include_once __DIR__ . '/Programs_includes/ProgramsTable.php';
+      } else {
+        echo htmlspecialchars($userHasPermission['error']);
+      }
+    ?>
+
+    <!-------------------Delete Program Modal---------------------->
+    <?php
+      // check if user has permission to delete colleges
+      $userHasPermission = $db->checkPermission('ProgramDeletion');
+      if ($userHasPermission['success'] === true && $userHasPermission['hasPermission'] === true) {
+        //include_once __DIR__ . '/Programs_includes/DeleteProgramModal.php';
+      } else {
+        echo htmlspecialchars($userHasPermission['error']);
+      }
     ?>
 
   </div><!--container-fluid close-->

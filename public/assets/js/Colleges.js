@@ -22,10 +22,10 @@ function initializeModals() {
     switch (action) {
       case 'edit':
         console.log("button: ",button,"\nmodal: ",modal);
-        populateEditModal(button, modal);
+        autoFillEditModal(button, modal);
         break;
       case 'delete':
-        populateDeleteModal(button, modal);
+        autoFillDeleteModal(button, modal);
         break;
       case 'saveAccountChangesToDb':
         // call api and send modal values using post
@@ -42,16 +42,16 @@ initializeModals();
 
 
 // Helper function to autofill in the edit modal
-function populateEditModal(button, modal) {
+function autoFillEditModal(button, modal) {
   modal.querySelector('#editCollegeId').value = button.getAttribute('data-college-id') || '';
   modal.querySelector('#editCollegeShortName').value = button.getAttribute('data-college-short-name') || '';
   modal.querySelector('#editCollegeName').value = button.getAttribute('data-college-name') || '';
-  modal.querySelector('#editDeanName').value = button.getAttribute('data-dean') || '';
+  modal.querySelector('#editDeanId').value = button.getAttribute('data-dean-id') || '';
 }
 
 
 // Example: for delete modals
-function populateDeleteModal(button, modal) {
+function autoFillDeleteModal(button, modal) {
   modal.querySelector('#deleteIdNumber').value = button.getAttribute('data-id-no') || '';
   modal.querySelector('#deleteUserName').textContent =
     `${button.getAttribute('data-fname')} ${button.getAttribute('data-lname')}`;

@@ -1,12 +1,15 @@
 <?php
+/*
 $colleges = [
-  ['code' => 'CCS', 'name' => 'College of Computer Studies'],
-  ['code' => 'CON', 'name' => 'College of Nursing'],
+  ['short_name' => 'CCS', 'college_name' => 'College of Computer Studies'],
+  ['short_name' => 'CON', 'college_name' => 'College of Nursing'],
 ];
+*/
+$db = new Datacontroller();
 ?>
 
 <div class="container-fluid py-4 px-0">
-  <h4 class="mb-3 ps-3">University</h4>
+  <h4 class="mb-3 ps-3">Syllabus</h4>
 
   <!-- 🔍 Search Bar -->
   <div class="mb-3 px-3">
@@ -28,7 +31,7 @@ $colleges = [
   <!-- 🗂️ College List -->
   <div class="card rounded-0 border-0 clickable-card">
     <div class="table-responsive">
-      <table class="table mb-0">
+      <table class="table mb-0 table-hover">
         <thead class="table-light">
           <tr>
             <th style="width: 40px;"></th>
@@ -37,22 +40,42 @@ $colleges = [
           </tr>
         </thead>
         <tbody id="collegeList">
-          <?php foreach ($colleges as $college): ?>
-            <tr>
-              <td><i class="bi bi-folder-fill folder-icon"></i></td>
-              <td><?= $college['code'] ?></td>
-              <td>
-                <a
-                  href="#"
-                  data-page="Syllabus"
-                  data-college="<?= $college['code'] ?>"
-                  class="text-decoration-none text-dark college-link"
-                >
-                  <?= $college['name'] ?>
-                </a>
-              </td>
-            </tr>
-          <?php endforeach; ?>
+          <?php 
+            // Get colleges
+            $query = $db->getAllColleges();
+
+            if ($query && $query['success']) {
+              $colleges = $query['db'];
+              if (!empty($colleges)) {
+                
+                foreach ($colleges as $college): ?>
+                <tr class="collegeEntry" data-college-id="<?= $college['college_id'] ?>">
+                  <td><i class="bi bi-folder-fill folder-icon"></i></td>
+                  <td><?= $college['short_name'] ?></td>
+                  <td>
+                    <a
+                      href="#"
+                      data-page="Syllabus"
+                      data-college="<?= $college['short_name'] ?>"
+                      class="text-decoration-none text-dark college-link"
+                    >
+                      <?= $college['college_name'] ?>
+                    </a>
+                  </td>
+                </tr>
+            
+          <?php 
+                endforeach;
+              } else {
+                 // No records to show
+                echo '<tr><td colspan="8" class="text-center text-muted">No records to show</td></tr>';
+              }
+            } else {
+              // Query failed
+                    $error = $query['error'] ?? 'Unknown error';
+                    echo "<script>alert('Error: " . addslashes($error) . "');</script>";    
+            }
+          ?>
         </tbody>
       </table>
     </div>

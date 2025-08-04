@@ -282,6 +282,15 @@ class PostgresDatabase implements StorageInterface {
         return array_keys($groups); // e.g., ['accounts', 'college', 'templates']
     }
 
+    public function getAllColleges() {
+        $stmt = $this->pdo->prepare("
+            SELECT * from colleges
+            ORDER BY college_name ASC
+        ");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function getAllCollegesInfo() {
         $stmt = $this->pdo->prepare("
             SELECT 
@@ -337,7 +346,22 @@ class PostgresDatabase implements StorageInterface {
         }
     }
 
-    public function getAllProgramDetails() {
+    public function getAllCoursesInfo() {
+            $stmt = $this->pdo->prepare("
+                SELECT cou.course_id,
+                    cou.course_code,
+                    cou.course_name,
+                    cou.college_id,
+                    col.short_name
+                FROM courses cou
+                LEFT JOIN colleges col ON cou.college_id = col.college_id
+                ORDER BY cou.course_id ASC
+            ");
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getAllProgramsInfo() {
         try {
             // fetch all programs from the database
             $stmt = $this->pdo->prepare("
@@ -405,6 +429,15 @@ class PostgresDatabase implements StorageInterface {
         ");
         $stmt->execute([$role_id, $college_id, $id_no]);
         return true;
+    }
+
+    public function cleanupDeanAssignment($id_no) {
+        $stmt = $this->pdo->prepare("
+            DELETE FROM college_deans
+            WHERE dean_id = ?
+        ");
+        $stmt->execute([$id_no]);
+        return $stmt->rowCount() > 0;
     }
 
     public function createUser($id_no, $fname, $mname, $lname, $email, $password) {
@@ -545,6 +578,15 @@ class PostgresDatabase implements StorageInterface {
                 'error' => $e->getMessage()
             ];
         }
+    }
+    
+    public function updateUserCollegeUsingCollegeId($id_no, $college_id) {
+        $stmt = $this->pdo->prepare("
+            UPDATE user_roles
+            SET college_id = ?
+            WHERE id_no = ?
+        ");
+        $stmt->execute([$college_id, $id_no]);
     }
 
     public function setUserDetails($id_no, $fname, $mname, $lname, $email) {
@@ -769,6 +811,18 @@ class PostgresDatabase implements StorageInterface {
             $this->pdo->rollback();
             return "Error: " . $e->getMessage();
         }
+    }
+
+    // update college table
+    public function updateCollege($college_id, $college_short_name, $college_name) {
+        $stmt = $this->pdo->prepare("
+            UPDATE colleges
+            SET short_name = ?,
+                college_name = ?
+            WHERE college_id = ?
+        ");
+        $stmt->execute([$college_short_name, $college_name, $college_id]);
+        return "College successfully updated!";
     }
 
     // updateChairUser is deprecated. delete for production ...

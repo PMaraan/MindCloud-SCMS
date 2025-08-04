@@ -12,7 +12,7 @@
   $db = new Datacontroller();
 ?>
 
-  <!-- Colleges -->
+  <!---------------------- Colleges ----------------------------->
   <div class="container-fluid"> <!--container-fluid open-->
     <h2>Colleges</h2>
     <!-- Search + Edit Controls -->

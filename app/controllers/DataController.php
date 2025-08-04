@@ -117,6 +117,38 @@ class DataController {
         }
     }
 
+    public function getAllChairs() {
+        try {
+            return $this->db->getAllChairs();
+        } catch (PDOException $e) {
+            // Database or logic-level error
+            return ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    public function getAllColleges() {
+        try {
+            // check if current user has permission
+              if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+            $user_id = $_SESSION['user_id'];   
+            $hasPermission = $this->db->checkPermission($user_id, 'CollegeViewing');
+            if(!$hasPermission) {
+                throw new Exception("You don't have permission to perform this action!");
+            }
+            return ['success' => true, 'db' => $this->db->getAllColleges()];
+        } catch (PDOException $e) {
+            // Database or logic-level error
+            return ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
+        } catch (Exception $e) {
+            // handle other errors
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
     public function getAllCollegeShortNames(){
         //validate if the college exists here...
         return $this->db->getAllCollegeShortNames();
@@ -135,6 +167,28 @@ class DataController {
                 throw new Exception("You don't have permission to perform this action!");
             }
             return ['success' => true, 'db' => $this->db->getAllCollegesInfo()];
+        } catch (PDOException $e) {
+            // Database or logic-level error
+            return ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
+        } catch (Exception $e) {
+            // handle other errors
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    public function getAllCoursesInfo(){
+        //validate if the college exists here...
+        try {
+            // check if current user has permission
+              if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+            $user_id = $_SESSION['user_id'];   
+            $hasPermission = $this->db->checkPermission($user_id, 'CourseViewing');
+            if(!$hasPermission) {
+                throw new Exception("You don't have permission to perform this action!");
+            }
+            return ['success' => true, 'db' => $this->db->getAllCoursesInfo()];
         } catch (PDOException $e) {
             // Database or logic-level error
             return ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
@@ -380,15 +434,51 @@ class DataController {
         }
     }
 
-    public function getAllProgramDetails() {
+    public function getAllProgramsInfo() {
         try {
             // insert validation here...
-            return ['success' => true, 'db' => $this->db->getAllProgramDetails()];
+            return ['success' => true, 'db' => $this->db->getAllProgramsInfo()];
         } catch (PDOException $e) {
             // Database or logic-level error
             return ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
         } catch (Exception $e) {
             return ['success' => false, 'error' => 'Error: ' . $e->getMessage()];
+        }
+    }
+
+    public function updateCollegeInfo($college_id, $college_short_name, $college_name, $dean_id) {
+        try {
+            // check permissions
+             if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+            $user_id = $_SESSION['user_id'];            
+            $hasPermission = $this->db->checkPermission($user_id, 'CollegeModification');
+            
+            if (!$hasPermission) {
+                throw new Exception("You don't have permission to perform this action!");
+            }
+            // begin transaction
+            $this->db->beginTransaction();
+            // update colleges table
+            $this->db->updateCollege($college_id, $college_short_name, $college_name);
+            // cleanup and update old references in user_roles table
+            $role_id = $this->db->getRoleIdUsingUserId($dean_id);
+            $this->db->cleanupCollegeReferences($dean_id, $role_id, $college_id);
+            $this->db->updateUserCollegeUsingCollegeId($dean_id, $college_id);
+            // cleanup references in college_deans table and assign the new dean
+            $this->db->cleanupDeanAssignment($dean_id);
+            $this->db->assignDean($dean_id, $college_id);
+            $this->db->commit();
+            return ['success' => true, 'message' => "College updated successfully!"];
+        } catch (PDOException $e) {
+            // Database or logic-level error
+            $this->db->rollBack();
+            return ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
+        } catch (Exception $e) {
+            // handle other errors
+            $this->db->rollBack();
+            return ['success' => false, 'error' => $e->getMessage()];
         }
     }
 }
