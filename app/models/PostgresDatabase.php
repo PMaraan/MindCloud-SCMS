@@ -703,6 +703,9 @@ class PostgresDatabase implements StorageInterface {
     }
 
     public function getRoleLevelUsingRoleId($role_id) {
+        if (!is_numeric($role_id)) {
+            throw new Exception("Invalid role_id: $role_id");
+        }
         $stmt = $this->pdo->prepare("
             SELECT role_level FROM roles
             WHERE role_id = ?

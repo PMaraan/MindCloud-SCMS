@@ -42,6 +42,37 @@ class DataController {
         return $currentUserLevel < $targetUserLevel;
     }
 
+    private function isMorePrivilegedUsingRoleId($currentUserId, $id_no, $role_id){
+        $role_id = intval($role_id);
+        // check if the user is editing self and is not admin
+        if ($currentUserId == $id_no && $currentUserId != "2025-01-10001") {
+            throw new Exception("Operation not allowed!");
+        }
+
+        // the current user is the currently logged in user
+        // the other user is the user who we do db operations to
+        $currentUserLevelRaw = $this->db->getRoleLevelUsingUserId($currentUserId);
+        $targetUserLevelRaw = $this->db->getRoleLevelUsingRoleId($role_id);
+        
+        // check if fetch failes
+        if ($currentUserLevelRaw === false || $targetUserLevelRaw === false) {
+            throw new Exception("Role level not found for one or both users.");
+        }
+
+        // cast values to int
+        $currentUserLevel = intval($currentUserLevelRaw);
+        $targetUserLevel = intval($targetUserLevelRaw);
+
+        // Admins (level 1) can act on anyone, including equal level
+        if ($currentUserLevel === 1) {
+            return true;
+        }
+
+        // the lower the level, the greater the privelege
+        // return true if current user is more priveleged
+        return $currentUserLevel < $targetUserLevel;
+    }
+
     public function getAllUsersAccountInfo() {
         try {
             //validate role here ...
@@ -210,7 +241,7 @@ class DataController {
             }
             $user_id = $_SESSION['user_id'];   
             $hasPermission = $this->db->checkPermission($user_id, 'AccountCreation');
-            $isMorePrivileged = $this->isMorePrivileged($user_id, $id_no);
+            $isMorePrivileged = $this->isMorePrivilegedUsingRoleId($user_id, $id_no, $role_id);
             if(!$hasPermission || !$isMorePrivileged) {
                 throw new Exception("You don't have permission to perform this action!");
             }
@@ -232,11 +263,18 @@ class DataController {
                     // save basic info
                     $this->db->createUser($id_no, $fname, $mname, $lname, $email, $password);
                     // clean up old dean in user roles and college deans
-                    $this->db->cleanupCollegeReferences($id_no, $role_id, $college_id);
+                    //if (isset($college_id) && $college_id != '') {
+                        $this->db->cleanupCollegeReferences($id_no, $role_id, $college_id);
+                    //}                    
                     // save user role and college
-                    $this->db->assignUserRoleAndCollege($id_no, $role_id, $college_id);
+                    //if (isset($college_id) && $college_id != '') {
+                        $this->db->assignUserRoleAndCollege($id_no, $role_id, $college_id);
+                    //}                    
                     // officially assing the new dean
-                    $this->db->assignDean($id_no, $college_id);
+                    //if (isset($college_id) && $college_id != '') {
+                        $this->db->assignDean($id_no, $college_id);
+                    //}
+                    
                     // commit if there are no errors
                     $this->db->commit();
                     //$result = $this->db->createDeanUser($id_no, $fname, $mname, $lname, $email, $college_id, $role_id);
