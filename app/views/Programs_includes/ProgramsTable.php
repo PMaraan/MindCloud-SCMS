@@ -18,16 +18,16 @@
             <!-- show the rows from the table declared in Programs.php -->
             <?php 
                 // get programs
-                $query = $db->getAllProgramsInfo();
+                //$query = $db->getAllProgramsInfo();
 
-                if ($query && $query['success']) {
-                    $programs = $query['db'];
+                //if ($query && $query['success']) {
+                    //$programs = $query['db'];
 
                     // Check permissions once
-                    $canEditPrograms = $db->checkPermission('ProgramModification');
-                    $canDeletePrograms = $db->checkPermission('ProgramDeletion');
-                    $canEdit = $canEditPrograms['success'] && $canEditPrograms['hasPermission'];
-                    $canDelete = $canDeletePrograms['success'] && $canDeletePrograms['hasPermission'];
+                    //$canEditPrograms = $db->checkPermission('ProgramModification');
+                    //$canDeletePrograms = $db->checkPermission('ProgramDeletion');
+                    //$canEdit = $canEditPrograms['success'] && $canEditPrograms['hasPermission'];
+                    //$canDelete = $canDeletePrograms['success'] && $canDeletePrograms['hasPermission'];
 
                     if (!empty($programs)) {
                         foreach ($programs as $program): echo "<!--show programs table-->"; 
@@ -44,8 +44,8 @@
                     <td><?= $program_id ?></td>                
                     <td><?= $program_name ?></td>
                     <td><?= $college_short_name ?></td>
-                    <td><?= $chair_id ?></td>
-                    <td><?= $chair_name ?></td>
+                    <td><?= $chair_id !== null ? $chair_id : htmlspecialchars("No chair assigned") ?></td>
+                    <td><?= $chair_name !== null ? $chair_name : htmlspecialchars("No chair assigned") ?></td>
                     <td>
                         <?php if ($canEdit): ?>
                         <!-- save data in the button to fetch in the edit modal -->
@@ -87,11 +87,11 @@
                         // No records to show
                         echo '<tr><td colspan="8" class="text-center text-muted">No records to show</td></tr>';
                     }
-                } else {
+                //} else {
                     // Query failes
-                    $error = $query['error'] ?? 'Unknown error';
-                    echo "<script>alert('Error: " . addslashes($error) . "');</script>";    
-            }
+                    //$error = $query['error'] ?? 'Unknown error';
+                    //echo "<script>alert('Error: " . addslashes($error) . "');</script>";    
+            //}
             ?>
         
         </tbody>

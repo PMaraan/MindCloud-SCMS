@@ -47,7 +47,7 @@ if ($user) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>LPU-SCMS | Login</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="../../public/assets/css/login-styles.css">
+  <link rel="stylesheet" href="<?= BASE_PATH ?>/public/assets/css/login-styles.css">
 </head>
 <body>
   <div class="container-fluid">
@@ -65,6 +65,7 @@ if ($user) {
         <!-- Login Form Container -->
         <div class="col login-form-container">
           <div class="col login-form">
+            <!-- put anti csrf token... -->
             <form method="POST" action="<?= BASE_PATH ?>/app/controllers/UserController.php">
 
               <!-- Email Input -->
@@ -75,7 +76,7 @@ if ($user) {
                   name = "email"
                   class="form-control" 
                   id="email-input"
-                  value="admin@lpunetwork.edu.ph" 
+                  value="vpaa@lpunetwork.edu.ph" 
                   required>
                 <div class="invalid-feedback">
                   Email must be a valid @lpunetwork.edu.ph address.

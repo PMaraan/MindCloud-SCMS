@@ -77,6 +77,7 @@ document.getElementById("toggleBtn").addEventListener("click", function () {
   document.body.classList.toggle("sidebar-collapsed");
 });
 
+// Toggle the active class for styling of selected sidebar tab
 document.querySelectorAll('.nav-link').forEach(link => {
   link.addEventListener('click', function (e) {
     e.preventDefault();

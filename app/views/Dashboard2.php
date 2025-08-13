@@ -5,6 +5,13 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// for handling success/error/warning messages
+$flashMessage = null;
+if (!empty($_SESSION['flash'])) {
+  $flashMessage = $_SESSION['flash'];
+  unset($_SESSION['flash']);
+}
+
 require_once __DIR__ . '/../../config/config.php'; // Load environment variables
 require_once __DIR__ . '/../controllers/DataController.php';
 require_once __DIR__ . '/../controllers/ContentController.php'; // Dynamically control the content
@@ -66,14 +73,24 @@ $content_file = $resources['content'];
 <body style="background-color: #f8f4f4;">
 
 
-<?php include_once __DIR__ . '/xHeaderComponent.php'; // Load header component ?>
+<?php include_once __DIR__ . '/components/Topbar.php';// '/xHeaderComponent.php'; delete for production ... // Load header component ?>
 
 <div class="wrapper"><!-- wrapper open -->
   
   <?php
   //$currentPage = $page; 
-  include_once __DIR__ . '/xSidebarComponent2.php'; // Load sidebar component
+  include_once __DIR__ . '/components/Sidebar.php'; // '/xSidebarComponent2.php'; delete for production ... // Load sidebar component
+
+  // Handle flash message
+  if ($flashMessage):
   ?>
+
+  <div class="alert alert-<?= htmlspecialchars($flashMessage['type']) ?> alert-dismissable fade show" role="alert">
+    <?= htmlspecialchars($flashMessage['message']) ?>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+
+  <?php endif; ?>
 
   <!-- Load Dynamic Workspace -->
   <div class="main-content"><!-- main-content open -->
@@ -96,21 +113,29 @@ $content_file = $resources['content'];
   <script src="<?= $js_file ?>"></script>
 <?php endif; ?>
 
-<!-- Dashboard Script -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<!------------------------- AJAX Loader --------------------------->
+<script 
+  src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js">
+</script>
+
 <script>
 document.body.addEventListener('click', function (e) {
+  // Sidebar tabs are <a> elements with data-page attributes
   const button = e.target.closest('[data-page]');
   if (!button) return; // Ignore clicks outside data-page elements
 
+  // Prevent the standard href from redirecting
   e.preventDefault();
 
+  // Page is 
   const page = button.getAttribute('data-page');
   console.log('Clicked page:', page); // log the value to the console
 
+  // formData is the form sent to the backend via POST method
   const formData = new FormData();
   formData.append('page', page);
 
+  // Send a POST request
   fetch('Dashboard2.php', {
     method: 'POST',
     body: formData
@@ -120,11 +145,17 @@ document.body.addEventListener('click', function (e) {
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
 
-    // Replace the dynamic content
+    // Replace main content
     const newContent = doc.querySelector('.main-content');
     if (newContent) {
       document.querySelector('.main-content').innerHTML = newContent.innerHTML;
     }
+
+    // Remove old page-specific scripts
+    //document.querySelectorAll('script[data-page-script').forEach(el => el.remove());
+
+    // Load new page-specific scripts
+
 
     // Load dynamic CSS (if needed)
     const newCss = doc.querySelectorAll('head link[rel="stylesheet"]:not([href*="bootstrap"], [href*="HeaderComponent"], [href*="SidebarComponent"])');

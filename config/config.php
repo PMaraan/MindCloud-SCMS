@@ -22,6 +22,7 @@ define('DB_NAME', getenv('DB_NAME'));
 define('DB_USER', getenv('DB_USER'));
 define('DB_PASS', getenv('DB_PASS'));
 define('BASE_PATH', getenv('BASE_PATH'));
+define('DB_DRIVER', getenv('DB_DRIVER') ?: 'pgsql'); // default to pgsql if not set
 
 $basePath = BASE_PATH ?: '/MindCloud-SCMS';
 // echo "USE_MOCK: " . var_export(USE_MOCK, true) . "<br>"; // delete for production
