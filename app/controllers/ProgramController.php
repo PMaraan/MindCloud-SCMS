@@ -11,7 +11,7 @@ class ProgramController{
         $this->db = $db;
     }
 
-    public function index() [
+    public function index() {
         try {
             // check permissions here
             $canView = $this->db->checkPermission('ProgramViewing');
@@ -23,12 +23,12 @@ class ProgramController{
 
             // Pass all data to the view
             $programs = $this->programModel->getAllPrograms();
-            require_once __DIR__ . '/../views'
+            require_once __DIR__ . '/../views';
         } catch (Exception $e) {
             $error = $e->getMessage();
             //require __DIR__ . '/../views/error.php'; // fallback error view
         }
-    ]
+    }
 
 }
 ?>
