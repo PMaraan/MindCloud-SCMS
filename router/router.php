@@ -1,7 +1,7 @@
 <?php
     // root/router/router.php
 
-    function route($path, $db = null){
+    function route($path, $db){
         // Set up base path from config (inherited from root/public/index.php)
         $basePath = BASE_PATH;
 
