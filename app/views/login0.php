@@ -5,7 +5,41 @@
 // Load environment variables
 require_once __DIR__ . '/../../config/config.php';
 
+/*
+// public/index.php
+
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../app/lib/database.php';
+
+if (USE_MOCK) {
+    require_once __DIR__ . '/../app/models/MockUserModel.php';
+    $userModel = new MockUserModel();
+} else {
+    require_once __DIR__ . '/../app/models/UserModel.php';
+    $db = new Database(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS);
+    $pdo = $db->connect();
+    $userModel = new UserModel($pdo);
+}
+
+// Example login check (replace with real routing)
+$username = $_POST['username'] ?? '';
+$password = $_POST['password'] ?? '';
+$user = $userModel->authenticate($username, $password);
+
+if ($user) {
+    echo "Login successful!";
+} else {
+    echo "Invalid credentials.";
+}
+    */
 ?>
+
+<!-- display login error message -->
+<?php if (isset($_GET['error'])): ?>
+  <p style="color:red;">
+    <?= $_GET['error'] === 'invalid_email' ? 'Invalid email format.' : 'Invalid email or password' ?>
+  </p>
+<?php endif; ?>
 
 <html lang="en">
 <head>
@@ -16,13 +50,6 @@ require_once __DIR__ . '/../../config/config.php';
   <link rel="stylesheet" href="<?= BASE_PATH ?>/public/assets/css/login-styles.css">
 </head>
 <body>
-  <!-- display login error message -->
-  <?php
-    require_once $_SERVER['DOCUMENT_ROOT'] . BASE_PATH . '/app/helpers/FlashHelper.php';
-    $flashMessage = FlashHelper::get();
-    include $_SERVER['DOCUMENT_ROOT'] . BASE_PATH . '/app/views/layouts/components/FlashMessage.php';
-  ?>
-
   <div class="container-fluid">
     <div class="row full-height">
 

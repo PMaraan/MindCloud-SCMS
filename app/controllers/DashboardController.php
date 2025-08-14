@@ -23,6 +23,7 @@ class DashboardController
         $this->db = $db;
         $this->userModel = new UserModel($db);
     }
+    
     /**
      * Render the dashboard layout with dynamic content, CSS, and JS.
      *
@@ -38,12 +39,7 @@ class DashboardController
             (!empty($user['mname']) ? $user['mname'] . '. ' : '') . 
             $user['lname']
         );
-        // $userCollegeName = $user['college_name'];
-        $userCollegeShortName = $user['college_short_name'];
-        $userRole = $user['role'];
-        $displayRole = trim(
-            ($userCollegeShortName ?? '') . ' ' . $userRole
-        ); // check this code if working ...
+        $displayRole = trim(($user['college_short_name'] ?? '') . ' ' . $user['role']); 
         
         // 2. Get user permissions for sidebar
         $permissionGroups = $this->db->getPermissionGroupsByUser($_SESSION['user_id']);

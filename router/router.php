@@ -43,7 +43,10 @@
 
             require_once __DIR__ . '/../app/controllers/DashboardController.php';
             $controller = new DashboardController($db);
-            $controller->render($dashboardRoutes[$path]);
+
+            // If page param exists, pass it to render
+            $page = $_GET['page'] ?? 'dashboard';
+            $controller->render($page);
             return;
         }
 

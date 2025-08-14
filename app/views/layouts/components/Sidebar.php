@@ -15,18 +15,15 @@
     </div><!-- sidebar-img-wrapper close -->
 
     <div class="d-flex flex-column align-items-center text-center profile-section"><!-- d-flex flex-column align-items-center text-center profile-section open -->
-      <h4 class="profile-name"><?= $username?></h4> 
-      <span class="profile-role"><?= $displayRole  //  change this to query database ...?></span>
+      <h4 class="profile-name"><?= htmlspecialchars($username) ?></h4> 
+      <span class="profile-role"><?= htmlspecialchars($displayRole)  ?></span>
     </div><!-- d-flex flex-column align-items-center text-center profile-section close -->
 
     <ul class="nav flex-column">
-      <?php
-      // Render each tab that the user has permission
-      foreach ($mapper as $label => $pageName): ?>
-        <?php if (in_array($label, $permissionGroups)): ?>
-          
+      <?php foreach ($mapper as $label => $pageName): // Render each tab that the user has permission ?> 
+        <?php if (in_array($label, $permissionGroups)): ?> 
           <li class="nav-item">
-            <a href="#" class="nav-link" data-page="<?= htmlspecialchars($pageName) ?>">
+            <a href="<?= $basePath ?>/dashboard?page=<?= urlencode($pageName) ?>" class="nav-link <?= ($_GET['page'] ?? '') === $pageName ? 'active' : '' ?>" data-page="<?= htmlspecialchars($pageName) ?>">
               <?= htmlspecialchars($label) ?>
             </a>
           </li>
@@ -40,11 +37,13 @@
 <script>
 // Toggle sidebar show and collapsed
 document.getElementById("toggleBtn").addEventListener("click", function () {
-  const sidebar = document.getElementById("sidebar");
-  sidebar.classList.toggle("collapsed");
+  //const sidebar = document.getElementById("sidebar");
+  //sidebar.classList.toggle("collapsed");
+  document.getElementById("sidebar").classList.toggle("collapsed");
   document.body.classList.toggle("sidebar-collapsed");
 });
 
+/*
 // Toggle the active class for styling of selected sidebar tab
 document.querySelectorAll('.nav-link').forEach(link => {
   link.addEventListener('click', function (e) {
@@ -53,4 +52,5 @@ document.querySelectorAll('.nav-link').forEach(link => {
     this.classList.add('active');
   });
 });
+*/
 </script>
