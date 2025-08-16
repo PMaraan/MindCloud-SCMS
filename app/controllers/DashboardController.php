@@ -57,6 +57,7 @@ class DashboardController
         ];
 
         // 4. Resolve the content file, CSS, and JS paths
+        $page = $_GET['page'] ?? 'dashboard';
         $pageContent = __DIR__ . '/../views/pages/' . $page . '/index.php'; // add a default address
         $pageCss     = '/public/assets/css/pages/' . $page . '.css';
         $pageJs      = '/public/assets/js/pages/' . $page . '.js';

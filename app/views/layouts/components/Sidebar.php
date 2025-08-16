@@ -10,26 +10,36 @@
 
 <div class="sidebar" id="sidebar"><!-- sidebar open -->
   <div class="fade-group"><!-- fade-group open -->
+
+    <!-- Sidebar Banner -->
     <div class="sidebar-img-wrapper"><!-- sidebar-img-wrapper open -->
       <img src="<?= $basePath . "/public/assets/images/coecsa-building.jpg" ?>" alt="Sidebar logo" class="sidebar-img" />
     </div><!-- sidebar-img-wrapper close -->
 
+    <!-- Profile Section -->
     <div class="d-flex flex-column align-items-center text-center profile-section"><!-- d-flex flex-column align-items-center text-center profile-section open -->
       <h4 class="profile-name"><?= htmlspecialchars($username) ?></h4> 
       <span class="profile-role"><?= htmlspecialchars($displayRole)  ?></span>
     </div><!-- d-flex flex-column align-items-center text-center profile-section close -->
 
+    <!-- Navigation -->
     <ul class="nav flex-column">
-      <?php foreach ($mapper as $label => $pageName): // Render each tab that the user has permission ?> 
-        <?php if (in_array($label, $permissionGroups)): ?> 
+      <?php 
+        $currentPage = $_GET['page'] ?? 'dachboard';
+        foreach ($mapper as $label => $pageName): // Render each tab that the user has permission 
+          if (in_array($label, $permissionGroups)): 
+      ?> 
           <li class="nav-item">
-            <a href="<?= $basePath ?>/dashboard?page=<?= urlencode($pageName) ?>" class="nav-link <?= ($_GET['page'] ?? '') === $pageName ? 'active' : '' ?>" data-page="<?= htmlspecialchars($pageName) ?>">
+            <a href="<?= $basePath ?>/dashboard?page=<?= urlencode($pageName) ?>" class="nav-link <?= $currentPage === $pageName ? 'active' : '' ?>" data-page="<?= htmlspecialchars($pageName) ?>">
               <?= htmlspecialchars($label) ?>
             </a>
           </li>
-        <?php endif; ?>
-      <?php endforeach; ?>
+      <?php 
+          endif; 
+        endforeach; 
+      ?>
     </ul>
+
   </div><!-- fade-group close -->
 </div><!-- sidebar close -->
 
@@ -37,8 +47,6 @@
 <script>
 // Toggle sidebar show and collapsed
 document.getElementById("toggleBtn").addEventListener("click", function () {
-  //const sidebar = document.getElementById("sidebar");
-  //sidebar.classList.toggle("collapsed");
   document.getElementById("sidebar").classList.toggle("collapsed");
   document.body.classList.toggle("sidebar-collapsed");
 });

@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 
 <?php
+// Load environment & bootstrap
+$db = require_once __DIR__ . '/../../app/bootstrap.php';
 
-// Load environment variables
-require_once __DIR__ . '/../../config/config.php';
-
+// Start session if not already started
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 ?>
 
 <html lang="en">
@@ -16,12 +19,6 @@ require_once __DIR__ . '/../../config/config.php';
   <link rel="stylesheet" href="<?= BASE_PATH ?>/public/assets/css/login-styles.css">
 </head>
 <body>
-  <!-- display login error message -->
-  <?php
-    require_once $_SERVER['DOCUMENT_ROOT'] . BASE_PATH . '/app/helpers/FlashHelper.php';
-    $flashMessage = FlashHelper::get();
-    include $_SERVER['DOCUMENT_ROOT'] . BASE_PATH . '/app/views/layouts/components/FlashMessage.php';
-  ?>
 
   <div class="container-fluid">
     <div class="row full-height">

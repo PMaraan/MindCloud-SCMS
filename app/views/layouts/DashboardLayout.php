@@ -69,7 +69,6 @@ $basePath = rtrim(BASE_PATH, '/'); // BASE_PATH is from config.php
 <div class="wrapper">
   <?php include __DIR__ . '/components/Sidebar.php'; ?>
   <div class="main-content container-fluid py-4">
-      <?php include __DIR__ . '/components/FlashMessage.php'; ?>
       <?php include $pageContent; ?>
   </div>
 </div>

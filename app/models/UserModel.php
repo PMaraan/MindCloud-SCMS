@@ -72,6 +72,19 @@ class UserModel {
         
     }
 
+    public function getRolePermissions($role_id): array {
+        if (!$role_id) return [];
+
+        $stmt = $this->db->prepare("
+            SELECT p.permission_key
+            FROM role_permissions rp
+            JOIN permissions p ON rp.permission_id = p.permission_id
+            WHERE rp.role_id = ?
+        ");
+        $stmt->execute([$role_id]);
+        return $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+    }
+
     /**
      * Get full user profile from database
      */
@@ -82,7 +95,8 @@ class UserModel {
                 u.fname,
                 u.mname,
                 u.lname,
-                r.role_name AS role,
+                r.role_id,
+                r.role_name,
                 c.short_name AS college_short_name,
                 c.college_name
             FROM users u
@@ -100,8 +114,7 @@ class UserModel {
     /**
      * Update password hash after login rehash.
      */
-    public function rehashPassword(string $userId, string $newHash): bool
-    {
+    public function rehashPassword(string $userId, string $newHash): bool {
         $stmt = $this->pdo->prepare("
             UPDATE users
             SET password = ?
@@ -113,8 +126,7 @@ class UserModel {
     /**
      * Set password manually (for admin resets or changes).
      */
-    public function setPassword(string $userId, string $newPassword): bool
-    {
+    public function setPassword(string $userId, string $newPassword): bool {
         $hash = PasswordHelper::hash($newPassword);
 
         $stmt = $this->pdo->prepare("

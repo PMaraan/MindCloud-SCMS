@@ -28,8 +28,8 @@ $userData = $userModel->authenticate($email, $password);
 if ($userData) {
     // Set session data
     session_regenerate_id(true);
-    //$_SESSION['username'] = $userData['fname'] . " " . $userData['lname'];
     $_SESSION['user_id'] = $userData['id_no'];
+    //$_SESSION['username'] = $userData['fname'] . " " . $userData['lname'];    
     //$_SESSION['role_id'] = intval($userData['role_id']);
     //$_SESSION['role'] = $userData['role_name'];
     //$_SESSION['college_id'] = $userData['college_short'];
