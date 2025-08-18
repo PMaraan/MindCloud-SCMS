@@ -7,12 +7,12 @@ if (session_status() === PHP_SESSION_NONE) {
 
 /**
  * Variables expected:
- * $pageContent   → Absolute path to content file
- * $pageCss       → URL path to page CSS (or null)
- * $pageJs        → URL path to page JS (or null)
- * $flashMessage  → Flash message array from FlashHelper
- * $permissionGroups → User's allowed sidebar sections
- * $mapper        → Sidebar page map
+ * $pageContent   -> Absolute path to content file
+ * $pageCss       -> URL path to page CSS (or null)
+ * $pageJs        -> URL path to page JS (or null)
+ * $flashMessage  -> Flash message array from FlashHelper
+ * $permissionGroups -> User's allowed sidebar sections
+ * $mapper        -> Sidebar page map
  */
 
 // require_once __DIR__ . '/../../../config/config.php'; // Load configs
@@ -56,9 +56,12 @@ $basePath = rtrim(BASE_PATH, '/'); // BASE_PATH is from config.php
   -->
   
    <!-- Page-Specific CSS -->
-  <?php if (!empty($pageCss)): ?>
+  <?php 
+  /*
+  if (!empty($pageCss)): 
       <link rel="stylesheet" href="<?= $basePath . htmlspecialchars($pageCss) ?>">
-  <?php endif; ?>
+   endif; 
+  */ ?>
 </head>
 <body>
 
@@ -69,7 +72,7 @@ $basePath = rtrim(BASE_PATH, '/'); // BASE_PATH is from config.php
 <div class="wrapper">
   <?php include __DIR__ . '/components/Sidebar.php'; ?>
   <div class="main-content container-fluid py-4">
-      <?php include $pageContent; ?>
+      <?php $contentHtml//include $pageContent; ?>
   </div>
 </div>
 
@@ -78,9 +81,11 @@ $basePath = rtrim(BASE_PATH, '/'); // BASE_PATH is from config.php
 <script src="<?= $basePath ?>/public/assets/js/dashboard.js"></script>
 
 <!-- Page-Specific JS -->
-<?php if (!empty($pageJs)): ?>
+<?php /*
+if (!empty($pageJs)): 
   <script src="<?= $basePath . htmlspecialchars($pageJs) ?>" defer></script>
-<?php endif; ?>
+ endif; 
+*/ ?>
 
 </body>
 </html>

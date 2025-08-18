@@ -18,24 +18,24 @@
 
     <!-- Profile Section -->
     <div class="d-flex flex-column align-items-center text-center profile-section"><!-- d-flex flex-column align-items-center text-center profile-section open -->
-      <h4 class="profile-name"><?= htmlspecialchars($username) ?></h4> 
-      <span class="profile-role"><?= htmlspecialchars($displayRole)  ?></span>
+      <h4 class="profile-name"><?= htmlspecialchars($username)  // $username is from DashboardCntroller.php?></h4> 
+      <span class="profile-role"><?= htmlspecialchars($displayRole)  // $displayRole is from DashboardCntroller.php?></span>
     </div><!-- d-flex flex-column align-items-center text-center profile-section close -->
 
     <!-- Navigation -->
     <ul class="nav flex-column">
       <?php 
-        $currentPage = $_GET['page'] ?? 'dachboard';
-        foreach ($mapper as $label => $pageName): // Render each tab that the user has permission 
-          if (in_array($label, $permissionGroups)): 
+        $currentPage = $_GET['page'] ?? 'dashboard';
+        foreach ($modules as $key => $module): // Render each tab that the user has permission 
+          //if (in_array($label, $permissionGroups)): 
       ?> 
           <li class="nav-item">
-            <a href="<?= $basePath ?>/dashboard?page=<?= urlencode($pageName) ?>" class="nav-link <?= $currentPage === $pageName ? 'active' : '' ?>" data-page="<?= htmlspecialchars($pageName) ?>">
-              <?= htmlspecialchars($label) ?>
+            <a href="<?= $basePath ?>/dashboard?page=<?= urlencode($key) ?>" class="nav-link <?= ($_GET['page'] ?? 'dashboard') === $key ? 'active' : '' ?>" data-page="<?= htmlspecialchars($pageName) ?>">
+              <?= htmlspecialchars($module['label']) ?>
             </a>
           </li>
       <?php 
-          endif; 
+          //endif; 
         endforeach; 
       ?>
     </ul>
