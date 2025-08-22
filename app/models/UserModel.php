@@ -1,15 +1,20 @@
 <?php
-// app/models/UserModel.php
+// root/app/models/UserModel.php
+declare(strict_types=1);
 
-// Load dependencies
-require_once __DIR__ . '/../helpers/PasswordHelper.php';
+namespace App\Models;
 
-class UserModel {
+use App\Interfaces\StorageInterface;;
+use App\Helpers\PasswordHelper;
+use PDO;
+
+final class UserModel {
     /** @var \PDO */
-    private $pdo;
+    private PDO $pdo;
 
     public function __construct(StorageInterface $db) {
-        $this->pdo = $db->getConnection(); // Always get PDO from storage interface
+        // StorageInterface::getConnection() must return a PDO
+        $this->pdo = $db->getConnection();
     }
 
     /**
@@ -17,26 +22,37 @@ class UserModel {
      * Returns full user details with role & college if valid, false otherwise.
      * Automatically rehashes password if needed.
      */
-    public function authenticate(string $email, string $password) {
-        $stmt = $this->pdo->prepare("
+    public function authenticate(string $usernameOrEmail, string $password): array|false {
+        // If you have a username column:
+        /*
+        $stmt = $this->pdo->prepare(
+            'SELECT * 
+            FROM users 
+            WHERE email = ? OR username = ? 
+            LIMIT 1'
+        );
+        $stmt->execute([$usernameOrEmail, $usernameOrEmail]);
+        // */
+
+        $stmt = $this->pdo->prepare('
             SELECT * 
             FROM users 
             WHERE email = ?
-            LIMIT 1"
-        );
-        $stmt->execute([$email]);
+            LIMIT 1
+        ');
+        $stmt->execute([$usernameOrEmail]);
         $user = $stmt->fetch(\PDO::FETCH_ASSOC);
 
         if (!$user) {
             return false;
         }
 
-        // Check if passwords match
-        // Also rehashes the password automatically if the hashing algo is changed
+        // Verify + rehash if algo changed
         if (!PasswordHelper::verify(
             $password,
             $user['password'],
-            function ($newHash) use ($user) {
+            function (string $newHash) use ($user): void {
+                // Rehash callback
                 $this->rehashPassword($user['id_no'], $newHash);
             }
         )) {
@@ -72,10 +88,13 @@ class UserModel {
         
     }
 
-    public function getRolePermissions($role_id): array {
-        if (!$role_id) return [];
+    /**
+     * Get role permissions (list of permission keys) for a role.
+     */
+    public function getRolePermissions(int|string|null $role_id): array {
+        if (empty($role_id)) return [];
 
-        $stmt = $this->db->prepare("
+        $stmt = $this->pdo->prepare("
             SELECT p.permission_key
             FROM role_permissions rp
             JOIN permissions p ON rp.permission_id = p.permission_id
@@ -86,9 +105,9 @@ class UserModel {
     }
 
     /**
-     * Get full user profile from database
+     * Get full user profile (joins role & college).
      */
-    public function getUserProfile($userId) {
+    public function getUserProfile(int|string $userId): ?array {
         $stmt = $this->pdo->prepare("
             SELECT 
                 u.id_no,

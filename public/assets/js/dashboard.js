@@ -1,3 +1,4 @@
+/*
 document.body.addEventListener('click', function (e) {
     // Store the <a> element with data-page attribute as button
     const button = e.target.closest('[data-page]');
@@ -43,3 +44,4 @@ document.body.addEventListener('click', function (e) {
     })
     .catch(err => console.error('Fetch error:', err));
 });
+*/

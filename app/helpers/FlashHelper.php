@@ -1,17 +1,17 @@
 <?php
 // root/app/helpers/FlashHelper.php
+namespace App\Helpers;
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-class FlashHelper {
+final class FlashHelper {
     /**
      * Set a flash message.
      * @param string $type    success | error | warning | info
      * @param string $message The message text
      */
     public static function set(string $type, string $message): void {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
         $_SESSION['flash'] = [
             'type' => $type, 
             'message' => $message
@@ -23,7 +23,10 @@ class FlashHelper {
      * @return array|null
      */
     public static function get(): ?array {
-        if (!empty($_SESSION['flash'])) {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+        if (isset($_SESSION['flash'])) {
             $flash = $_SESSION['flash'];
             unset($_SESSION['flash']); // Clear after retrieval
             return $flash;

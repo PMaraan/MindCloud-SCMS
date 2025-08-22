@@ -1,5 +1,8 @@
 <?php
 // root/app/views/pages/accounts/index.php
+
+echo "DEBUG: accounts/index.php reached<br>";
+var_dump(isset($users));
 ?>
 <div class="card shadow-sm">
   <div class="card-header d-flex justify-content-between align-items-center">
@@ -21,13 +24,13 @@
   </div>
 </div>
 
-<?php if ($this->userHasPermission('edit_accounts')): ?>
-  <?php include __DIR__ . '/EditUserModal.php'; ?>
-<?php endif; ?>
+<?php //if ($this->userHasPermission('edit_accounts')): ?>
+  <?php //include __DIR__ . '/EditUserModal.php'; ?>
+<?php //endif; ?>
 
-<?php if ($this->userHasPermission('delete_accounts')): ?>
-  <?php include __DIR__ . '/DeleteUserModal.php'; ?>
-<?php endif; ?>
+<?php //if ($this->userHasPermission('delete_accounts')): ?>
+  <?php //include __DIR__ . '/DeleteUserModal.php'; ?>
+<?php //endif; ?>
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {

@@ -1,5 +1,8 @@
 <?php
 // root/app/controllers/UserController.php
+namespace App\Controllers;
+use App\Models\UserModel;
+use App\Helpers\FlashHelper;
 
 //handle login logic
 if (session_status() === PHP_SESSION_NONE) {
@@ -10,7 +13,7 @@ if (session_status() === PHP_SESSION_NONE) {
 $db = require_once __DIR__ . '/../bootstrap.php';
 
 // Load user model for authenticaton function
-require_once __DIR__ . '/../models/UserModel.php';
+//require_once __DIR__ . '/../models/UserModel.php';
 
 // Load the flash for displaying success/error/info messages
 require_once __DIR__ . '/../helpers/FlashHelper.php';

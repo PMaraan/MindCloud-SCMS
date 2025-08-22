@@ -1,25 +1,28 @@
 <?php
 // root/app/models/Postgres.php
+namespace App\Models;
+use App\Interfaces\StorageInterface;
+
 require_once __DIR__ . '/../../config/config.php';
-require_once __DIR__ . '/../interfaces/StorageInterface.php';
+//require_once __DIR__ . '/../interfaces/StorageInterface.php';
 
 class Postgres implements StorageInterface{
-    protected PDO $pdo;
+    private \PDO $pdo;
 
     public function __construct() {
         $dsn = "pgsql:host=".DB_HOST.";port=".DB_PORT.";dbname=".DB_NAME;
 
         try {
-            $this->pdo = new PDO($dsn, DB_USER, DB_PASS, [
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+            $this->pdo = new \PDO($dsn, DB_USER, DB_PASS, [
+                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+                \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC
             ]);
-        } catch (PDOException $e) {
+        } catch (\PDOException $e) {
             die("Database connection failed: " . $e->getMessage());
         }
     }
 
-    public function getConnection(): PDO {
+    public function getConnection(): \PDO {
         return $this->pdo;
     }
 

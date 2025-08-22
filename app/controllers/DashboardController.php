@@ -1,48 +1,45 @@
 <?php
 // root/app/controllers/DashboardController.php
+declare(strict_types=1);
+
 namespace App\Controllers;
-use FlashHelper;
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+use App\Interfaces\StorageInterface;
+use App\Models\UserModel;
+use App\Helpers\FlashHelper;
 
-
-
-require_once __DIR__ . '/../helpers/FlashHelper.php';
-
-class DashboardController
+final class DashboardController
 {
-    private $db;
-    private $userModel;
-    private $modules;
+    private StorageInterface $db;
+    private UserModel $userModel;
+    private array $modules;
 
-    public function __construct($db) {
+    public function __construct(StorageInterface $db) {
         $this->db = $db;
-        require_once __DIR__ . '/../models/UserModel.php';
-        $this->userModel = new \UserModel($db);
+        $this->userModel = new UserModel($db);
 
         // Load module registry
-        $registryPath = __DIR__ . '/../../config/ModuleRegistry.php';
+        $registryPath = dirname(__DIR__, 2) . '/config/ModuleRegistry.php';
+        $this->modules = is_file($registryPath) ? require $registryPath : [];
+        /*
         if (is_file($registryPath)) {
             $this->modules = require $registryPath;
         } else {
             $this->modules = [];
             error_log('ModuleRegistry not found at: ' . $registryPath);
         }
-
+        */
     }
     
     /**
      * Render the dashboard layout with dynamic content, CSS, and JS.
      *
-     * @param string $page The page name relative to /views/pages/
+     * @param string $requestedPage The page name relative to /views/pages/
      */
-    public function render(string $requestedPage = 'dashboard')
-    {
+    public function render(string $requestedPage = 'dashboard'): void {
         // 1. Authentication check
         if (empty($_SESSION['user_id'])) {
-            \FlashHelper::set('danger', 'You must log in first.');
+            FlashHelper::set('danger', 'You must log in first.');
             header("Location: " . BASE_PATH ."/login");
             exit;
         }
@@ -50,7 +47,7 @@ class DashboardController
         // 2. Load user profile
         $user = $this->userModel->getUserProfile($_SESSION['user_id']);
         if (!$user) {
-            \FlashHelper::set('danger', 'Account not found.');
+            FlashHelper::set('danger', 'Account not found.');
             session_destroy();
             header("Location: " . BASE_PATH . "/login");
             exit;
@@ -69,10 +66,24 @@ class DashboardController
         // 4. Load requested module controller (if exists)
         $contentHtml = '';
         if (isset($modules[$requestedPage])) {
-            $controllerClass = $modules[$requestedPage]['controller'];
+            $controllerClass = $modules[$requestedPage]['controller'] ?? null;
+
+            // try requiring the file manually before checking
+            /*
+            $controllerFile = __DIR__ . '/' . basename($requestedPage) . 'Controller.php';
+            if (is_file($controllerFile)) {
+                require_once $controllerFile;
+            }
+            */
+
+            $test1 = 'The requested page exists';
+
             if (class_exists($controllerClass)) {
+                $test2 = 'Module controller exists';
                 $controller = new $controllerClass($this->db);
                 $contentHtml = $controller->index(); // module’s index returns rendered HTML
+            } else {
+                $contentHtml = '<h3>Module Controller not found</h3>';
             }
         } else {
             $contentHtml = '<h3>404 - Page Not Found</h3>';
@@ -120,6 +131,6 @@ class DashboardController
         $flashMessage = FlashHelper::get();
 
         // 6. Render the layout
-        require __DIR__ . '/../views/layouts/DashboardLayout.php';
+        require dirname(__DIR__) . '/views/layouts/DashboardLayout.php';
     }
 }

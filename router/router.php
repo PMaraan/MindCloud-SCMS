@@ -1,58 +1,100 @@
 <?php
     // root/router/router.php
 
-    function route($path, $db){
-        // Set up base path from config (inherited from root/public/index.php)
-        $basePath = BASE_PATH;
+    use App\Controllers\DashboardController;
+    use App\Controllers\AuthController;
 
-        // Define routes that don't require login
-        $publicRoutes = [
-            '/'             => __DIR__ . '/../app/views/login.php',
-            '/login'        => __DIR__ . '/../app/views/login.php',
-            '/auth'         => __DIR__ . '/../app/controllers/UserController.php',
-            '/templatebuilder' => __DIR__ . '/../app/views/TemplateBuilder.php'
-        ];
-
-        //check if path exists in public routes
-        if (isset($publicRoutes[$path])) {
-            require $publicRoutes[$path];
-            return;
-        }
-
-        // Private dashboard routes
-        // The array values are just module names
-        // The real address mappings are in dashboard controller
-        $dashboardRoutes = [
-            '/dashboard' => 'dashboard',
-            '/accounts'  => 'accounts',
-            '/programs'  => 'programs'
-            // Add more pages here...
-        ];
-
-        if (isset($dashboardRoutes[$path])) {
-            if (empty($_SESSION['user_id'])) {
-                header("Location: {$basePath}/login");
-                exit;
-            }
-
-            // Role/permission checks:
-            //if (!userHasPermission($_SESSION['role'], $path)) {
-            //    require __DIR__ . '/../app/views/404.php';
-            //    exit;
-            //}
-
-            require_once __DIR__ . '/../app/controllers/DashboardController.php';
-            $controller = new \App\Controllers\DashboardController($db);
-
-            // If page param exists, pass it to render
-            $page = $_GET['page'] ?? 'dashboard';
-            $controller->render($page);
-            return;
-        }
-
-        // Not found -> 404
-        http_response_code(404);
-        require __DIR__ . '/../app/views/404.php';
+    /**
+     * Build an absolute URL from BASE_PATH and a path.
+     */
+    function url(string $path = '/'): string {
+        $p = '/' . ltrim($path, '/');
+        $base = BASE_PATH; // normalized in config.php (no trailing slash, may be '')
+        return ($base === '' ? '' : $base) . $p;
     }
 
-?>
+    /**
+     * Strip BASE_PATH from the request path and normalize slashes.
+     */
+    function normalize_path(string $uri): string {
+        $rawPath = parse_url($uri, PHP_URL_PATH) ?? '/';
+        // If app is under a subfolder, remove that prefix
+        if (BASE_PATH !== '' && str_starts_with($rawPath, BASE_PATH)) {
+            $rawPath = substr($rawPath, strlen(BASE_PATH)) ?: '/';
+        }
+        // Normalize to leading slash, no trailing slash (except root)
+        $path = '/' . ltrim($rawPath, '/');
+        if ($path !== '/' && str_ends_with($path, '/')) {
+            $path = rtrim($path, '/');
+        }
+        return $path;
+    }
+
+    // Route maps by HTTP method
+    $publicRoutes = [
+        'GET' => [
+            '/'       => [AuthController::class, 'login'],    // show login
+            '/login'  => [AuthController::class, 'login'],    // show login
+        ],
+        'POST' => [
+            '/login'  => [AuthController::class, 'login'],    // handle login submit
+            '/logout' => [AuthController::class, 'logout'],
+        ],
+    ];
+
+    $privateRoutes = [
+        'GET' => [
+            '/dashboard' => [DashboardController::class, 'render'],
+            // add more GET private routes here
+        ],
+        'POST' => [
+            // add POST private routes here
+        ],
+    ];
+    
+    /**
+     * Simple dispatcher.
+     *
+     * @param string $uri
+     * @param mixed  $db
+     * @param string $method
+     */
+    function route(string $uri, $db, string $method = 'GET'): void
+    {
+        $method = strtoupper($method);
+        $path = normalize_path($uri);
+
+        global $publicRoutes, $privateRoutes;
+
+        // 1) Public routes
+        if (isset($publicRoutes[$method][$path])) {
+            [$controller, $action] = $publicRoutes[$method][$path];
+            (new $controller($db))->$action();
+            return;
+        }
+
+        // 2) Private routes (require login)
+        if (isset($privateRoutes[$method][$path])) {
+            if (empty($_SESSION['user_id'])) {
+                header('Location: ' . url('/login'));
+                exit;
+            }
+            [$controller, $action] = $privateRoutes[$method][$path];
+            // preserve your page param convention
+            $page = $_GET['page'] ?? 'dashboard';
+            (new $controller($db))->$action($page);
+            return;
+        }
+
+        // 3) Method not allowed? (path exists under other method)
+        $allPaths = array_merge(array_keys($publicRoutes['GET'] + $privateRoutes['GET']), array_keys($publicRoutes['POST'] + $privateRoutes['POST']));
+        if (in_array($path, $allPaths, true)) {
+            http_response_code(405);
+            echo '<h1>405 Method Not Allowed</h1>';
+            return;
+        }
+
+        // 4) 404
+        http_response_code(404);
+        echo '<h1>404 Not Found</h1>';
+    }

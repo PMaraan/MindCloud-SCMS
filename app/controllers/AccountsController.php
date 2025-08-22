@@ -1,6 +1,7 @@
 <?php
 // root/app/controllers/AccountsController.php
-
+namespace App\Controllers;
+use App\Models\AccountsModel;
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -20,12 +21,17 @@ class AccountsController {
      */
     public function index() {
         $search = $_GET['q'] ?? null;
-        $users = $this->model->getAllUsers($search);
+        //$users = $this->model->getAllUsers($search);
 
         // Later: check if user has "view_accounts" permission
         // if (!in_array('view_accounts', $_SESSION['permissions'])) { ... }
 
+        // Capture output buffer
+        ob_start();
         require __DIR__ . '/../views/pages/accounts/index.php';
+        return ob_get_clean();
+
+        //require __DIR__ . '/../views/pages/accounts/index.php';
     }
 
     /**
