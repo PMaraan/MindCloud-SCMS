@@ -1,48 +1,55 @@
 <?php
 // root/app/controllers/AccountsController.php
+declare(strict_types=1);
+
 namespace App\Controllers;
+
+use App\Interfaces\StorageInterface;
 use App\Models\AccountsModel;
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+use App\Helpers\FlashHelper;
 
-require_once __DIR__ . '/../helpers/FlashHelper.php';
-require_once __DIR__ . '/../models/AccountsModel.php';
+final class AccountsController {
+    private AccountsModel $model;
 
-class AccountsController {
-    private $model;
-
-    public function __construct($db) {
+    public function __construct(StorageInterface $db) {
         $this->model = new AccountsModel($db);
     }
 
     /**
      * Show Accounts page (list of users).
      */
-    public function index() {
+    public function index(): string {
         $search = $_GET['q'] ?? null;
-        //$users = $this->model->getAllUsers($search);
+        $users  = $this->model->getAllUsers($search);
+        
+        // Permission flags for RBAC
+        $canEdit = true;
+        $canDelete = true;
 
-        // Later: check if user has "view_accounts" permission
-        // if (!in_array('view_accounts', $_SESSION['permissions'])) { ... }
-
-        // Capture output buffer
+        // Render view and return HTML (keeps DashboardController flow)
         ob_start();
-        require __DIR__ . '/../views/pages/accounts/index.php';
-        return ob_get_clean();
-
-        //require __DIR__ . '/../views/pages/accounts/index.php';
+        // Make vars visible in the view:
+        /** @var array $users */
+        /** @var bool $canEdit */
+        /** @var bool $canDelete */
+        require dirname(__DIR__) . '/views/pages/accounts/index.php';
+        return (string)ob_get_clean();
     }
 
     /**
      * Handle edit user action.
      */
-    public function edit() {
+    public function edit(): void {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             FlashHelper::set('danger', 'Invalid request.');
             header("Location: " . BASE_PATH . "/dashboard?page=accounts");
             exit;
         }
+
+        // TODO: implement update in AccountsModel
+        FlashHelper::set('danger', 'Edit not implemented yet.');
+        header('Location: ' . BASE_PATH . '/dashboard?page=accounts');
+        exit;
 
         // Collect fields from POST
         $data = [
@@ -68,12 +75,17 @@ class AccountsController {
     /**
      * Handle delete user action.
      */
-    public function delete() {
+    public function delete(): void {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             FlashHelper::set('danger', 'Invalid request.');
             header("Location: " . BASE_PATH . "/dashboard?page=accounts");
             exit;
         }
+
+        // TODO: implement delete in AccountsModel
+        FlashHelper::set('danger', 'Delete not implemented yet.');
+        header('Location: ' . BASE_PATH . '/dashboard?page=accounts');
+        exit;
 
         $id_no = $_POST['id_no'] ?? null;
 

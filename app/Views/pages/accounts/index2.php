@@ -1,26 +1,27 @@
 <?php
 // root/app/views/pages/accounts/index.php
-// Expects: $users (array), $canEdit (bool), $canDelete (bool)
 
 echo "DEBUG: accounts/index.php reached<br>";
 var_dump(isset($users));
 ?>
-<div class="container-fluid">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="mb-0">Accounts</h2>
+<div class="card shadow-sm">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Accounts</h5>
     <form class="d-flex" method="GET" action="">
-      <input
-        class="form-control me-2"
-        type="search"
-        name="q"
-        placeholder="Search users..."
+      <input 
+        class="form-control me-2" 
+        type="search" 
+        name="q" 
+        placeholder="Search users..." 
         aria-label="Search"
-        value="<?= htmlspecialchars($_GET['q'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+        value="<?= htmlspecialchars($_GET['q'] ?? '') ?>">
       <button class="btn btn-outline-primary" type="submit">Search</button>
     </form>
   </div>
 
-  <?php include __DIR__ . '/AccountsTable.php'; ?>
+  <div class="card-body">
+    <?php include __DIR__ . '/AccountsTable.php'; ?>
+  </div>
 </div>
 
 <?php //if ($this->userHasPermission('edit_accounts')): ?>

@@ -1,21 +1,28 @@
 <?php
 // root/app/models/AccountsModel.php
+declare(strict_types=1);
 
-class AccountsModel {
-    private $pdo;
+namespace App\Models;
 
-    public function __construct($db) {
+use App\Interfaces\StorageInterface;
+use PDO;
+
+final class AccountsModel {
+    private PDO $pdo;
+
+    public function __construct(StorageInterface $db) {
         // $db is your PDO instance from DatabaseFactory
-        $this->pdo = $db;
+        $this->pdo = $db->getConnection();
     }
 
     /**
-     * Fetch all users, optionally filtered by search term.
-     *
-     * @param string|null $search
-     * @return array
+     * Return a list of users (joined with role & college). Optional search.
+     * @param string|null $q
+     * @param int $limit
+     * @param int $offset
+     * @return array<int, array<string, mixed>>
      */
-    public function getAllUsers(?string $search = null): array {
+    public function getAllUsers(?string $q = null, int $limit = 100, int $offset = 0): array {
         $sql = "
             SELECT 
                 u.id_no,
@@ -26,28 +33,36 @@ class AccountsModel {
                 r.role_name,
                 c.short_name AS college_short_name
             FROM users u
-            JOIN user_roles ur ON u.id_no = ur.id_no
-            JOIN roles r ON ur.role_id = r.role_id
+            LEFT JOIN user_roles ur ON u.id_no = ur.id_no
+            LEFT JOIN roles r ON ur.role_id = r.role_id
             LEFT JOIN colleges c ON ur.college_id = c.college_id
         ";
 
+        // Add search filter if provided
         $params = [];
-        if (!empty($search)) {
+        if ($q !== null && $q !== '') {
             $sql .= " WHERE 
-                        u.id_no ILIKE :search OR
-                        u.fname ILIKE :search OR
-                        u.mname ILIKE :search OR
-                        u.lname ILIKE :search OR
-                        u.email ILIKE :search OR
-                        r.role_name ILIKE :search OR
-                        c.short_name ILIKE :search";
-            $params[':search'] = "%$search%";
+                        u.id_no ILIKE :q OR
+                        u.fname ILIKE :q OR
+                        u.mname ILIKE :q OR
+                        u.lname ILIKE :q OR
+                        u.email ILIKE :q OR
+                        r.role_name ILIKE :q OR
+                        c.short_name ILIKE :q";
+            $params[':q'] = '%' . $q . '%';
         }
 
-        $sql .= " ORDER BY u.lname, u.fname";
+        $sql .= " ORDER BY u.lname ASC, u.fname ASC LIMIT :limit OFFSET :offset";
 
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($params);
+        // bind scalar params
+        foreach ($params as $k => $v) {
+            $stmt->bindValue($k, $v);
+        }
+        $stmt->bindValue(':limit',  $limit,  PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        
         return $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
     }
 

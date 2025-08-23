@@ -63,6 +63,29 @@ final class DashboardController
         // 3. Load available modules
         $modules = $this->modules;
 
+        // Prepare debug vars (optional)
+        $controllerClass = null;
+        $controller      = null;
+        $test1 = '';
+        $test2 = '';
+
+        $contentHtml = '';
+        if (isset($modules[$requestedPage])) {
+            $controllerClass = $modules[$requestedPage]['controller'] ?? null;
+            $test1 = 'The requested page exists';
+
+            if ($controllerClass && class_exists($controllerClass)) {
+                $test2 = 'Module controller exists';
+                $controller = new $controllerClass($this->db);
+                // The module returns fully-rendered HTML (via ob_start in AccountsController::index):
+                $contentHtml = $controller->index();
+            } else {
+                $contentHtml = '<div class="alert alert-warning">Module controller not found.</div>';
+            }
+        } else {
+            $contentHtml = '<div class="alert alert-danger">404 - Page Not Found</div>';
+        }
+
         // 4. Load requested module controller (if exists)
         $contentHtml = '';
         if (isset($modules[$requestedPage])) {
@@ -129,6 +152,19 @@ final class DashboardController
 
         // 5. Get flash messages
         $flashMessage = FlashHelper::get();
+
+        // Make data visible to layout:
+        $viewData = [
+            'modules'         => $modules,
+            'contentHtml'     => $contentHtml,
+            'flashMessage'    => $flashMessage,
+            // optional debug
+            'controllerClass' => $controllerClass,
+            'controller'      => $controller,
+            'test1'           => $test1,
+            'test2'           => $test2,
+        ];
+        extract($viewData, EXTR_SKIP);
 
         // 6. Render the layout
         require dirname(__DIR__) . '/views/layouts/DashboardLayout.php';

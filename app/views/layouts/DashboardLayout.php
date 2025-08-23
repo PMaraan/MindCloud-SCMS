@@ -1,10 +1,6 @@
 <?php
 // root/app/views/layouts/DashboardLayout.php
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
 /**
  * Variables expected:
  * $pageContent   -> Absolute path to content file
@@ -70,17 +66,39 @@ $basePath = rtrim(BASE_PATH, '/'); // BASE_PATH is from config.php
 
 <!-- Wrapper -->
 <div class="wrapper">
+
+  <!-- Sidebar -->
   <?php include __DIR__ . '/components/Sidebar.php'; ?>
+
+  <!-- Main Content -->
   <div class="main-content container-fluid py-4">
-      <?php echo print_r($modules);
-      echo print_r($controllerClass);
-      echo htmlspecialchars($test1);
-      echo htmlspecialchars($test2);
-      echo var_dump($controller);
-      echo "<pre>"; 
-        print_r($contentHtml); 
-        echo "</pre>";
-      
+    <?php if (!empty($flashMessage)): ?>
+      <div class="alert alert-<?= htmlspecialchars($flashMessage['type'], ENT_QUOTES, 'UTF-8') ?>">
+        <?= htmlspecialchars($flashMessage['message'], ENT_QUOTES, 'UTF-8') ?>
+      </div>
+    <?php endif; ?>
+
+    <!-- The module-rendered HTML goes here -->
+    <?= $contentHtml ?? '' ?>
+
+    <?php if (defined('APP_ENV') && APP_ENV === 'dev'): ?>
+      <hr>
+      <h6 class="text-muted">Debug (dev only)</h6>
+      <pre>Modules: <?= htmlspecialchars(print_r($modules ?? [], true)) ?></pre>
+      <pre>ControllerClass: <?= htmlspecialchars((string)($controllerClass ?? 'null')) ?></pre>
+      <pre>Test1: <?= htmlspecialchars((string)($test1 ?? '')) ?></pre>
+      <pre>Test2: <?= htmlspecialchars((string)($test2 ?? '')) ?></pre>
+      <pre>Controller object: <?= htmlspecialchars($controller ? get_class($controller) : 'null') ?></pre>
+    <?php endif; ?>
+    
+      <?php //echo 'Modules: ' . print_r($modules);
+      //echo var_dump($controllerClass);
+      //echo htmlspecialchars($test1);
+      //echo htmlspecialchars($test2);
+      //echo var_dump($controller);
+      //echo "<pre>"; 
+        //print_r($contentHtml); 
+      //echo "</pre>";
       //echo print_r($controllerClass->index());//echo $contentHtml ?? '';//include $pageContent; ?>
   </div>
 </div>
