@@ -19,9 +19,31 @@ final class AccountsController {
      * Show Accounts page (list of users).
      */
     public function index(): string {
-        $search = $_GET['q'] ?? null;
-        $users  = $this->model->getAllUsers($search);
+        $search  = isset($_GET['q']) ? trim((string)$_GET['q']) : null;
+        $page    = max(1, (int)($_GET['pg'] ?? 1));
+        $perPage = 10; // tweak as you wish
+
+        $offset  = ($page - 1) * $perPage;
+        $result  = $this->model->getUsersPage($search, $perPage, $offset);
+
+        $users   = $result['rows'];
+        $total   = $result['total'];
+        $pages   = max(1, (int)ceil($total / $perPage));
         
+        // Build a tiny pager struct the view can use
+        $pager = [
+            'page'     => $page,
+            'perPage'  => $perPage,
+            'total'    => $total,
+            'pages'    => $pages,
+            'hasPrev'  => $page > 1,
+            'hasNext'  => $page < $pages,
+            'prev'     => max(1, $page - 1),
+            'next'     => min($pages, $page + 1),
+            'baseUrl'  => BASE_PATH . '/dashboard?page=accounts', // keep your module route
+            'query'    => $search, // so we can preserve ?q=
+        ];
+
         // Permission flags for RBAC
         $canEdit = true;
         $canDelete = true;
@@ -30,6 +52,7 @@ final class AccountsController {
         ob_start();
         // Make vars visible in the view:
         /** @var array $users */
+        /** @var array $pager */
         /** @var bool $canEdit */
         /** @var bool $canDelete */
         require dirname(__DIR__) . '/views/pages/accounts/index.php';
