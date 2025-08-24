@@ -28,11 +28,11 @@
           >
             <td><?= htmlspecialchars((string)$user['id_no']) ?></td>
             <td><?= htmlspecialchars((string)$user['fname']) ?></td>
-            <td><?= htmlspecialchars((string)($user['mname'] ?? '')) ?></td>
+            <td><?= htmlspecialchars((string)($user['mname'] ?: '-unassigned-')) ?></td>
             <td><?= htmlspecialchars((string)$user['lname']) ?></td>
             <td><?= htmlspecialchars((string)$user['email']) ?></td>
-            <td><?= htmlspecialchars((string)($user['role_name'] ?? '')) ?></td>
-            <td><?= htmlspecialchars((string)($user['college_short_name'] ?? '-')) ?></td>
+            <td><?= htmlspecialchars((string)($user['role_name'])) ?></td>
+            <td><?= htmlspecialchars((string)($user['college_short_name'] ?: '-unassigned-')) ?></td>
             <td>
               <?php if ($canEdit || $canDelete): ?>
                 <?php if ($canEdit): ?>

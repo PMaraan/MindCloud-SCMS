@@ -77,8 +77,19 @@ final class DashboardController
             if ($controllerClass && class_exists($controllerClass)) {
                 $test2 = 'Module controller exists';
                 $controller = new $controllerClass($this->db);
-                // The module returns fully-rendered HTML (via ob_start in AccountsController::index):
-                $contentHtml = $controller->index();
+                $action = strtolower((string)($_GET['action'] ?? 'index'));
+                $allowed = ['index','create','edit','delete']; // whitelist
+
+                if (!in_array($action, $allowed, true)) {
+                    $action = 'index';
+                }
+                if ($action === 'index') {
+                    $contentHtml = $controller->index();
+                } else {
+                    // Actions are side-effect handlers that redirect; they don’t need to return HTML
+                    $controller->{$action}();
+                    return; // prevent falling through to layout after redirect
+                }
             } else {
                 $contentHtml = '<div class="alert alert-warning">Module controller not found.</div>';
             }

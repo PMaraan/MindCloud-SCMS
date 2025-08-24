@@ -16,6 +16,59 @@ final class AccountsModel {
     }
 
     /**
+     * Create a user with role & (optional) college. Returns bool.
+     * Expects keys: id_no, fname, mname|null, lname, email, password(hash), role_id, college_id|null
+     */
+    public function createUser(array $data): bool {
+        try {
+            $this->pdo->beginTransaction();
+
+            // Ensure email/id_no uniqueness at DB level too (unique indexes recommended)
+            $stmt = $this->pdo->prepare("
+                INSERT INTO users (id_no, fname, mname, lname, email, password)
+                VALUES (:id_no, :fname, :mname, :lname, :email, :password)
+            ");
+            $stmt->execute([
+                ':id_no'    => $data['id_no'],
+                ':fname'    => $data['fname'],
+                ':mname'    => $data['mname'],
+                ':lname'    => $data['lname'],
+                ':email'    => $data['email'],
+                ':password' => $data['password'],
+            ]);
+
+            // user_roles
+            $stmt2 = $this->pdo->prepare("
+                INSERT INTO user_roles (id_no, role_id, college_id)
+                VALUES (:id_no, :role_id, :college_id)
+            ");
+            $stmt2->execute([
+                ':id_no'      => $data['id_no'],
+                ':role_id'    => $data['role_id'],
+                ':college_id' => $data['college_id'],
+            ]);
+
+            $this->pdo->commit();
+            return true;
+        } catch (\Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            // Optional: logger() if you added it
+            // \App\Helpers\logger()->error('Create user failed', ['err' => $e->getMessage()]);
+            return false;
+        }
+    }
+
+    /**
+     * Return a list of colleges (college_id, short_name, college_name).
+     */
+    public function getAllColleges(): array {
+        $stmt = $this->pdo->query('SELECT college_id, short_name, college_name FROM colleges ORDER BY short_name ASC');
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    /**
      * Return a list of users (joined with role & college). Optional search.
      * @param string|null $q
      * @param int $limit
@@ -64,6 +117,14 @@ final class AccountsModel {
         $stmt->execute();
 
         return $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+    }
+
+    /**
+     * Return a list of roles (role_id, role_name).
+     */
+    public function getAllRoles(): array {
+        $stmt = $this->pdo->query('SELECT role_id, role_name FROM roles ORDER BY role_name ASC');
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
     /**

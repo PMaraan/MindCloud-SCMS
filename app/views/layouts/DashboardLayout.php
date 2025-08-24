@@ -106,7 +106,28 @@ $basePath = rtrim(BASE_PATH, '/'); // BASE_PATH is from config.php
 <!-- Global JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="<?= $basePath ?>/public/assets/js/dashboard.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  // Reset forms inside ANY Bootstrap modal when it closes,
+  // unless the modal has data-no-reset attribute.
+  document.body.addEventListener('hidden.bs.modal', (ev) => {
+    const modal = ev.target;
+    if (!(modal instanceof HTMLElement)) return;
+    if (modal.hasAttribute('data-no-reset')) return; // opt-out
 
+    // Reset all forms inside this modal
+    modal.querySelectorAll('form').forEach(form => {
+      if (!(form instanceof HTMLFormElement)) return;
+      form.reset();
+
+      // Also clear validation states if you use them
+      form.querySelectorAll('.is-valid, .is-invalid').forEach(el => {
+        el.classList.remove('is-valid', 'is-invalid');
+      });
+    });
+  }, true);
+});
+</script>
 <!-- Page-Specific JS -->
 <?php /*
 if (!empty($pageJs)): 

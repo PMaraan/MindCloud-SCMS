@@ -1,7 +1,10 @@
 <?php
-// root/app/helpers/PasswordHelper.php
+// root/app/Helpers/PasswordHelper.php
+declare(strict_types=1);
 
-class PasswordHelper
+namespace App\Helpers;
+
+final class PasswordHelper
 {
     /**
      * Default hashing options.
@@ -14,17 +17,28 @@ class PasswordHelper
     ];
 
     /**
-     * Algorithm to use for hashing.
-     * You can change this in the future (e.g., PASSWORD_BCRYPT).
+     * Choose algorithm: prefer Argon2id if available; else BCRYPT fallback.
+     * (Some Windows/XAMPP builds may lack Argon2.)
      */
-    private const ALGO = PASSWORD_ARGON2ID;
+    private const ALGO_FALLBACK = PASSWORD_BCRYPT;
+
+    private static function algo(): string|int
+    {
+        return defined('PASSWORD_ARGON2ID') ? PASSWORD_ARGON2ID : self::ALGO_FALLBACK;
+    }
 
     /**
      * Hash a password using the configured algorithm and options.
      */
     public static function hash(string $password): string
     {
-        return password_hash($password, self::ALGO, self::$options);
+        // When falling back to BCRYPT, ignore Argon options
+        $algo = self::algo();
+        $opts = ($algo === PASSWORD_BCRYPT)
+            ? [] // you could set ['cost'=>12] if you want
+            : self::$options;
+
+        return password_hash($password, $algo, $opts);
     }
 
     /**
@@ -44,14 +58,14 @@ class PasswordHelper
             return false;
         }
 
-        // Check if the hash needs rehashing
-        if (password_needs_rehash($hash, self::ALGO, self::$options)) {
+        $algo = self::algo();
+        $opts = ($algo === PASSWORD_BCRYPT) ? [] : self::$options;
+
+        if (password_needs_rehash($hash, $algo, $opts)) {
             if ($rehashCallback) {
-                $newHash = self::hash($password);
-                $rehashCallback($newHash);
+                $rehashCallback(self::hash($password));
             }
         }
-
         return true;
     }
 }

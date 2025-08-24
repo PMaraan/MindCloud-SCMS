@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Interfaces\StorageInterface;
 use App\Models\AccountsModel;
 use App\Helpers\FlashHelper;
+use App\Helpers\PasswordHelper;
 
 final class AccountsController {
     private AccountsModel $model;
@@ -16,7 +17,7 @@ final class AccountsController {
     }
 
     /**
-     * Show Accounts page (list of users).
+     * List users + show create modal.
      */
     public function index(): string {
         $search  = isset($_GET['q']) ? trim((string)$_GET['q']) : null;
@@ -48,6 +49,16 @@ final class AccountsController {
         $canEdit = true;
         $canDelete = true;
 
+        // Create modal dropdown data
+        $roles    = $this->model->getAllRoles();     // role_id, role_name
+        $colleges = $this->model->getAllColleges();  // college_id, short_name
+
+        // CSRF token (simple)
+        if (empty($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(16));
+        }
+        $csrf = $_SESSION['csrf_token'];
+
         // Render view and return HTML (keeps DashboardController flow)
         ob_start();
         // Make vars visible in the view:
@@ -57,6 +68,74 @@ final class AccountsController {
         /** @var bool $canDelete */
         require dirname(__DIR__) . '/views/pages/accounts/index.php';
         return (string)ob_get_clean();
+    }
+
+    /**
+     * Create user (POST from Create modal).
+     */
+    public function create(): void {
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+            FlashHelper::set('danger', 'Invalid request.');
+            header('Location: ' . BASE_PATH . '/dashboard?page=accounts');
+            exit;
+        }
+
+        // CSRF check
+        $token = $_POST['csrf'] ?? '';
+        if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $token)) {
+            FlashHelper::set('danger', 'Invalid CSRF token.');
+            header('Location: ' . BASE_PATH . '/dashboard?page=accounts');
+            exit;
+        }
+
+        $defaultPassword = 'password'; // you may choose to set a default password
+        // Collect & validate
+        $id_no   = trim((string)($_POST['id_no']   ?? ''));
+        $fname   = trim((string)($_POST['fname']   ?? ''));
+        $mname   = trim((string)($_POST['mname']   ?? ''));
+        $lname   = trim((string)($_POST['lname']   ?? ''));
+        $email   = trim((string)($_POST['email']   ?? ''));
+        $passwd  = (string)($_POST['password']     ?? $defaultPassword);
+        $role_id = (string)($_POST['role_id']      ?? '');
+        $college_id = (string)($_POST['college_id'] ?? '');
+
+        $errors = [];
+        if ($id_no === '')   $errors[] = 'ID No is required.';
+        if ($fname === '')   $errors[] = 'First name is required.';
+        if ($lname === '')   $errors[] = 'Last name is required.';
+        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Valid email is required.';
+        if ($passwd === '' || strlen($passwd) < 6) $errors[] = 'Password must be at least 6 characters.';
+        if ($role_id === '') $errors[] = 'Role is required.';
+
+        if ($errors) {
+            FlashHelper::set('danger', implode(' ', $errors));
+            header('Location: ' . BASE_PATH . '/dashboard?page=accounts');
+            exit;
+        }
+
+        // Hash password
+        $hash = PasswordHelper::hash($passwd);
+
+        // Insert (users + user_roles) in a transaction
+        $ok = $this->model->createUser([
+            'id_no'      => $id_no,
+            'fname'      => $fname,
+            'mname'      => ($mname !== '' ? $mname : null),
+            'lname'      => $lname,
+            'email'      => $email,
+            'password'   => $hash,
+            'role_id'    => (int)$role_id,
+            'college_id' => ($college_id !== '' ? (int)$college_id : null),
+        ]);
+
+        if ($ok) {
+            FlashHelper::set('success', 'User created successfully.');
+        } else {
+            FlashHelper::set('danger', 'Failed to create user. Make sure ID/email are unique.');
+        }
+
+        header('Location: ' . BASE_PATH . '/dashboard?page=accounts');
+        exit;
     }
 
     /**

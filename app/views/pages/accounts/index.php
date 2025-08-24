@@ -18,6 +18,9 @@ var_dump(isset($users));
         value="<?= htmlspecialchars($_GET['q'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
       <button class="btn btn-outline-primary" type="submit">Search</button>
     </form>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createUserModal">
+        + Create
+    </button>
   </div>
 
   <div class="d-flex justify-content-between align-items-center mb-2">
@@ -35,6 +38,8 @@ var_dump(isset($users));
       <?php include __DIR__ . '/Pagination.php'; ?>
     </div>
   </div>
+
+  <?php include __DIR__ . '/CreateUserModal.php'; ?>
 
   <?php include __DIR__ . '/AccountsTable.php'; ?>
 

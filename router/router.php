@@ -48,6 +48,7 @@
             // add more GET private routes here
         ],
         'POST' => [
+            '/dashboard' => [DashboardController::class, 'render'],
             // add POST private routes here
         ],
     ];
