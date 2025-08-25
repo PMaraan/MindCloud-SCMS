@@ -148,29 +148,54 @@ final class AccountsController {
             exit;
         }
 
-        // TODO: implement update in AccountsModel
-        FlashHelper::set('danger', 'Edit not implemented yet.');
-        header('Location: ' . BASE_PATH . '/dashboard?page=accounts');
-        exit;
+        // CSRF
+        $token = $_POST['csrf'] ?? '';
+        if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $token)) {
+            FlashHelper::set('danger', 'Invalid CSRF token.');
+            header('Location: ' . BASE_PATH . '/dashboard?page=accounts');
+            exit;
+        }
 
         // Collect fields from POST
         $data = [
-            'id_no'   => $_POST['id_no'],
-            'fname'   => $_POST['fname'],
-            'mname'   => $_POST['mname'] ?? null,
-            'lname'   => $_POST['lname'],
-            'email'   => $_POST['email']
+            'id_no'      => trim((string)($_POST['id_no'] ?? '')),
+            'fname'      => trim((string)($_POST['fname'] ?? '')),
+            'mname'      => trim((string)($_POST['mname'] ?? '')),
+            'lname'      => trim((string)($_POST['lname'] ?? '')),
+            'email'      => trim((string)($_POST['email'] ?? '')),
+            'role_id'    => (string)($_POST['role_id'] ?? ''),
+            'college_id' => (string)($_POST['college_id'] ?? ''),
         ];
 
-        // Later: check "edit_accounts" permission here
+        // Validate
+        $errs = [];
+        if ($data['id_no'] === '') $errs[] = 'Missing user ID.';
+        if ($data['fname'] === '') $errs[] = 'First name is required.';
+        if ($data['lname'] === '') $errs[] = 'Last name is required.';
+        if ($data['email'] === '' || !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) $errs[] = 'Valid email is required.';
+        if ($data['role_id'] === '') $errs[] = 'Role is required.';
+        if ($errs) {
+            FlashHelper::set('danger', implode(' ', $errs));
+            header('Location: ' . BASE_PATH . '/dashboard?page=accounts');
+            exit;
+        }
 
-        if ($this->model->updateUser($data)) {
+        // Normalize nullable mname/college
+        if ($data['mname'] === '') $data['mname'] = null;
+        if ($data['college_id'] === '') $data['college_id'] = null;
+
+        // Update
+        // Later: check "edit_accounts" permission here
+        $ok = $this->model->updateUserWithRoleCollege($data);
+
+        if ($ok) {
             FlashHelper::set('success', 'User updated successfully.');
+            // (Future hook: if role/college changed, enqueue domain updates here.)
         } else {
             FlashHelper::set('danger', 'Failed to update user.');
         }
 
-        header("Location: " . BASE_PATH . "/dashboard?page=accounts");
+        header('Location: ' . BASE_PATH . '/dashboard?page=accounts');
         exit;
     }
 

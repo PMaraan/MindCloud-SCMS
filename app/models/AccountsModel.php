@@ -196,6 +196,8 @@ final class AccountsModel {
                 u.mname,
                 u.lname,
                 u.email,
+                ur.role_id,
+                ur.college_id,
                 COALESCE(r.role_name, '')       AS role_name,
                 COALESCE(c.short_name, '')      AS college_short_name
               FROM users u
@@ -253,6 +255,54 @@ final class AccountsModel {
             ':email' => $data['email'],
             ':id_no' => $data['id_no']
         ]);
+    }
+
+    public function updateUserWithRoleCollege(array $data): bool {
+        // expects: id_no, fname, mname|null, lname, email, role_id(int), college_id(int|null)
+        try {
+            $this->pdo->beginTransaction();
+
+            // 1) Update users
+            $stmt = $this->pdo->prepare("
+                UPDATE users
+                SET fname = :fname,
+                    mname = :mname,
+                    lname = :lname,
+                    email = :email
+                WHERE id_no = :id_no
+            ");
+            $stmt->execute([
+                ':fname' => $data['fname'],
+                ':mname' => $data['mname'],
+                ':lname' => $data['lname'],
+                ':email' => $data['email'],
+                ':id_no' => $data['id_no'],
+            ]);
+
+            // 2) Enforce single role per user (MVP): replace mapping
+            $del = $this->pdo->prepare("DELETE FROM user_roles WHERE id_no = :id_no");
+            $del->execute([':id_no' => $data['id_no']]);
+
+            $ins = $this->pdo->prepare("
+                INSERT INTO user_roles (id_no, role_id, college_id)
+                VALUES (:id_no, :role_id, :college_id)
+            ");
+            $ins->execute([
+                ':id_no'      => $data['id_no'],
+                ':role_id'    => (int)$data['role_id'],
+                ':college_id' => $data['college_id'] === null ? null : (int)$data['college_id'],
+            ]);
+
+            $this->pdo->commit();
+            return true;
+        } catch (\Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            // TEMP: log so you can see the reason while in dev
+            error_log('updateUserWithRoleCollege failed: ' . $e->getMessage());
+            return false;
+        }
     }
 
     /**

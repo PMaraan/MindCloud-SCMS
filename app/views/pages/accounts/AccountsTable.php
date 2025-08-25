@@ -25,6 +25,8 @@
             data-mname="<?= htmlspecialchars((string)($user['mname'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
             data-lname="<?= htmlspecialchars((string)$user['lname'], ENT_QUOTES, 'UTF-8') ?>"
             data-email="<?= htmlspecialchars((string)$user['email'], ENT_QUOTES, 'UTF-8') ?>"
+            data-role-id="<?= htmlspecialchars((string)($user['role_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+            data-college-id="<?= htmlspecialchars((string)($user['college_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
           >
             <td><?= htmlspecialchars((string)$user['id_no']) ?></td>
             <td><?= htmlspecialchars((string)$user['fname']) ?></td>

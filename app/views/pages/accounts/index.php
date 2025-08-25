@@ -43,6 +43,8 @@ var_dump(isset($users));
 
   <?php include __DIR__ . '/AccountsTable.php'; ?>
 
+  <?php include __DIR__ . '/EditUserModal.php'; ?>
+
   <div class="d-flex justify-content-end mt-3">
     <?php include __DIR__ . '/Pagination.php'; ?>
   </div>
@@ -67,7 +69,11 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("edit-mname").value = row.dataset.mname;
       document.getElementById("edit-lname").value = row.dataset.lname;
       document.getElementById("edit-email").value = row.dataset.email;
-      // add more fields as needed
+      // role/college
+      const roleSel = document.getElementById("edit-role");
+      const collegeSel = document.getElementById("edit-college");
+      if (roleSel) roleSel.value = row.dataset.roleId || "";
+      if (collegeSel) collegeSel.value = row.dataset.collegeId || "";
     });
   });
 
