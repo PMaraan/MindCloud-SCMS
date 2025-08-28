@@ -8,14 +8,15 @@ var_dump(isset($users));
 <div class="container-fluid">
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="mb-0">Accounts</h2>
-    <form class="d-flex" method="GET" action="">
+    <form class="d-flex" method="GET" action="<?= BASE_PATH ?>/dashboard">
+      <input type="hidden" name="page" value="accounts">
       <input
         class="form-control me-2"
         type="search"
         name="q"
         placeholder="Search users..."
         aria-label="Search"
-        value="<?= htmlspecialchars($_GET['q'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+        value="<?= htmlspecialchars($pager['query'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
       <button class="btn btn-outline-primary" type="submit">Search</button>
     </form>
     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createUserModal">

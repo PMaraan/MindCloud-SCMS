@@ -70,6 +70,7 @@ final class DashboardController
         $currentPage = (isset($_GET['page']) && is_string($_GET['page']) && $_GET['page'] !== '')
             ? $_GET['page']
             : 'dashboard';
+        $requestedPage = $currentPage;
 
         // Build sidebar-safe list
         $visibleModules = [];

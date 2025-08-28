@@ -26,6 +26,9 @@ final class AccountsController {
      * List users + show create modal.
      */
     public function index(): string {
+        // For dev only. Remove for production ...
+        error_log('accounts search q=' . var_export($search, true));
+
         // RBAC check
         (new RBAC($this->db))->require((string)$_SESSION['user_id'], 'AccountViewing');
 

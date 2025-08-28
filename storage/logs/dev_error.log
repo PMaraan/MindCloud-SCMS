@@ -509,3 +509,51 @@
 [28-Aug-2025 09:20:03 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
 [28-Aug-2025 09:20:03 Europe/Berlin] PHP Warning:  Undefined variable $pageName in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
 [28-Aug-2025 09:20:03 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:22:39 Europe/Berlin] PHP Warning:  Undefined variable $pageName in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:22:39 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:22:39 Europe/Berlin] PHP Warning:  Undefined variable $pageName in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:22:39 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:22:54 Europe/Berlin] PHP Warning:  Undefined variable $pageName in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:22:54 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:22:54 Europe/Berlin] PHP Warning:  Undefined variable $pageName in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:22:54 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:36:06 Europe/Berlin] PHP Warning:  Undefined variable $pageName in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:36:06 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:36:06 Europe/Berlin] PHP Warning:  Undefined variable $pageName in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:36:06 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:36:09 Europe/Berlin] PHP Warning:  Undefined variable $pageName in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:36:09 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:36:09 Europe/Berlin] PHP Warning:  Undefined variable $pageName in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:36:09 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:36:31 Europe/Berlin] PHP Warning:  Undefined variable $pageName in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:36:31 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:36:31 Europe/Berlin] PHP Warning:  Undefined variable $pageName in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:36:31 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:36:40 Europe/Berlin] PHP Warning:  Undefined variable $pageName in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:36:40 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:36:40 Europe/Berlin] PHP Warning:  Undefined variable $pageName in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:36:40 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:36:50 Europe/Berlin] PHP Warning:  Undefined variable $pageName in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:36:50 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:36:50 Europe/Berlin] PHP Warning:  Undefined variable $pageName in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:36:50 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:37:00 Europe/Berlin] PHP Warning:  Undefined variable $pageName in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:37:00 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:37:00 Europe/Berlin] PHP Warning:  Undefined variable $pageName in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:37:00 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:37:04 Europe/Berlin] PHP Warning:  Undefined variable $pageName in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:37:04 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:37:04 Europe/Berlin] PHP Warning:  Undefined variable $pageName in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:37:04 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:37:30 Europe/Berlin] PHP Warning:  Undefined variable $pageName in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:37:30 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:37:30 Europe/Berlin] PHP Warning:  Undefined variable $pageName in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:37:30 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:37:40 Europe/Berlin] PHP Warning:  Undefined variable $pageName in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:37:40 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:37:40 Europe/Berlin] PHP Warning:  Undefined variable $pageName in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:37:40 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:37:43 Europe/Berlin] PHP Warning:  Undefined variable $pageName in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:37:43 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:37:43 Europe/Berlin] PHP Warning:  Undefined variable $pageName in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 09:37:43 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
