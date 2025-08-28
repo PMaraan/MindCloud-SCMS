@@ -26,25 +26,27 @@ final class AccountsController {
      * List users + show create modal.
      */
     public function index(): string {
-        // For dev only. Remove for production ...
-        error_log('accounts search q=' . var_export($search, true));
-
         // RBAC check
         (new RBAC($this->db))->require((string)$_SESSION['user_id'], 'AccountViewing');
 
-        // Pagination + search
-        $search  = isset($_GET['q']) ? trim((string)$_GET['q']) : null;
-        $page    = max(1, (int)($_GET['pg'] ?? 1));
-        $perPage = 10; // tweak as you wish
+        // Read raw query (for echoing back to the user)
+        $rawQ   = isset($_GET['q']) ? trim((string)$_GET['q']) : null;
 
+        // Normalized query for DB (lowercased; null if empty)
+        $search = ($rawQ !== null && $rawQ !== '') ? mb_strtolower($rawQ) : null;
+        error_log('accounts.search raw=' . var_export($rawQ, true) . ' normalized=' . var_export($search, true)); // For debugging only. Remove for production ...
+
+        $page    = max(1, (int)($_GET['pg'] ?? 1));
+        $perPage = 10;
         $offset  = ($page - 1) * $perPage;
+
+        // Pass the normalized value to the model
         $result  = $this->model->getUsersPage($search, $perPage, $offset);
 
         $users   = $result['rows'];
         $total   = $result['total'];
         $pages   = max(1, (int)ceil($total / $perPage));
-        
-        // Build a tiny pager struct the view can use
+
         $pager = [
             'page'     => $page,
             'perPage'  => $perPage,
@@ -54,8 +56,8 @@ final class AccountsController {
             'hasNext'  => $page < $pages,
             'prev'     => max(1, $page - 1),
             'next'     => min($pages, $page + 1),
-            'baseUrl'  => BASE_PATH . '/dashboard?page=accounts', // keep your module route
-            'query'    => $search, // so we can preserve ?q=
+            'baseUrl'  => BASE_PATH . '/dashboard?page=accounts',
+            'query'    => $rawQ, // ← keep original for the UI
         ];
 
         // Permission flags for RBAC
