@@ -8,18 +8,28 @@ use App\Interfaces\StorageInterface;
 use App\Models\AccountsModel;
 use App\Helpers\FlashHelper;
 use App\Helpers\PasswordHelper;
+use App\Security\RBAC;
 
 final class AccountsController {
+    private StorageInterface $db;
     private AccountsModel $model;
 
     public function __construct(StorageInterface $db) {
+        $this->db = $db;
         $this->model = new AccountsModel($db);
+        if (session_status() !== \PHP_SESSION_ACTIVE) {
+            session_start();
+        }
     }
 
     /**
      * List users + show create modal.
      */
     public function index(): string {
+        // RBAC check
+        (new RBAC($this->db))->require((string)$_SESSION['user_id'], 'AccountViewing');
+
+        // Pagination + search
         $search  = isset($_GET['q']) ? trim((string)$_GET['q']) : null;
         $page    = max(1, (int)($_GET['pg'] ?? 1));
         $perPage = 10; // tweak as you wish
@@ -46,8 +56,8 @@ final class AccountsController {
         ];
 
         // Permission flags for RBAC
-        $canEdit = true;
-        $canDelete = true;
+        $canEdit = (new RBAC($this->db))->has((string)$_SESSION['user_id'], 'AccountModification');
+        $canDelete = (new RBAC($this->db))->has((string)$_SESSION['user_id'], 'AccountDeletion');
 
         // Create modal dropdown data
         $roles    = $this->model->getAllRoles();     // role_id, role_name
@@ -66,6 +76,9 @@ final class AccountsController {
         /** @var array $pager */
         /** @var bool $canEdit */
         /** @var bool $canDelete */
+        /** @var array $roles */
+        /** @var array $colleges */
+        /** @var string $csrf */
         require dirname(__DIR__) . '/views/pages/accounts/index.php';
         return (string)ob_get_clean();
     }
@@ -74,6 +87,8 @@ final class AccountsController {
      * Create user (POST from Create modal).
      */
     public function create(): void {
+        (new RBAC($this->db))->require((string)$_SESSION['user_id'], 'AccountCreation');
+
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
             FlashHelper::set('danger', 'Invalid request.');
             header('Location: ' . BASE_PATH . '/dashboard?page=accounts');
@@ -142,6 +157,7 @@ final class AccountsController {
      * Handle edit user action.
      */
     public function edit(): void {
+        (new RBAC($this->db))->require((string)$_SESSION['user_id'], 'AccountModification');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             FlashHelper::set('danger', 'Invalid request.');
             header("Location: " . BASE_PATH . "/dashboard?page=accounts");
@@ -203,28 +219,48 @@ final class AccountsController {
      * Handle delete user action.
      */
     public function delete(): void {
+        (new RBAC($this->db))->require((string)$_SESSION['user_id'], 'AccountDeletion');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             FlashHelper::set('danger', 'Invalid request.');
             header("Location: " . BASE_PATH . "/dashboard?page=accounts");
             exit;
         }
 
-        // TODO: implement delete in AccountsModel
-        FlashHelper::set('danger', 'Delete not implemented yet.');
-        header('Location: ' . BASE_PATH . '/dashboard?page=accounts');
-        exit;
-
-        $id_no = $_POST['id_no'] ?? null;
-
-        // Later: check "delete_accounts" permission here
-
-        if ($id_no && $this->model->deleteUser($id_no)) {
-            FlashHelper::set('success', 'User deleted successfully.');
-        } else {
-            FlashHelper::set('danger', 'Failed to delete user.');
+        // CSRF
+        $token = $_POST['csrf'] ?? '';
+        if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $token)) {
+            \App\Helpers\FlashHelper::set('danger', 'Invalid CSRF token.');
+            header('Location: ' . BASE_PATH . '/dashboard?page=accounts');
+            exit;
         }
 
-        header("Location: " . BASE_PATH . "/dashboard?page=accounts");
+        $id_no = trim((string)($_POST['id_no'] ?? ''));
+
+        // Basic validations
+        if ($id_no === '') {
+            \App\Helpers\FlashHelper::set('danger', 'Missing user ID.');
+            header('Location: ' . BASE_PATH . '/dashboard?page=accounts');
+            exit;
+        }
+
+        // Optional guard: prevent deleting your own account (MVP-friendly)
+        if (!empty($_SESSION['user_id']) && trim((string)$_SESSION['user_id']) === $id_no) {
+            \App\Helpers\FlashHelper::set('danger', 'You cannot delete your own account while logged in.');
+            header('Location: ' . BASE_PATH . '/dashboard?page=accounts');
+            exit;
+        }
+
+        // TODO (later): RBAC check e.g. checkPermission('delete_accounts')
+
+        $ok = $this->model->deleteUser($id_no);
+
+        if ($ok) {
+            \App\Helpers\FlashHelper::set('success', 'User deleted successfully.');
+        } else {
+            \App\Helpers\FlashHelper::set('danger', 'Failed to delete user.');
+        }
+
+        header('Location: ' . BASE_PATH . '/dashboard?page=accounts');
         exit;
     }
 }

@@ -1,5 +1,6 @@
 <?php
   // root/app/views/layouts/components/Sidebar.php
+  // Expects $visibleModules
 ?>
 <!-- Sidebar Component -->
 <div class="toggle-wrapper">
@@ -13,7 +14,7 @@
 
     <!-- Sidebar Banner -->
     <div class="sidebar-img-wrapper"><!-- sidebar-img-wrapper open -->
-      <img src="<?= $basePath . "/public/assets/images/coecsa-building.jpg" ?>" alt="Sidebar logo" class="sidebar-img" />
+      <img src="<?= BASE_PATH . "/public/assets/images/coecsa-building.jpg" ?>" alt="Sidebar logo" class="sidebar-img" />
     </div><!-- sidebar-img-wrapper close -->
 
     <!-- Profile Section -->
@@ -25,19 +26,17 @@
     <!-- Navigation -->
     <ul class="nav flex-column">
       <?php 
-        $currentPage = $_GET['page'] ?? 'dashboard';
-        foreach ($modules as $key => $module): // Render each tab that the user has permission 
-          //if (in_array($label, $permissionGroups)): 
+        $current = $currentPage ?? 'dashboard';
+        foreach (($visibleModules ?? []) as $key => $module): // Render each tab that the user has permission
       ?> 
           <li class="nav-item">
-            <a href="<?= $basePath ?>/dashboard?page=<?= urlencode($key) ?>" class="nav-link <?= ($_GET['page'] ?? 'dashboard') === $key ? 'active' : '' ?>" data-page="<?= htmlspecialchars($pageName) ?>">
-              <?= htmlspecialchars($module['label']) ?>
+            <a  href="<?= BASE_PATH ?>/dashboard?page=<?= urlencode($key) ?>" 
+                class="nav-link <?= ($current === $key) ? 'active' : '' ?>" 
+                data-page="<?= htmlspecialchars($pageName) ?>">
+              <?= htmlspecialchars($module['label'] ?? ucfirst($key)) ?>
             </a>
           </li>
-      <?php 
-          //endif; 
-        endforeach; 
-      ?>
+      <?php endforeach; ?>
     </ul>
 
   </div><!-- fade-group close -->

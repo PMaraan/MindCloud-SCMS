@@ -45,6 +45,8 @@ var_dump(isset($users));
 
   <?php include __DIR__ . '/EditUserModal.php'; ?>
 
+  <?php include __DIR__ . '/DeleteUserModal.php'; ?>
+
   <div class="d-flex justify-content-end mt-3">
     <?php include __DIR__ . '/Pagination.php'; ?>
   </div>

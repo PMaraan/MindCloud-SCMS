@@ -1,15 +1,4 @@
 <!DOCTYPE html>
-
-<?php
-// Load environment & bootstrap
-$db = require_once __DIR__ . '/../../app/bootstrap.php';
-
-// Start session if not already started
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-?>
-
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -36,7 +25,7 @@ if (session_status() === PHP_SESSION_NONE) {
         <div class="col login-form-container">
           <div class="col login-form">
             <!-- put anti csrf token... -->
-            <form method="POST" action="<?= BASE_PATH ?>/app/controllers/UserController.php">
+            <form method="POST" action="<?= BASE_PATH ?>/login" autocomplete="off">
 
               <!-- Email Input -->
               <div class="mb-3">
@@ -83,6 +72,6 @@ if (session_status() === PHP_SESSION_NONE) {
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="assets/js/login-script.js"></script>
+  <script src="<?= BASE_PATH ?>/public/assets/js/login-script.js"></script>
 </body>
 </html>

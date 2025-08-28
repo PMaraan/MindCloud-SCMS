@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Interfaces\StorageInterface;
 use App\Models\UserModel;
 use App\Helpers\FlashHelper;
+use App\Security\RBAC;
 
 final class DashboardController
 {
@@ -60,9 +61,26 @@ final class DashboardController
         );
         $displayRole = trim(($user['college_short_name'] ?? '') . ' ' . $user['role_name']); 
         
-        // 3. Load available modules
+        // 3. Modules & RBAC
         $modules = $this->modules;
+        $rbac = new RBAC($this->db);
+        $userId = (string)$_SESSION['user_id'];
 
+        // Compute current page once (for sidebar active state, etc.)
+        $currentPage = (isset($_GET['page']) && is_string($_GET['page']) && $_GET['page'] !== '')
+            ? $_GET['page']
+            : 'dashboard';
+
+        // Build sidebar-safe list
+        $visibleModules = [];
+        foreach ($modules as $key => $def) {
+            $perm = $def['permission'] ?? null;
+            if (!$perm || $rbac->has($userId, $perm)) {
+                $visibleModules[$key] = $def;
+            }
+        }
+
+        /*
         // Prepare debug vars (optional)
         $controllerClass = null;
         $controller      = null;
@@ -72,7 +90,13 @@ final class DashboardController
         $contentHtml = '';
         if (isset($modules[$requestedPage])) {
             $controllerClass = $modules[$requestedPage]['controller'] ?? null;
-            $test1 = 'The requested page exists';
+            $requiredPerm    = $modules[$requestedPage]['permission'] ?? null;
+            $test1 = 'The requested page exists'; // for debugging only. remove for production ...
+
+            // RBAC check
+            if ($requiredPerm) {
+                $rbac->require((string)$_SESSION['user_id'], $requiredPerm);
+            }
 
             if ($controllerClass && class_exists($controllerClass)) {
                 $test2 = 'Module controller exists';
@@ -96,80 +120,67 @@ final class DashboardController
         } else {
             $contentHtml = '<div class="alert alert-danger">404 - Page Not Found</div>';
         }
+// */
 
-        // 4. Load requested module controller (if exists)
-        $contentHtml = '';
+        // 4. Resolve requested module/controller
+        $contentHtml     = '';
+        $controllerClass = null;
+        $controller      = null;
+
+        // (Optional) debug strings for dev
+        $test1 = '';
+        $test2 = '';
+
         if (isset($modules[$requestedPage])) {
             $controllerClass = $modules[$requestedPage]['controller'] ?? null;
-
-            // try requiring the file manually before checking
-            /*
-            $controllerFile = __DIR__ . '/' . basename($requestedPage) . 'Controller.php';
-            if (is_file($controllerFile)) {
-                require_once $controllerFile;
-            }
-            */
-
+            $requiredPerm    = $modules[$requestedPage]['permission'] ?? null;
             $test1 = 'The requested page exists';
 
-            if (class_exists($controllerClass)) {
+            // Gate module view with RBAC
+            if ($requiredPerm) {
+                $rbac->require($userId, $requiredPerm);
+            }
+
+            if ($controllerClass && class_exists($controllerClass)) {
                 $test2 = 'Module controller exists';
                 $controller = new $controllerClass($this->db);
-                $contentHtml = $controller->index(); // module’s index returns rendered HTML
+
+                // Action dispatch (query param ?action=)
+                $action  = strtolower((string)($_GET['action'] ?? 'index'));
+                $allowed = ['index', 'create', 'edit', 'delete'];
+
+                if (!in_array($action, $allowed, true)) {
+                    $action = 'index';
+                }
+
+                if ($action === 'index') {
+                    // Render HTML content for the region
+                    $contentHtml = $controller->index();
+                } else {
+                    // Mutating actions should handle redirect/flash themselves
+                    $controller->{$action}();
+                    return; // prevent rendering layout after redirect
+                }
             } else {
-                $contentHtml = '<h3>Module Controller not found</h3>';
+                $contentHtml = '<div class="alert alert-warning">Module controller not found.</div>';
             }
         } else {
-            $contentHtml = '<h3>404 - Page Not Found</h3>';
+            $contentHtml = '<div class="alert alert-danger">404 - Page Not Found</div>';
         }
-
-        /*
-        // 2. Get user permissions for sidebar
-        $permissionGroups = $this->db->getPermissionGroupsByUser($_SESSION['user_id']);
-
-        // Get user role for RBAC checks
-        $role_id = $user['role_id'] ?? null; // Might need a new role Model...
-
-        // 3. Map sidebar labels to their corresponding page names
-         // Load mapper
-        $mapper = require __DIR__ . '/../config/PageMapper.php';
-
-        // pick requested page config
-        $pageConfig = $mapper[$requestedPage] ?? null;
-
-        if (!$pageConfig) {
-            $pageContent = __DIR__ . '/../views/404.php';
-            $pageCss = null;
-            $pageJs = null;
-            $pagePermissions = [];
-        } else {
-            $pageContent = __DIR__ . '/../views/pages/' . $pageConfig['page'] . '/index.php';
-            $pageCss = $pageConfig['css'];
-            $pageJs = $pageConfig['js'];
-            $pagePermissions = $pageConfig['permissions'];
-        }
-
-        // If files don’t exist, set them to null
-        if (!file_exists($_SERVER['DOCUMENT_ROOT'] . $pageCss)) {
-            $pageCss = null;
-        }
-        if (!file_exists($_SERVER['DOCUMENT_ROOT'] . $pageJs)) {
-            $pageJs = null;
-        }
-
-        // Later on, replace with permissions fetched by role_id
-        $permissionGroups = $this->userModel->getRolePermissions($role_id);
-*/
 
         // 5. Get flash messages
         $flashMessage = FlashHelper::get();
 
-        // Make data visible to layout:
+        // 6. Make data visible to layout:
         $viewData = [
+            'currentPage'     => $currentPage,
             'modules'         => $modules,
+            'visibleModules'  => $visibleModules,
             'contentHtml'     => $contentHtml,
             'flashMessage'    => $flashMessage,
-            // optional debug
+            'username'        => $username,
+            'displayRole'     => $displayRole,
+            // Debug (use in dev only)
             'controllerClass' => $controllerClass,
             'controller'      => $controller,
             'test1'           => $test1,
@@ -177,7 +188,7 @@ final class DashboardController
         ];
         extract($viewData, EXTR_SKIP);
 
-        // 6. Render the layout
+        // 7. Render the layout
         require dirname(__DIR__) . '/views/layouts/DashboardLayout.php';
     }
 }

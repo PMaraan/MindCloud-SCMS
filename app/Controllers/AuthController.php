@@ -7,27 +7,32 @@ namespace App\Controllers;
 use App\Interfaces\StorageInterface;
 use App\Models\UserModel;
 use App\Helpers\FlashHelper;
+// use App\Security\RBAC; // optional preload
 
-class AuthController
+final class AuthController
 {
     private StorageInterface $db;
-    private $userModel;
+    private UserModel $userModel;
 
     public function __construct(StorageInterface $db) {
         $this->db = $db;
         $this->userModel = new UserModel($db);
+        if (session_status() !== \PHP_SESSION_ACTIVE) {
+            session_start();
+        }
     }
 
     /**
-     * Show login form OR handle login POST
+     * GET: show login form
+     * POST: authenticate and redirect
      */
     public function login(): void {
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
-            $usernameOrEmail = trim($_POST['username'] ?? ''); // Form field is called username
-            $password = trim($_POST['password'] ?? '');
+            $usernameOrEmail = trim((string)$_POST['email'] ?? ''); // Form field is called email
+            $password = (string)($_POST['password'] ?? '');
 
-            if ($username === '' || $password === '') {
-                FlashHelper::set('danger', 'Username and password are required.');
+            if ($usernameOrEmail === '' || $password === '') {
+                FlashHelper::set('danger', 'Email and password are required.');
                 header("Location: " . BASE_PATH . "/login");
                 exit;
             }
@@ -37,9 +42,8 @@ class AuthController
 
             if ($user !== false) {
                 // valid login
+                session_regenerate_id(true);
                 $_SESSION['user_id'] = $user['id_no'];
-                $_SESSION['username'] = $user['username'] ?? ($user['email'] ?? '');
-                $_SESSION['role_id']  = $user['role_id'] ?? null;
 
                 FlashHelper::set('success', 'Welcome back, ' . htmlspecialchars($user['fname'] ?? 'user'));
                 header('Location: ' . BASE_PATH . '/dashboard');
@@ -51,8 +55,8 @@ class AuthController
             }
         }
 
-        // GET request to show login view
-        require __DIR__ . '/../views/login.php';
+        // If server request type is GET then show login view
+        require dirname(__DIR__) . '/views/login.php';
     }
 
     /**
