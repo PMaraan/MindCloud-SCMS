@@ -24,6 +24,25 @@ if (APP_ENV === 'dev') {
 require_once __DIR__ . '/autoload.php';
 
 // 3. Sessions (needed for Auth/RBAC)
+
+// Secure, dev-friendly cookie settings (do this BEFORE session_start)
+ini_set('session.use_strict_mode', '1');
+ini_set('session.cookie_httponly', '1');
+ini_set('session.cookie_samesite', 'Lax');
+// Use secure cookies only when HTTPS is actually on (XAMPP is usually http)
+ini_set('session.cookie_secure', (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? '1' : '0');
+
+session_name('MCSESSID');
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Generate ONCE per session (do NOT regenerate in views/layouts)
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }

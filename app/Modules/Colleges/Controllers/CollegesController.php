@@ -87,16 +87,16 @@ final class CollegesController
         if ($data['college_name'] === '') $errors[] = 'College name is required.';
 
         if ($errors) {
-            FlashHelper::error(implode(' ', $errors));
+            FlashHelper::set('danger', implode(' ', $errors));
             $this->redirect(BASE_PATH . '/dashboard?page=colleges');
             return;
         }
 
         try {
             $id = (new CollegesModel($this->db))->create($data);
-            FlashHelper::success('College created (ID ' . (int)$id . ').');
+            FlashHelper::set('success', 'College created (ID ' . (int)$id . ').');
         } catch (\Throwable $e) {
-            FlashHelper::error('Create failed: ' . $e->getMessage());
+            FlashHelper::set('danger', 'Create failed: ' . $e->getMessage());
         }
 
         $this->redirect(BASE_PATH . '/dashboard?page=colleges');
@@ -108,7 +108,7 @@ final class CollegesController
 
         $id = (int)($_POST['id'] ?? 0);
         if ($id <= 0) {
-            FlashHelper::error('Invalid ID.');
+            FlashHelper::set('danger', 'Invalid ID.');
             $this->redirect(BASE_PATH . '/dashboard?page=colleges');
             return;
         }
@@ -123,17 +123,17 @@ final class CollegesController
         if ($data['college_name'] === '') $errors[] = 'College name is required.';
 
         if ($errors) {
-            FlashHelper::error(implode(' ', $errors));
+            FlashHelper::set('danger', implode(' ', $errors));
             $this->redirect(BASE_PATH . '/dashboard?page=colleges');
             return;
         }
 
         try {
             $ok = (new CollegesModel($this->db))->update($id, $data);
-            $ok ? FlashHelper::success('College updated.')
-                : FlashHelper::warning('No changes were made.');
+            $ok ? FlashHelper::set('success', 'College updated.')
+                : FlashHelper::set('warning', 'No changes were made.');
         } catch (\Throwable $e) {
-            FlashHelper::error('Update failed: ' . $e->getMessage());
+            FlashHelper::set('danger', 'Update failed: ' . $e->getMessage());
         }
 
         $this->redirect(BASE_PATH . '/dashboard?page=colleges');
@@ -145,17 +145,17 @@ final class CollegesController
 
         $id = (int)($_POST['id'] ?? 0);
         if ($id <= 0) {
-            FlashHelper::error('Invalid ID.');
+            FlashHelper::set('danger', 'Invalid ID.');
             $this->redirect(BASE_PATH . '/dashboard?page=colleges');
             return;
         }
 
         try {
             $ok = (new CollegesModel($this->db))->delete($id);
-            $ok ? FlashHelper::success('College deleted.')
-                : FlashHelper::warning('College not found.');
+            $ok ? FlashHelper::set('success', 'College deleted.')
+                : FlashHelper::set('warning', 'College not found.');
         } catch (\Throwable $e) {
-            FlashHelper::error('Delete failed: ' . $e->getMessage());
+            FlashHelper::set('danger', 'Delete failed: ' . $e->getMessage());
         }
 
         $this->redirect(BASE_PATH . '/dashboard?page=colleges');
@@ -172,15 +172,20 @@ final class CollegesController
         }
     }
 
-    private function assertCsrf(): void {
+    private function assertCsrf(): void
+    {
         $token = (string)($_POST['csrf'] ?? '');
         $sess  = (string)($_SESSION['csrf_token'] ?? '');
-        if ($token === '' || !hash_equals($sess, $token)) {
-            FlashHelper::error('Invalid CSRF token.');
+        if ($token === '' || $sess === '' || !hash_equals($sess, $token)) {
+            \App\Helpers\FlashHelper::set('danger', 'Invalid CSRF token.');
             $this->redirect(BASE_PATH . '/dashboard?page=colleges');
             exit;
         }
+
+        // Rotate after a successful POST
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
     }
+
 
     private function redirect(string $url): void {
         header('Location: ' . $url);

@@ -1,9 +1,9 @@
 <?php // /app/Modules/Accounts/Views/partials/delete_modal.php ?>
-<div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-hidden="true" aria-labelledby="deleteAccountLabel">
+<div class="modal fade" id="deleteUserModal" tabindex="-1" aria-hidden="true" aria-labelledby="deleteUserLabel">
   <div class="modal-dialog">
     <form method="post" action="/accounts/delete" class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="deleteAccountLabel">Delete Account</h5>
+        <h5 class="modal-title" id="deleteUserLabel">Delete User</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">

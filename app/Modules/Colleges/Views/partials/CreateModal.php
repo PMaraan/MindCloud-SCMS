@@ -11,7 +11,7 @@
         <div class="modal-body row g-3">
           <div class="col-12">
             <label class="form-label">Short Name <span class="text-danger">*</span></label>
-            <input class="form-control" name="short_name" maxlength="10" required placeholder="e.g., CEng">
+            <input class="form-control" name="short_name" maxlength="10" required placeholder="e.g., CCS">
           </div>
           <div class="col-12">
             <label class="form-label">College Name <span class="text-danger">*</span></label>

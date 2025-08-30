@@ -32,7 +32,9 @@
               <button class="btn btn-sm btn-danger"
                       data-bs-toggle="modal"
                       data-bs-target="#deleteModal"
-                      data-id="<?= (int)$r['college_id'] ?>">
+                      data-id="<?= (int)$r['college_id'] ?>"
+                      data-short_name="<?= htmlspecialchars((string)$r['short_name'], ENT_QUOTES) ?>"
+                      data-college_name="<?= htmlspecialchars((string)$r['college_name'], ENT_QUOTES) ?>">
                 <i class="bi bi-trash"></i> Delete
               </button>
             <?php endif; ?>
@@ -67,7 +69,24 @@ document.addEventListener('DOMContentLoaded', () => {
     delModal.addEventListener('show.bs.modal', evt => {
       const btn = evt.relatedTarget;
       if (!btn) return;
-      delModal.querySelector('[name="id"]').value = btn.getAttribute('data-id') || '';
+
+      const id          = btn.getAttribute('data-id') || '';
+      const shortName   = btn.getAttribute('data-short_name') || '';
+      const collegeName = btn.getAttribute('data-college_name') || '';
+
+      // hidden input for submission
+      const inputId = delModal.querySelector('input[name="id"]');
+      if (inputId) inputId.value = id;
+
+      // display fields
+      const spanId = delModal.querySelector('.js-del-id');
+      if (spanId) spanId.textContent = id;
+
+      const spanShort = delModal.querySelector('.js-del-short');
+      if (spanShort) spanShort.textContent = shortName;
+
+      const spanName = delModal.querySelector('.js-del-name');
+      if (spanName) spanName.textContent = collegeName;
     });
   }
 });
