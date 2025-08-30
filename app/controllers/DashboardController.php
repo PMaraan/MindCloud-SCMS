@@ -33,9 +33,8 @@ final class DashboardController
     }
     
     /**
-     * Render the dashboard layout with dynamic content, CSS, and JS.
-     *
-     * @param string $requestedPage The page name relative to /views/pages/
+     * Render the dashboard layout (app shell) and dynamic module content.
+     * The active module is resolved via ?page=... and config/ModuleRegistry.php.
      */
     public function render(string $requestedPage = 'dashboard'): void {
         // 1. Authentication check
@@ -81,48 +80,6 @@ final class DashboardController
             }
         }
 
-        /*
-        // Prepare debug vars (optional)
-        $controllerClass = null;
-        $controller      = null;
-        $test1 = '';
-        $test2 = '';
-
-        $contentHtml = '';
-        if (isset($modules[$requestedPage])) {
-            $controllerClass = $modules[$requestedPage]['controller'] ?? null;
-            $requiredPerm    = $modules[$requestedPage]['permission'] ?? null;
-            $test1 = 'The requested page exists'; // for debugging only. remove for production ...
-
-            // RBAC check
-            if ($requiredPerm) {
-                $rbac->require((string)$_SESSION['user_id'], $requiredPerm);
-            }
-
-            if ($controllerClass && class_exists($controllerClass)) {
-                $test2 = 'Module controller exists';
-                $controller = new $controllerClass($this->db);
-                $action = strtolower((string)($_GET['action'] ?? 'index'));
-                $allowed = ['index','create','edit','delete']; // whitelist
-
-                if (!in_array($action, $allowed, true)) {
-                    $action = 'index';
-                }
-                if ($action === 'index') {
-                    $contentHtml = $controller->index();
-                } else {
-                    // Actions are side-effect handlers that redirect; they don’t need to return HTML
-                    $controller->{$action}();
-                    return; // prevent falling through to layout after redirect
-                }
-            } else {
-                $contentHtml = '<div class="alert alert-warning">Module controller not found.</div>';
-            }
-        } else {
-            $contentHtml = '<div class="alert alert-danger">404 - Page Not Found</div>';
-        }
-// */
-
         // 4. Resolve requested module/controller
         $contentHtml     = '';
         $controllerClass = null;
@@ -142,7 +99,10 @@ final class DashboardController
                 $rbac->require($userId, $requiredPerm);
             }
 
-            if ($controllerClass && class_exists($controllerClass)) {
+            if ($controllerClass === null) {
+                // Registry placeholder (e.g., "dashboard" landing)
+                $contentHtml = $this->renderLandingContent($username, $displayRole);
+            } elseif (class_exists($controllerClass)) {
                 $test2 = 'Module controller exists';
                 $controller = new $controllerClass($this->db);
 
@@ -190,6 +150,27 @@ final class DashboardController
         extract($viewData, EXTR_SKIP);
 
         // 7. Render the layout
-        require dirname(__DIR__) . '/views/layouts/DashboardLayout.php';
+        require dirname(__DIR__) . '/Views/layouts/DashboardLayout.php';
     }
+
+    /**
+     * Default landing content for the dashboard shell when no module is selected.
+     * Keep it minimal – you can swap this for a small include later if needed.
+     */
+    private function renderLandingContent(string $username, string $displayRole): string
+    {
+        $safeUser  = htmlspecialchars($username, ENT_QUOTES, 'UTF-8');
+        $safeRole  = htmlspecialchars($displayRole, ENT_QUOTES, 'UTF-8');
+
+        return <<<HTML
+        <div class="card shadow-sm">
+            <div class="card-body">
+            <h5 class="card-title mb-2">Welcome, {$safeUser}</h5>
+            <p class="text-muted mb-4">{$safeRole}</p>
+            <p class="mb-0">Use the sidebar to select a module. Your permissions determine which modules appear here.</p>
+            </div>
+        </div>
+        HTML;
+    }
+
 }
