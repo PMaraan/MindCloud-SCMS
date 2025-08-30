@@ -1,5 +1,5 @@
 <?php
-// root/app/factories/DatabaseFactory.php
+// /app/Factories/DatabaseFactory.php
 namespace App\Factories;
 
 use App\Interfaces\StorageInterface;

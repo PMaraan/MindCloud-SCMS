@@ -1,18 +1,39 @@
 <?php
-// root/app/models/AccountsModel.php
+// /app/Modules/Accounts/Models/AccountsModel.php
 declare(strict_types=1);
 
-namespace App\Models;
+namespace App\Modules\Accounts\Models;
 
 use App\Interfaces\StorageInterface;
 use PDO;
 
 final class AccountsModel {
     private PDO $pdo;
+    private string $driver;
 
     public function __construct(StorageInterface $db) {
         // $db is your PDO instance from DatabaseFactory
         $this->pdo = $db->getConnection();
+        $this->driver = (string)$this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+    }
+
+    /**
+     * Return a SQL snippet for LIMIT/OFFSET depending on the driver.
+     * Both $limit and $offset are clamped to sensible values.
+     */
+    private function limitOffsetClause(int $limit, int $offset): string {
+        // Both values already clamped below; safe to inline.
+        switch ($this->driver) {
+            case 'pgsql':
+            case 'mysql':
+                return "LIMIT $limit OFFSET $offset";
+            case 'sqlsrv': // SQL Server 2012+
+                return "OFFSET $offset ROWS FETCH NEXT $limit ROWS ONLY";
+            case 'oci':    // Oracle 12c+
+                return "OFFSET $offset ROWS FETCH NEXT $limit ROWS ONLY";
+            default:       // Best-effort default
+                return "LIMIT $limit OFFSET $offset";
+        }
     }
 
     /**
@@ -158,6 +179,10 @@ final class AccountsModel {
      * @return array{rows: array<int,array<string,mixed>>, total: int}
      */
     public function getUsersPage(?string $q, int $limit, int $offset): array {
+        // Defense-in-depth
+        $limit  = max(1, (int)$limit);
+        $offset = max(0, (int)$offset);
+
         // Build WHERE pieces portably (LOWER() LIKE) and trim id_no (CHAR(13))
         $where = ' WHERE 1=1 ';
         $params = [];
@@ -165,58 +190,68 @@ final class AccountsModel {
         if ($q !== null && $q !== '') {
             $where .= "
             AND (
-                    TRIM(u.id_no) LIKE :q        -- id_no is CHAR(13) in PG; TRIM for padding
+                TRIM(u.id_no) LIKE :q
                 OR LOWER(u.fname)      LIKE :q
                 OR LOWER(u.mname)      LIKE :q
                 OR LOWER(u.lname)      LIKE :q
                 OR LOWER(u.email)      LIKE :q
                 OR LOWER(r.role_name)  LIKE :q
                 OR LOWER(c.short_name) LIKE :q
-            )
-            ";
+            )";
             $params[':q'] = '%' . $q . '%'; // $q should already be lowercased by controller
         }
 
+        // Dev logging (optional)
+        if (defined('APP_ENV') && APP_ENV === 'dev') {
+            $probe = $this->pdo->query('SELECT COUNT(*) FROM users')->fetchColumn();
+            error_log('Probe users count = ' . (int)$probe);
+        }
+
         // ---- 1) Total count (respecting search) ----
-        $countSql = "
+        $stmtCount = $this->pdo->prepare("
             SELECT COUNT(*) AS total
             FROM users u
-        LEFT JOIN user_roles ur ON u.id_no = ur.id_no
-        LEFT JOIN roles r       ON ur.role_id = r.role_id
-        LEFT JOIN colleges c    ON ur.college_id = c.college_id
+            LEFT JOIN user_roles ur ON u.id_no = ur.id_no
+            LEFT JOIN roles r       ON ur.role_id = r.role_id
+            LEFT JOIN colleges c    ON ur.college_id = c.college_id
             $where
-        ";
-        $stmt = $this->pdo->prepare($countSql);
-        foreach ($params as $k => $v) $stmt->bindValue($k, $v);
-        $stmt->execute();
-        $total = (int)$stmt->fetchColumn();
+        ");
+        foreach ($params as $k => $v) $stmtCount->bindValue($k, $v);
+        $stmtCount->execute();
+        $total = (int)$stmtCount->fetchColumn();
 
         // ---- 2) Page rows ----
-        $listSql = "
+        $pageClause = $this->limitOffsetClause($limit, $offset); // Build page clause for pagination
+        $stmtUserList = $this->pdo->prepare("
             SELECT
                 u.id_no,
                 u.fname,
                 u.mname,
                 u.lname,
                 u.email,
+                ur.role_id,
+                ur.college_id,
                 COALESCE(r.role_name, '')  AS role_name,
                 COALESCE(c.short_name, '') AS college_short_name
             FROM users u
-        LEFT JOIN user_roles ur ON u.id_no = ur.id_no
-        LEFT JOIN roles r       ON ur.role_id = r.role_id
-        LEFT JOIN colleges c    ON ur.college_id = c.college_id
+            LEFT JOIN user_roles ur ON u.id_no = ur.id_no
+            LEFT JOIN roles r       ON ur.role_id = r.role_id
+            LEFT JOIN colleges c    ON ur.college_id = c.college_id
             $where
-        ORDER BY u.lname ASC, u.fname ASC
-            LIMIT :limit OFFSET :offset
-        ";
-        $stmt2 = $this->pdo->prepare($listSql);
-        foreach ($params as $k => $v) $stmt2->bindValue($k, $v);
-        $stmt2->bindValue(':limit',  $limit,  \PDO::PARAM_INT);
-        $stmt2->bindValue(':offset', $offset, \PDO::PARAM_INT);
-        $stmt2->execute();
+            ORDER BY u.lname ASC, u.fname ASC
+            $pageClause
+        ");
+        foreach ($params as $k => $v) $stmtUserList->bindValue($k, $v);
+        $stmtUserList->execute();
 
-        $rows = $stmt2->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+        $rows = $stmtUserList->fetchAll(\PDO::FETCH_ASSOC) ?: [];
 
+        // Dev logging (optional)
+        if (defined('APP_ENV') && APP_ENV === 'dev') {
+            error_log("accounts.page rows=" . count($rows) . " total={$total} limit={$limit} offset={$offset}");
+        }
+
+        // Return the result
         return ['rows' => $rows, 'total' => $total];
     }
 

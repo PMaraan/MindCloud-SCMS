@@ -1,5 +1,5 @@
 <?php
-// root/app/views/pages/accounts/CreateUserModal.php
+// /app/Views/pages/accounts/CreateUserModal.php
 // expects: $roles, $colleges, $csrf
 ?>
 <div class="modal fade" id="createUserModal" tabindex="-1" aria-labelledby="createUserModalLabel" aria-hidden="true">

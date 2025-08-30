@@ -572,3 +572,104 @@
 [28-Aug-2025 09:59:55 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
 [28-Aug-2025 09:59:55 Europe/Berlin] PHP Warning:  Undefined variable $pageName in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
 [28-Aug-2025 09:59:55 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 10:33:05 Europe/Berlin] PHP Warning:  Undefined variable $pageName in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 10:33:05 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 10:33:05 Europe/Berlin] PHP Warning:  Undefined variable $pageName in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 10:33:05 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Views\layouts\components\Sidebar.php on line 35
+[28-Aug-2025 11:44:17 Europe/Berlin] PHP Notice:  session_start(): Ignoring session_start() because a session is already active in C:\xampp\htdocs\MindCloud-SCMS\Router\router.php on line 7
+[2025-08-28T11:44:17+02:00] dev.CRITICAL [req:39efa46c1a3dd875] Call to undefined function route() | {"exception":"Error","code":0,"file":"C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\bootstrap.php","line":98,"trace":"#0 C:\\xampp\\htdocs\\MindCloud-SCMS\\public\\index.php(7): require_once()\n#1 {main}"}
+[2025-08-28T12:27:45+02:00] dev.CRITICAL [req:7a5e55e20618c290] Too few arguments to function App\Modules\Auth\Controllers\AuthController::__construct(), 0 passed in C:\xampp\htdocs\MindCloud-SCMS\Router\router.php on line 83 and exactly 1 expected | {"exception":"ArgumentCountError","code":0,"file":"C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Auth\\Controllers\\AuthController.php","line":16,"trace":"#0 C:\\xampp\\htdocs\\MindCloud-SCMS\\Router\\router.php(83): App\\Modules\\Auth\\Controllers\\AuthController->__construct()\n#1 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\bootstrap.php(98): route('/MindCloud-SCMS...', Object(App\\Models\\Postgres), 'GET')\n#2 C:\\xampp\\htdocs\\MindCloud-SCMS\\public\\index.php(7): require_once('C:\\\\xampp\\\\htdocs...')\n#3 {main}"}
+[29-Aug-2025 17:53:00 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[29-Aug-2025 17:53:02 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[29-Aug-2025 18:00:07 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[29-Aug-2025 18:00:07 Europe/Berlin] Probe users count = 17
+[29-Aug-2025 18:05:13 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[29-Aug-2025 18:05:15 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Aug-2025 04:52:18 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Aug-2025 04:52:18 Europe/Berlin] Probe users count = 17
+[30-Aug-2025 05:18:39 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Aug-2025 05:18:39 Europe/Berlin] Probe users count = 17
+[30-Aug-2025 05:18:39 Europe/Berlin] accounts.page rows=10 total=17 limit=10 offset=0
+[30-Aug-2025 05:18:39 Europe/Berlin] accounts.index total=17 rows=10
+[30-Aug-2025 05:18:39 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"A","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[30-Aug-2025 05:18:41 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Aug-2025 05:18:41 Europe/Berlin] Probe users count = 17
+[30-Aug-2025 05:18:41 Europe/Berlin] accounts.page rows=10 total=17 limit=10 offset=0
+[30-Aug-2025 05:18:41 Europe/Berlin] accounts.index total=17 rows=10
+[30-Aug-2025 05:18:41 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"A","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[2025-08-30T08:01:48+02:00] dev.CRITICAL [req:7448886966f56a75] Undefined constant App\Config\Permissions::COURSES_VIEW | {"exception":"Error","code":0,"file":"C:\\xampp\\htdocs\\MindCloud-SCMS\\config\\ModuleRegistry.php","line":33,"trace":"#0 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Controllers\\DashboardController.php(24): require()\n#1 C:\\xampp\\htdocs\\MindCloud-SCMS\\Router\\router.php(86): App\\Controllers\\DashboardController->__construct(Object(App\\Models\\Postgres))\n#2 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\bootstrap.php(98): route('/MindCloud-SCMS...', Object(App\\Models\\Postgres), 'GET')\n#3 C:\\xampp\\htdocs\\MindCloud-SCMS\\public\\index.php(7): require_once('C:\\\\xampp\\\\htdocs...')\n#4 {main}"}
+[30-Aug-2025 08:03:03 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Aug-2025 08:03:03 Europe/Berlin] Probe users count = 17
+[30-Aug-2025 08:03:03 Europe/Berlin] accounts.page rows=10 total=17 limit=10 offset=0
+[30-Aug-2025 08:03:03 Europe/Berlin] accounts.index total=17 rows=10
+[30-Aug-2025 08:03:03 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"A","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[30-Aug-2025 08:03:11 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Aug-2025 08:03:11 Europe/Berlin] Probe users count = 17
+[30-Aug-2025 08:03:11 Europe/Berlin] accounts.page rows=2 total=2 limit=10 offset=0
+[30-Aug-2025 08:03:11 Europe/Berlin] accounts.index total=2 rows=2
+[30-Aug-2025 08:03:11 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-40004","fname":"User7","mname":"","lname":"Dean","email":"dean4@lpunetwork.edu.ph","role_id":null,"college_id":null,"role_name":"","college_short_name":""}
+[30-Aug-2025 08:03:24 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Aug-2025 08:03:24 Europe/Berlin] Probe users count = 17
+[30-Aug-2025 08:03:24 Europe/Berlin] accounts.page rows=10 total=17 limit=10 offset=0
+[30-Aug-2025 08:03:24 Europe/Berlin] accounts.index total=17 rows=10
+[30-Aug-2025 08:03:24 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"A","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[30-Aug-2025 08:03:46 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Aug-2025 08:03:47 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Aug-2025 08:03:47 Europe/Berlin] Probe users count = 17
+[30-Aug-2025 08:03:47 Europe/Berlin] accounts.page rows=10 total=17 limit=10 offset=0
+[30-Aug-2025 08:03:47 Europe/Berlin] accounts.index total=17 rows=10
+[30-Aug-2025 08:03:47 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"A","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[30-Aug-2025 08:04:00 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Aug-2025 08:04:00 Europe/Berlin] Probe users count = 17
+[30-Aug-2025 08:04:00 Europe/Berlin] accounts.page rows=10 total=17 limit=10 offset=0
+[30-Aug-2025 08:04:00 Europe/Berlin] accounts.index total=17 rows=10
+[30-Aug-2025 08:04:00 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"A","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[30-Aug-2025 08:04:15 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Aug-2025 08:04:15 Europe/Berlin] Probe users count = 17
+[30-Aug-2025 08:04:15 Europe/Berlin] accounts.page rows=10 total=17 limit=10 offset=0
+[30-Aug-2025 08:04:15 Europe/Berlin] accounts.index total=17 rows=10
+[30-Aug-2025 08:04:15 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"A","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[30-Aug-2025 08:14:46 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Aug-2025 08:14:46 Europe/Berlin] Probe users count = 17
+[30-Aug-2025 08:14:46 Europe/Berlin] accounts.page rows=10 total=17 limit=10 offset=0
+[30-Aug-2025 08:14:46 Europe/Berlin] accounts.index total=17 rows=10
+[30-Aug-2025 08:14:46 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"A","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[30-Aug-2025 08:14:48 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Aug-2025 08:14:48 Europe/Berlin] Probe users count = 17
+[30-Aug-2025 08:14:48 Europe/Berlin] accounts.page rows=7 total=17 limit=10 offset=10
+[30-Aug-2025 08:14:48 Europe/Berlin] accounts.index total=17 rows=7
+[30-Aug-2025 08:14:48 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-60004","fname":"Chair","mname":"","lname":"Four","email":"chair4@lpunetwork.edu.ph","role_id":6,"college_id":1,"role_name":"Chair","college_short_name":"CCS"}
+[30-Aug-2025 08:14:52 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Aug-2025 08:14:52 Europe/Berlin] Probe users count = 17
+[30-Aug-2025 08:14:52 Europe/Berlin] accounts.page rows=10 total=17 limit=10 offset=0
+[30-Aug-2025 08:14:52 Europe/Berlin] accounts.index total=17 rows=10
+[30-Aug-2025 08:14:52 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"A","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[30-Aug-2025 08:14:56 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Aug-2025 08:14:56 Europe/Berlin] Probe users count = 17
+[30-Aug-2025 08:14:56 Europe/Berlin] accounts.page rows=2 total=2 limit=10 offset=0
+[30-Aug-2025 08:14:56 Europe/Berlin] accounts.index total=2 rows=2
+[30-Aug-2025 08:14:56 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-40004","fname":"User7","mname":null,"lname":"Dean","email":"dean4@lpunetwork.edu.ph","role_id":4,"college_id":null,"role_name":"Dean","college_short_name":""}
+[30-Aug-2025 08:14:58 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Aug-2025 08:14:58 Europe/Berlin] Probe users count = 17
+[30-Aug-2025 08:14:58 Europe/Berlin] accounts.page rows=2 total=2 limit=10 offset=0
+[30-Aug-2025 08:14:58 Europe/Berlin] accounts.index total=2 rows=2
+[30-Aug-2025 08:14:58 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-40004","fname":"User7","mname":null,"lname":"Dean","email":"dean4@lpunetwork.edu.ph","role_id":4,"college_id":null,"role_name":"Dean","college_short_name":""}
+[30-Aug-2025 08:15:00 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Aug-2025 08:15:00 Europe/Berlin] Probe users count = 17
+[30-Aug-2025 08:15:00 Europe/Berlin] accounts.page rows=10 total=17 limit=10 offset=0
+[30-Aug-2025 08:15:00 Europe/Berlin] accounts.index total=17 rows=10
+[30-Aug-2025 08:15:00 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"A","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[30-Aug-2025 08:15:07 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Aug-2025 08:15:07 Europe/Berlin] Probe users count = 17
+[30-Aug-2025 08:15:07 Europe/Berlin] accounts.page rows=1 total=1 limit=10 offset=0
+[30-Aug-2025 08:15:07 Europe/Berlin] accounts.index total=1 rows=1
+[30-Aug-2025 08:15:07 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-50001","fname":"Prince","mname":"E","lname":"Caparaz","email":"chair@lpunetwork.edu.ph","role_id":6,"college_id":1,"role_name":"Chair","college_short_name":"CCS"}
+[30-Aug-2025 08:15:18 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Aug-2025 08:15:18 Europe/Berlin] Probe users count = 17
+[30-Aug-2025 08:15:18 Europe/Berlin] accounts.page rows=0 total=0 limit=10 offset=0
+[30-Aug-2025 08:15:18 Europe/Berlin] accounts.index total=0 rows=0
+[30-Aug-2025 08:15:24 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Aug-2025 08:15:24 Europe/Berlin] Probe users count = 17
+[30-Aug-2025 08:15:24 Europe/Berlin] accounts.page rows=10 total=17 limit=10 offset=0
+[30-Aug-2025 08:15:24 Europe/Berlin] accounts.index total=17 rows=10
+[30-Aug-2025 08:15:24 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"A","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}

@@ -1,5 +1,5 @@
 <?php
-// root/app/Helpers/PasswordHelper.php
+// /app/Helpers/PasswordHelper.php
 declare(strict_types=1);
 
 namespace App\Helpers;

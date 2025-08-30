@@ -1,5 +1,5 @@
 <?php
-// root/app/views/pages/accounts/DeleteUserModal.php
+// /app/Views/pages/accounts/DeleteUserModal.php
 // expects: $csrf
 ?>
 <div class="modal fade" id="deleteUserModal" tabindex="-1" aria-hidden="true">

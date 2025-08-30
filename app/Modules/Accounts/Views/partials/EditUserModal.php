@@ -1,5 +1,4 @@
 <?php
-// /app/Views/pages/accounts/EditUserModal.php
 // expects: $csrf, $roles, $colleges
 ?>
 <div class="modal fade" id="editUserModal" tabindex="-1" aria-hidden="true">

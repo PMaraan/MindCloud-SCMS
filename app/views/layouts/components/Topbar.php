@@ -17,10 +17,21 @@
         </a>
       </li>
       <li class="nav-item">
-        <a class="header-link" href="<?= "$basePath/app/lib/logout.php" ?>" title="Logout">
-          <i class="bi bi-box-arrow-right fs-4"></i>
-        </a>
+        <form method="POST" action="<?= $basePath ?>/logout" class="d-inline">
+          <button class="header-link btn btn-link p-0 m-0 border-0" type="submit" title="Logout">
+            <i class="bi bi-box-arrow-right fs-4"></i>
+          </button>
+        </form>
       </li>
     </ul>
   </div>
 </nav>
+<?php
+/*
+<li class="nav-item">
+        <a class="header-link" href="<?= "$basePath/app/lib/logout.php" ?>" title="Logout">
+          <i class="bi bi-box-arrow-right fs-4"></i>
+        </a>
+      </li>
+*/
+?>

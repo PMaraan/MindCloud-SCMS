@@ -1,5 +1,5 @@
 <?php
-// root/app/bootstrap.php
+// /app/bootstrap.php
 
 // 1. Load config (defines APP_ENV, DB_DRIVER, BASE_PATH, etc.)
 require_once dirname(__DIR__) . '/config/config.php';
@@ -91,7 +91,7 @@ use App\Factories\DatabaseFactory;
 $db = DatabaseFactory::create(DB_DRIVER);
 
 // 5. Start router (function-style for now)
-require_once dirname(__DIR__) . '/router/router.php';
+require_once dirname(__DIR__) . '/Router/router.php';
 
 // Dispatch the request (normalize method default)
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';

@@ -1,5 +1,5 @@
 <?php
-// root/app/controllers/DashboardController.php
+// /app/Controllers/DashboardController.php
 declare(strict_types=1);
 
 namespace App\Controllers;

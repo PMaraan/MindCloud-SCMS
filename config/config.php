@@ -1,5 +1,5 @@
 <?php
-// root/config/config.php
+// /config/config.php
 
 // Load .env file if it exists
 $envFile = dirname(__DIR__) . '/.env';

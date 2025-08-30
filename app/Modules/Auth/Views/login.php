@@ -1,3 +1,12 @@
+<?php
+// Make sure CSRF token exists (router/controller sets it, but safe to re-check)
+if (empty($_SESSION['csrf_token_login'])) {
+  $_SESSION['csrf_token_login'] = bin2hex(random_bytes(32));
+}
+
+// Optional: show flash message
+$flash = \App\Helpers\FlashHelper::get();
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -17,22 +26,31 @@
 
       <!-- Right Content Area -->
       <div class="col-8 right">
-
-        <!-- Background Layer -->
         <div class="background-wrapper"></div>
 
-        <!-- Login Form Container -->
         <div class="col login-form-container">
           <div class="col login-form">
-            <!-- put anti csrf token... -->
+
+            <?php if (!empty($flash)): ?>
+              <?php
+                // Map your flash types to Bootstrap classes
+                $type = $flash['type'] ?? 'info';
+                $map = ['success'=>'success','error'=>'danger','warning'=>'warning','info'=>'info','danger'=>'danger'];
+                $class = $map[$type] ?? 'info';
+              ?>
+              <div class="alert alert-<?= htmlspecialchars($class) ?>"><?= htmlspecialchars($flash['message'] ?? '') ?></div>
+            <?php endif; ?>
+
             <form method="POST" action="<?= BASE_PATH ?>/login" autocomplete="off">
+              <!-- Anti-CSRF -->
+              <input type="hidden" name="csrf" value="<?= htmlspecialchars($_SESSION['csrf_token_login']) ?>">
 
               <!-- Email Input -->
               <div class="mb-3">
                 <label for="email-input" class="form-label">Email Address</label>
                 <input 
                   type="email" 
-                  name = "email"
+                  name="email"
                   class="form-control" 
                   id="email-input"
                   value="vpaa@lpunetwork.edu.ph" 
@@ -47,7 +65,7 @@
                 <label for="password-input" class="form-label">Password</label>
                 <input 
                   type="password" 
-                  name = "password"
+                  name="password"
                   class="form-control password-input" 
                   id="password-input"
                   value="password"
@@ -60,9 +78,7 @@
                 </div>
               </div>
 
-              <!-- Submit Button -->
               <button type="submit" class="btn btn-primary login-button">Login</button>
-
             </form>
           </div>
         </div>

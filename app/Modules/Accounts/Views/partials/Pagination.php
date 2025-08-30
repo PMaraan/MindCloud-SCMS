@@ -1,21 +1,27 @@
 <?php
-// /app/Views/pages/accounts/Pagination.php
-// expects $pager array
-$pg   = $pager['page'];
-$last = $pager['pages'];
-$base = $pager['baseUrl'];
+// /app/Modules/Accounts/Views/partials/Pagination.php
+// expects $pager array with keys:
+// page, pages, hasPrev, hasNext, prev, next, baseUrl, query
+
+$pg   = (int)$pager['page'];
+$last = (int)$pager['pages'];
+$base = (string)$pager['baseUrl']; // e.g. BASE_PATH . '/dashboard?page=accounts'
 $q    = $pager['query'] ?? null;
 
-// Build a helper for URLs that preserves q=
+// Helper: build URL preserving page=accounts and q, changing only pg
 $u = function (int $p) use ($base, $q): string {
-    $params = ['page' => 'accounts', 'pg' => $p];
-    if ($q !== null && $q !== '') $params['q'] = $q;
-    // We already have baseUrl with ?page=accounts, so we just append &...
-    $tail = http_build_query(['pg' => $p] + ($q ? ['q' => $q] : []));
-    return $base . (strpos($base, '?') === false ? '?' : '&') . $tail;
+    // $base should already include '?page=accounts'
+    // We only add/replace pg and optionally q
+    $params = ['pg' => $p];
+    if ($q !== null && $q !== '') {
+        $params['q'] = $q;
+    }
+    // Decide separator
+    $sep = (str_contains($base, '?') ? '&' : '?');
+    return $base . $sep . http_build_query($params);
 };
 
-// Optional: compact page window (e.g., current ±2)
+// Optional compact window
 $window = 2;
 $start  = max(1, $pg - $window);
 $end    = min($last, $pg + $window);

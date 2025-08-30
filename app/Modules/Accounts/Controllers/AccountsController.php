@@ -1,48 +1,43 @@
 <?php
-// root/app/controllers/AccountsController.php
+// /app/Modules/Accounts/Controllers/AccountsController.php
 declare(strict_types=1);
-
-namespace App\Controllers;
+namespace App\Modules\Accounts\Controllers;
 
 use App\Interfaces\StorageInterface;
-use App\Models\AccountsModel;
+use App\Modules\Accounts\Models\AccountsModel;
 use App\Helpers\FlashHelper;
 use App\Helpers\PasswordHelper;
 use App\Security\RBAC;
+// Delete these permissions after deprecated confirmation ...
+//use App\Config\Permissions;
+//use App\Helpers\RbacHelper;
+//use App\Helpers\View;
 
-final class AccountsController {
+final class AccountsController{
     private StorageInterface $db;
     private AccountsModel $model;
 
     public function __construct(StorageInterface $db) {
         $this->db = $db;
         $this->model = new AccountsModel($db);
-        if (session_status() !== \PHP_SESSION_ACTIVE) {
-            session_start();
+        if (defined('APP_ENV') && APP_ENV === 'dev') {
+            error_log('AccountsController using model: ' . get_class($this->model));
         }
+        if (session_status() !== \PHP_SESSION_ACTIVE) session_start();
     }
 
-    /**
-     * List users + show create modal.
-     */
     public function index(): string {
         // RBAC check
         (new RBAC($this->db))->require((string)$_SESSION['user_id'], 'AccountViewing');
 
-        // Read raw query (for echoing back to the user)
         $rawQ   = isset($_GET['q']) ? trim((string)$_GET['q']) : null;
-
-        // Normalized query for DB (lowercased; null if empty)
-        $search = ($rawQ !== null && $rawQ !== '') ? mb_strtolower($rawQ) : null;
-        error_log('accounts.search raw=' . var_export($rawQ, true) . ' normalized=' . var_export($search, true)); // For debugging only. Remove for production ...
+        $search = ($rawQ !== null && $rawQ !== '') ? mb_strtolower($rawQ) : null; // Make string lowercase or null
 
         $page    = max(1, (int)($_GET['pg'] ?? 1));
         $perPage = 10;
         $offset  = ($page - 1) * $perPage;
 
-        // Pass the normalized value to the model
         $result  = $this->model->getUsersPage($search, $perPage, $offset);
-
         $users   = $result['rows'];
         $total   = $result['total'];
         $pages   = max(1, (int)ceil($total / $perPage));
@@ -57,34 +52,49 @@ final class AccountsController {
             'prev'     => max(1, $page - 1),
             'next'     => min($pages, $page + 1),
             'baseUrl'  => BASE_PATH . '/dashboard?page=accounts',
-            'query'    => $rawQ, // ← keep original for the UI
+            'query'    => $rawQ,
         ];
 
         // Permission flags for RBAC
-        $canEdit = (new RBAC($this->db))->has((string)$_SESSION['user_id'], 'AccountModification');
-        $canDelete = (new RBAC($this->db))->has((string)$_SESSION['user_id'], 'AccountDeletion');
+        $rbac = new RBAC($this->db);
+        $uid  = (string)$_SESSION['user_id'];
+
+        // Load module actions from registry (path relative to this controller)
+        $registry = require dirname(__DIR__, 4) . '/config/ModuleRegistry.php';
+        $actions  = $registry['accounts']['actions'] ?? [];
+
+        // Check permissions
+        $canCreate = !empty($actions['create']) && $rbac->has($uid, $actions['create']);
+        $canEdit   = !empty($actions['edit'])   && $rbac->has($uid, $actions['edit']);
+        $canDelete = !empty($actions['delete']) && $rbac->has($uid, $actions['delete']);
 
         // Create modal dropdown data
-        $roles    = $this->model->getAllRoles();     // role_id, role_name
-        $colleges = $this->model->getAllColleges();  // college_id, short_name
+        $roles    = $this->model->getAllRoles();
+        $colleges = $this->model->getAllColleges();
 
-        // CSRF token (simple)
         if (empty($_SESSION['csrf_token'])) {
             $_SESSION['csrf_token'] = bin2hex(random_bytes(16));
         }
         $csrf = $_SESSION['csrf_token'];
 
-        // Render view and return HTML (keeps DashboardController flow)
+        if (defined('APP_ENV') && APP_ENV === 'dev') {
+            error_log("accounts.index total=" . $total . " rows=" . count($users));
+            if (!empty($users)) {
+                error_log("accounts.index firstRow=" . json_encode($users[0], JSON_UNESCAPED_SLASHES));
+            }
+        }
+
         ob_start();
         // Make vars visible in the view:
         /** @var array $users */
         /** @var array $pager */
+        /** @var bool $canCreate */
         /** @var bool $canEdit */
         /** @var bool $canDelete */
         /** @var array $roles */
         /** @var array $colleges */
         /** @var string $csrf */
-        require dirname(__DIR__) . '/views/pages/accounts/index.php';
+        require __DIR__ . '/../Views/index.php';
         return (string)ob_get_clean();
     }
 
@@ -206,7 +216,6 @@ final class AccountsController {
         if ($data['college_id'] === '') $data['college_id'] = null;
 
         // Update
-        // Later: check "edit_accounts" permission here
         $ok = $this->model->updateUserWithRoleCollege($data);
 
         if ($ok) {
@@ -234,7 +243,7 @@ final class AccountsController {
         // CSRF
         $token = $_POST['csrf'] ?? '';
         if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $token)) {
-            \App\Helpers\FlashHelper::set('danger', 'Invalid CSRF token.');
+            FlashHelper::set('danger', 'Invalid CSRF token.');
             header('Location: ' . BASE_PATH . '/dashboard?page=accounts');
             exit;
         }
@@ -243,7 +252,7 @@ final class AccountsController {
 
         // Basic validations
         if ($id_no === '') {
-            \App\Helpers\FlashHelper::set('danger', 'Missing user ID.');
+            FlashHelper::set('danger', 'Missing user ID.');
             header('Location: ' . BASE_PATH . '/dashboard?page=accounts');
             exit;
         }
@@ -255,14 +264,12 @@ final class AccountsController {
             exit;
         }
 
-        // TODO (later): RBAC check e.g. checkPermission('delete_accounts')
-
         $ok = $this->model->deleteUser($id_no);
 
         if ($ok) {
-            \App\Helpers\FlashHelper::set('success', 'User deleted successfully.');
+            FlashHelper::set('success', 'User deleted successfully.');
         } else {
-            \App\Helpers\FlashHelper::set('danger', 'Failed to delete user.');
+            FlashHelper::set('danger', 'Failed to delete user.');
         }
 
         header('Location: ' . BASE_PATH . '/dashboard?page=accounts');

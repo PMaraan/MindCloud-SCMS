@@ -1,5 +1,5 @@
 <?php
-  // root/app/views/layouts/components/Sidebar.php
+  // /app/Views/layouts/components/Sidebar.php
   // Expects $visibleModules
 ?>
 <!-- Sidebar Component -->
@@ -32,7 +32,7 @@
           <li class="nav-item">
             <a  href="<?= BASE_PATH ?>/dashboard?page=<?= urlencode($key) ?>" 
                 class="nav-link <?= ($current === $key) ? 'active' : '' ?>" 
-                data-page="<?= htmlspecialchars($pageName) ?>">
+                data-page="<?= htmlspecialchars($key) ?>">
               <?= htmlspecialchars($module['label'] ?? ucfirst($key)) ?>
             </a>
           </li>

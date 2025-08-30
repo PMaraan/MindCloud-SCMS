@@ -1,5 +1,5 @@
 <?php
-// root/app/Security/RBAC.php
+// /app/Security/RBAC.php
 declare(strict_types=1);
 
 namespace App\Security;

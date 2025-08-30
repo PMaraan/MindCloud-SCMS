@@ -1,5 +1,5 @@
 <?php
-// root/app/views/layouts/DashboardLayout.php
+// /app/Views/layouts/DashboardLayout.php
 
 /**
  * Variables expected:

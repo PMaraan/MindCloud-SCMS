@@ -1,5 +1,5 @@
 <?php
-// root/public/index.php
+// /public/index.php
 
 declare(strict_types=1);
 

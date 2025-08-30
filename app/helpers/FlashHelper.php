@@ -1,5 +1,5 @@
 <?php
-// root/app/helpers/FlashHelper.php
+// /app/Helpers/FlashHelper.php
 namespace App\Helpers;
 
 final class FlashHelper {

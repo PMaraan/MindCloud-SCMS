@@ -1,5 +1,5 @@
 <?php
-// root/app/autoload.php
+// /app/autoload.php
 
 /**
  * PSR-4 style autoloader for the App\ namespace.

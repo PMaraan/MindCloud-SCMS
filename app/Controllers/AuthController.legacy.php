@@ -1,8 +1,8 @@
 <?php
-// root/app/controllers/AuthController.php
+// /app/Controllers/AuthController.php
 declare(strict_types=1);
 
-namespace App\Controllers;
+namespace App\Controllers\Legacy; // added legacy to avoid namespace collisions
 
 use App\Interfaces\StorageInterface;
 use App\Models\UserModel;

@@ -1,5 +1,5 @@
 <?php
-// root/app/views/pages/accounts/AccountsTable.php
+// /app/Views/pages/accounts/AccountsTable.php
 // Uses $users, $canEdit, $canDelete
 ?>
 <div class="table-responsive">

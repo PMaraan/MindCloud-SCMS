@@ -1,4 +1,5 @@
 <?php
+// /app/Interfaces/StorageInterface.php
 namespace App\Interfaces;
 
 interface StorageInterface {

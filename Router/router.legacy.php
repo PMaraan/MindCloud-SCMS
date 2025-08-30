@@ -2,7 +2,7 @@
     // /Router/router.php
 
     use App\Controllers\DashboardController;
-    use App\Modules\Auth\Controllers\AuthController;
+    use App\Controllers\AuthController;
 
     /**
      * Build an absolute URL from BASE_PATH and a path.
