@@ -13,6 +13,11 @@ final class Permissions
     public const ACCOUNTS_EDIT   = 'AccountModification';
     public const ACCOUNTS_DELETE = 'AccountDeletion';
 
+    public const COLLEGES_VIEW   = 'CollegeViewing';
+    public const COLLEGES_CREATE = 'CollegeCreation';
+    public const COLLEGES_EDIT   = 'CollegeModification';
+    public const COLLEGES_DELETE = 'CollegeDeletion';
+
     public const COURSES_VIEW   = 'CourseViewing';
     public const COURSES_CREATE = 'CourseCreation';
     public const COURSES_EDIT   = 'CourseModification';
