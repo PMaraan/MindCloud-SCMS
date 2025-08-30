@@ -1,5 +1,5 @@
 <?php
-// app/Modules/Colleges/Controllers/CollegesController.php
+// /app/Modules/Colleges/Controllers/CollegesController.php
 declare(strict_types=1);
 
 namespace App\Modules\Colleges\Controllers;
@@ -7,6 +7,7 @@ namespace App\Modules\Colleges\Controllers;
 use App\Interfaces\StorageInterface;
 use App\Security\RBAC;
 use App\Helpers\FlashHelper;
+use App\Modules\Colleges\Models\CollegesModel;
 
 final class CollegesController
 {
@@ -14,46 +15,35 @@ final class CollegesController
 
     public function __construct(StorageInterface $db) {
         $this->db = $db;
-        if (session_status() !== \PHP_SESSION_ACTIVE) {
-            session_start();
-        }
+        if (session_status() !== \PHP_SESSION_ACTIVE) session_start();
     }
 
     public function index(): string {
-        // Resolve registry (for permission keys & actions)
         $registryPath = dirname(__DIR__, 4) . '/config/ModuleRegistry.php';
         $registry = is_file($registryPath) ? require $registryPath : [];
-        $def = $registry['colleges'] ?? [];
+        $def = $registry['colleges'] ?? []; // <- plural key
 
-        // Gate view permission if configured
         if (!empty($def['permission'])) {
             (new RBAC($this->db))->require((string)$_SESSION['user_id'], (string)$def['permission']);
         }
 
-        // Compute action gates (DB each request; no caching)
-        $uid = (string)($_SESSION['user_id'] ?? '');
+        $uid  = (string)($_SESSION['user_id'] ?? '');
         $rbac = new RBAC($this->db);
-        $actions = (array)($def['actions'] ?? []);
+        $actions   = (array)($def['actions'] ?? []);
         $canCreate = isset($actions['create']) && $rbac->has($uid, (string)$actions['create']);
         $canEdit   = isset($actions['edit'])   && $rbac->has($uid, (string)$actions['edit']);
         $canDelete = isset($actions['delete']) && $rbac->has($uid, (string)$actions['delete']);
 
-        // Optional search + pagination skeleton (you can remove if not needed)
         $rawQ   = isset($_GET['q']) ? trim((string)$_GET['q']) : null;
         $search = ($rawQ !== null && $rawQ !== '') ? mb_strtolower($rawQ) : null;
         $page    = max(1, (int)($_GET['pg'] ?? 1));
         $perPage = 10;
         $offset  = ($page - 1) * $perPage;
 
-        // TODO: call your model here when ready
-        // $model = new \App\Modules\Colleges\Models\CollegesModel($this->db);
-        // $result = $model->getPage($search, $perPage, $offset);
-        // $rows   = $result['rows'];
-        // $total  = $result['total'];
-
-        // Placeholder empty list
-        $rows  = [];
-        $total = 0;
+        $model  = new CollegesModel($this->db);
+        $result = $model->getPage($search, $perPage, $offset);
+        $rows   = $result['rows'];
+        $total  = $result['total'];
 
         $pages = max(1, (int)ceil($total / $perPage));
         $pager = [
@@ -65,12 +55,10 @@ final class CollegesController
             'hasNext'  => $page < $pages,
             'prev'     => max(1, $page - 1),
             'next'     => min($pages, $page + 1),
-            // Preserve module key in all links:
-            'baseUrl'  => BASE_PATH . '/dashboard?page=colleges',
+            'baseUrl'  => BASE_PATH . '/dashboard?page=colleges', // <- plural page
             'query'    => $rawQ,
         ];
 
-        // Expose to view
         $data = [
             'rows'      => $rows,
             'pager'     => $pager,
@@ -85,8 +73,117 @@ final class CollegesController
         return (string)ob_get_clean();
     }
 
-    // Example stubs (uncomment/implement when you need them):
-    // public function create(): void {}
-    // public function edit(): void {}
-    // public function delete(): void {}
+    public function create(): void {
+        $this->requireActionPermission('create');
+        $this->assertCsrf();
+
+        $data = [
+            'short_name'   => trim((string)($_POST['short_name'] ?? '')),
+            'college_name' => trim((string)($_POST['college_name'] ?? '')),
+        ];
+
+        $errors = [];
+        if ($data['short_name'] === '')   $errors[] = 'Short name is required.';
+        if ($data['college_name'] === '') $errors[] = 'College name is required.';
+
+        if ($errors) {
+            FlashHelper::error(implode(' ', $errors));
+            $this->redirect(BASE_PATH . '/dashboard?page=colleges');
+            return;
+        }
+
+        try {
+            $id = (new CollegesModel($this->db))->create($data);
+            FlashHelper::success('College created (ID ' . (int)$id . ').');
+        } catch (\Throwable $e) {
+            FlashHelper::error('Create failed: ' . $e->getMessage());
+        }
+
+        $this->redirect(BASE_PATH . '/dashboard?page=colleges');
+    }
+
+    public function edit(): void {
+        $this->requireActionPermission('edit');
+        $this->assertCsrf();
+
+        $id = (int)($_POST['id'] ?? 0);
+        if ($id <= 0) {
+            FlashHelper::error('Invalid ID.');
+            $this->redirect(BASE_PATH . '/dashboard?page=colleges');
+            return;
+        }
+
+        $data = [
+            'short_name'   => trim((string)($_POST['short_name'] ?? '')),
+            'college_name' => trim((string)($_POST['college_name'] ?? '')),
+        ];
+
+        $errors = [];
+        if ($data['short_name'] === '')   $errors[] = 'Short name is required.';
+        if ($data['college_name'] === '') $errors[] = 'College name is required.';
+
+        if ($errors) {
+            FlashHelper::error(implode(' ', $errors));
+            $this->redirect(BASE_PATH . '/dashboard?page=colleges');
+            return;
+        }
+
+        try {
+            $ok = (new CollegesModel($this->db))->update($id, $data);
+            $ok ? FlashHelper::success('College updated.')
+                : FlashHelper::warning('No changes were made.');
+        } catch (\Throwable $e) {
+            FlashHelper::error('Update failed: ' . $e->getMessage());
+        }
+
+        $this->redirect(BASE_PATH . '/dashboard?page=colleges');
+    }
+
+    public function delete(): void {
+        $this->requireActionPermission('delete');
+        $this->assertCsrf();
+
+        $id = (int)($_POST['id'] ?? 0);
+        if ($id <= 0) {
+            FlashHelper::error('Invalid ID.');
+            $this->redirect(BASE_PATH . '/dashboard?page=colleges');
+            return;
+        }
+
+        try {
+            $ok = (new CollegesModel($this->db))->delete($id);
+            $ok ? FlashHelper::success('College deleted.')
+                : FlashHelper::warning('College not found.');
+        } catch (\Throwable $e) {
+            FlashHelper::error('Delete failed: ' . $e->getMessage());
+        }
+
+        $this->redirect(BASE_PATH . '/dashboard?page=colleges');
+    }
+
+    private function requireActionPermission(string $key): void {
+        $registryPath = dirname(__DIR__, 4) . '/config/ModuleRegistry.php';
+        $registry = is_file($registryPath) ? require $registryPath : [];
+        $def = $registry['colleges'] ?? []; // <- plural key
+        $actions = (array)($def['actions'] ?? []);
+        $perm = (string)($actions[$key] ?? '');
+        if ($perm !== '') {
+            (new RBAC($this->db))->require((string)$_SESSION['user_id'], $perm);
+        }
+    }
+
+    private function assertCsrf(): void {
+        $token = (string)($_POST['csrf'] ?? '');
+        $sess  = (string)($_SESSION['csrf_token'] ?? '');
+        if ($token === '' || !hash_equals($sess, $token)) {
+            FlashHelper::error('Invalid CSRF token.');
+            $this->redirect(BASE_PATH . '/dashboard?page=colleges');
+            exit;
+        }
+    }
+
+    private function redirect(string $url): void {
+        header('Location: ' . $url);
+        exit;
+    }
 }

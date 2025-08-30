@@ -1,32 +1,38 @@
-<?php /* app/Modules/Colleges/Views/partials/Table.php */ ?>
-<?php
-// expects: $rows (array), $canEdit (bool), $canDelete (bool)
-?>
+<?php /* app/Modules/College/Views/partials/Table.php */ ?>
+<?php // expects: $rows (array), $canEdit (bool), $canDelete (bool) ?>
 <div class="table-responsive">
   <table class="table table-bordered table-striped table-hover align-middle">
     <thead class="table-light">
       <tr>
-        <th>#</th>
-        <th>Name</th>
-        <th>Code</th>
-        <th style="width:140px;" class="text-end">Actions</th>
+        <th style="width:90px;">ID</th>
+        <th style="width:160px;">Short Name</th>
+        <th>College Name</th>
+        <th style="width:180px;" class="text-end">Actions</th>
       </tr>
     </thead>
     <tbody>
     <?php if (!empty($rows)): ?>
       <?php foreach ($rows as $r): ?>
         <tr>
-          <td><?= htmlspecialchars((string)($r['id'] ?? ''), ENT_QUOTES) ?></td>
-          <td><?= htmlspecialchars((string)($r['name'] ?? ''), ENT_QUOTES) ?></td>
-          <td><?= htmlspecialchars((string)($r['code'] ?? ''), ENT_QUOTES) ?></td>
+          <td><?= (int)($r['college_id'] ?? 0) ?></td>
+          <td><?= htmlspecialchars((string)($r['short_name'] ?? ''), ENT_QUOTES) ?></td>
+          <td><?= htmlspecialchars((string)($r['college_name'] ?? ''), ENT_QUOTES) ?></td>
           <td class="text-end">
             <?php if ($canEdit): ?>
-              <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editModal">
+              <button class="btn btn-sm btn-outline-primary"
+                      data-bs-toggle="modal"
+                      data-bs-target="#editModal"
+                      data-id="<?= (int)$r['college_id'] ?>"
+                      data-short_name="<?= htmlspecialchars((string)$r['short_name'], ENT_QUOTES) ?>"
+                      data-college_name="<?= htmlspecialchars((string)$r['college_name'], ENT_QUOTES) ?>">
                 <i class="bi bi-pencil"></i> Edit
               </button>
             <?php endif; ?>
             <?php if ($canDelete): ?>
-              <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+              <button class="btn btn-sm btn-danger"
+                      data-bs-toggle="modal"
+                      data-bs-target="#deleteModal"
+                      data-id="<?= (int)$r['college_id'] ?>">
                 <i class="bi bi-trash"></i> Delete
               </button>
             <?php endif; ?>
@@ -42,3 +48,27 @@
     </tbody>
   </table>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const editModal = document.getElementById('editModal');
+  if (editModal) {
+    editModal.addEventListener('show.bs.modal', evt => {
+      const btn = evt.relatedTarget;
+      if (!btn) return;
+      editModal.querySelector('[name="id"]').value            = btn.getAttribute('data-id') || '';
+      editModal.querySelector('[name="short_name"]').value    = btn.getAttribute('data-short_name') || '';
+      editModal.querySelector('[name="college_name"]').value  = btn.getAttribute('data-college_name') || '';
+    });
+  }
+
+  const delModal = document.getElementById('deleteModal');
+  if (delModal) {
+    delModal.addEventListener('show.bs.modal', evt => {
+      const btn = evt.relatedTarget;
+      if (!btn) return;
+      delModal.querySelector('[name="id"]').value = btn.getAttribute('data-id') || '';
+    });
+  }
+});
+</script>

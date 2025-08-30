@@ -32,9 +32,9 @@ return [
         'permission' => Permissions::COLLEGES_VIEW,
         'controller' => CollegesController::class,
         'actions'    => [
-        'create' => Permissions::COLLEGES_CREATE,
-        'edit'   => Permissions::COLLEGES_EDIT,
-        'delete' => Permissions::COLLEGES_DELETE,
+            'create' => Permissions::COLLEGES_CREATE,
+            'edit'   => Permissions::COLLEGES_EDIT,
+            'delete' => Permissions::COLLEGES_DELETE,
         ],
     ],
     'courses' => [
