@@ -799,3 +799,18 @@
 [30-Aug-2025 12:17:32 Europe/Berlin] accounts.page rows=7 total=17 limit=10 offset=10
 [30-Aug-2025 12:17:32 Europe/Berlin] accounts.index total=17 rows=7
 [30-Aug-2025 12:17:32 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-60004","fname":"Chair","mname":"","lname":"Four","email":"chair4@lpunetwork.edu.ph","role_id":6,"college_id":1,"role_name":"Chair","college_short_name":"CCS"}
+[01-Sep-2025 00:43:17 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[01-Sep-2025 00:43:17 Europe/Berlin] Probe users count = 17
+[01-Sep-2025 00:43:17 Europe/Berlin] accounts.page rows=7 total=17 limit=10 offset=10
+[01-Sep-2025 00:43:17 Europe/Berlin] accounts.index total=17 rows=7
+[01-Sep-2025 00:43:17 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-60004","fname":"Chair","mname":"","lname":"Four","email":"chair4@lpunetwork.edu.ph","role_id":6,"college_id":1,"role_name":"Chair","college_short_name":"CCS"}
+[01-Sep-2025 14:49:27 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[01-Sep-2025 14:49:27 Europe/Berlin] Probe users count = 17
+[01-Sep-2025 14:49:27 Europe/Berlin] accounts.page rows=7 total=17 limit=10 offset=10
+[01-Sep-2025 14:49:27 Europe/Berlin] accounts.index total=17 rows=7
+[01-Sep-2025 14:49:27 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-60004","fname":"Chair","mname":"","lname":"Four","email":"chair4@lpunetwork.edu.ph","role_id":6,"college_id":1,"role_name":"Chair","college_short_name":"CCS"}
+[01-Sep-2025 14:49:31 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[01-Sep-2025 14:49:31 Europe/Berlin] Probe users count = 17
+[01-Sep-2025 14:49:31 Europe/Berlin] accounts.page rows=10 total=17 limit=10 offset=0
+[01-Sep-2025 14:49:31 Europe/Berlin] accounts.index total=17 rows=10
+[01-Sep-2025 14:49:31 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"A","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}

@@ -1,5 +1,5 @@
 <?php /* app/Modules/Colleges/Views/partials/DeleteModal.php */ ?>
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="deleteCollegesModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <form method="POST" action="<?= BASE_PATH ?>/dashboard?page=colleges&action=delete">

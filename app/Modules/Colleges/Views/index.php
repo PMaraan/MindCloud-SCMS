@@ -11,7 +11,7 @@
     </form>
 
     <?php if (!empty($canCreate)): ?>
-      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createModal">
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createCollegesModal">
         + Create
       </button>
     <?php endif; ?>

@@ -21,7 +21,7 @@
             <?php if ($canEdit): ?>
               <button class="btn btn-sm btn-outline-primary"
                       data-bs-toggle="modal"
-                      data-bs-target="#editModal"
+                      data-bs-target="#editCollegesModal"
                       data-id="<?= (int)$r['college_id'] ?>"
                       data-short_name="<?= htmlspecialchars((string)$r['short_name'], ENT_QUOTES) ?>"
                       data-college_name="<?= htmlspecialchars((string)$r['college_name'], ENT_QUOTES) ?>">
@@ -31,7 +31,7 @@
             <?php if ($canDelete): ?>
               <button class="btn btn-sm btn-danger"
                       data-bs-toggle="modal"
-                      data-bs-target="#deleteModal"
+                      data-bs-target="#deleteCollegesModal"
                       data-id="<?= (int)$r['college_id'] ?>"
                       data-short_name="<?= htmlspecialchars((string)$r['short_name'], ENT_QUOTES) ?>"
                       data-college_name="<?= htmlspecialchars((string)$r['college_name'], ENT_QUOTES) ?>">
