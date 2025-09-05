@@ -1,0 +1,493 @@
+:root{
+  --maroon: #660003;
+  --bg: #eef1f4;
+  --page-shadow: 0 4px 24px rgba(16,24,40,.08);
+  --page-border: #e5e7eb;
+  --sidebar-bg: #f8f9fb;
+  --sidebar-border: #e5e7eb;
+
+  --A4-w: 794px;   --A4-h: 1123px;
+  --Letter-w: 816px; --Letter-h: 1056px;
+  --Legal-w: 816px;  --Legal-h: 1344px;
+
+  /* NEW: topbar height */
+  --topbar-h: 56px;
+
+  --sb-w: 320px;
+  --sb-w-collapsed: 48px;
+}
+
+*{ box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin:0; background: var(--bg); font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+
+/* Top bar */
+#mc-topbar { position: relative; top:0; z-index: 1040; }
+.bg-maroon{ background: var(--maroon); }
+
+/* logo pinned at the far left, centered vertically */
+.mc-logo{
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 64px; /* fits inside the bar */
+  width: auto;
+  display: block;
+}
+
+/* unified, centered controls strip */
+#mc-topbar .container-fluid {
+  display: flex;
+  justify-content: center;   /* center everything */
+  align-items: center;
+  flex-wrap: wrap;           /* wrap if too many buttons */
+  gap: .25rem;
+  min-height: var(--topbar-h);     /* THICKNESS MATCH */
+  padding: .25rem 0;               /* breathing room */
+}
+
+#mc-topbar .form-control-color {
+  height: calc(2rem + 2px);
+  width: 40px;
+  padding: 2px;
+  border-radius: .5rem;
+  border: 1px solid rgba(255,255,255,.25);
+  background: rgba(255,255,255,.1);
+}
+
+
+.top-label { font-size: .8rem; opacity: .9; }
+.top-select { width: 120px; }
+
+/* make selects & buttons look good on maroon bar */
+#mc-topbar .form-select,
+#mc-topbar .btn {
+  height: calc(2rem + 2px);
+  line-height: 1.25rem;
+  padding: .375rem .5rem;
+  border-radius: .5rem;
+  border-color: rgba(255,255,255,.25);
+}
+#mc-topbar .form-select {
+  background-color: rgba(255,255,255,.1);
+  color: #fff;
+}
+#mc-topbar .form-select option { color:#000; }
+
+/* TipTap icon buttons */
+/* Smaller TipTap icon buttons */
+#mc-topbar .btn-icon {
+  background: transparent;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.25);
+  border-radius: .4rem;
+  padding: 0.25rem 0.4rem;   /* was .4rem .6rem */
+  font-size: 0.85rem;        /* was 1rem */
+  line-height: 1;            /* keep icons centered */
+}
+
+#mc-topbar .btn-icon i {
+  font-size: 0.9rem;         /* directly shrink the <i> icons */
+}
+
+#mc-topbar .btn-icon:hover{ background: rgba(255,255,255,.12); }
+.toolbar-sep{ width:1px; height:24px; background: rgba(255,255,255,.25); margin: 0 .25rem; }
+.dropdown-menu-dark .dropdown-item{ font-size: .9rem; }
+
+/* Shell layout */
+#gutter, .gutter{ display:none !important; }
+
+/* Shell fills the viewport below the topbar so children can scroll */
+#mc-shell{
+  display: grid;
+  grid-template-columns: minmax(0,1fr) var(--sb-w);
+  transition: grid-template-columns .2s ease;
+  height: calc(100vh - var(--topbar-h));
+  /* IMPORTANT: let grid children be allowed to overflow/scroll */
+  min-height: 0;
+}
+#mc-shell.sb-collapsed{
+  grid-template-columns: minmax(0,1fr) var(--sb-w-collapsed);
+}
+/* Work area = the ONLY scroll container for pages */
+#mc-work{
+  /* takes the left column and scrolls; scrollbar appears left of the sidebar */
+  overflow: auto;
+  min-height: 0;                 /* required for proper overflow in grids */
+  padding: 16px 0 64px;
+
+  /* center pages + STACK vertically */
+  display: flex;
+  flex-direction: column;         /* vertical stack */
+  align-items: center;            /* horizontal centering */
+  gap: 32px;                      /* space between pages */
+  width: 100%;
+}
+
+/* Page */
+.page{
+  width: var(--A4-w);
+  min-height: var(--A4-h);
+  background: #fff;
+  border: 1px solid var(--page-border);
+  border-radius: 6px;
+  box-shadow: var(--page-shadow);
+  overflow:hidden;
+  position: relative;
+  padding-bottom: 56px;
+}
+.page:focus {
+  outline: none;            /* remove browser default */
+  box-shadow: var(--page-shadow); /* keep normal shadow */
+}
+
+
+
+/* Header layout: logo fixed left, titles centered */
+
+/* uploader lives at the same spot as old placeholder */
+/* logo pinned left */
+.logo-upload {
+  position: absolute;
+  left: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 72px;   /* bigger logo */
+  height: 72px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+
+/* fallback dashed box when no image yet */
+.logo-upload .logo-fallback{
+  width: 100%;
+  height: 100%;
+  border: 1px dashed #cbd5e1;
+  border-radius: 4px;
+  display: block;
+}
+
+/* the preview image */
+.logo-upload img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;   /* change to contain if you prefer full logo */
+  border-radius: 4px;
+  display: none;       /* hidden until a file is chosen */
+  background: transparent;
+}
+
+/* when we have a logo, hide the dashed box and show img */
+.logo-upload.has-image .logo-fallback{ display: none; }
+.logo-upload.has-image img{ display: block; }
+
+/* Footer inside the page */
+.page-footer{
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: #6b7280;                  /* slate-500 */
+  pointer-events: auto;
+}
+
+/* Only the left text is editable */
+.page-footer .footer-left[contenteditable="true"]{
+  min-width: 24px;
+  outline: none;
+  border-bottom: 1px dashed transparent;
+}
+.page-footer .footer-left[contenteditable="true"]:focus{
+  border-bottom-color: #cbd5e1;    /* subtle cue while editing */
+}
+
+/* Optional placeholder behavior for empty footer text */
+.page-footer .footer-left:empty:before{
+  content: attr(data-placeholder);
+  color: #9ca3af;
+}
+
+/* Centered stack */
+.header-center{   
+  text-align: center;
+}
+
+/* Header layout */
+.page-header {
+  position: relative;
+  border-bottom: 1px solid var(--page-border);
+  padding: 16px 20px 12px 20px; /* remove large left padding */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Title + subtitle are editable text, not containers */
+.page-header .title[contenteditable],
+.page-header .subtitle[contenteditable]{
+  cursor: text;
+  outline: none;                /* no blue outline when focused */
+  -webkit-user-modify: read-write-plaintext-only; /* prevents weird rich paste in Safari */
+}
+
+.header-center{
+  max-width: 80%;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.page-header .title{ margin: 0 0 4px; font-weight: 700; font-size: 1.35rem; }
+.page-header .subtitle{ margin: 0; font-size: .95rem; color: #6b7280; }
+
+/* ===== Split Cell modal ===== */
+.mc-modal {
+  position: fixed; inset: 0; z-index: 2000;
+  display: grid; place-items: center;
+  background: rgba(17,24,39,.35);
+}
+.mc-dialog {
+  background:#fff; border:1px solid #e5e7eb; border-radius:12px;
+  min-width:320px; max-width:360px; padding:16px;
+  box-shadow:0 20px 60px rgba(0,0,0,.18);
+  font-size:14px;
+}
+.mc-dialog h3 { margin:0 0 8px; font-size:18px; }
+.mc-dialog .row { display:grid; grid-template-columns:1fr auto; gap:8px; align-items:center; margin:8px 0; }
+.mc-dialog input[type="number"] {
+  width:88px; padding:6px 8px; border:1px solid #d1d5db; border-radius:8px;
+}
+.mc-dialog .actions { display:flex; justify-content:flex-end; gap:8px; margin-top:12px; }
+.mc-btn { border:1px solid #d1d5db; background:#fff; padding:6px 10px; border-radius:8px; cursor:pointer; }
+.mc-btn.primary { background:#7b0f14; color:#fff; border-color:#7b0f14; }
+.mc-btn[disabled]{ opacity:.5; cursor:not-allowed; }
+
+
+
+
+
+
+/* --- Table inline toolbar --- */
+.mc-table-toolbar{
+  position:absolute;
+  right:10px;
+  top:-12px;
+  display:flex;
+  gap:6px;
+  align-items:center;
+  background:#fff;
+  border:1px solid #e5e7eb;
+  border-radius:8px;
+  padding:4px 6px;
+  box-shadow: 0 2px 10px rgba(16,24,40,.05);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .15s ease;
+  z-index:3;
+}
+.mc-table-active .mc-table-toolbar{ opacity:1; pointer-events:auto; }
+.mc-table-toolbar button{
+  border:1px solid #e5e7eb;
+  background:#fff;
+  border-radius:6px;
+  padding:2px 6px;
+  font-size:12px;
+  line-height:1.2;
+  cursor:pointer;
+}
+.mc-table-toolbar button:hover{ background:#f8fafc; }
+.mc-table-toolbar .sep{ width:1px; height:16px; background:#e5e7eb; }
+
+/* --- Resize grips --- */
+.mc-col-grips, .mc-row-grips{
+  position:absolute; inset:0;
+  pointer-events:none; z-index:2;
+}
+.mc-grip-x, .mc-grip-y{
+  position:absolute;
+  background:transparent;
+  pointer-events:auto;
+}
+.mc-grip-x{
+  width:6px; cursor:col-resize;
+  top:0; bottom:0;
+}
+.mc-grip-y{
+  height:6px; cursor:row-resize;
+  left:0; right:0;
+}
+
+/* subtle visible rails when hovering grips */
+.mc-grip-x::before, .mc-grip-y::before{
+  content:'';
+  position:absolute; inset:0;
+  background:rgba(123,15,20,.08);
+  opacity:0;
+  transition:opacity .12s;
+  border-radius:2px;
+}
+.mc-grip-x:hover::before, .mc-grip-y:hover::before{ opacity:1; }
+
+
+
+
+/* TipTap content */
+.tiptap{ padding: 24px 28px 48px; min-height: 600px; }
+.tiptap { padding-bottom: 72px; }  /* a bit more bottom padding */
+.tiptap p{ margin: 0 0 .75rem; }
+.tiptap h1{ font-size: 1.5rem; margin: 1rem 0 .5rem; }
+.tiptap h2{ font-size: 1.25rem; margin: 1rem 0 .5rem; }
+.tiptap h3{ font-size: 1.125rem; margin: 1rem 0 .5rem; }
+.tiptap blockquote{ border-left: 4px solid #e5e7eb; padding-left: 12px; color: #6b7280; }
+.tiptap pre{ background: #0b1020; color:#e2e8f0; padding: 10px; border-radius: 8px; overflow:auto; }
+.tiptap a{ color: #0d6efd; text-decoration: underline; }
+
+/* Remove the black border inside the page when editing */
+.tiptap:focus {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+
+/* Sidebar base */
+#mc-sidebar{
+  position: sticky;
+  top: var(--topbar-h);
+  height: calc(100vh - var(--topbar-h));
+  overflow: auto;
+  background: var(--sidebar-bg);
+  border-left: 1px solid var(--sidebar-border);
+  padding: 12px;
+  width: var(--sb-w);
+  transition: width .2s ease, padding .2s ease;
+  z-index: 2;
+}
+
+/* Collapsed: keep grid visible, but hide all items EXCEPT the toggle */
+#mc-shell.sb-collapsed #mc-sidebar{
+  width: var(--sb-w-collapsed);
+  padding: 8px;
+}
+
+#mc-shell.sb-collapsed #mc-sidebar .d-grid{ display:grid; gap:8px; }
+#mc-shell.sb-collapsed #mc-sidebar .d-grid .sb-item:not(#sb-toggle){ display:none; }
+
+/* Toggle styled like a normal item so spacing matches */
+#sb-toggle{
+  display:flex; align-items:center; justify-content:center;
+  gap:8px; width:100%;
+  padding:8px 10px; margin-bottom:8px;
+  border:1px solid #d9dce3; border-radius:8px;
+  background:#fff; color:#111827; cursor:pointer;
+}
+#sb-toggle:hover{ background:#f8fafc; }
+
+
+.sb-item{ display:flex; align-items:center; gap:8px; border: 1px solid #d9dce3; background: #fff; color: #111827; padding: 8px 10px; border-radius: 8px; text-align:left; cursor: grab; }
+.sb-item:active{ cursor: grabbing; }
+.sb-item:hover{ background:#f8fafc; }
+
+/* Drop feedback */
+.page.drag-over{ box-shadow: 0 0 0 3px rgba(123,15,20,.25), var(--page-shadow); }
+
+/* Paper sizes */
+.page.size-A4{ width: var(--A4-w); min-height: var(--A4-h); }
+.page.size-Letter{ width: var(--Letter-w); min-height: var(--Letter-h); }
+.page.size-Legal{ width: var(--Legal-w); min-height: var(--Legal-h); }
+
+/* Centered TipTap toolbar grouping */
+#tt-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: .25rem;
+}
+
+/* Active state tint */
+#tt-toolbar .btn-icon.active{
+  background: rgba(255,255,255,.16)!important;
+  border-color: rgba(255,255,255,.4)!important;
+}
+
+/* === TB-like blocks inside TipTap === */
+.tb-block{
+  position: relative;
+  padding-left: 28px;             /* room for the handle */
+  margin: 18px 0;
+}
+.tb-block .tb-handle{
+  position:absolute; left:0; top:6px;
+  width:22px; height:18px;
+  display:flex; align-items:center; justify-content:center;
+  color:#6b7280; cursor:grab; user-select:none;
+}
+.tb-block .tb-handle::before{ content:"\22EE"; font-size:18px; line-height:1; } /* ⋮ */
+.tb-block .tb-handle:active{ cursor:grabbing; }
+.tb-block .tb-body{ width:100%; }
+
+/* Label */
+.tb-label [data-ce]{ font-weight:700; letter-spacing:.02em; }
+
+/* Paragraph */
+.tb-paragraph [data-ce]{ white-space:pre-wrap; }
+
+/* Text Field (single line box) */
+.tb-input-line{
+  border:1px solid #111; border-radius:4px;
+  padding:8px 10px; min-height:38px;
+}
+.tb-input-line[data-ce]:empty::before{ content:"Text Field"; color:#9ca3af; }
+
+/* Text Area (large box) */
+.tb-textarea{
+  border:1px solid #111; border-radius:4px;
+  min-height:160px; padding:12px;
+}
+.tb-textarea[data-ce]:empty::before{ content:"Text Area"; color:#9ca3af; }
+
+/* Table */
+.tb-table table{ width:100%; border-collapse:collapse; table-layout:fixed; }
+.tb-table td{ border:1px solid #cbd5e1; padding:10px; vertical-align:top; }
+.tb-table td[data-ce]:empty::before{ content:"TABLE"; color:#9ca3af; }
+
+/* Signature row (4 columns) */
+.tb-signatures .sig-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:28px; }
+.tb-signatures .sig-box{
+  border:1px dashed #cbd5e1; border-radius:8px; height:58px;
+  display:flex; align-items:center; justify-content:center; margin-bottom:8px;
+}
+.tb-signatures .sig-labels{ border-top:2px solid #111; padding-top:6px; text-align:center; font-size:13px; color:#111; }
+.tb-signatures .sig-labels span{ display:block; line-height:1.3; }
+.tb-signatures .sig-labels .muted{ color:#6b7280; }
+
+/* Visual drop marker when reordering */
+.tb-drop-marker{ height:8px; margin:4px 0; outline:2px dashed #9ca3af; outline-offset:-3px; }
+
+/* remove the outer box for these three */
+.mc-block.mc-textfield,
+.mc-block.mc-label,
+.mc-block.mc-paragraph {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* keep underline only for text field */
+.mc-textfield .element-body {
+  border-bottom: 1px solid #9ca3af;
+}
+
+/* label / paragraph have no borders */
+.mc-label .element-body,
+.mc-paragraph .element-body {
+  border: 0;
+}
+
+
