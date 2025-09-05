@@ -3,6 +3,7 @@
 
     use App\Controllers\DashboardController;
     use App\Modules\Auth\Controllers\AuthController;
+    use App\Interfaces\StorageInterface;
 
     /**
      * Build an absolute URL from BASE_PATH and a path.
@@ -60,7 +61,7 @@
      * @param mixed  $db
      * @param string $method
      */
-    function route(string $uri, $db, string $method = 'GET'): void
+    function route(string $uri, StorageInterface $db, string $method = 'GET'): void
     {
         $method = strtoupper($method);
         $path = normalize_path($uri);

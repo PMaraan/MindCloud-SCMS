@@ -5,7 +5,7 @@ use App\Config\Permissions;
 use App\Modules\Accounts\Controllers\AccountsController;
 use App\Modules\Colleges\Controllers\CollegesController;
 use App\Modules\Courses\Controllers\CoursesController;
-// use App\Controllers\ProgramsController;
+use App\Modules\Programs\Controllers\ProgramsController;
 // use App\Controllers\RolesController; // might be deprecated. remove for production ...
 // use App\Controllers\TemplatesController;
 // use App\Controllers\SyllabusController;
@@ -45,6 +45,16 @@ return [
             'create' => Permissions::COURSES_CREATE,
             'edit'   => Permissions::COURSES_EDIT,
             'delete' => Permissions::COURSES_DELETE,
+        ],
+    ],
+    'programs' => [
+        'label'      => 'Programs',
+        'controller' => ProgramsController::class,
+        'permission' => Permissions::PROGRAMS_VIEW,
+        'actions'    => [
+            'create' => Permissions::PROGRAMS_CREATE,
+            'edit'   => Permissions::PROGRAMS_EDIT,
+            'delete' => Permissions::PROGRAMS_DELETE,
         ],
     ],
     // add more...

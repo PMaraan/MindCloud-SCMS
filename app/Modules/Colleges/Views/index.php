@@ -23,7 +23,7 @@
         $from = $pager['total'] === 0 ? 0 : (($pager['page'] - 1) * $pager['perPage'] + 1);
         $to   = min($pager['total'], $pager['page'] * $pager['perPage']);
       ?>
-      Showing <?= $from ?>-<?= $to ?> of <?= (int)$pager['total'] ?>
+      Showing <strong><?= $from ?></strong>-<strong><?= $to ?></strong> of <strong><?= (int)$pager['total'] ?></strong>
       <?php if (!empty($pager['query'])): ?>
         for “<?= htmlspecialchars($pager['query'], ENT_QUOTES, 'UTF-8') ?>”
       <?php endif; ?>
@@ -39,7 +39,15 @@
     <?php include __DIR__ . '/partials/Pagination.php'; ?>
   </div>
 
+
   <?php if (!empty($canCreate)) include __DIR__ . '/partials/CreateModal.php'; ?>
   <?php if (!empty($canEdit))   include __DIR__ . '/partials/EditModal.php'; ?>
   <?php if (!empty($canDelete)) include __DIR__ . '/partials/DeleteModal.php'; ?>
 </div>
+
+<?php
+$jsPath = '/public/assets/js/colleges.js';
+$ver = @filemtime($_SERVER['DOCUMENT_ROOT'] . $jsPath) ?: '1';
+?>
+<script defer src="<?= BASE_PATH . $jsPath ?>?v=<?= urlencode((string)$ver) ?>"></script>
+

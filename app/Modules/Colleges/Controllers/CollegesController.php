@@ -8,6 +8,8 @@ use App\Interfaces\StorageInterface;
 use App\Security\RBAC;
 use App\Helpers\FlashHelper;
 use App\Modules\Colleges\Models\CollegesModel;
+use App\Models\UserModel;
+use App\Services\AssignmentsService;
 
 final class CollegesController
 {
@@ -23,6 +25,7 @@ final class CollegesController
         $registry = is_file($registryPath) ? require $registryPath : [];
         $def = $registry['colleges'] ?? []; // <- plural key
 
+        // If access requires a permission, check user permission
         if (!empty($def['permission'])) {
             (new RBAC($this->db))->require((string)$_SESSION['user_id'], (string)$def['permission']);
         }
@@ -59,12 +62,15 @@ final class CollegesController
             'query'    => $rawQ,
         ];
 
+        // Get a list of users who are deans.
+        $deans = (new UserModel($this->db))->listUsersByRole('Dean');
         $data = [
-            'rows'      => $rows,
-            'pager'     => $pager,
-            'canCreate' => $canCreate,
-            'canEdit'   => $canEdit,
-            'canDelete' => $canDelete,
+        'rows'      => $rows,
+        'pager'     => $pager,
+        'canCreate' => $canCreate,
+        'canEdit'   => $canEdit,
+        'canDelete' => $canDelete,
+        'deans'     => $deans,
         ];
         extract($data, EXTR_SKIP);
 
@@ -81,6 +87,7 @@ final class CollegesController
             'short_name'   => trim((string)($_POST['short_name'] ?? '')),
             'college_name' => trim((string)($_POST['college_name'] ?? '')),
         ];
+        $deanIdNo = trim((string)($_POST['dean_id_no'] ?? ''));
 
         $errors = [];
         if ($data['short_name'] === '')   $errors[] = 'Short name is required.';
@@ -94,7 +101,18 @@ final class CollegesController
 
         try {
             $id = (new CollegesModel($this->db))->create($data);
-            FlashHelper::set('success', 'College created (ID ' . (int)$id . ').');
+            // Optional dean handling (non-blocking): only runs if a dean was selected
+            if ($deanIdNo !== '') {
+                try {
+                    (new AssignmentsService($this->db))->setCollegeDean((int)$id, $deanIdNo);
+                    FlashHelper::set('success', 'College created (ID ' . (int)$id . '). Dean assigned.');
+                } catch (\DomainException $e) {
+                    // Business-rule error (e.g., selected user is not a Dean)
+                    FlashHelper::set('warning', 'College created (ID ' . (int)$id . '), but dean not assigned: ' . $e->getMessage());
+                }
+            } else {
+                FlashHelper::set('success', 'College created (ID ' . (int)$id . ').');
+            }
         } catch (\Throwable $e) {
             FlashHelper::set('danger', 'Create failed: ' . $e->getMessage());
         }
@@ -117,6 +135,7 @@ final class CollegesController
             'short_name'   => trim((string)($_POST['short_name'] ?? '')),
             'college_name' => trim((string)($_POST['college_name'] ?? '')),
         ];
+        $deanIdNo = trim((string)($_POST['dean_id_no'] ?? ''));
 
         $errors = [];
         if ($data['short_name'] === '')   $errors[] = 'Short name is required.';
@@ -130,8 +149,13 @@ final class CollegesController
 
         try {
             $ok = (new CollegesModel($this->db))->update($id, $data);
-            $ok ? FlashHelper::set('success', 'College updated.')
-                : FlashHelper::set('warning', 'No changes were made.');
+            try {
+                (new \App\Services\AssignmentsService($this->db))->setCollegeDean($id, $deanIdNo !== '' ? $deanIdNo : null);
+                $ok ? FlashHelper::set('success', 'College updated.')
+                    : FlashHelper::set('warning', 'No changes were made.');
+            } catch (\DomainException $e) {
+                FlashHelper::set('warning', 'College updated, but dean not assigned: ' . $e->getMessage());
+            }
         } catch (\Throwable $e) {
             FlashHelper::set('danger', 'Update failed: ' . $e->getMessage());
         }

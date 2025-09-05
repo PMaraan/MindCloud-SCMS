@@ -23,5 +23,9 @@ final class Permissions
     public const COURSES_EDIT   = 'CourseModification';
     public const COURSES_DELETE = 'CourseDeletion';
 
+    public const PROGRAMS_VIEW   = 'ProgramViewing';
+    public const PROGRAMS_CREATE = 'ProgramCreation';
+    public const PROGRAMS_EDIT   = 'ProgramModification';
+    public const PROGRAMS_DELETE = 'ProgramDeletion';
     // Add more modules here...
 }

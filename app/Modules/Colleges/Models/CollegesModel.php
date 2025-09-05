@@ -17,6 +17,14 @@ final class CollegesModel
         $this->driver = (string)$this->pdo->getAttribute(\PDO::ATTR_DRIVER_NAME);
     }
 
+    private function fullNameExpr(string $a): string {
+        return match ($this->driver) {
+            'pgsql' => "TRIM(CONCAT_WS(' ', {$a}.fname, NULLIF({$a}.mname,''), {$a}.lname))",
+            'mysql' => "TRIM(CONCAT_WS(' ', {$a}.fname, NULLIF({$a}.mname,''), {$a}.lname))",
+            default => "TRIM(CONCAT_WS(' ', {$a}.fname, NULLIF({$a}.mname,''), {$a}.lname))",
+        };
+    }
+
     private function limitOffsetClause(int $limit, int $offset): string {
         $limit  = max(1, (int)$limit);
         $offset = max(0, (int)$offset);
@@ -41,13 +49,22 @@ final class CollegesModel
         $total = (int)$stmt->fetchColumn();
 
         $pageClause = $this->limitOffsetClause($limit, $offset);
-        $sql = "
-            SELECT c.college_id, c.short_name, c.college_name
-            FROM colleges c
-            {$where}
-            ORDER BY c.college_name ASC
-            {$pageClause}";
-        $stmt2 = $this->pdo->prepare($sql);
+        $fullName   = $this->fullNameExpr('u');
+
+        $sqlList = "
+        SELECT
+            c.college_id,
+            c.short_name,
+            c.college_name,
+            cd.dean_id           AS dean_id_no,
+            {$fullName}          AS dean_full_name
+        FROM colleges c
+        LEFT JOIN college_deans cd ON cd.college_id = c.college_id
+        LEFT JOIN users u          ON u.id_no      = cd.dean_id
+        {$where}
+        ORDER BY c.college_name ASC
+        {$pageClause}";
+        $stmt2 = $this->pdo->prepare($sqlList);
         foreach ($params as $k => $v) $stmt2->bindValue($k, $v);
         $stmt2->execute();
 

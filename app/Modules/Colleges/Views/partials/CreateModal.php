@@ -1,5 +1,5 @@
 <?php /* app/Modules/College/Views/partials/CreateModal.php */ ?>
-<div class="modal fade" id="createCollegeModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="createCollegesModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-md modal-dialog-scrollable">
     <div class="modal-content">
       <form method="POST" action="<?= BASE_PATH ?>/dashboard?page=colleges&action=create" autocomplete="off">
@@ -19,8 +19,21 @@
             <label class="form-label">College Name <span class="text-danger">*</span></label>
             <input class="form-control" name="college_name" maxlength="100" required>
           </div>
+          <div class="col-12">
+            <label class="form-label">Dean (optional)</label>
+            <select class="form-select" name="dean_id_no">
+              <option value="">— None —</option>
+              <?php foreach (($deans ?? []) as $u):
+                $fn = trim(($u['fname'] ?? '') . ' ' . ($u['mname'] ?? '') . ' ' . ($u['lname'] ?? ''));
+              ?>
+                <option value="<?= htmlspecialchars((string)$u['id_no'], ENT_QUOTES) ?>">
+                  <?= htmlspecialchars((string)$u['id_no'], ENT_QUOTES) ?> — <?= htmlspecialchars($fn, ENT_QUOTES) ?>
+                </option>
+              <?php endforeach; ?>
+            </select>
+          </div>
         </div>
-        
+
         <div class="modal-footer">
           <button class="btn btn-primary" type="submit">Create</button>
           <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button>

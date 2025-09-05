@@ -1,12 +1,14 @@
 <?php /* app/Modules/College/Views/partials/Table.php */ ?>
 <?php // expects: $rows (array), $canEdit (bool), $canDelete (bool) ?>
 <div class="table-responsive">
-  <table class="table table-bordered table-striped table-hover align-middle">
+  <table class="table table-bordered table-striped table-hover align-middle mb-0">
     <thead class="table-light">
       <tr>
         <th style="width:90px;">ID</th>
         <th style="width:160px;">Short Name</th>
         <th>College Name</th>
+        <th style="width:160px;">Dean ID No</th>
+        <th style="width:220px;">Dean Full Name</th>
         <th style="width:180px;" class="text-end">Actions</th>
       </tr>
     </thead>
@@ -17,6 +19,8 @@
           <td><?= (int)($r['college_id'] ?? 0) ?></td>
           <td><?= htmlspecialchars((string)($r['short_name'] ?? ''), ENT_QUOTES) ?></td>
           <td><?= htmlspecialchars((string)($r['college_name'] ?? ''), ENT_QUOTES) ?></td>
+          <td><?= htmlspecialchars((string)(($r['dean_id_no']      ?? '') ?: '-unassigned-'), ENT_QUOTES) ?></td>
+          <td><?= htmlspecialchars((string)(($r['dean_full_name']  ?? '') ?: '-unassigned-'), ENT_QUOTES) ?></td>
           <td class="text-end">
             <?php if ($canEdit): ?>
               <button class="btn btn-sm btn-outline-primary"
@@ -24,7 +28,8 @@
                       data-bs-target="#editCollegesModal"
                       data-id="<?= (int)$r['college_id'] ?>"
                       data-short_name="<?= htmlspecialchars((string)$r['short_name'], ENT_QUOTES) ?>"
-                      data-college_name="<?= htmlspecialchars((string)$r['college_name'], ENT_QUOTES) ?>">
+                      data-college_name="<?= htmlspecialchars((string)$r['college_name'], ENT_QUOTES) ?>"
+                      data-dean_id_no="<?= htmlspecialchars((string)($r['dean_id_no'] ?? ''), ENT_QUOTES) ?>">
                 <i class="bi bi-pencil"></i> Edit
               </button>
             <?php endif; ?>
@@ -45,28 +50,57 @@
         </tr>
       <?php endforeach; ?>
     <?php else: ?>
-      <tr><td colspan="4" class="text-center">No records found.</td></tr>
+      <tr><td colspan="6" class="text-center">No records found.</td></tr>
     <?php endif; ?>
     </tbody>
   </table>
 </div>
 
 <script>
+  /*
 document.addEventListener('DOMContentLoaded', () => {
-  const editModal = document.getElementById('editModal');
+  // ----- EDIT MODAL -----
+  const editModal = document.getElementById('editCollegesModal');
   if (editModal) {
-    editModal.addEventListener('show.bs.modal', evt => {
+    editModal.addEventListener('show.bs.modal', (evt) => {
       const btn = evt.relatedTarget;
       if (!btn) return;
-      editModal.querySelector('[name="id"]').value            = btn.getAttribute('data-id') || '';
-      editModal.querySelector('[name="short_name"]').value    = btn.getAttribute('data-short_name') || '';
-      editModal.querySelector('[name="college_name"]').value  = btn.getAttribute('data-college_name') || '';
+
+      // Read from data-* on the button that triggered the modal
+      const id          = btn.getAttribute('data-id') || '';
+      const shortName   = btn.getAttribute('data-short_name') || '';
+      const collegeName = btn.getAttribute('data-college_name') || '';
+      const deanIdNo    = btn.getAttribute('data-dean_id_no') || '';
+
+      // Fill hidden/visible inputs in the modal
+      const idInput          = editModal.querySelector('[name="id"]');
+      const shortNameInput   = editModal.querySelector('[name="short_name"]');
+      const collegeNameInput = editModal.querySelector('[name="college_name"]');
+      const deanSelect       = editModal.querySelector('[name="dean_id_no"]');
+
+      if (idInput)          idInput.value = id;
+      if (shortNameInput)   shortNameInput.value = shortName;
+      if (collegeNameInput) collegeNameInput.value = collegeName;
+
+      if (deanSelect) {
+        // Try to select the existing dean if present in options; blank clears
+        deanSelect.value = deanIdNo || '';
+        // If current dean isn't in the dropdown (edge case), add it so it's visible
+        if (deanIdNo && ![...deanSelect.options].some(o => o.value === deanIdNo)) {
+          const opt = document.createElement('option');
+          opt.value = deanIdNo;
+          opt.textContent = deanIdNo + ' — (not in list)';
+          deanSelect.appendChild(opt);
+          deanSelect.value = deanIdNo;
+        }
+      }
     });
   }
 
-  const delModal = document.getElementById('deleteModal');
+  // ----- DELETE MODAL -----
+  const delModal = document.getElementById('deleteCollegesModal');
   if (delModal) {
-    delModal.addEventListener('show.bs.modal', evt => {
+    delModal.addEventListener('show.bs.modal', (evt) => {
       const btn = evt.relatedTarget;
       if (!btn) return;
 
@@ -74,20 +108,20 @@ document.addEventListener('DOMContentLoaded', () => {
       const shortName   = btn.getAttribute('data-short_name') || '';
       const collegeName = btn.getAttribute('data-college_name') || '';
 
-      // hidden input for submission
-      const inputId = delModal.querySelector('input[name="id"]');
-      if (inputId) inputId.value = id;
+      // Hidden input (for submission)
+      const idInput = delModal.querySelector('input[name="id"]');
+      if (idInput) idInput.value = id;
 
-      // display fields
-      const spanId = delModal.querySelector('.js-del-id');
-      if (spanId) spanId.textContent = id;
-
+      // Visible fields in the confirmation UI
+      const spanId    = delModal.querySelector('.js-del-id');
       const spanShort = delModal.querySelector('.js-del-short');
-      if (spanShort) spanShort.textContent = shortName;
+      const spanName  = delModal.querySelector('.js-del-name');
 
-      const spanName = delModal.querySelector('.js-del-name');
-      if (spanName) spanName.textContent = collegeName;
+      if (spanId)    spanId.textContent = id;
+      if (spanShort) spanShort.textContent = shortName;
+      if (spanName)  spanName.textContent = collegeName;
     });
   }
 });
+*/
 </script>

@@ -1,5 +1,5 @@
 <?php /* app/Modules/College/Views/partials/EditModal.php */ ?>
-<div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="editCollegesModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-md modal-dialog-scrollable">
     <div class="modal-content">
       <form method="POST" action="<?= BASE_PATH ?>/dashboard?page=colleges&action=edit" autocomplete="off">
@@ -19,6 +19,18 @@
           <div class="col-12">
             <label class="form-label">College Name <span class="text-danger">*</span></label>
             <input class="form-control" name="college_name" maxlength="100" required>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Dean <span class="text-danger">*</span></label>
+            <select class="form-select" name="dean_id_no">
+              <option value="">— None —</option>
+              <?php foreach (($deans ?? []) as $u): 
+                  $fn = trim(($u['fname'] ?? '').' '.($u['mname'] ?? '').' '.($u['lname'] ?? '')); ?>
+                <option value="<?= htmlspecialchars((string)$u['id_no'], ENT_QUOTES) ?>">
+                  <?= htmlspecialchars((string)$u['id_no'], ENT_QUOTES) ?> — <?= htmlspecialchars($fn, ENT_QUOTES) ?>
+                </option>
+              <?php endforeach; ?>
+            </select>
           </div>
         </div>
 

@@ -130,6 +130,23 @@ final class UserModel {
         return $result ?: null;
     }
 
+    /** List users who have the 'Dean' role (for dropdowns). */
+    public function listUsersByRole(string $roleName): array
+    {
+        $sql = "
+          SELECT u.id_no, u.fname, u.mname, u.lname
+          FROM users u
+          JOIN user_roles ur ON ur.id_no = u.id_no
+          JOIN roles r       ON r.role_id = ur.role_id
+          WHERE LOWER(r.role_name) = LOWER(:r)
+          ORDER BY u.lname ASC, u.fname ASC
+        ";
+        $st = $this->pdo->prepare($sql);
+        $st->bindValue(':r', $roleName);
+        $st->execute();
+        return $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
     /**
      * Update password hash after login rehash.
      */
