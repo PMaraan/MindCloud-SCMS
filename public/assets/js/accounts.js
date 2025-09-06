@@ -43,11 +43,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
       const idNo   = row.dataset.idNo || '';
       // Compose full name with optional middle name
-      const parts = [];
-      if (row.dataset.fname) parts.push(row.dataset.fname);
-      if (row.dataset.mname) parts.push(row.dataset.mname);
-      if (row.dataset.lname) parts.push(row.dataset.lname);
-      const fullName = parts.join(' ').trim() || 'this account';
+      const fullName = [
+      row.dataset.fname,
+      row.dataset.mname,
+      row.dataset.lname,
+      ]
+      .filter(Boolean)       // removes null, undefined, empty string
+      .join(' ')             // join with spaces
+      .trim() || 'this account';
 
       const idField     = document.getElementById('delete-id-no');
       const nameField   = document.getElementById('delete-username');
