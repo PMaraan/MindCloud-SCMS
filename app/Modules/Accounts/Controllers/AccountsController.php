@@ -150,12 +150,12 @@ final class AccountsController{
         $ok = $this->model->createUser([
             'id_no'      => $id_no,
             'fname'      => $fname,
-            'mname'      => ($mname !== '' ? $mname : null),
+            'mname'      => ($mname === '') ? null : $mname,
             'lname'      => $lname,
             'email'      => $email,
             'password'   => $hash,
             'role_id'    => (int)$role_id,
-            'college_id' => ($college_id !== '' ? (int)$college_id : null),
+            'college_id' => ($college_id === '') ? null : (int)$college_id,
         ]);
 
         if ($ok) {

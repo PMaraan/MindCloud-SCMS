@@ -1,4 +1,5 @@
 <?php
+// /app/Modules/Accounts/Views/partials/EditModal.php
 // expects: $csrf, $roles, $colleges
 ?>
 <div class="modal fade" id="editUserModal" tabindex="-1" aria-hidden="true">
@@ -19,7 +20,7 @@
               <input type="text" id="edit-fname" name="fname" class="form-control" required>
             </div>
             <div class="col-md-4">
-              <label class="form-label">Middle Name</label>
+              <label class="form-label">Middle Name (optional)</label>
               <input type="text" id="edit-mname" name="mname" class="form-control">
             </div>
             <div class="col-md-4">

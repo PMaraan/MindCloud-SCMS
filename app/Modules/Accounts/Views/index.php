@@ -53,12 +53,15 @@ if (defined('APP_ENV') && APP_ENV === 'dev'):
     <?php include __DIR__ . '/partials/Pagination.php'; ?>
   </div>
 
-  <?php if (!empty($canCreate)) include __DIR__ . '/partials/CreateUserModal.php'; ?>
-  <?php if (!empty($canEdit))   include __DIR__ . '/partials/EditUserModal.php'; ?>
-  <?php if (!empty($canDelete)) include __DIR__ . '/partials/DeleteUserModal.php'; ?>
+  <?php if (!empty($canCreate)) include __DIR__ . '/partials/CreateModal.php'; ?>
+  <?php if (!empty($canEdit))   include __DIR__ . '/partials/EditModal.php'; ?>
+  <?php if (!empty($canDelete)) include __DIR__ . '/partials/DeleteModal.php'; ?>
 </div>
 
+<script src="<?= BASE_PATH ?>/public/assets/js/accounts.js" defer></script>
+
 <script>
+/*
 document.addEventListener("DOMContentLoaded", () => {
   // Autofill edit modal
   document.querySelectorAll("[data-bs-target='#editUserModal']").forEach(btn => {
@@ -86,4 +89,5 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 });
+*/
 </script>
