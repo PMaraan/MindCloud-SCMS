@@ -1,3 +1,21 @@
+<?php
+// Fallback for asset base when this file is opened outside the normal app flow
+if (!defined('BASE_PATH')) {
+    // Example request: /MindCloud-SCMS/app/Views/TemplateBuilder-New.php
+    $reqUri = $_SERVER['REQUEST_URI'] ?? '';
+    // Everything before "/app/..." becomes the project base (e.g., "/MindCloud-SCMS")
+    $projectBase = '';
+    if ($reqUri !== '') {
+        $parts = explode('/app/', $reqUri, 2);
+        $projectBase = rtrim($parts[0] ?? '', '/');
+    }
+    // When not routed through /public, serve assets from "/{project}/public"
+    $ASSET_BASE = ($projectBase !== '' ? $projectBase : '') . '/public';
+} else {
+    // When routed properly, BASE_PATH already points to /public
+    $ASSET_BASE = BASE_PATH;
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,7 +28,7 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
   <!-- Styles -->
-  <link rel="stylesheet" href="TemplateBuilder-New.css"/>
+  <link rel="stylesheet" href="<?= $ASSET_BASE ?>/assets/css/TemplateBuilder-New.css">
 </head>
 <body>
 
