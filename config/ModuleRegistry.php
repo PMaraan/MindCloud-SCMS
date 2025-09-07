@@ -6,6 +6,7 @@ use App\Modules\Accounts\Controllers\AccountsController;
 use App\Modules\Colleges\Controllers\CollegesController;
 use App\Modules\Courses\Controllers\CoursesController;
 use App\Modules\Programs\Controllers\ProgramsController;
+use App\Modules\Curricula\Controllers\CurriculaController;
 // use App\Controllers\RolesController; // might be deprecated. remove for production ...
 // use App\Controllers\TemplatesController;
 // use App\Controllers\SyllabusController;
