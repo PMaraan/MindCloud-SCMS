@@ -28,8 +28,11 @@ final class AuthController
 
         if ($method === 'POST') {
             // CSRF check
-            if (empty($_POST['csrf']) || $_POST['csrf'] !== ($_SESSION['csrf_token_login'] ?? '')) {
-                FlashHelper::set('danger', 'Your session expired. Please try again.');
+            $token    = (string)($_POST['csrf'] ?? '');
+            $expected = (string)($_SESSION['csrf_token_login'] ?? '');
+
+            if ($token === '' || $expected === '' || !hash_equals($expected, $token)) {
+                \App\Helpers\FlashHelper::set('danger', 'Your session expired. Please try again.');
                 header('Location: ' . BASE_PATH . '/login');
                 exit;
             }
@@ -61,9 +64,7 @@ final class AuthController
         }
 
         // GET ensure CSRF token exists and show login view
-        if (empty($_SESSION['csrf_token_login'])) {
-            $_SESSION['csrf_token_login'] = bin2hex(random_bytes(32));
-        }
+        $_SESSION['csrf_token_login'] = bin2hex(random_bytes(32));
         // Legacy: require dirname(__DIR__, 3) . '/Views/login.php';
         require __DIR__ . '/../Views/login.php';
     }

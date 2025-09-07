@@ -43,7 +43,7 @@ $flash = \App\Helpers\FlashHelper::get();
 
             <form method="POST" action="<?= BASE_PATH ?>/login" autocomplete="off">
               <!-- Anti-CSRF -->
-              <input type="hidden" name="csrf" value="<?= htmlspecialchars($_SESSION['csrf_token_login']) ?>">
+              <input type="hidden" name="csrf" value="<?= htmlspecialchars($_SESSION['csrf_token_login'] ?? '', ENT_QUOTES) ?>">
 
               <!-- Email Input -->
               <div class="mb-3">
