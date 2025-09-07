@@ -62,6 +62,7 @@
 ?>
 
 <script>
+  /*
 document.addEventListener('DOMContentLoaded', function () {
   const editModal = document.getElementById('EditModal');
   if (editModal) {
@@ -91,4 +92,11 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 });
+*/
 </script>
+
+<?php
+$jsPath = '/public/assets/js/programs.js';
+$ver = @filemtime($_SERVER['DOCUMENT_ROOT'] . $jsPath) ?: '1';
+?>
+<script defer src="<?= BASE_PATH . $jsPath ?>?v=<?= urlencode((string)$ver) ?>"></script>

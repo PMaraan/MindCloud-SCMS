@@ -1025,3 +1025,142 @@ HINT:  Perhaps you meant to reference the column "cur.curriculum_code". | {"exce
 [06-Sep-2025 16:16:43 Europe/Berlin] accounts.page rows=10 total=18 limit=10 offset=0
 [06-Sep-2025 16:16:43 Europe/Berlin] accounts.index total=18 rows=10
 [06-Sep-2025 16:16:43 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"A","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_id" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 22
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_code" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_title" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_id" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 22
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_code" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_title" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_id" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 22
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_code" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_title" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_id" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 22
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_code" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_title" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_id" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 22
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_code" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_title" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_id" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 22
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_code" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_title" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_id" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 22
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_code" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_title" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_id" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 22
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_code" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_title" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_id" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 22
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_code" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_title" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_id" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 22
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_code" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_title" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:28 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_id" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 22
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_code" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_title" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_id" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 22
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_code" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_title" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_id" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 22
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_code" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_title" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_id" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 22
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_code" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_title" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_id" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 22
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_code" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_title" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_id" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 22
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_code" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_title" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_id" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 22
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_code" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_title" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_id" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 22
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_code" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_title" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_id" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 22
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_code" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_title" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_id" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 22
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_code" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Warning:  Undefined array key "curriculum_title" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:42:30 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 26
+[07-Sep-2025 05:47:26 Europe/Berlin] PHP Warning:  foreach() argument must be of type array|object, string given in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\CreateModal.php on line 27
+[07-Sep-2025 05:47:26 Europe/Berlin] PHP Warning:  foreach() argument must be of type array|object, string given in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\EditModal.php on line 27
+[2025-09-07T06:12:09+02:00] dev.CRITICAL [req:9cb1be6f271841fd] SQLSTATE[42P10]: Invalid column reference: 7 ERROR:  in an aggregate with DISTINCT, ORDER BY expressions must appear in argument list
+LINE 9: ...GG(DISTINCT cur.curriculum_id::text, ',' ORDER BY cur.curric...
+                                                             ^ | {"exception":"PDOException","code":"42P10","file":"C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Courses\\Models\\CoursesModel.php","line":64,"trace":"#0 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Courses\\Models\\CoursesModel.php(64): PDOStatement->execute(Array)\n#1 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Courses\\Controllers\\CoursesController.php(108): App\\Modules\\Courses\\Models\\CoursesModel->getPage(NULL, 10, 0)\n#2 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Controllers\\DashboardController.php(119): App\\Modules\\Courses\\Controllers\\CoursesController->index()\n#3 C:\\xampp\\htdocs\\MindCloud-SCMS\\Router\\router.php(87): App\\Controllers\\DashboardController->render('courses')\n#4 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\bootstrap.php(117): route('/MindCloud-SCMS...', Object(App\\Models\\Postgres), 'GET')\n#5 C:\\xampp\\htdocs\\MindCloud-SCMS\\public\\index.php(7): require_once('C:\\\\xampp\\\\htdocs...')\n#6 {main}"}
+[07-Sep-2025 06:16:05 Europe/Berlin] PHP Warning:  foreach() argument must be of type array|object, string given in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\CreateModal.php on line 26
+[07-Sep-2025 06:16:05 Europe/Berlin] PHP Warning:  foreach() argument must be of type array|object, string given in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\EditModal.php on line 26
+[07-Sep-2025 10:19:29 Europe/Berlin] PHP Warning:  foreach() argument must be of type array|object, string given in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\CreateModal.php on line 28
+[07-Sep-2025 10:19:29 Europe/Berlin] PHP Warning:  foreach() argument must be of type array|object, string given in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\EditModal.php on line 28
+[07-Sep-2025 11:18:40 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[07-Sep-2025 11:18:40 Europe/Berlin] Probe users count = 18
+[07-Sep-2025 11:18:40 Europe/Berlin] accounts.page rows=10 total=18 limit=10 offset=0
+[07-Sep-2025 11:18:40 Europe/Berlin] accounts.index total=18 rows=10
+[07-Sep-2025 11:18:40 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"A","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[07-Sep-2025 11:18:50 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[07-Sep-2025 11:18:50 Europe/Berlin] Probe users count = 18
+[07-Sep-2025 11:18:50 Europe/Berlin] accounts.page rows=7 total=7 limit=10 offset=0
+[07-Sep-2025 11:18:50 Europe/Berlin] accounts.index total=7 rows=7
+[07-Sep-2025 11:18:50 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"A","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[07-Sep-2025 11:20:14 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[07-Sep-2025 11:20:14 Europe/Berlin] Probe users count = 18
+[07-Sep-2025 11:20:14 Europe/Berlin] accounts.page rows=7 total=7 limit=10 offset=0
+[07-Sep-2025 11:20:14 Europe/Berlin] accounts.index total=7 rows=7
+[07-Sep-2025 11:20:14 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"A","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[07-Sep-2025 11:20:15 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[07-Sep-2025 11:20:15 Europe/Berlin] Probe users count = 18
+[07-Sep-2025 11:20:15 Europe/Berlin] accounts.page rows=7 total=7 limit=10 offset=0
+[07-Sep-2025 11:20:15 Europe/Berlin] accounts.index total=7 rows=7
+[07-Sep-2025 11:20:15 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"A","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[07-Sep-2025 11:20:57 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[07-Sep-2025 11:20:57 Europe/Berlin] Probe users count = 18
+[07-Sep-2025 11:20:57 Europe/Berlin] accounts.page rows=7 total=7 limit=10 offset=0
+[07-Sep-2025 11:20:57 Europe/Berlin] accounts.index total=7 rows=7
+[07-Sep-2025 11:20:57 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"A","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[07-Sep-2025 11:21:24 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[07-Sep-2025 11:21:24 Europe/Berlin] Probe users count = 18
+[07-Sep-2025 11:21:24 Europe/Berlin] accounts.page rows=7 total=7 limit=10 offset=0
+[07-Sep-2025 11:21:24 Europe/Berlin] accounts.index total=7 rows=7
+[07-Sep-2025 11:21:24 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"A","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}

@@ -37,16 +37,6 @@ return [
             'delete' => Permissions::COLLEGES_DELETE,
         ],
     ],
-    'courses' => [
-        'label'      => 'Courses',
-        'controller' => CoursesController::class,
-        'permission' => Permissions::COURSES_VIEW,
-        'actions'    => [
-            'create' => Permissions::COURSES_CREATE,
-            'edit'   => Permissions::COURSES_EDIT,
-            'delete' => Permissions::COURSES_DELETE,
-        ],
-    ],
     'programs' => [
         'label'      => 'Programs',
         'controller' => ProgramsController::class,
@@ -57,5 +47,26 @@ return [
             'delete' => Permissions::PROGRAMS_DELETE,
         ],
     ],
+    'curricula' => [
+        'label'      => 'Curricula',
+        'permission' => Permissions::CURRICULA_VIEW,
+        'controller' => CurriculaController::class,
+        'actions'    => [
+            'create' => Permissions::CURRICULA_CREATE,
+            'edit'   => Permissions::CURRICULA_EDIT,
+            'delete' => Permissions::CURRICULA_DELETE,
+        ],
+    ],
+    'courses' => [
+        'label'      => 'Courses',
+        'controller' => CoursesController::class,
+        'permission' => Permissions::COURSES_VIEW,
+        'actions'    => [
+            'create' => Permissions::COURSES_CREATE,
+            'edit'   => Permissions::COURSES_EDIT,
+            'delete' => Permissions::COURSES_DELETE,
+        ],
+    ],
+    
     // add more...
 ];

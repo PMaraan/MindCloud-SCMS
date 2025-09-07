@@ -150,16 +150,18 @@ final class CoursesController
         $this->assertCsrf();
 
         $data = [
-            'course_code'   => trim((string)($_POST['course_code'] ?? '')),
-            'course_name'   => trim((string)($_POST['course_name'] ?? '')),
-            'curriculum_id' => (int)($_POST['curriculum_id'] ?? 0),
-            'college_id'    => ($_POST['college_id'] ?? '') === '' ? null : (int)$_POST['college_id'],
+            'course_code' => trim((string)($_POST['course_code'] ?? '')),
+            'course_name' => trim((string)($_POST['course_name'] ?? '')),
+            'college_id'  => ($_POST['college_id'] ?? '') === '' ? null : (int)$_POST['college_id'],
         ];
+        // Multiple selections allowed; may be absent
+        $curriculumIds = isset($_POST['curriculum_ids']) && is_array($_POST['curriculum_ids'])
+            ? array_filter($_POST['curriculum_ids'], fn($v) => (int)$v > 0)
+            : [];
 
         $errors = [];
-        if ($data['course_code'] === '')   $errors[] = 'Course code is required.';
-        if ($data['course_name'] === '')   $errors[] = 'Course name is required.';
-        if ($data['curriculum_id'] <= 0)   $errors[] = 'Curriculum is required.';
+        if ($data['course_code'] === '') $errors[] = 'Course code is required.';
+        if ($data['course_name'] === '') $errors[] = 'Course name is required.';
 
         if ($errors) {
             FlashHelper::set('danger', implode(' ', $errors));
@@ -167,7 +169,16 @@ final class CoursesController
         }
 
         try {
-            $this->model->create($data);
+            $newId = $this->model->create([
+                'course_code' => $data['course_code'],
+                'course_name' => $data['course_name'],
+                'college_id'  => $data['college_id'],
+                // curriculum_id removed (M:N now)
+            ]);
+            // link selections
+            if (!empty($curriculumIds)) {
+                $this->model->setCourseCurricula((int)$newId, $curriculumIds);
+            }
             FlashHelper::set('success', 'Course created.');
         } catch (\PDOException $e) {
             if ($e->getCode() === '23505') {
@@ -194,16 +205,17 @@ final class CoursesController
         }
 
         $data = [
-            'course_code'   => trim((string)($_POST['course_code'] ?? '')),
-            'course_name'   => trim((string)($_POST['course_name'] ?? '')),
-            'curriculum_id' => (int)($_POST['curriculum_id'] ?? 0),
-            'college_id'    => ($_POST['college_id'] ?? '') === '' ? null : (int)$_POST['college_id'],
+            'course_code' => trim((string)($_POST['course_code'] ?? '')),
+            'course_name' => trim((string)($_POST['course_name'] ?? '')),
+            'college_id'  => ($_POST['college_id'] ?? '') === '' ? null : (int)$_POST['college_id'],
         ];
+        $curriculumIds = isset($_POST['curriculum_ids']) && is_array($_POST['curriculum_ids'])
+            ? array_filter($_POST['curriculum_ids'], fn($v) => (int)$v > 0)
+            : [];
 
         $errors = [];
-        if ($data['course_code'] === '')   $errors[] = 'Course code is required.';
-        if ($data['course_name'] === '')   $errors[] = 'Course name is required.';
-        if ($data['curriculum_id'] <= 0)   $errors[] = 'Curriculum is required.';
+        if ($data['course_code'] === '') $errors[] = 'Course code is required.';
+        if ($data['course_name'] === '') $errors[] = 'Course name is required.';
 
         if ($errors) {
             FlashHelper::set('danger', implode(' ', $errors));
@@ -212,6 +224,9 @@ final class CoursesController
 
         try {
             $ok = $this->model->update($id, $data);
+            // rewrite mappings (even if none)
+            $this->model->setCourseCurricula($id, $curriculumIds);
+
             $ok ? FlashHelper::set('success', 'Course updated.')
                 : FlashHelper::set('warning', 'No changes were made.');
         } catch (\PDOException $e) {

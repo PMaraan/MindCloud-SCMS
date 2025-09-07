@@ -18,14 +18,20 @@ final class Permissions
     public const COLLEGES_EDIT   = 'CollegeModification';
     public const COLLEGES_DELETE = 'CollegeDeletion';
 
+    public const PROGRAMS_VIEW   = 'ProgramViewing';
+    public const PROGRAMS_CREATE = 'ProgramCreation';
+    public const PROGRAMS_EDIT   = 'ProgramModification';
+    public const PROGRAMS_DELETE = 'ProgramDeletion';
+
+    public const CURRICULA_VIEW   = 'CurriculaViewing';
+    public const CURRICULA_CREATE = 'CurriculaCreation';
+    public const CURRICULA_EDIT   = 'CurriculaModification';
+    public const CURRICULA_DELETE = 'CurriculaDeletion';
+
     public const COURSES_VIEW   = 'CourseViewing';
     public const COURSES_CREATE = 'CourseCreation';
     public const COURSES_EDIT   = 'CourseModification';
     public const COURSES_DELETE = 'CourseDeletion';
 
-    public const PROGRAMS_VIEW   = 'ProgramViewing';
-    public const PROGRAMS_CREATE = 'ProgramCreation';
-    public const PROGRAMS_EDIT   = 'ProgramModification';
-    public const PROGRAMS_DELETE = 'ProgramDeletion';
     // Add more modules here...
 }

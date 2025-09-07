@@ -31,11 +31,12 @@ final class CoursesModel
         }
 
         $countSql = "
-          SELECT COUNT(*) AS cnt
-            FROM public.courses c
-            JOIN public.curricula cur ON cur.curriculum_id = c.curriculum_id
-       LEFT JOIN public.colleges  col ON col.college_id   = c.college_id
-           $where
+            SELECT COUNT(DISTINCT c.course_id)
+                FROM public.courses c
+                LEFT JOIN public.curriculum_courses cc ON cc.course_id = c.course_id
+                LEFT JOIN public.curricula cur ON cur.curriculum_id = cc.curriculum_id
+                LEFT JOIN public.colleges col ON col.college_id = c.college_id
+            $where
         ";
         $stmt = $pdo->prepare($countSql);
         $stmt->execute($params);
@@ -47,14 +48,15 @@ final class CoursesModel
                 c.course_code,
                 c.course_name,
                 c.college_id,
-                c.curriculum_id,
-                cur.curriculum_code,
-                cur.title AS curriculum_title,
-                col.short_name AS college_short
+                COALESCE(col.short_name, '—') AS college_short,
+                STRING_AGG(DISTINCT cur.curriculum_code, ', ' ORDER BY cur.curriculum_code) AS curricula,
+                STRING_AGG(DISTINCT cur.curriculum_id::text, ',' ORDER BY cur.curriculum_id::text) AS curricula_ids
             FROM public.courses c
-            JOIN public.curricula cur ON cur.curriculum_id = c.curriculum_id
-            LEFT JOIN public.colleges  col ON col.college_id   = c.college_id
+            LEFT JOIN public.colleges col ON col.college_id = c.college_id
+            LEFT JOIN public.curriculum_courses cc ON cc.course_id = c.course_id
+            LEFT JOIN public.curricula cur ON cur.curriculum_id = cc.curriculum_id
             $where
+            GROUP BY c.course_id, c.course_code, c.course_name, c.college_id, col.short_name
             ORDER BY LOWER(c.course_code), LOWER(c.course_name)
             LIMIT {$limit} OFFSET {$offset}
         ";
@@ -74,28 +76,27 @@ final class CoursesModel
     public function listCurricula(): array
     {
         $sql = "SELECT curriculum_id, curriculum_code, title AS curriculum_title
-                FROM public.curricula
-                ORDER BY LOWER(curriculum_code)";
-        return $this->db->getConnection()->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+              FROM public.curricula
+             ORDER BY LOWER(curriculum_code)";
+        return $this->db->getConnection()->query($sql)->fetchAll(\PDO::FETCH_ASSOC);
     }
 
     public function create(array $data): int
     {
         $pdo = $this->db->getConnection();
         $sql = "
-            INSERT INTO public.courses (course_code, course_name, college_id, curriculum_id)
-            VALUES (:code, :name, :college_id, :curriculum_id)
+            INSERT INTO public.courses (course_code, course_name, college_id)
+            VALUES (:code, :name, :college_id)
             RETURNING course_id
         ";
         $stmt = $pdo->prepare($sql);
         $stmt->bindValue(':code', $data['course_code']);
         $stmt->bindValue(':name', $data['course_name']);
         if ($data['college_id'] === null) {
-            $stmt->bindValue(':college_id', null, PDO::PARAM_NULL);
+            $stmt->bindValue(':college_id', null, \PDO::PARAM_NULL);
         } else {
-            $stmt->bindValue(':college_id', (int)$data['college_id'], PDO::PARAM_INT);
+            $stmt->bindValue(':college_id', (int)$data['college_id'], \PDO::PARAM_INT);
         }
-        $stmt->bindValue(':curriculum_id', (int)$data['curriculum_id'], PDO::PARAM_INT);
         $stmt->execute();
         return (int)$stmt->fetchColumn();
     }
@@ -104,23 +105,21 @@ final class CoursesModel
     {
         $pdo = $this->db->getConnection();
         $sql = "
-          UPDATE public.courses
-             SET course_code   = :code,
-                 course_name   = :name,
-                 college_id    = :college_id,
-                 curriculum_id = :curriculum_id
-           WHERE course_id     = :id
+        UPDATE public.courses
+            SET course_code = :code,
+                course_name = :name,
+                college_id  = :college_id
+        WHERE course_id   = :id
         ";
         $stmt = $pdo->prepare($sql);
         $stmt->bindValue(':code', $data['course_code']);
         $stmt->bindValue(':name', $data['course_name']);
         if ($data['college_id'] === null) {
-            $stmt->bindValue(':college_id', null, PDO::PARAM_NULL);
+            $stmt->bindValue(':college_id', null, \PDO::PARAM_NULL);
         } else {
-            $stmt->bindValue(':college_id', (int)$data['college_id'], PDO::PARAM_INT);
+            $stmt->bindValue(':college_id', (int)$data['college_id'], \PDO::PARAM_INT);
         }
-        $stmt->bindValue(':curriculum_id', (int)$data['curriculum_id'], PDO::PARAM_INT);
-        $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+        $stmt->bindValue(':id', $id, \PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->rowCount() > 0;
     }
@@ -133,4 +132,36 @@ final class CoursesModel
         $stmt->execute();
         return $stmt->rowCount() > 0;
     }
+
+    public function setCourseCurricula(int $courseId, array $curriculumIds): void
+    {
+        $pdo = $this->db->getConnection();
+        $pdo->beginTransaction();
+        try {
+            // Remove old links
+            $del = $pdo->prepare("DELETE FROM public.curriculum_courses WHERE course_id = :cid");
+            $del->execute([':cid' => $courseId]);
+
+            // Insert new links (ignore invalids, rely on FK to error if bad id)
+            if (!empty($curriculumIds)) {
+                $ins = $pdo->prepare("
+                    INSERT INTO public.curriculum_courses (curriculum_id, course_id)
+                    VALUES (:curid, :cid)
+                    ON CONFLICT DO NOTHING
+                ");
+                foreach ($curriculumIds as $curId) {
+                    $curId = (int)$curId;
+                    if ($curId > 0) {
+                        $ins->execute([':curid' => $curId, ':cid' => $courseId]);
+                    }
+                }
+            }
+
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+    }
+
 }
