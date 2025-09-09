@@ -36,7 +36,7 @@ if (!defined('BASE_PATH')) {
   <header id="mc-topbar" class="bg-maroon text-white">
     <div class="container-fluid d-flex align-items-center gap-2">
       
-    <img src="logo_lpu.png" alt="Logo" class="mc-logo">
+    <img src="<?= $ASSET_BASE ?>/assets/images/logo_lpu.png" alt="Logo" class="mc-logo">
 
       <!-- Left: doc controls you already have -->
       <div class="d-flex align-items-center gap-2 flex-wrap">
@@ -249,7 +249,7 @@ if (!defined('BASE_PATH')) {
   import TaskItem                from "https://esm.sh/@tiptap/extension-task-item@2.6.6";
 
   // Load your sidebar/toolbar wiring (it waits for window.__mc.editor)
-  import "./TemplateBuilder-New.js";
+  import "<?= $ASSET_BASE ?>/assets/js/TemplateBuilder-New.js";
 
   // Minimal font-size extension via textStyle
   const FontSize = Extension.create({
@@ -471,6 +471,12 @@ const LineHeight = Extension.create({
     );
   });
 </script>
+
+<script type="module">
+  const ASSET_BASE = "<?= $ASSET_BASE ?>";
+  await import(`${ASSET_BASE}/assets/js/TemplateBuilder-New.js`);
+</script>
+
 
 
 </body>
