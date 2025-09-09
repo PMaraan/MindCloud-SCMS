@@ -100,10 +100,27 @@ if (!defined('BASE_PATH')) {
 
 
           <!-- Font color -->
-          <input id="ctl-color" type="color" class="form-control form-control-color" value="#111827" title="Font color" />
-          <button id="ctl-color-clear" class="btn btn-icon" title="Clear color">
-            <i class="bi bi-eraser"></i>
-          </button>
+          <!-- Color dropdown -->
+          <div class="dropdown">
+              <button class="btn btn-icon dropdown-toggle" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" title="Text color">
+              <i class="bi bi-palette2"></i> Color
+            </button>
+            <ul class="dropdown-menu dropdown-menu-dark">
+              <!-- Presets -->
+              <li><button class="dropdown-item" data-action="setColor" data-value="#111827"><span style="color:#111827">A</span> Default</button></li>
+              <li><button class="dropdown-item" data-action="setColor" data-value="#dc2626"><span style="color:#dc2626">A</span> Red</button></li>
+              <li><button class="dropdown-item" data-action="setColor" data-value="#2563eb"><span style="color:#2563eb">A</span> Blue</button></li>
+              <li><button class="dropdown-item" data-action="setColor" data-value="#16a34a"><span style="color:#16a34a">A</span> Green</button></li>
+              <li><hr class="dropdown-divider"></li>
+              <!-- Native color picker -->
+              <li><button class="dropdown-item" data-action="pickColor">Custom…</button></li>
+              <li><button class="dropdown-item" data-action="setColor" data-value=""><i class="bi bi-eraser"></i> Clear</button></li>
+            </ul>
+
+            <!-- Hidden native input that backs "Custom…" -->
+            <input id="ctl-color-hidden" type="color" value="#111827" hidden>
+          </div>
+
         </div>
 
         <!-- Undo / Redo -->

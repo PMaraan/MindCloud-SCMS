@@ -137,6 +137,19 @@ body { margin:0; background: var(--bg); font-family: system-ui, -apple-system, S
   position: relative;
   padding-bottom: 56px;
 }
+
+.page .page-footer {
+  position: absolute;
+  left: 32px; right: 32px; bottom: 24px;
+  /* no floats here */
+}
+
+.page .tiptap {
+  padding-bottom: 120px;     /* >= footer height + a little margin */
+  display: flow-root;        /* establishes a new BFC; stops float intrusions */
+}
+
+
 .page:focus {
   outline: none;            /* remove browser default */
   box-shadow: var(--page-shadow); /* keep normal shadow */
@@ -479,6 +492,8 @@ body { margin:0; background: var(--bg); font-family: system-ui, -apple-system, S
   box-shadow: none !important;
 }
 
+.element-body { color: inherit; }
+
 /* keep underline only for text field */
 .mc-textfield .element-body {
   border-bottom: 1px solid #9ca3af;
@@ -489,5 +504,7 @@ body { margin:0; background: var(--bg); font-family: system-ui, -apple-system, S
 .mc-paragraph .element-body {
   border: 0;
 }
+
+
 
 

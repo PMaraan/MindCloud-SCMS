@@ -22,6 +22,68 @@
 
   // Track which sidebar block body is focused
   let currentBlockBody = null;
+  let pickingColor = false; // guards focus while the native color dialog is open
+
+
+  // --- Selection locker for contentEditable blocks ---
+const selectionStore = new WeakMap();
+
+function saveSelection(body) {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return;
+  const range = sel.getRangeAt(0);
+  if (!body.contains(range.commonAncestorContainer)) return;
+  selectionStore.set(body, range.cloneRange());
+}
+
+function restoreSelection(body) {
+  const range = selectionStore.get(body);
+  if (!range) return false;
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+  return true;
+}
+
+function withRestoredSelection(cb) {
+  if (!currentBlockBody) return;
+  restoreSelection(currentBlockBody);
+  cb();
+  // store the new location after mutation
+  saveSelection(currentBlockBody);
+}
+
+function wrapSelectionWithSpan(styleText) {
+  withRestoredSelection(() => {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    const range = sel.getRangeAt(0);
+
+    if (range.collapsed) {
+      // insert a styled zero-width placeholder so typing uses the style
+      const span = document.createElement('span');
+      span.setAttribute('style', styleText);
+      span.appendChild(document.createTextNode('\u200b')); // ZWSP
+      range.insertNode(span);
+      // move caret to end of span
+      const newRange = document.createRange();
+      newRange.setStart(span.firstChild, span.firstChild.length);
+      newRange.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(newRange);
+      return;
+    }
+
+    // Non-collapsed: replace selection with styled HTML
+    const frag = range.cloneContents();
+    const div = document.createElement('div');
+    div.appendChild(frag);
+    const html = `<span style="${styleText}">${div.innerHTML}</span>`;
+    document.execCommand('insertHTML', false, html);
+  });
+}
+
+
 
   // ---------- Overlay host (lets TipTap remain editable) ----------
   function ensureOverlay(pageEl) {
@@ -489,7 +551,7 @@ function makeTable() {
       <div class="row"><label>Rows</label><input type="number" id="mc-split-rows" min="1" value="1"></div>
       <div class="actions">
         <button class="mc-btn" data-act="cancel">Cancel</button>
-        <button class="mc-btn primary" data-act="ok">Split</button>
+        < ="mc-btn primary" data-act="ok">Split</button>
       </div>
     `;
     overlay.appendChild(dlg);
@@ -963,14 +1025,28 @@ function makeTable() {
     signature: makeSignatureRow,
   };
 
-  // Register body focus so toolbar knows to target it
   function registerBlockBody(bodyEl) {
-    bodyEl.addEventListener('focusin', () => { currentBlockBody = bodyEl; });
-    bodyEl.addEventListener('mousedown', () => { currentBlockBody = bodyEl; });
+    bodyEl.addEventListener('focusin', () => {
+      currentBlockBody = bodyEl;
+      // defer so the caret has landed
+      setTimeout(() => saveSelection(bodyEl), 0);
+    });
+    bodyEl.addEventListener('mousedown', () => {
+      currentBlockBody = bodyEl;
+      // caret will update on mouseup
+    });
+    bodyEl.addEventListener('mouseup', () => saveSelection(bodyEl));
+    bodyEl.addEventListener('keyup',  () => saveSelection(bodyEl));
     bodyEl.addEventListener('focusout', () => {
       if (currentBlockBody === bodyEl) currentBlockBody = null;
+      selectionStore.delete(bodyEl);
+      document.addEventListener('selectionchange', () => {
+      if (currentBlockBody) saveSelection(currentBlockBody);
+    });
+
     });
   }
+
 
   // ---------- Drag / stack logic ----------
   function pushDownFrom(source, overlay) {
@@ -1093,33 +1169,72 @@ function makeTable() {
     });
   }
 
-  // ========= TOP BAR WIRING (TipTap + Sidebar blocks) =========
-  function execOnBlockOrEditor(editor, fnForEditor, fallbackExecCommand /* string or function */) {
+  function execOnBlockOrEditor(editor, fnForEditor, fallback /* string or function */) {
     if (currentBlockBody && currentBlockBody.isContentEditable !== false) {
-      if (typeof fallbackExecCommand === 'function') {
-        fallbackExecCommand();
-      } else if (typeof fallbackExecCommand === 'string') {
-        document.execCommand(fallbackExecCommand, false, null);
+      // put the caret back where the user left it
+      restoreSelection(currentBlockBody);
+
+      if (typeof fallback === 'function') {
+        fallback();
+      } else if (typeof fallback === 'string') {
+        document.execCommand(fallback, false, null);
       }
+
       currentBlockBody.focus();
+      saveSelection(currentBlockBody);
     } else {
       fnForEditor(editor);
     }
   }
 
-  function wireTopbar(editor) {
-    // When the TipTap editor gains focus, clear block selection
-    const tiptapEl = document.querySelector('.tiptap');
-    tiptapEl?.addEventListener('focusin', () => { currentBlockBody = null; });
+ 
+    function wireTopbar(editor) {
+      // When the TipTap editor gains focus, clear block selection
+      const tiptapEl = document.querySelector('.tiptap');
+      tiptapEl?.addEventListener('focusin', () => { currentBlockBody = null; });
 
-    const toolbar = document.getElementById('tt-toolbar');
-    if (!toolbar) return;
+      // ✅ get toolbar first
+      const toolbar = document.getElementById('tt-toolbar');
+      if (!toolbar) return;
 
-    toolbar.addEventListener('click', (e) => {
-      const el = e.target.closest('[data-action]');
-      if (!el) return;
-      const action = el.dataset.action;
-      const level = +el.dataset.level || undefined;
+      // ✅ keep focus in the current contentEditable BEFORE Bootstrap dropdown handles the click
+      const keepFocus = (e) => {
+        // limit to toolbar actions that can steal focus, esp. color menu
+        const el = e.target.closest(
+          '.dropdown-item[data-action="setColor"], .dropdown-item[data-action="pickColor"]'
+        );
+        if (!el) return;
+        e.preventDefault();
+        if (currentBlockBody) restoreSelection(currentBlockBody);
+      };
+      toolbar.addEventListener('pointerdown', keepFocus);
+      toolbar.addEventListener('mousedown', keepFocus);
+
+      // Keep caret in the block when pressing toolbar buttons (general case)
+      toolbar.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        if (currentBlockBody) restoreSelection(currentBlockBody);
+      });
+
+
+      toolbar.addEventListener('click', (e) => {
+        const el = e.target.closest('[data-action]');
+        if (!el) return;
+        const action = el.dataset.action;
+        const level = +el.dataset.level || undefined;
+
+        if (action === 'pickColor') {
+          const hidden = document.getElementById('ctl-color-hidden');
+          if (!hidden) return;
+
+          if (currentBlockBody) saveSelection(currentBlockBody);
+          pickingColor = true; // 🔒 lock while the native dialog is open
+
+          hidden.click();
+          return; // actual apply happens in the input/change handlers below
+        }
+
+
       
 
             // === Line height ===
@@ -1199,6 +1314,61 @@ function makeTable() {
           execOnBlockOrEditor(editor, (ed) => ed.chain().focus().setTextAlign('justify').run(), 'justifyFull');
           break;
 
+        case 'toggleSuperscript':
+          execOnBlockOrEditor(
+            editor,
+            (ed) => ed.chain().focus().toggleSuperscript().run(),
+            () => document.execCommand('superscript')
+          );
+          break;
+
+        case 'toggleSubscript':
+          execOnBlockOrEditor(
+            editor,
+            (ed) => ed.chain().focus().toggleSubscript().run(),
+            () => document.execCommand('subscript')
+          );
+          break;
+
+        case 'toggleTaskList':
+          execOnBlockOrEditor(
+            editor,
+            (ed) => ed.chain().focus().toggleTaskList().run(),
+            // blocks don’t have native checklist support, so fallback = unordered list
+            'insertUnorderedList'
+          );
+          break;
+
+        case 'setColor': {
+          const value = el.dataset.value || null;
+
+          if (currentBlockBody) {
+            // snapshot before dropdown closes
+            saveSelection(currentBlockBody);
+            restoreSelection(currentBlockBody);
+          }
+
+          execOnBlockOrEditor(
+            editor,
+            (ed) => {
+              if (value) ed.chain().focus().setColor(value).run();
+              else       ed.chain().focus().unsetColor().run();
+            },
+            () => {
+              if (value) wrapSelectionWithSpan(`color:${value}`);
+              else       wrapSelectionWithSpan('color:inherit');
+            }
+          );
+
+          if (currentBlockBody) {
+            currentBlockBody.focus();
+            saveSelection(currentBlockBody);
+          }
+          break;
+        }
+
+
+        
         case 'setHorizontalRule':
           editor.chain().focus().setHorizontalRule().run();
           break;
@@ -1253,38 +1423,78 @@ function makeTable() {
       }
     });
 
+      const hiddenColor = document.getElementById('ctl-color-hidden');
+      hiddenColor?.addEventListener('input', () => {
+        const value = hiddenColor.value; // e.g. "#ff0000"
+
+        if (currentBlockBody) restoreSelection(currentBlockBody);
+
+        execOnBlockOrEditor(
+          editor,
+          (ed) => (value ? ed.chain().focus().setColor(value).run()
+                        : ed.chain().focus().unsetColor().run()),
+          () => {
+            if (value) wrapSelectionWithSpan(`color:${value}`);
+            else       wrapSelectionWithSpan('color:inherit');
+          }
+        );
+
+        if (currentBlockBody) {
+          currentBlockBody.focus();
+          saveSelection(currentBlockBody);
+        }
+
+        // 🔓 release after the browser finishes focus gymnastics
+        setTimeout(() => { pickingColor = false; }, 0);
+      });
+
+      // Some browsers only fire 'change' after the dialog closes – also unlock there
+      hiddenColor?.addEventListener('change', () => {
+        setTimeout(() => { pickingColor = false; }, 0);
+      });
+
+
+
     // Font / size / color controls if present
     const selFont  = document.getElementById('ctl-font');
     const selSize  = document.getElementById('ctl-size');
     const inpColor = document.getElementById('ctl-color');
     const clrColor = document.getElementById('ctl-color-clear');
 
-    function applyFontFamily(value) {
-      if (currentBlockBody) {
-        currentBlockBody.style.fontFamily = value || '';
-        currentBlockBody.focus();
-      } else {
-        const c = editor.chain().focus();
-        value ? c.setFontFamily?.(value).run() : c.unsetFontFamily?.().run();
-      }
-    }
+function applyFontFamily(value) {
+  if (currentBlockBody) {
+    if (value) wrapSelectionWithSpan(`font-family:${value}`);
+    else wrapSelectionWithSpan(`font-family:inherit`);
+  } else {
+    const c = editor.chain().focus();
+    value ? c.setFontFamily?.(value).run()
+          : c.unsetFontFamily?.().run();
+  }
+}
+
     function applyFontSize(value) {
       if (currentBlockBody) {
-        currentBlockBody.style.fontSize = value || '';
-        currentBlockBody.focus();
+        if (value) wrapSelectionWithSpan(`font-size:${value}`);
+        else wrapSelectionWithSpan(`font-size:inherit`);
       } else {
         const c = editor.chain().focus();
         value ? c.setMark('textStyle', { fontSize: value }).run()
               : c.setMark('textStyle', { fontSize: null }).run();
       }
     }
+
     function applyColor(value) {
       if (currentBlockBody) {
-        currentBlockBody.style.color = value || '';
-        currentBlockBody.focus();
+        if (value) {
+          withRestoredSelection(() => document.execCommand('foreColor', false, value));
+        } else {
+          // Clear color by wrapping with inherit (fallback)
+          wrapSelectionWithSpan('color:inherit');
+        }
       } else {
         const c = editor.chain().focus();
-        value ? c.setColor?.(value).run() : c.unsetColor?.().run();
+        value ? c.setColor?.(value).run()
+              : c.unsetColor?.().run();
       }
     }
     selFont?.addEventListener('change',  () => applyFontFamily(selFont.value));
@@ -1342,43 +1552,6 @@ function makeTable() {
         wireSidebarDrag();
         wireDropTargets();
         wireTopbar(editor); // <— restore toolbar + make it affect sidebar text too
-
-        // --- Superscript / Subscript / Checklist wiring ---
-    (function attachScriptSubscriptChecklist(editor){
-      const on = (sel, runner) => {
-        const el = document.querySelector(sel);
-        if (!el) return;
-        el.addEventListener('click', () => runner());
-      };
-
-      on('[data-action="toggleSuperscript"]', () =>
-        editor.chain().focus().toggleSuperscript().run()
-      );
-
-      on('[data-action="toggleSubscript"]', () =>
-        editor.chain().focus().toggleSubscript().run()
-      );
-
-      on('[data-action="toggleTaskList"]', () =>
-        editor.chain().focus().toggleTaskList().run()
-      );
-
-      // reflect active state on the buttons
-      const reflect = () => {
-        const set = (a, on) =>
-          document.querySelector(`[data-action="${a}"]`)
-            ?.classList.toggle('active', !!on);
-
-        set('toggleSuperscript', editor.isActive('superscript'));
-        set('toggleSubscript',  editor.isActive('subscript'));
-        set('toggleTaskList',   editor.isActive('taskList'));
-      };
-
-      editor.on('selectionUpdate', reflect);
-      editor.on('transaction',     reflect);
-      editor.on('create',          reflect);
-      reflect();
-    })(window.__mc.editor);
 
       // expose a rewire hook so new pages can be made drop targets
   window.__mc = window.__mc || {};
