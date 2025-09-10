@@ -28,6 +28,11 @@
   // --- Selection locker for contentEditable blocks ---
 const selectionStore = new WeakMap();
 
+document.addEventListener('selectionchange', () => {
+  if (currentBlockBody) saveSelection(currentBlockBody);
+});
+
+
 function saveSelection(body) {
   const sel = window.getSelection();
   if (!sel || sel.rangeCount === 0) return;
@@ -551,7 +556,7 @@ function makeTable() {
       <div class="row"><label>Rows</label><input type="number" id="mc-split-rows" min="1" value="1"></div>
       <div class="actions">
         <button class="mc-btn" data-act="cancel">Cancel</button>
-        < ="mc-btn primary" data-act="ok">Split</button>
+        <button class="mc-btn primary" data-act="ok">Split</button>
       </div>
     `;
     overlay.appendChild(dlg);
@@ -1040,10 +1045,6 @@ function makeTable() {
     bodyEl.addEventListener('focusout', () => {
       if (currentBlockBody === bodyEl) currentBlockBody = null;
       selectionStore.delete(bodyEl);
-      document.addEventListener('selectionchange', () => {
-      if (currentBlockBody) saveSelection(currentBlockBody);
-    });
-
     });
   }
 
@@ -1126,48 +1127,6 @@ function makeTable() {
     grip.addEventListener('mousedown', startDrag);
   }
 
-  function wireDropTargets() {
-    const pages = document.querySelectorAll('.page');
-    if (!pages.length) return;
-    pages.forEach((page) => {
-      const overlay = ensureOverlay(page);
-      ['dragenter', 'dragover'].forEach((evt) => {
-        overlay.addEventListener(evt, (ev) => {
-          if (ev.dataTransfer?.types?.includes('application/x-mc')) ev.preventDefault();
-        });
-      });
-      overlay.addEventListener('drop', (ev) => {
-        ev.preventDefault();
-        const raw = ev.dataTransfer.getData('application/x-mc');
-        if (!raw) return;
-        const { type } = JSON.parse(raw);
-        const factory = FACTORY[type];
-        if (!factory) return;
-        const block = factory();
-        const y = snap(ev.offsetY);
-        block.style.top = `${Math.max(PAGE_PADDING_TOP, y)}px`;
-        overlay.appendChild(block);
-        makeDraggable(block, overlay);
-        pushDownFrom(block, overlay);
-        setOverlaysDragEnabled(false);
-      });
-    });
-  }
-
-  function wireSidebarDrag() {
-    document.querySelectorAll('#mc-sidebar .sb-item').forEach((btn) => {
-      if (!btn.hasAttribute('draggable')) btn.setAttribute('draggable', 'true');
-      btn.addEventListener('dragstart', (e) => {
-        const type = btn.dataset.type || '';
-        e.dataTransfer.effectAllowed = 'copy';
-        e.dataTransfer.setData('application/x-mc', JSON.stringify({ type }));
-        setOverlaysDragEnabled(true);
-      });
-      btn.addEventListener('dragend', () => {
-        setOverlaysDragEnabled(false);
-      });
-    });
-  }
 
   function execOnBlockOrEditor(editor, fnForEditor, fallback /* string or function */) {
     if (currentBlockBody && currentBlockBody.isContentEditable !== false) {
@@ -1509,6 +1468,10 @@ function applyFontFamily(value) {
     if (!pages.length) return;
     pages.forEach((page) => {
       const overlay = ensureOverlay(page);
+
+      if (overlay.dataset.wired === '1') return;
+      overlay.dataset.wired = '1';
+
       ['dragenter', 'dragover'].forEach((evt) => {
         overlay.addEventListener(evt, (ev) => {
           if (ev.dataTransfer?.types?.includes('application/x-mc')) ev.preventDefault();
@@ -1553,30 +1516,18 @@ function applyFontFamily(value) {
         wireDropTargets();
         wireTopbar(editor); // <— restore toolbar + make it affect sidebar text too
 
-      // expose a rewire hook so new pages can be made drop targets
-  window.__mc = window.__mc || {};
-  window.__mc.rewireDropTargets = () => {
-    // re-run the internal drop-target wiring for any pages that don't have an overlay yet
-    document.querySelectorAll('.page').forEach((page) => {
-      if (!page.querySelector('.mc-block-overlay')) {
-        // create overlay identical to initial wiring
-        const overlay = document.createElement('div');
-        overlay.className = 'mc-block-overlay';
-        Object.assign(overlay.style, {
-          position: 'absolute',
-          inset: '0',
-          pointerEvents: 'none',
-          paddingTop: '10px',
-        });
-        if (getComputedStyle(page).position === 'static') page.style.position = 'relative';
-        page.appendChild(overlay);
-      }
-    });
+// expose a rewire hook so new pages can be made drop targets
+window.__mc = window.__mc || {};
+window.__mc.rewireDropTargets = () => {
+  // 1) make sure every .page has the overlay
+  document.querySelectorAll('.page').forEach((page) => {
+    ensureOverlay(page);           // uses your helper above
+  });
 
-    // let TipTapTest’s original listeners attach (they’re bound on `.mc-block-overlay`)
-    const evt = new Event('mc:rewire');
-    document.dispatchEvent(evt);
-  };
+  // 2) (re)bind listeners for any overlays that aren't wired yet
+  wireDropTargets();
+};
+
 
 
 
