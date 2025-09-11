@@ -97,6 +97,30 @@ if (!defined('BASE_PATH')) {
               <li><button class="dropdown-item" data-action="unsetLineHeight">Clear</button></li>
             </ul>
           </div>
+
+
+          <!-- Font color -->
+          <!-- Color dropdown -->
+          <div class="dropdown">
+              <button class="btn btn-icon dropdown-toggle" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" title="Text color">
+              <i class="bi bi-palette2"></i> Color
+            </button>
+            <ul class="dropdown-menu dropdown-menu-dark">
+              <!-- Presets -->
+              <li><button class="dropdown-item" data-action="setColor" data-value="#111827"><span style="color:#111827">A</span> Default</button></li>
+              <li><button class="dropdown-item" data-action="setColor" data-value="#dc2626"><span style="color:#dc2626">A</span> Red</button></li>
+              <li><button class="dropdown-item" data-action="setColor" data-value="#2563eb"><span style="color:#2563eb">A</span> Blue</button></li>
+              <li><button class="dropdown-item" data-action="setColor" data-value="#16a34a"><span style="color:#16a34a">A</span> Green</button></li>
+              <li><hr class="dropdown-divider"></li>
+              <!-- Native color picker -->
+              <li><button class="dropdown-item" data-action="pickColor">Custom…</button></li>
+              <li><button class="dropdown-item" data-action="setColor" data-value=""><i class="bi bi-eraser"></i> Clear</button></li>
+            </ul>
+
+            <!-- Hidden native input that backs "Custom…" -->
+            <input id="ctl-color-hidden" type="color" value="#111827" hidden>
+          </div>
+
         </div>
 
         <!-- Undo / Redo -->
@@ -105,8 +129,26 @@ if (!defined('BASE_PATH')) {
 
         <div class="toolbar-sep"></div>
 
+        <!-- Headings dropdown -->
+        <div class="dropdown">
+          <button class="btn btn-icon dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" id="dd-heading">
+            <span id="dd-heading-label">P</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-dark">
+            <li><button class="dropdown-item" data-action="setParagraph">Paragraph</button></li>
+            <li><button class="dropdown-item" data-action="setHeading" data-level="1">Heading 1</button></li>
+            <li><button class="dropdown-item" data-action="setHeading" data-level="2">Heading 2</button></li>
+            <li><button class="dropdown-item" data-action="setHeading" data-level="3">Heading 3</button></li>
+            <li><button class="dropdown-item" data-action="setHeading" data-level="4">Heading 4</button></li>
+            <li><button class="dropdown-item" data-action="setHeading" data-level="5">Heading 5</button></li>
+            <li><button class="dropdown-item" data-action="setHeading" data-level="6">Heading 6</button></li>
+          </ul>
+        </div>
+
         <!-- Lists -->
         <button class="btn btn-icon" data-action="toggleBulletList" title="Bulleted list"><i class="bi bi-list-ul"></i></button>
+        <button class="btn btn-icon" data-action="toggleOrderedList" title="Numbered list"><i class="bi bi-list-ol"></i></button>
+        <button class="btn btn-icon" data-action="toggleTaskList" title="Task list"><i class="bi bi-ui-checks"></i></button>
 
         <div class="toolbar-sep"></div>
 
@@ -115,8 +157,17 @@ if (!defined('BASE_PATH')) {
         <button class="btn btn-icon" data-action="toggleItalic" title="Italic"><i class="bi bi-type-italic"></i></button>
         <button class="btn btn-icon" data-action="toggleUnderline" title="Underline"><i class="bi bi-type-underline"></i></button>
         <button class="btn btn-icon" data-action="toggleStrike" title="Strikethrough"><i class="bi bi-type-strikethrough"></i></button>
+        <button class="btn btn-icon" data-action="toggleCode" title="Code"><i class="bi bi-code"></i></button>
+        <button class="btn btn-icon" data-action="toggleSuperscript" title="Superscript">x<sup>2</sup></button>
+        <button class="btn btn-icon" data-action="toggleSubscript" title="Subscript">x<sub>2</sub></button>
         <button class="btn btn-icon" data-action="setLink" title="Link"><i class="bi bi-link-45deg"></i></button>
         <button class="btn btn-icon" data-action="unsetLink" title="Remove link"><i class="bi bi-link-45deg"></i><i class="bi bi-x-lg ms-n2 small"></i></button>
+
+        <div class="toolbar-sep"></div>
+
+        <!-- Blocks -->
+        <button class="btn btn-icon" data-action="toggleBlockquote" title="Blockquote"><i class="bi bi-blockquote-left"></i></button>
+        <button class="btn btn-icon" data-action="toggleCodeBlock" title="Code block"><i class="bi bi-code-slash"></i></button>
 
         <div class="toolbar-sep"></div>
 
@@ -140,9 +191,8 @@ if (!defined('BASE_PATH')) {
       </div>
 
       <!-- Right icons (optional) -->
-      <div class="topbar-actions d-flex align-items-center gap-3">
-        <i class="bi bi-send fs-5" role="button" title="Send"></i>
-        <i class="bi bi-gear fs-5" role="button" title="Settings"></i>
+        <i class="bi bi-send"></i>
+        <i class="bi bi-gear"></i>
       </div>
     </div>
   </header>
@@ -167,7 +217,7 @@ if (!defined('BASE_PATH')) {
           </div>
         </div>
 
-        <div id="editor" class="tiptap" aria-label="Document editor"></div>
+        <div id="editor" class="tiptap" data-editor aria-label="Document editor"></div>
 
         <!-- Footer -->
         <footer class="page-footer" aria-label="Page footer">
@@ -205,6 +255,58 @@ if (!defined('BASE_PATH')) {
   import Link                    from "https://esm.sh/@tiptap/extension-link@2.6.6";
   import TextAlign               from "https://esm.sh/@tiptap/extension-text-align@2.6.6";
   import Placeholder             from "https://esm.sh/@tiptap/extension-placeholder@2.6.6";
+
+    // === Multi-page editor manager ===
+  const MCEditors = {
+    map: new Map(),                  // pageId -> Editor
+    get(pageId) { return this.map.get(pageId) || null; },
+    set(pageId, ed) { this.map.set(pageId, ed); return ed; },
+    first() { return this.map.values().next().value || null; },
+    all() { return Array.from(this.map.values()); }
+  };
+
+  // Create a TipTap editor inside a given page's [data-editor] container
+  async function makeEditorFor(pageEl) {
+    const holder = pageEl.querySelector('[data-editor]');
+    if (!holder) return null;
+
+    const pageId = pageEl.id || pageEl.dataset.page || `page-${Date.now()}`;
+
+    const ed = new Editor({
+      element: holder,
+      extensions: [
+        StarterKit.configure({ heading: { levels: [1,2,3,4,5,6] } }),
+        Underline,
+        Link.configure({
+          openOnClick: true,
+          autolink: true,
+          HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' },
+        }),
+        TextAlign.configure({ types: ['heading','paragraph'] }),
+        Placeholder.configure({ placeholder: 'Start typing…' }),
+        TextStyle, Color, FontFamily,
+        FontSize, LineHeight,
+        Superscript,
+        Subscript,
+        TaskList.configure({ HTMLAttributes: { class: 'tt-tasklist' } }),
+        TaskItem.configure({ nested: true, HTMLAttributes: { class: 'tt-taskitem' } }),
+
+        // FontSize + LineHeight are still declared later in this file
+      ],
+      content: '<p></p>',
+      autofocus: false,
+    });
+
+    MCEditors.set(pageId, ed);
+
+    // Let the auto-pagination watcher see changes on this editor
+    ed.on('update', () => {
+      const box = pageEl.querySelector('[data-editor]');
+      if (box) maybeAddPageFor(box);
+    });
+
+    return ed;
+  }
 
   import TextStyle               from "https://esm.sh/@tiptap/extension-text-style@2.6.6";
   import Color                   from "https://esm.sh/@tiptap/extension-color@2.6.6";
@@ -286,214 +388,86 @@ const LineHeight = Extension.create({
 });
 
 
-  // --- Create TipTap editor
-  const editor = new Editor({
-    element: document.getElementById("editor"),
-    extensions: [
-      StarterKit.configure({ heading: { levels: [1,2,3,4,5,6] } }),
-      Underline,
-      Link.configure({
-        openOnClick: true,
-        autolink: true,
-        HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' },
-      }),
-      TextAlign.configure({ types: ['heading','paragraph'] }),
-      Placeholder.configure({ placeholder: 'Start typing…' }),
+// --- Create TipTap editors for all pages present on load
+// (FontSize + LineHeight are defined below; we’ll push them in after.)
+async function bootEditorsForExistingPages() {
+  const pages = document.querySelectorAll('.page');
+  for (const p of pages) await makeEditorFor(p);
+}
+await bootEditorsForExistingPages();
 
-      // Formatting addons
-      TextStyle,
-      Color,
-      FontFamily,
-      FontSize,
-      LineHeight,
 
-      // The three you asked for
-      Superscript,
-      Subscript,
-      TaskList.configure({ HTMLAttributes: { class: 'tt-tasklist' } }),
-      TaskItem.configure({ nested: true, HTMLAttributes: { class: 'tt-taskitem' } }),
-    ],
-    content: '<p></p>',
-    autofocus: true,
-  });
+  // --- After: const editor = new Editor({ ... }) ---
 
-  // Expose for TipTapTest.js (it polls for this)
-  window.__mc = { editor };
+// --- Auto-pagination (generalized for any page/editor) ---
+const PAGED = new WeakSet();
+// Reserve some bottom space above the footer when deciding to add a new page
+const BOTTOM_GUARD_PX = 20; // tweak to taste (matches the CSS padding-bottom)
 
-  // ===== Multi-page TipTap + Auto Pagination =====
-const PageEditors = new Map(); // pageEl -> { editor, el }
-const PADDING_BOTTOM = 120;    // matches .tiptap bottom padding in CSS
 
-function getPageFromChild(el) {
-  return el?.closest?.('.page') || null;
+function getEditorMeasureTargets(editorBoxEl){
+  const prose = editorBoxEl.querySelector('.ProseMirror') || editorBoxEl.firstElementChild || editorBoxEl;
+  return { box: editorBoxEl, content: prose };
 }
 
-function editorHeightWithinPage(editor) {
-  const tip = editor.options.element;          // the .tiptap for this editor
-  const page = getPageFromChild(tip);
-  if (!page) return { contentH: tip.scrollHeight, maxH: tip.scrollHeight };
+function maybeAddPageFor(editorBoxEl){
+  if (!editorBoxEl || PAGED.has(editorBoxEl)) return;
 
-  // Available height = page height - footer clearance - content padding
-  const footer = page.querySelector('.page-footer');
-  const tipRect   = tip.getBoundingClientRect();
-  const footRect  = footer.getBoundingClientRect();
-  // How much vertical space the editable flow area truly has:
-  const maxH = (footRect.top - tipRect.top) - 24 /* little safety */;
-  const contentH = tip.scrollHeight;
+  const { box, content } = getEditorMeasureTargets(editorBoxEl);
+  const BUFFER = 4;
 
-  return { contentH, maxH };
-}
+  // Look up the footer height (if present) and reserve some extra breathing room.
+  const pageEl = editorBoxEl.closest('.page');
+  const footerH = pageEl?.querySelector('.page-footer')?.offsetHeight || 0;
 
-function ensureNextPage() {
-  // reuse your existing createPage(), then return the new .page
-  const beforeCount = document.querySelectorAll('.page').length;
-  // Your createPage() is defined below in the same module:
-  if (typeof createPage === 'function') createPage();
-  const pages = Array.from(document.querySelectorAll('.page'));
-  return pages[pages.length - 1] || null;
-}
+  // Use whichever is larger: your fixed guard or the actual footer height + a small spacer.
+  const reservedBottom = Math.max(BOTTOM_GUARD_PX, footerH + 24);
 
-function createEditorForPage(page) {
-  // Find (or create) the .tiptap container inside this page
-  let tip = page.querySelector('.tiptap');
-  if (!tip) {
-    tip = document.createElement('div');
-    tip.className = 'tiptap';
-    tip.setAttribute('aria-label', 'Document editor');
-    page.insertBefore(tip, page.querySelector('.page-footer'));
+  // Trigger paging BEFORE text visually collides with the footer.
+  const effectiveHeight = Math.max(0, box.clientHeight - reservedBottom);
+  const overflows = (content.scrollHeight - BUFFER) >= effectiveHeight;
+
+  // Only fire if caret/focus is inside THIS editor box (incl. .ProseMirror)
+  const activeInside = box.contains(document.activeElement);
+
+  if (activeInside && overflows) {
+    PAGED.add(editorBoxEl);
+    createPage(); // your existing function
   }
-
-  // Make a new Editor instance that mirrors the first one’s config
-  const ed = new Editor({
-    element: tip,
-    extensions: window.__mc.editor.extensionManager.extensions,
-    content: '<p></p>',
-    autofocus: false,
-  });
-
-  PageEditors.set(page, { editor: ed, el: tip });
-  // ✅ ensure new editors auto-paginate, too
-  attachAutoPagination(ed, page);
-  return ed;
-}
-
-function getActivePageEditor() {
-  // Prefer the page whose editor/element is currently focused, else last page’s editor
-  const focused = document.activeElement?.closest?.('.page');
-  if (focused && PageEditors.has(focused)) return PageEditors.get(focused);
-
-  const pages = Array.from(document.querySelectorAll('.page'));
-  for (let i = pages.length - 1; i >= 0; i--) {
-    const pe = PageEditors.get(pages[i]);
-    if (pe) return pe;
-  }
-  return null;
-}
-
-let _isPaginating = false;
-
-function stableFocus(editor, pageEl, where = 'end') {
-  const go = () => {
-    try { editor.chain().focus(where).run(); } catch {}
-    try { editor.commands.scrollIntoView?.(); } catch {}
-    try { pageEl?.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch {}
-  };
-  go();                      // now
-  requestAnimationFrame(go); // next frame (after layout settles)
-  setTimeout(go, 0);         // microtask queue
 }
 
 
-function moveOverflowToNextPage(fromEditor, fromPage) {
-  if (_isPaginating) return;
-  _isPaginating = true;
-  try {
-    // 1) Ensure destination page + editor
-    let nextPage = fromPage.nextElementSibling?.classList?.contains('page')
-      ? fromPage.nextElementSibling
-      : ensureNextPage();
+// Start watching an editor box
+function setupOverflowWatcher(editorBoxEl){
+  if (!editorBoxEl) return;
 
-    if (!PageEditors.has(nextPage)) createEditorForPage(nextPage);
-    const { editor: toEditor } = PageEditors.get(nextPage);
+  const ro = new ResizeObserver(() => maybeAddPageFor(editorBoxEl));
+  ro.observe(editorBoxEl);
 
-    // 2) Pre-focus the destination to steer caret there ASAP
-    stableFocus(toEditor, nextPage, 'end');
+  editorBoxEl.addEventListener('input', () => maybeAddPageFor(editorBoxEl), { passive: true });
+  editorBoxEl.addEventListener('keyup',  () => maybeAddPageFor(editorBoxEl), { passive: true });
+}
 
-    // 3) Measure and peel overflowed blocks from the end (your existing logic)
-    let { contentH, maxH } = editorHeightWithinPage(fromEditor);
-    if (contentH <= maxH) return;
+// Wire all existing pages
+document.querySelectorAll('.page [data-editor]').forEach(setupOverflowWatcher);
 
-    const blocks = Array.from(fromEditor.options.element.children);
-    if (!blocks.length) return;
 
-    const moveNodes = [];
-    while (blocks.length && contentH > maxH) {
-      const last = blocks.pop();
-      moveNodes.unshift(last);
-      last.remove();
-      const newHTML = fromEditor.options.element.innerHTML || '<p></p>';
-      fromEditor.commands.setContent(newHTML, false);
-      const m = editorHeightWithinPage(fromEditor);
-      contentH = m.contentH; maxH = m.maxH;
-    }
-
-    // 4) Append moved content to the next page
-    if (moveNodes.length) {
-      const movedHTML = moveNodes.map(n => n.outerHTML).join('');
-      toEditor.commands.insertContent(movedHTML);
-
-      // If we still overflow the next page, keep walking forward
-      const measureDest = editorHeightWithinPage(toEditor);
-      if (measureDest.contentH > measureDest.maxH) {
-        moveOverflowToNextPage(toEditor, nextPage);
-        return; // focus will be handled by the recursive call
+// Expose a getter so other code can reach the current editor if needed
+  window.__mc = window.__mc || {};
+  window.__mc.getActiveEditor = () => {
+    const el = document.activeElement;
+    if (el) {
+      const page = el.closest('.page');
+      if (page) {
+        for (const ed of MCEditors.all()) {
+          if (page.contains(ed.options.element)) return ed;
+        }
       }
     }
+    return MCEditors.first();
+  };
 
-    // 5) Post-focus to land the caret where the user continues typing
-    stableFocus(toEditor, nextPage, 'end');
-
-  } finally {
-    _isPaginating = false;
-  }
-}
-
-
-// Wire the initial page/editor into the map
-(function registerFirstEditor(){
-  const firstPage = document.querySelector('.page');
-  if (firstPage) PageEditors.set(firstPage, { editor, el: document.getElementById('editor') });
-})();
-
-// Observe changes on each page editor and paginate as needed
-function attachAutoPagination(ed, page) {
-  ed.on('update', () => {
-    if (_isPaginating) return;                 // <-- guard
-    const { contentH, maxH } = editorHeightWithinPage(ed);
-    if (contentH > maxH) moveOverflowToNextPage(ed, page);
-  });
-}
-
-
-// Attach to the first page/editor now
-{
-  const firstPage = document.querySelector('.page');
-  const first = PageEditors.get(firstPage);
-  if (first) attachAutoPagination(first.editor, firstPage);
-}
-
-
-// Also, if paper size changes, re-check overflow on the active page
-document.getElementById('ctl-paper')?.addEventListener('change', () => {
-  const pe = getActivePageEditor();
-  if (!pe) return;
-  const { editor: ed, el } = pe;
-  const page = getPageFromChild(el);
-  if (page) {
-    const { contentH, maxH } = editorHeightWithinPage(ed);
-    if (contentH > maxH) moveOverflowToNextPage(ed, page);
-  }
-});
+  // Watch the first page editor box for overflow
 
 
     // ---------- Add Page wiring ----------
@@ -510,7 +484,7 @@ document.getElementById('ctl-paper')?.addEventListener('change', () => {
     return `size-${val}`;
   }
 
-  function createPage() {
+  async function createPage() {
     const n = nextPageNumber();
 
     // build a new page section (no duplicate #editor!)
@@ -533,7 +507,7 @@ document.getElementById('ctl-paper')?.addEventListener('change', () => {
       </div>
 
       <!-- No TipTap instance here; sidebar blocks can still be dropped -->
-      <div class="tiptap" aria-label="Document area"></div>
+      <div class="tiptap" data-editor aria-label="Document area"></div>
 
       <footer class="page-footer" aria-label="Page footer">
         <span class="footer-left" contenteditable="true" data-placeholder="Footer Text">Footer Text</span>
@@ -554,6 +528,11 @@ document.getElementById('ctl-paper')?.addEventListener('change', () => {
     } catch {}
 
     workEl.appendChild(page);
+    await makeEditorFor(page);
+    // Start overflow watching on the new page’s editor box
+    const newEditorBox = page.querySelector('[data-editor]');
+    if (newEditorBox) setupOverflowWatcher(newEditorBox);
+
 
     // make the new page a valid drop target for the sidebar
     window.__mc?.rewireDropTargets?.();
@@ -568,14 +547,10 @@ document.getElementById('ctl-paper')?.addEventListener('change', () => {
     });
   }
 
-  addBtn?.addEventListener('click', () => {
-  createPage();                                         // your existing page creator
-  const pages  = document.querySelectorAll('.page');
-  const newPage = pages[pages.length - 1];              // last page just added
-  const newEd   = createEditorForPage(newPage);         // (#1 code provides this)
-  attachAutoPagination(newEd, newPage);                 // (#1 code provides this)
-});
+  // --- Auto-pagination: watch the editor box for overflow and add a page ---
 
+
+  addBtn?.addEventListener('click', createPage);
 
   // keep paper size consistent for new pages, too
   paperSel?.addEventListener('change', () => {

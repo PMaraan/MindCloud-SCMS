@@ -36,23 +36,6 @@ body { margin:0; background: var(--bg); font-family: system-ui, -apple-system, S
   display: block;
 }
 
-/* Right-side icons: fixed position inside the header without affecting layout */
-#mc-topbar .topbar-actions{
-  position: absolute;     /* take out of the flex flow */
-  right: 16px;            /* nudge from the edge (tweak as you like) */
-  top: 50%;
-  transform: translateY(-50%);
-  color: #fff;
-}
-#mc-topbar .topbar-actions i {
-  cursor: pointer;
-  opacity: .95;
-}
-#mc-topbar .topbar-actions i:hover {
-  opacity: 1;
-}
-
-
 /* unified, centered controls strip */
 #mc-topbar .container-fluid {
   display: flex;
@@ -138,22 +121,25 @@ body { margin:0; background: var(--bg); font-family: system-ui, -apple-system, S
   display: flex;
   flex-direction: column;         /* vertical stack */
   align-items: center;            /* horizontal centering */
-  gap: 32px;                      /* space between pages */
+  gap: 35px;                      /* space between pages */
   width: 100%;
 }
 
 /* Page */
 .page{
+  flex: 0 0 auto;
   width: var(--A4-w);
-  min-height: var(--A4-h);
+  height: var(--A4-h);          /* 🔒 fixed height */
   background: #fff;
   border: 1px solid var(--page-border);
   border-radius: 6px;
   box-shadow: var(--page-shadow);
-  overflow:hidden;
+  overflow: hidden;             /* clip anything past the page edge */
   position: relative;
   padding-bottom: 56px;
+  display: block;
 }
+
 
 .page .page-footer {
   position: absolute;
@@ -161,10 +147,20 @@ body { margin:0; background: var(--bg); font-family: system-ui, -apple-system, S
   /* no floats here */
 }
 
+/* Keep page fixed-size; put the editable area in a fixed slot */
+.page { position: relative; }
+
 .page .tiptap {
-  padding-bottom: 120px;     /* >= footer height + a little margin */
-  display: flow-root;        /* establishes a new BFC; stops float intrusions */
+  position: absolute;
+  left: 0;
+  right: 0;
+  /* Tune these two to match your header/footer heights */
+  top: var(--content-top, 40px);      /* start below header */
+  bottom: var(--content-bottom, 20px); /* leave space for footer */
+  padding: 24px 28px;
+  overflow: hidden;   /* or: auto  -> gives an inner scrollbar instead of overlap */
 }
+
 
 
 .page:focus {
@@ -428,9 +424,10 @@ body { margin:0; background: var(--bg); font-family: system-ui, -apple-system, S
 .page.drag-over{ box-shadow: 0 0 0 3px rgba(123,15,20,.25), var(--page-shadow); }
 
 /* Paper sizes */
-.page.size-A4{ width: var(--A4-w); min-height: var(--A4-h); }
-.page.size-Letter{ width: var(--Letter-w); min-height: var(--Letter-h); }
-.page.size-Legal{ width: var(--Legal-w); min-height: var(--Legal-h); }
+.page.size-A4{ width: var(--A4-w); height: var(--A4-h); }       /* 🔒 */
+.page.size-Letter{ width: var(--Letter-w); height: var(--Letter-h); }
+.page.size-Legal{ width: var(--Legal-w); height: var(--Legal-h); }
+
 
 /* Centered TipTap toolbar grouping */
 #tt-toolbar {

@@ -11,14 +11,18 @@
 
   const waitForEditor = () =>
     new Promise((resolve) => {
-      if (window.__mc?.editor) return resolve(window.__mc.editor);
+      const get = () => window.__mc?.getActiveEditor?.();
+      const ed = get();
+      if (ed) return resolve(ed);
       const iv = setInterval(() => {
-        if (window.__mc?.editor) {
+        const ed2 = get();
+        if (ed2) {
           clearInterval(iv);
-          resolve(window.__mc.editor);
+          resolve(ed2);
         }
       }, 20);
     });
+
 
   // Track which sidebar block body is focused
   let currentBlockBody = null;
@@ -27,11 +31,6 @@
 
   // --- Selection locker for contentEditable blocks ---
 const selectionStore = new WeakMap();
-
-document.addEventListener('selectionchange', () => {
-  if (currentBlockBody) saveSelection(currentBlockBody);
-});
-
 
 function saveSelection(body) {
   const sel = window.getSelection();
@@ -556,7 +555,7 @@ function makeTable() {
       <div class="row"><label>Rows</label><input type="number" id="mc-split-rows" min="1" value="1"></div>
       <div class="actions">
         <button class="mc-btn" data-act="cancel">Cancel</button>
-        <button class="mc-btn primary" data-act="ok">Split</button>
+        < ="mc-btn primary" data-act="ok">Split</button>
       </div>
     `;
     overlay.appendChild(dlg);
@@ -1045,6 +1044,10 @@ function makeTable() {
     bodyEl.addEventListener('focusout', () => {
       if (currentBlockBody === bodyEl) currentBlockBody = null;
       selectionStore.delete(bodyEl);
+      document.addEventListener('selectionchange', () => {
+      if (currentBlockBody) saveSelection(currentBlockBody);
+    });
+
     });
   }
 
@@ -1127,351 +1130,11 @@ function makeTable() {
     grip.addEventListener('mousedown', startDrag);
   }
 
-
-  function execOnBlockOrEditor(editor, fnForEditor, fallback /* string or function */) {
-    if (currentBlockBody && currentBlockBody.isContentEditable !== false) {
-      // put the caret back where the user left it
-      restoreSelection(currentBlockBody);
-
-      if (typeof fallback === 'function') {
-        fallback();
-      } else if (typeof fallback === 'string') {
-        document.execCommand(fallback, false, null);
-      }
-
-      currentBlockBody.focus();
-      saveSelection(currentBlockBody);
-    } else {
-      fnForEditor(editor);
-    }
-  }
-
- 
-    function wireTopbar(editor) {
-      // When the TipTap editor gains focus, clear block selection
-      const tiptapEl = document.querySelector('.tiptap');
-      tiptapEl?.addEventListener('focusin', () => { currentBlockBody = null; });
-
-      // ✅ get toolbar first
-      const toolbar = document.getElementById('tt-toolbar');
-      if (!toolbar) return;
-
-      // ✅ keep focus in the current contentEditable BEFORE Bootstrap dropdown handles the click
-      const keepFocus = (e) => {
-        // limit to toolbar actions that can steal focus, esp. color menu
-        const el = e.target.closest(
-          '.dropdown-item[data-action="setColor"], .dropdown-item[data-action="pickColor"]'
-        );
-        if (!el) return;
-        e.preventDefault();
-        if (currentBlockBody) restoreSelection(currentBlockBody);
-      };
-      toolbar.addEventListener('pointerdown', keepFocus);
-      toolbar.addEventListener('mousedown', keepFocus);
-
-      // Keep caret in the block when pressing toolbar buttons (general case)
-      toolbar.addEventListener('mousedown', (e) => {
-        e.preventDefault();
-        if (currentBlockBody) restoreSelection(currentBlockBody);
-      });
-
-
-      toolbar.addEventListener('click', (e) => {
-        const el = e.target.closest('[data-action]');
-        if (!el) return;
-        const action = el.dataset.action;
-        const level = +el.dataset.level || undefined;
-
-        if (action === 'pickColor') {
-          const hidden = document.getElementById('ctl-color-hidden');
-          if (!hidden) return;
-
-          if (currentBlockBody) saveSelection(currentBlockBody);
-          pickingColor = true; // 🔒 lock while the native dialog is open
-
-          hidden.click();
-          return; // actual apply happens in the input/change handlers below
-        }
-
-
-      
-
-            // === Line height ===
-      if (action === 'setLineHeight') {
-        let lh = el.dataset.lh || '';
-        if (lh === 'custom') {
-          const v = prompt('Enter line spacing (e.g., 1, 1.15, 1.5, 2, or CSS like "24px")', '1.5');
-          if (v === null) return;          // cancelled
-          lh = v.trim();
-          if (!lh) return;                  // empty => do nothing
-        }
-        editor.chain().focus().setLineHeight(lh).run();
-        return;
-      }
-      if (action === 'unsetLineHeight') {
-        editor.chain().focus().unsetLineHeight().run();
-        return;
-      }
-
-      switch (action) {
-        case 'toggleBold':
-          execOnBlockOrEditor(
-            editor,
-            (ed) => ed.chain().focus().toggleBold().run(),
-            'bold'
-          );
-          break;
-        case 'toggleItalic':
-          execOnBlockOrEditor(editor, (ed) => ed.chain().focus().toggleItalic().run(), 'italic');
-          break;
-        case 'toggleUnderline':
-          execOnBlockOrEditor(editor, (ed) => ed.chain().focus().toggleUnderline().run(), 'underline');
-          break;
-        case 'toggleStrike':
-          execOnBlockOrEditor(editor, (ed) => ed.chain().focus().toggleStrike().run(), () => document.execCommand('strikethrough'));
-          break;
-
-        case 'setParagraph':
-          execOnBlockOrEditor(editor, (ed) => ed.chain().focus().setParagraph().run(), () => document.execCommand('formatBlock', false, 'P'));
-          break;
-        case 'setHeading':
-          execOnBlockOrEditor(
-            editor,
-            (ed) => ed.chain().focus().toggleHeading({ level }).run(),
-            () => document.execCommand('formatBlock', false, 'H' + (level || 1))
-          );
-          break;
-
-        case 'toggleBulletList':
-          execOnBlockOrEditor(editor, (ed) => ed.chain().focus().toggleBulletList().run(), 'insertUnorderedList');
-          break;
-        case 'toggleOrderedList':
-          execOnBlockOrEditor(editor, (ed) => ed.chain().focus().toggleOrderedList().run(), 'insertOrderedList');
-          break;
-
-        case 'toggleBlockquote':
-          execOnBlockOrEditor(
-            editor,
-            (ed) => ed.chain().focus().toggleBlockquote().run(),
-            () => document.execCommand('formatBlock', false, 'BLOCKQUOTE')
-          );
-          break;
-        case 'toggleCodeBlock':
-          execOnBlockOrEditor(editor, (ed) => ed.chain().focus().toggleCodeBlock().run(), null);
-          break;
-
-        case 'alignLeft':
-          execOnBlockOrEditor(editor, (ed) => ed.chain().focus().setTextAlign('left').run(), 'justifyLeft');
-          break;
-        case 'alignCenter':
-          execOnBlockOrEditor(editor, (ed) => ed.chain().focus().setTextAlign('center').run(), 'justifyCenter');
-          break;
-        case 'alignRight':
-          execOnBlockOrEditor(editor, (ed) => ed.chain().focus().setTextAlign('right').run(), 'justifyRight');
-          break;
-        case 'alignJustify':
-          execOnBlockOrEditor(editor, (ed) => ed.chain().focus().setTextAlign('justify').run(), 'justifyFull');
-          break;
-
-        case 'toggleSuperscript':
-          execOnBlockOrEditor(
-            editor,
-            (ed) => ed.chain().focus().toggleSuperscript().run(),
-            () => document.execCommand('superscript')
-          );
-          break;
-
-        case 'toggleSubscript':
-          execOnBlockOrEditor(
-            editor,
-            (ed) => ed.chain().focus().toggleSubscript().run(),
-            () => document.execCommand('subscript')
-          );
-          break;
-
-        case 'toggleTaskList':
-          execOnBlockOrEditor(
-            editor,
-            (ed) => ed.chain().focus().toggleTaskList().run(),
-            // blocks don’t have native checklist support, so fallback = unordered list
-            'insertUnorderedList'
-          );
-          break;
-
-        case 'setColor': {
-          const value = el.dataset.value || null;
-
-          if (currentBlockBody) {
-            // snapshot before dropdown closes
-            saveSelection(currentBlockBody);
-            restoreSelection(currentBlockBody);
-          }
-
-          execOnBlockOrEditor(
-            editor,
-            (ed) => {
-              if (value) ed.chain().focus().setColor(value).run();
-              else       ed.chain().focus().unsetColor().run();
-            },
-            () => {
-              if (value) wrapSelectionWithSpan(`color:${value}`);
-              else       wrapSelectionWithSpan('color:inherit');
-            }
-          );
-
-          if (currentBlockBody) {
-            currentBlockBody.focus();
-            saveSelection(currentBlockBody);
-          }
-          break;
-        }
-
-
-        
-        case 'setHorizontalRule':
-          editor.chain().focus().setHorizontalRule().run();
-          break;
-
-        case 'insertImage': {
-          const url = prompt('Image URL');
-          if (!url) return;
-          execOnBlockOrEditor(
-            editor,
-            (ed) => (ed.chain().focus().setImage?.({ src: url }).run() || ed.chain().focus().insertContent(`<img src="${url}" alt="">`).run()),
-            () => {
-              // insert into block at caret
-              document.execCommand('insertImage', false, url);
-            }
-          );
-          break;
-        }
-
-        case 'setLink': {
-          const prev = editor.getAttributes('link')?.href || '';
-          const url = prompt('Enter URL', prev);
-          if (url === null) return;
-          if (currentBlockBody) {
-            if (url === '') document.execCommand('unlink');
-            else document.execCommand('createLink', false, url);
-            currentBlockBody.focus();
-          } else {
-            if (url === '') editor.chain().focus().unsetLink().run();
-            else editor.chain().focus().setLink({ href: url }).run();
-          }
-          break;
-        }
-        case 'unsetLink':
-          if (currentBlockBody) {
-            document.execCommand('unlink');
-            currentBlockBody.focus();
-          } else {
-            editor.chain().focus().unsetLink().run();
-          }
-          break;
-
-        case 'undo':
-          if (currentBlockBody) document.execCommand('undo'); else editor.commands.undo();
-          break;
-        case 'redo':
-          if (currentBlockBody) document.execCommand('redo'); else editor.commands.redo();
-          break;
-
-        default:
-          // no-op for unknown buttons
-          break;
-      }
-    });
-
-      const hiddenColor = document.getElementById('ctl-color-hidden');
-      hiddenColor?.addEventListener('input', () => {
-        const value = hiddenColor.value; // e.g. "#ff0000"
-
-        if (currentBlockBody) restoreSelection(currentBlockBody);
-
-        execOnBlockOrEditor(
-          editor,
-          (ed) => (value ? ed.chain().focus().setColor(value).run()
-                        : ed.chain().focus().unsetColor().run()),
-          () => {
-            if (value) wrapSelectionWithSpan(`color:${value}`);
-            else       wrapSelectionWithSpan('color:inherit');
-          }
-        );
-
-        if (currentBlockBody) {
-          currentBlockBody.focus();
-          saveSelection(currentBlockBody);
-        }
-
-        // 🔓 release after the browser finishes focus gymnastics
-        setTimeout(() => { pickingColor = false; }, 0);
-      });
-
-      // Some browsers only fire 'change' after the dialog closes – also unlock there
-      hiddenColor?.addEventListener('change', () => {
-        setTimeout(() => { pickingColor = false; }, 0);
-      });
-
-
-
-    // Font / size / color controls if present
-    const selFont  = document.getElementById('ctl-font');
-    const selSize  = document.getElementById('ctl-size');
-    const inpColor = document.getElementById('ctl-color');
-    const clrColor = document.getElementById('ctl-color-clear');
-
-function applyFontFamily(value) {
-  if (currentBlockBody) {
-    if (value) wrapSelectionWithSpan(`font-family:${value}`);
-    else wrapSelectionWithSpan(`font-family:inherit`);
-  } else {
-    const c = editor.chain().focus();
-    value ? c.setFontFamily?.(value).run()
-          : c.unsetFontFamily?.().run();
-  }
-}
-
-    function applyFontSize(value) {
-      if (currentBlockBody) {
-        if (value) wrapSelectionWithSpan(`font-size:${value}`);
-        else wrapSelectionWithSpan(`font-size:inherit`);
-      } else {
-        const c = editor.chain().focus();
-        value ? c.setMark('textStyle', { fontSize: value }).run()
-              : c.setMark('textStyle', { fontSize: null }).run();
-      }
-    }
-
-    function applyColor(value) {
-      if (currentBlockBody) {
-        if (value) {
-          withRestoredSelection(() => document.execCommand('foreColor', false, value));
-        } else {
-          // Clear color by wrapping with inherit (fallback)
-          wrapSelectionWithSpan('color:inherit');
-        }
-      } else {
-        const c = editor.chain().focus();
-        value ? c.setColor?.(value).run()
-              : c.unsetColor?.().run();
-      }
-    }
-    selFont?.addEventListener('change',  () => applyFontFamily(selFont.value));
-    selSize?.addEventListener('change',  () => applyFontSize(selSize.value));
-    inpColor?.addEventListener('input',  () => applyColor(inpColor.value));
-    clrColor?.addEventListener('click',  () => applyColor(null));
-  }
-  // ========= END TOP BAR WIRING =========
-
   function wireDropTargets() {
     const pages = document.querySelectorAll('.page');
     if (!pages.length) return;
     pages.forEach((page) => {
       const overlay = ensureOverlay(page);
-
-      if (overlay.dataset.wired === '1') return;
-      overlay.dataset.wired = '1';
-
       ['dragenter', 'dragover'].forEach((evt) => {
         overlay.addEventListener(evt, (ev) => {
           if (ev.dataTransfer?.types?.includes('application/x-mc')) ev.preventDefault();
@@ -1510,24 +1173,399 @@ function applyFontFamily(value) {
     });
   }
 
+  function execOnBlockOrEditor(editor, fnForEditor, fallback /* string or function */) {
+    if (currentBlockBody && currentBlockBody.isContentEditable !== false) {
+      // put the caret back where the user left it
+      restoreSelection(currentBlockBody);
+
+      if (typeof fallback === 'function') {
+        fallback();
+      } else if (typeof fallback === 'string') {
+        document.execCommand(fallback, false, null);
+      }
+
+      currentBlockBody.focus();
+      saveSelection(currentBlockBody);
+    } else {
+      fnForEditor(editor);
+    }
+  }
+
+ 
+    function wireTopbar() {
+        // Which TipTap editor is currently focused?
+      function getEd() {
+        // 1) direct focus
+        const el = document.activeElement;
+        if (el) {
+          const page = el.closest('.page');
+          if (page) {
+            // Try to find an editor whose element is inside this page
+            for (const ed of MCEditors.all()) {
+              if (page.contains(ed.options.element)) return ed;
+            }
+          }
+        }
+        // 2) fall back to first editor
+        return MCEditors.first();
+      }
+
+      // When the TipTap editor gains focus, clear block selection
+      const tiptapEl = document.querySelector('.tiptap');
+      tiptapEl?.addEventListener('focusin', () => { currentBlockBody = null; });
+
+      // ✅ get toolbar first
+      const toolbar = document.getElementById('tt-toolbar');
+      if (!toolbar) return;
+
+      // ✅ keep focus in the current contentEditable BEFORE Bootstrap dropdown handles the click
+      const keepFocus = (e) => {
+        // limit to toolbar actions that can steal focus, esp. color menu
+        const el = e.target.closest(
+          '.dropdown-item[data-action="setColor"], .dropdown-item[data-action="pickColor"]'
+        );
+        if (!el) return;
+        e.preventDefault();
+        if (currentBlockBody) restoreSelection(currentBlockBody);
+      };
+      toolbar.addEventListener('pointerdown', keepFocus);
+      toolbar.addEventListener('mousedown', keepFocus);
+
+      // Keep caret in the block when pressing toolbar buttons (general case)
+      toolbar.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        if (currentBlockBody) restoreSelection(currentBlockBody);
+      });
+
+
+      toolbar.addEventListener('click', (e) => {
+        const el = e.target.closest('[data-action]');
+        if (!el) return;
+        const action = el.dataset.action;
+        const level = +el.dataset.level || undefined;
+        const ed = getEd(); // TipTap editor for the currently focused page
+
+
+        if (action === 'pickColor') {
+          const hidden = document.getElementById('ctl-color-hidden');
+          if (!hidden) return;
+
+          if (currentBlockBody) saveSelection(currentBlockBody);
+          pickingColor = true; // 🔒 lock while the native dialog is open
+
+          hidden.click();
+          return; // actual apply happens in the input/change handlers below
+        }
+
+
+      
+
+            // === Line height ===
+          if (action === 'setLineHeight') {
+            if (!ed) return;
+            let lh = el.dataset.lh || '';
+            if (lh === 'custom') {
+              const v = prompt('Enter line spacing (e.g., 1, 1.15, 1.5, 2, or CSS like "24px")', '1.5');
+              if (v === null) return;
+              lh = v.trim();
+              if (!lh) return;
+            }
+            ed.chain().focus().setLineHeight(lh).run();
+            return;
+          }
+          if (action === 'unsetLineHeight') {
+            if (!ed) return;
+            ed.chain().focus().unsetLineHeight().run();
+            return;
+          }
+
+
+      switch (action) {
+        case 'toggleBold':
+            const ed = getEd(); if (!ed) return;
+          execOnBlockOrEditor(
+            ed,
+            (eed) => eed.chain().focus().toggleBold().run(),
+            'bold'
+          );
+          break;
+        case 'toggleItalic':
+          execOnBlockOrEditor(ed, (eed) => eed.chain().focus().toggleItalic().run(), 'italic');
+          break;
+        case 'toggleUnderline':
+          execOnBlockOrEditor(ed, (eed) => eed.chain().focus().toggleUnderline().run(), 'underline');
+          break;
+        case 'toggleStrike':
+          execOnBlockOrEditor(ed, (eed) => eed.chain().focus().toggleStrike().run(), () => document.execCommand('strikethrough'));
+          break;
+
+        case 'setParagraph':
+          execOnBlockOrEditor(ed, (eed) => eed.chain().focus().setParagraph().run(), () => document.execCommand('formatBlock', false, 'P'));
+          break;
+        case 'setHeading':
+          execOnBlockOrEditor(
+            ed,
+            (eed) => eed.chain().focus().toggleHeading({ level }).run(),
+            () => document.execCommand('formatBlock', false, 'H' + (level || 1))
+          );
+          break;
+
+        case 'toggleBulletList':
+          execOnBlockOrEditor(ed, (eed) => eed.chain().focus().toggleBulletList().run(), 'insertUnorderedList');
+          break;
+        case 'toggleOrderedList':
+          execOnBlockOrEditor(ed, (eed) => eed.chain().focus().toggleOrderedList().run(), 'insertOrderedList');
+          break;
+
+        case 'toggleBlockquote':
+          execOnBlockOrEditor(
+            ed,
+            (eed) => eed.chain().focus().toggleBlockquote().run(),
+            () => document.execCommand('formatBlock', false, 'BLOCKQUOTE')
+          );
+          break;
+        case 'toggleCodeBlock':
+          execOnBlockOrEditor(ed, (eed) => eed.chain().focus().toggleCodeBlock().run(), null);
+          break;
+
+        case 'alignLeft':
+          execOnBlockOrEditor(ed, (eed) => eed.chain().focus().setTextAlign('left').run(), 'justifyLeft');
+          break;
+        case 'alignCenter':
+          execOnBlockOrEditor(ed, (eed) => eed.chain().focus().setTextAlign('center').run(), 'justifyCenter');
+          break;
+        case 'alignRight':
+          execOnBlockOrEditor(ed, (eed) => eed.chain().focus().setTextAlign('right').run(), 'justifyRight');
+          break;
+        case 'alignJustify':
+          execOnBlockOrEditor(ed, (eed) => eed.chain().focus().setTextAlign('justify').run(), 'justifyFull');
+          break;
+
+        case 'toggleSuperscript':
+          execOnBlockOrEditor(
+            ed,
+            (eed) => eed.chain().focus().toggleSuperscript().run(),
+            () => document.execCommand('superscript')
+          );
+          break;
+
+        case 'toggleSubscript':
+          execOnBlockOrEditor(
+            ed,
+            (eed) => eed.chain().focus().toggleSubscript().run(),
+            () => document.execCommand('subscript')
+          );
+          break;
+
+        case 'toggleTaskList':
+          execOnBlockOrEditor(
+            ed,
+            (eed) => eed.chain().focus().toggleTaskList().run(),
+            'insertUnorderedList'
+          );
+          break;
+
+
+        case 'setColor': {
+          const value = el.dataset.value || null;
+
+          if (currentBlockBody) {
+            // snapshot before dropdown closes
+            saveSelection(currentBlockBody);
+            restoreSelection(currentBlockBody);
+          }
+
+          execOnBlockOrEditor(
+            ed,
+            (eed) => {
+              if (value) eed.chain().focus().setColor(value).run();
+              else       eed.chain().focus().unsetColor().run();
+            },
+            () => {
+              if (value) wrapSelectionWithSpan(`color:${value}`);
+              else       wrapSelectionWithSpan('color:inherit');
+            }
+          );
+
+          if (currentBlockBody) {
+            currentBlockBody.focus();
+            saveSelection(currentBlockBody);
+          }
+          break;
+        }
+        
+        case 'setHorizontalRule':
+          if (!ed) return;
+          ed.chain().focus().setHorizontalRule().run();
+          break;
+
+        case 'insertImage': {
+          const url = prompt('Image URL');
+          if (!url) return;
+          execOnBlockOrEditor(
+            ed,
+            (eed) => (eed.chain().focus().setImage?.({ src: url }).run() || eed.chain().focus().insertContent(`<img src="${url}" alt="">`).run()),
+            () => {
+              // insert into block at caret
+              document.execCommand('insertImage', false, url);
+            }
+          );
+          break;
+        }
+
+        case 'setLink': {
+          const ed = getEd(); if (!ed) return;
+          const prev = ed.getAttributes('link')?.href || '';
+          const url = prompt('Enter URL', prev);
+          if (url === null) return;
+          if (currentBlockBody) {
+            if (url === '') document.execCommand('unlink');
+            else document.execCommand('createLink', false, url);
+            currentBlockBody.focus();
+          } else {
+            if (!ed) return;
+            if (url === '') ed.chain().focus().unsetLink().run();
+            else ed.chain().focus().setLink({ href: url }).run();
+          }
+          break;
+        }
+        case 'unsetLink':
+          if (currentBlockBody) {
+            document.execCommand('unlink');
+            currentBlockBody.focus();
+          } else {
+            ed.chain().focus().unsetLink().run();
+          }
+          break;
+
+        case 'undo':
+          if (currentBlockBody) document.execCommand('undo'); else ed.commands.undo();
+          break;
+        case 'redo':
+          if (currentBlockBody) document.execCommand('redo'); else ed.commands.redo();
+          break;
+
+        default:
+          // no-op for unknown buttons
+          break;
+      }
+    });
+
+      const hiddenColor = document.getElementById('ctl-color-hidden');
+      hiddenColor?.addEventListener('input', () => {
+        const value = hiddenColor.value;
+        if (currentBlockBody) restoreSelection(currentBlockBody);
+
+        const curEd = getEd(); if (!curEd && !currentBlockBody) return;
+
+        execOnBlockOrEditor(
+          curEd,
+          (eed) => (value ? eed.chain().focus().setColor(value).run()
+                          : eed.chain().focus().unsetColor().run()),
+          () => {
+            if (value) wrapSelectionWithSpan(`color:${value}`);
+            else       wrapSelectionWithSpan('color:inherit');
+          }
+        );
+
+        if (currentBlockBody) {
+          currentBlockBody.focus();
+          saveSelection(currentBlockBody);
+        }
+        setTimeout(() => { pickingColor = false; }, 0);
+      });
+
+
+      // Some browsers only fire 'change' after the dialog closes – also unlock there
+      hiddenColor?.addEventListener('change', () => {
+        setTimeout(() => { pickingColor = false; }, 0);
+      });
+
+
+
+    // Font / size / color controls if present
+    const selFont  = document.getElementById('ctl-font');
+    const selSize  = document.getElementById('ctl-size');
+    const inpColor = document.getElementById('ctl-color');
+    const clrColor = document.getElementById('ctl-color-clear');
+
+    function applyFontFamily(value) {
+      if (currentBlockBody) {
+        if (value) wrapSelectionWithSpan(`font-family:${value}`);
+        else wrapSelectionWithSpan(`font-family:inherit`);
+      } else {
+        const ed = getEd(); if (!ed) return;
+        const c = ed.chain().focus();
+        value ? c.setFontFamily?.(value).run()
+              : c.unsetFontFamily?.().run();
+      }
+    }
+
+
+    function applyFontSize(value) {
+      if (currentBlockBody) {
+        if (value) wrapSelectionWithSpan(`font-size:${value}`);
+        else wrapSelectionWithSpan(`font-size:inherit`);
+      } else {
+        const ed = getEd(); if (!ed) return;
+        const c = ed.chain().focus();
+        value ? c.setMark('textStyle', { fontSize: value }).run()
+              : c.setMark('textStyle', { fontSize: null }).run();
+      }
+    }
+
+    function applyColor(value) {
+      if (currentBlockBody) {
+        if (value) {
+          withRestoredSelection(() => document.execCommand('foreColor', false, value));
+        } else {
+          // Clear color by wrapping with inherit (fallback)
+          wrapSelectionWithSpan('color:inherit');
+        }
+      } else {
+        const ed = getEd(); if (!ed) return;
+        const c = ed.chain().focus();
+        value ? c.setColor?.(value).run()
+              : c.unsetColor?.().run();
+      }
+    }
+    selFont?.addEventListener('change',  () => applyFontFamily(selFont.value));
+    selSize?.addEventListener('change',  () => applyFontSize(selSize.value));
+    inpColor?.addEventListener('input',  () => applyColor(inpColor.value));
+    clrColor?.addEventListener('click',  () => applyColor(null));
+  }
+  // ========= END TOP BAR WIRING =========
+
       // ---------- Boot ----------
       waitForEditor().then((editor) => {
         wireSidebarDrag();
         wireDropTargets();
-        wireTopbar(editor); // <— restore toolbar + make it affect sidebar text too
+        wireTopbar(); // <— restore toolbar + make it affect sidebar text too
 
-// expose a rewire hook so new pages can be made drop targets
-window.__mc = window.__mc || {};
-window.__mc.rewireDropTargets = () => {
-  // 1) make sure every .page has the overlay
-  document.querySelectorAll('.page').forEach((page) => {
-    ensureOverlay(page);           // uses your helper above
-  });
+      // expose a rewire hook so new pages can be made drop targets
+  window.__mc = window.__mc || {};
+  window.__mc.rewireDropTargets = () => {
+    // re-run the internal drop-target wiring for any pages that don't have an overlay yet
+    document.querySelectorAll('.page').forEach((page) => {
+      if (!page.querySelector('.mc-block-overlay')) {
+        // create overlay identical to initial wiring
+        const overlay = document.createElement('div');
+        overlay.className = 'mc-block-overlay';
+        Object.assign(overlay.style, {
+          position: 'absolute',
+          inset: '0',
+          pointerEvents: 'none',
+          paddingTop: '10px',
+        });
+        if (getComputedStyle(page).position === 'static') page.style.position = 'relative';
+        page.appendChild(overlay);
+      }
+    });
 
-  // 2) (re)bind listeners for any overlays that aren't wired yet
-  wireDropTargets();
-};
-
+    // let TipTapTest’s original listeners attach (they’re bound on `.mc-block-overlay`)
+    const evt = new Event('mc:rewire');
+    document.dispatchEvent(evt);
+  };
 
 
 
