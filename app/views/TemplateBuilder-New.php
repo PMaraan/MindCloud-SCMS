@@ -430,9 +430,12 @@ function maybeAddPageFor(editorBoxEl){
   // Only fire if caret/focus is inside THIS editor box (incl. .ProseMirror)
   const activeInside = box.contains(document.activeElement);
 
+
   if (activeInside && overflows) {
+    // prevent the old editor from eating the next keystroke
+    try { window.__mc?.getActiveEditor?.()?.commands?.blur(); } catch {}
     PAGED.add(editorBoxEl);
-    createPage(); // your existing function
+    createPage();
   }
 }
 
@@ -492,6 +495,8 @@ document.querySelectorAll('.page [data-editor]').forEach(setupOverflowWatcher);
     page.className = `page ${currentPaperClass()}`;
     page.dataset.page = String(n);
     page.tabIndex = 0;
+    page.id = `page-${n}`;
+
 
     page.innerHTML = `
       <div class="page-header">
@@ -529,6 +534,24 @@ document.querySelectorAll('.page [data-editor]').forEach(setupOverflowWatcher);
 
     workEl.appendChild(page);
     await makeEditorFor(page);
+
+
+    // --- Focus caret into the newly created page and keep it there ---
+    const edKey = page.id || page.dataset.page;
+    const ed    = MCEditors.get(edKey) || MCEditors.all().slice(-1)[0] || null;
+
+    // Bring the new page into view (nice UX)
+    page.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    // Focus now (same tick). Land at end of its first paragraph.
+    try { ed?.chain().focus('start').run(); } catch { ed?.commands?.focus?.(); }
+
+    // Guard: if the browser/ProseMirror steals focus, reclaim it next tick
+    setTimeout(() => {
+      try { ed?.chain().focus('start').run(); } catch { ed?.commands?.focus?.(); }
+    }, 0);
+
+
     // Start overflow watching on the new page’s editor box
     const newEditorBox = page.querySelector('[data-editor]');
     if (newEditorBox) setupOverflowWatcher(newEditorBox);
