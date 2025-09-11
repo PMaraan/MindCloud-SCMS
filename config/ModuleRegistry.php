@@ -7,6 +7,7 @@ use App\Modules\Colleges\Controllers\CollegesController;
 use App\Modules\Courses\Controllers\CoursesController;
 use App\Modules\Programs\Controllers\ProgramsController;
 use App\Modules\Curricula\Controllers\CurriculaController;
+use App\Modules\TemplateBuilder\Controllers\TemplateBuilderController;
 // use App\Controllers\RolesController; // might be deprecated. remove for production ...
 // use App\Controllers\TemplatesController;
 // use App\Controllers\SyllabusController;
@@ -66,6 +67,16 @@ return [
             'create' => Permissions::COURSES_CREATE,
             'edit'   => Permissions::COURSES_EDIT,
             'delete' => Permissions::COURSES_DELETE,
+        ],
+    ],
+    'templatebuilder' => [
+        'label'      => 'Template Builder',
+        'controller' => TemplateBuilderController::class,
+        'permission' => Permissions::TEMPLATEBUILDER_VIEW,
+        'actions'    => [
+            'create' => Permissions::TEMPLATEBUILDER_CREATE,
+            'edit'   => Permissions::TEMPLATEBUILDER_EDIT,
+            'delete' => Permissions::TEMPLATEBUILDER_DELETE,
         ],
     ],
     

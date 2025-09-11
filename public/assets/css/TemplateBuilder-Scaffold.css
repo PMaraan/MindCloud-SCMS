@@ -1,0 +1,16 @@
+/* /public/assets/css/TemplateBuilder-Scaffold.css */
+.tb-card {
+  cursor: pointer;
+  border: 1px solid rgba(0,0,0,.05);
+  transition: box-shadow .15s ease, border-color .15s ease;
+}
+.tb-card:focus,
+.tb-card:hover {
+  border-color: rgba(0,0,0,.1);
+  box-shadow: 0 4px 16px rgba(0,0,0,.06);
+  outline: 0;
+}
+#tb-info-pane {
+  position: sticky;
+  top: 12px;
+}

@@ -33,5 +33,10 @@ final class Permissions
     public const COURSES_EDIT   = 'CourseModification';
     public const COURSES_DELETE = 'CourseDeletion';
 
+    public const TEMPLATEBUILDER_VIEW   = 'SyllabusTemplateViewing';
+    public const TEMPLATEBUILDER_CREATE = 'SyllabusTemplateCreation';
+    public const TEMPLATEBUILDER_EDIT   = 'SyllabusTemplateModification';
+    public const TEMPLATEBUILDER_DELETE = 'SyllabusTemplateDeletion';
+
     // Add more modules here...
 }

@@ -33,8 +33,6 @@
         <div>
             <?php require __DIR__ . '/partials/Pagination.php'; ?>
         </div>
-
-        
     </div>
 
     <?php require __DIR__ . '/partials/Table.php'; ?>

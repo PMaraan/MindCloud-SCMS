@@ -25,10 +25,13 @@
     </div>
   <?php endif; ?>
 
-  <?php require __DIR__ . '/partials/table.php'; ?>
+  <?php include dirname(__DIR__, 3) . '/Views/partials/Pagination.php'; ?>
+
+  <?php require __DIR__ . '/partials/Table.php'; ?>
 
   <?php
     // Pagination
+    /*
     $pages = (int)($pager['pages'] ?? 1);
     $page  = (int)($pager['page'] ?? 1);
     $mk = function(int $n) use ($pager) {
@@ -37,7 +40,11 @@
       if ($q !== '') $url .= '&q=' . urlencode($q);
       return $url;
     };
+    */
+    include dirname(__DIR__, 3) . '/Views/partials/Pagination.php';
   ?>
+  <?php
+  /*
   <nav aria-label="Courses pagination">
     <ul class="pagination">
       <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>">
@@ -53,6 +60,8 @@
       </li>
     </ul>
   </nav>
+  */
+  ?>
 </div>
 
 <?php
