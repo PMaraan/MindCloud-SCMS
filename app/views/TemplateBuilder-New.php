@@ -461,6 +461,7 @@ document.querySelectorAll('.page [data-editor]').forEach(setupOverflowWatcher);
 
 // Expose a getter so other code can reach the current editor if needed
   window.__mc = window.__mc || {};
+  window.__mc.MCEditors = MCEditors;
   window.__mc.getActiveEditor = () => {
     const el = document.activeElement;
     if (el) {
@@ -567,6 +568,9 @@ document.querySelectorAll('.page [data-editor]').forEach(setupOverflowWatcher);
     // update page numbers
     updatePageNumbers();
   }
+
+  // make createPage accessible to non-module scripts
+  window.createPage = createPage;
 
   function updatePageNumbers() {
     document.querySelectorAll('.page .page-num').forEach((span, idx) => {

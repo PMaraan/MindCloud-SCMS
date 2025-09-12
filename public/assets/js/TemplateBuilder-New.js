@@ -5,9 +5,89 @@
 // apply to TipTap OR to the focused sidebar block text.
 
 (function () {
+  function MC_all()   { return window.__mc?.MCEditors?.all?.()   || []; }
+  function MC_first() { return window.__mc?.MCEditors?.first?.() || null; }
+
   const GRID = 20;
   const PAGE_PADDING_TOP = 10;
+
+  function MC_all() {
+    const mod = (window.__mc && window.__mc.MCEditors && typeof window.__mc.MCEditors.all === 'function')
+      ? window.__mc.MCEditors
+      : null;
+    return mod ? mod.all() : [];
+  }
+  function MC_first() {
+    const list = MC_all();
+    return list.length ? list[0] : null;
+  }
+
   const snap = (v) => Math.round(v / GRID) * GRID;
+
+  // --- Content bounds & pagination helpers ---
+  const CONTENT_BOTTOM_GUARD = 24; // space above footer
+
+  function getPage(el) {
+    return el.closest('.page');
+  }
+  function getPageContentBounds(page) {
+    const box = page.querySelector('[data-editor]');
+    const footer = page.querySelector('.page-footer');
+    const top = box ? box.offsetTop : 40;
+    const bottom = page.clientHeight - ((footer?.offsetHeight || 0) + CONTENT_BOTTOM_GUARD);
+    return { top, bottom };
+  }
+  function ensureNextPage() {
+    if (typeof window.createPage === 'function') return window.createPage();
+  }
+  function getOrCreateNextOverlay(curPage) {
+    const pages = Array.from(document.querySelectorAll('.page'));
+    const idx = pages.indexOf(curPage);
+    let next = pages[idx + 1];
+    if (!next) {
+      ensureNextPage();
+      const pagesAfter = Array.from(document.querySelectorAll('.page'));
+      next = pagesAfter[pagesAfter.length - 1];
+    }
+    // ask the app to build overlays for new pages
+    document.dispatchEvent(new Event('mc:rewire'));
+    let overlay = next.querySelector('.mc-block-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.className = 'mc-block-overlay';
+      Object.assign(overlay.style, {
+        position: 'absolute', inset: '0', pointerEvents: 'none', paddingTop: `${PAGE_PADDING_TOP}px`,
+      });
+      if (getComputedStyle(next).position === 'static') next.style.position = 'relative';
+      next.appendChild(overlay);
+    }
+    return overlay;
+  }
+  function moveBlockToNextPage(block) {
+    const curPage = getPage(block);
+    if (!curPage) return;
+    const nextOverlay = getOrCreateNextOverlay(curPage);
+    block.style.top = `${PAGE_PADDING_TOP}px`;
+    nextOverlay.appendChild(block);
+    // reflow stacks on both pages
+    const newOverlay = nextOverlay;
+    if (newOverlay) reflowStack(newOverlay);
+    const prevOverlay = curPage.querySelector('.mc-block-overlay');
+    if (prevOverlay) reflowStack(prevOverlay);
+  }
+  function paginateOverlayIfNeeded(overlay) {
+    if (!overlay) return;
+    const page = getPage(overlay);
+    if (!page) return;
+    const { bottom: contentBottom } = getPageContentBounds(page);
+    const pageTop = page.getBoundingClientRect().top;
+
+    for (const blk of overlay.querySelectorAll('.mc-block')) {
+      const br = blk.getBoundingClientRect();
+      const blkBottom = br.bottom - pageTop;
+      if (blkBottom > contentBottom) moveBlockToNextPage(blk);
+    }
+  }
 
   const waitForEditor = () =>
     new Promise((resolve) => {
@@ -245,7 +325,10 @@ function wrapSelectionWithSpan(styleText) {
       if (h !== parseInt(el.style.height || '0', 10)) {
         el.style.height = `${h}px`;
         el.dataset.rows = String(rows);
-        if (overlay) pushDownFrom(el, overlay);
+        if (overlay) {
+          pushDownFrom(el, overlay);
+          paginateOverlayIfNeeded(overlay);
+        }
       }
     };
     body.addEventListener('input', () => requestAnimationFrame(autosize));
@@ -287,7 +370,10 @@ function wrapSelectionWithSpan(styleText) {
       if (h !== parseInt(el.style.height || '0', 10)) {
         el.style.height = `${h}px`;
         el.dataset.rows = String(rows);
-        if (overlay) pushDownFrom(el, overlay);
+        if (overlay) {
+          pushDownFrom(el, overlay);
+          paginateOverlayIfNeeded(overlay);
+        }
       }
     };
     body.addEventListener('input', () => requestAnimationFrame(autosize));
@@ -698,7 +784,10 @@ function makeTable() {
     el.style.height = `${rowsForHeight * GRID}px`;
     el.dataset.rows = String(rowsForHeight);
     const overlay = el.closest('.mc-block-overlay');
-    if (overlay) pushDownFrom(el, overlay);
+    if (overlay) {
+      pushDownFrom(el, overlay);
+      paginateOverlayIfNeeded(overlay);
+    }
 
     if (!preserveWidth) evenColumns(); // normalize on first build
 
@@ -1073,7 +1162,10 @@ function makeTable() {
         cursor = Math.max(cursor, bottom);
       }
     }
+    // ensure anything past bottom goes to next page
+    paginateOverlayIfNeeded(overlay);
   }
+
   function reflowStack(overlay) {
     const items = Array.from(overlay.querySelectorAll('.mc-block'))
       .sort((a, b) => (parseInt(a.style.top || 0, 10) - parseInt(b.style.top || 0, 10)));
@@ -1153,10 +1245,14 @@ function makeTable() {
         overlay.appendChild(block);
         makeDraggable(block, overlay);
         pushDownFrom(block, overlay);
+        paginateOverlayIfNeeded(overlay);
         setOverlaysDragEnabled(false);
       });
     });
   }
+
+  // Initial wiring
+  document.addEventListener('mc:rewire', wireDropTargets);
 
   function wireSidebarDrag() {
     document.querySelectorAll('#mc-sidebar .sb-item').forEach((btn) => {
@@ -1195,20 +1291,17 @@ function makeTable() {
     function wireTopbar() {
         // Which TipTap editor is currently focused?
       function getEd() {
-        // 1) direct focus
-        const el = document.activeElement;
-        if (el) {
-          const page = el.closest('.page');
-          if (page) {
-            // Try to find an editor whose element is inside this page
-            for (const ed of MCEditors.all()) {
-              if (page.contains(ed.options.element)) return ed;
-            }
+      const el = document.activeElement;
+      if (el) {
+        const page = el.closest('.page');
+        if (page) {
+          for (const ed of MC_all()) {
+            if (page.contains(ed.options.element)) return ed;
           }
         }
-        // 2) fall back to first editor
-        return MCEditors.first();
       }
+      return MC_first();
+    }
 
       // When the TipTap editor gains focus, clear block selection
       const tiptapEl = document.querySelector('.tiptap');
@@ -1281,7 +1374,7 @@ function makeTable() {
 
 
       switch (action) {
-        case 'toggleBold': {
+        case 'toggleBold':
           if (!ed) return;
           execOnBlockOrEditor(
             ed,
@@ -1289,7 +1382,6 @@ function makeTable() {
             'bold'
           );
           break;
-        }
         case 'toggleItalic':
           execOnBlockOrEditor(ed, (eed) => eed.chain().focus().toggleItalic().run(), 'italic');
           break;
@@ -1415,7 +1507,7 @@ function makeTable() {
         }
 
         case 'setLink': {
-          const ed = getEd(); if (!ed) return;
+          if (!ed) return;
           const prev = ed.getAttributes('link')?.href || '';
           const url = prompt('Enter URL', prev);
           if (url === null) return;
