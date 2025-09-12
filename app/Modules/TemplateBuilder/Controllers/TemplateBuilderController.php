@@ -8,137 +8,247 @@ use App\Interfaces\StorageInterface;
 use App\Security\RBAC;
 use App\Config\Permissions;
 use App\Models\UserModel;
+use App\Modules\TemplateBuilder\Models\TemplateBuilderModel;
+use PDO;
+use Throwable;
 
 final class TemplateBuilderController
 {
     private StorageInterface $db;
     private UserModel $userModel;
-
-    /**
-     * Roles not exclusive to a single college (show list of college “folders”)
-     * e.g., VPAA, Admin, Librarian, QA, Registrar, etc.
-     */
-    private const NON_COLLEGE_BOUND_ROLES = [
-        'VPAA',
-        'Admin',
-        'Librarian',
-    ];
-
-    /**
-     * Roles exclusive to a college (show Drive-like template grid + right pane)
-     * e.g., Dean, College Dean, Program Chair, Department Chair, etc.
-     */
-    private const COLLEGE_BOUND_ROLES = [
-        'Dean',
-        'College Secretary',
-        'Chair',
-    ];
+    private TemplateBuilderModel $model;
+    private array $SYSTEM_ROLES  = ['VPAA','Admin','Librarian','QA','Registrar'];
+    private array $DEAN_ROLES    = ['Dean','College Dean'];
+    private array $CHAIR_ROLES   = ['Program Chair','Department Chair','Coordinator'];
 
     public function __construct(StorageInterface $db)
     {
         $this->db = $db;
-        if (session_status() !== \PHP_SESSION_ACTIVE) {
-            session_start();
-        }
+        if (session_status() !== \PHP_SESSION_ACTIVE) session_start();
         $this->userModel = new UserModel($db);
+        $this->model     = new TemplateBuilderModel($db);
+        if (!isset($_SESSION['tb_cache'])) $_SESSION['tb_cache'] = [];
     }
 
     public function index(): string
     {
-        // 1) RBAC Gate
         (new RBAC($this->db))->require((string)$_SESSION['user_id'], Permissions::TEMPLATEBUILDER_VIEW);
 
-        // 2) User context (role_name, college info)
         $user = $this->userModel->getUserProfile((string)$_SESSION['user_id']);
-        $roleName = trim((string)($user['role_name'] ?? ''));
-        $userCollegeId = $user['college_id'] ?? null;
-        $userCollegeShort = $user['college_short_name'] ?? null;
-        $userCollegeFull  = $user['college_name'] ?? null;
+        $role = (string)($user['role_name'] ?? '');
+        $collegeId = isset($user['college_id']) ? (int)$user['college_id'] : null;
+        $programId = isset($user['program_id']) ? (int)$user['program_id'] : null;
 
-        // 3) Mode resolution by role arrays (NOT by checking null college)
-        $mode = 'multi-college'; // default
-        if (in_array($roleName, self::COLLEGE_BOUND_ROLES, true)) {
-            $mode = 'college-drive';
-        } elseif (in_array($roleName, self::NON_COLLEGE_BOUND_ROLES, true)) {
-            $mode = 'multi-college';
-        }
+        $ASSET_BASE = (defined('BASE_PATH') ? BASE_PATH : '') . '/public';
+        $esc = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 
-        // 4) Allow “entering a college folder” from multi-college view
-        //    ?college={id} switches to college-drive view
-        $selectedCollegeId = null;
-        if (isset($_GET['college']) && ctype_digit((string)$_GET['college'])) {
-            $selectedCollegeId = (int)$_GET['college'];
-            $mode = 'college-drive';
-        }
-
-        // 5) Mock data for now — replace with model later
-        //    Colleges shown in folder list (for non-college-bound roles)
-        $colleges = [
-            ['college_id' => 1, 'short_name' => 'CCS', 'college_name' => 'College of Computer Studies'],
-            ['college_id' => 2, 'short_name' => 'CBA', 'college_name' => 'College of Business Administration'],
-            ['college_id' => 3, 'short_name' => 'CAS', 'college_name' => 'College of Arts and Sciences'],
+        $viewData = [
+            'ASSET_BASE' => $ASSET_BASE,
+            'esc'        => $esc,
+            'user'       => $user,
+            'role'       => $role,
         ];
 
-        //    Templates shown in the drive view (for selected college or user’s own)
-        $currentCollege = null;
-        if ($mode === 'college-drive') {
-            // Pick by GET ?college=... if present; otherwise default to user’s college (if any)
-            $cid = $selectedCollegeId ?? (is_numeric($userCollegeId) ? (int)$userCollegeId : null);
-            if ($cid !== null) {
-                // Map from $colleges mock to get names
-                foreach ($colleges as $c) {
-                    if ((int)$c['college_id'] === (int)$cid) {
-                        $currentCollege = $c;
-                        break;
-                    }
-                }
-            } elseif ($userCollegeShort || $userCollegeFull) {
-                $currentCollege = [
-                    'college_id'   => (int)($userCollegeId ?? 0),
-                    'short_name'   => (string)($userCollegeShort ?? ''),
-                    'college_name' => (string)($userCollegeFull ?? ''),
-                ];
+        // FOLDER-FIRST for non-college-bound roles (system roles)
+        $openCollegeId = null;
+        if (isset($_GET['college']) && ctype_digit((string)$_GET['college'])) {
+            $openCollegeId = (int)$_GET['college'];
+        }
+
+        // Cache helpers
+        $cacheGet = function (string $key) {
+            return $_SESSION['tb_cache'][$key] ?? null;
+        };
+        $cacheSet = function (string $key, $value): void {
+            $_SESSION['tb_cache'][$key] = $value;
+        };
+
+        // SYSTEM ROLES: show folders first. Only load templates when a folder is opened.
+        if (in_array($role, $this->SYSTEM_ROLES, true)) {
+            // Cache colleges list
+            $colleges = $cacheGet('colleges_all');
+            if ($colleges === null) {
+                $colleges = $this->model->getAllColleges();
+                $cacheSet('colleges_all', $colleges);
             }
 
-            // Mock templates
-            $templates = [
-                [
-                    'template_id' => 101,
-                    'title'       => 'Syllabus — Introduction to Programming',
-                    'course_code' => 'CS101',
-                    'updated_at'  => '2025-08-30 14:05',
-                    'owner'       => 'Dept Template',
-                ],
-                [
-                    'template_id' => 102,
-                    'title'       => 'Syllabus — Data Structures',
-                    'course_code' => 'CS201',
-                    'updated_at'  => '2025-09-02 10:11',
-                    'owner'       => 'Dept Template',
-                ],
-                [
-                    'template_id' => 103,
-                    'title'       => 'Syllabus — Database Systems',
-                    'course_code' => 'CS301',
-                    'updated_at'  => '2025-09-08 09:00',
-                    'owner'       => 'Dept Template',
-                ],
-            ];
-        } else {
-            $templates = [];
+            if ($openCollegeId === null) {
+                // just folders view
+                $viewData['mode']     = 'system-folders';
+                $viewData['colleges'] = $colleges;
+                return $this->render('index', $viewData);
+            }
+
+            // opened a college folder → load that college’s sections, but cache per-college
+            $perKey = "college_sections_{$openCollegeId}";
+            $collegeSections = $cacheGet($perKey);
+            if ($collegeSections === null) {
+                $general   = $this->model->getCollegeGeneralTemplates($openCollegeId);
+                $programs  = $this->model->getProgramsByCollege($openCollegeId);
+                $progSecs  = [];
+                foreach ($programs as $p) {
+                    $pid = (int)$p['program_id'];
+                    $progSecs[] = [
+                        'program'   => $p,
+                        'templates' => $this->model->getProgramExclusiveTemplates($openCollegeId, $pid),
+                    ];
+                }
+                // also fetch the college basic info (from cached list)
+                $college = null;
+                foreach ($colleges as $c) {
+                    if ((int)$c['college_id'] === $openCollegeId) { $college = $c; break; }
+                }
+                $collegeSections = [
+                    'college'  => $college ?: ['college_id'=>$openCollegeId,'short_name'=>'','college_name'=>''],
+                    'general'  => $general,
+                    'programs' => $progSecs,
+                ];
+                $cacheSet($perKey, $collegeSections);
+            }
+
+            $viewData['mode']    = 'college';
+            $viewData['college'] = $collegeSections['college'];
+            $viewData['general'] = $collegeSections['general'];
+            $viewData['programs']= $collegeSections['programs'];
+            $viewData['showBackToFolders'] = true;
+            $viewData['canCreateGlobal']   = true; // VPAA/Admin can create system/global
+            $viewData['canCreateCollege']  = true; // they can also create college-level
+            $viewData['allColleges']       = $colleges; // for modal selects
+            $viewData['programsOfCollege'] = $this->model->getProgramsByCollege((int)$collegeSections['college']['college_id']);
+            return $this->render('index', $viewData);
         }
 
-        // 6) Render view
+        // DEANS: show their college sections directly
+        if ($collegeId && in_array($role, $this->DEAN_ROLES, true)) {
+            $general  = $this->model->getCollegeGeneralTemplates($collegeId);
+            $programs = $this->model->getProgramsByCollege($collegeId);
+            $progSecs = [];
+            foreach ($programs as $p) {
+                $pid = (int)$p['program_id'];
+                $progSecs[] = [
+                    'program'   => $p,
+                    'templates' => $this->model->getProgramExclusiveTemplates($collegeId, $pid),
+                ];
+            }
+            $viewData['mode']    = 'college';
+            $viewData['college'] = [
+                'college_id'   => $collegeId,
+                'short_name'   => (string)($user['college_short_name'] ?? ''),
+                'college_name' => (string)($user['college_name'] ?? ''),
+            ];
+            $viewData['general'] = $general;
+            $viewData['programs']= $progSecs;
+            $viewData['canCreateCollege']  = true;
+            $viewData['allColleges']       = [['college_id'=>$collegeId,'short_name'=>$user['college_short_name'] ?? '','college_name'=>$user['college_name'] ?? '']];
+            $viewData['programsOfCollege'] = $programs;
+            return $this->render('index', $viewData);
+        }
+
+        // CHAIRS: general (college-level) + their program section only
+        if ($collegeId && $programId && in_array($role, $this->CHAIR_ROLES, true)) {
+            $general  = $this->model->getCollegeGeneralTemplates($collegeId);
+            $progOnly = $this->model->getProgramExclusiveTemplates($collegeId, $programId);
+            $viewData['mode']    = 'program';
+            $viewData['college'] = [
+                'college_id'   => $collegeId,
+                'short_name'   => (string)($user['college_short_name'] ?? ''),
+                'college_name' => (string)($user['college_name'] ?? ''),
+            ];
+            $viewData['program'] = [
+                'program_id'   => $programId,
+                'program_name' => (string)($user['program_name'] ?? 'My Program'),
+            ];
+            $viewData['general'] = $general;
+            $viewData['program_templates'] = $progOnly;
+            $viewData['canCreateProgram']  = true;
+            $viewData['allColleges']       = [['college_id'=>$collegeId,'short_name'=>$user['college_short_name'] ?? '','college_name'=>$user['college_name'] ?? '']];
+            $viewData['programsOfCollege'] = [['program_id'=>$programId,'program_name'=>$user['program_name'] ?? '']];
+            return $this->render('index', $viewData);
+        }
+
+        // fallback
+        $viewData['mode']   = 'system-folders';
+        $viewData['colleges'] = $this->model->getAllColleges();
+        return $this->render('index', $viewData);
+    }
+
+    public function create(): void
+    {
+        (new RBAC($this->db))->require((string)$_SESSION['user_id'], Permissions::TEMPLATEBUILDER_CREATE);
+        $user = $this->userModel->getUserProfile((string)$_SESSION['user_id']);
+        $idno = (string)($user['id_no'] ?? 'SYS-UNKNOWN');
+        $pdo  = $this->db->getConnection();
+        $pdo->beginTransaction();
+
+        try {
+            $title  = trim((string)($_POST['title'] ?? ''));
+            $scope  = (string)($_POST['scope'] ?? 'system'); // system | college | program
+            $colId  = isset($_POST['college_id']) ? (int)$_POST['college_id'] : null;
+            $progId = isset($_POST['program_id']) ? (int)$_POST['program_id'] : null;
+
+            if ($title === '') throw new \RuntimeException('Title is required.');
+
+            // Insert template
+            if ($scope === 'system') {
+                $stmt = $pdo->prepare("INSERT INTO public.syllabus_templates (scope, title, status, content, created_by)
+                                       VALUES ('system', :title, 'draft', '{}'::jsonb, :by)
+                                       RETURNING template_id");
+                $stmt->execute([':title'=>$title, ':by'=>$idno]);
+                $tid = (int)$stmt->fetchColumn();
+
+            } elseif ($scope === 'college') {
+                if (!$colId) throw new \RuntimeException('College is required for college scope.');
+                $stmt = $pdo->prepare("INSERT INTO public.syllabus_templates (scope, title, status, content, created_by)
+                                       VALUES ('college', :title, 'draft', '{}'::jsonb, :by)
+                                       RETURNING template_id");
+                $stmt->execute([':title'=>$title, ':by'=>$idno]);
+                $tid = (int)$stmt->fetchColumn();
+
+                // exactly one college assignment
+                $pdo->prepare("INSERT INTO public.syllabus_template_colleges (template_id, college_id) VALUES (:t,:c)")
+                    ->execute([':t'=>$tid, ':c'=>$colId]);
+
+            } else { // program
+                if (!$progId) throw new \RuntimeException('Program is required for program scope.');
+                // derive college for the program
+                $colId = (int)$pdo->query("SELECT college_id FROM public.programs WHERE program_id = {$progId}")->fetchColumn();
+                if (!$colId) throw new \RuntimeException('Program has no college.');
+
+                $stmt = $pdo->prepare("INSERT INTO public.syllabus_templates (scope, owner_program_id, title, status, content, created_by)
+                                       VALUES ('program', :pid, :title, 'draft', '{}'::jsonb, :by)
+                                       RETURNING template_id");
+                $stmt->execute([':pid'=>$progId, ':title'=>$title, ':by'=>$idno]);
+                $tid = (int)$stmt->fetchColumn();
+
+                // enforce program + its single college assignment
+                $pdo->prepare("INSERT INTO public.syllabus_template_programs (template_id, program_id) VALUES (:t,:p)")
+                    ->execute([':t'=>$tid, ':p'=>$progId]);
+                $pdo->prepare("INSERT INTO public.syllabus_template_colleges (template_id, college_id) VALUES (:t,:c)
+                               ON CONFLICT DO NOTHING")
+                    ->execute([':t'=>$tid, ':c'=>$colId]);
+            }
+
+            $pdo->commit();
+
+            // bust just enough cache so user sees new item on refresh
+            unset($_SESSION['tb_cache']);
+            $_SESSION['flash'] = ['type'=>'success','message'=>'Template created.'];
+
+            header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=templatebuilder' . ($scope!=='system' && isset($colId) ? '&college='.$colId : ''));
+            exit;
+        } catch (Throwable $e) {
+            $pdo->rollBack();
+            $_SESSION['flash'] = ['type'=>'danger','message'=>'Create failed: '.$e->getMessage()];
+            header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=templatebuilder');
+            exit;
+        }
+    }
+
+    private function render(string $view, array $vars): string
+    {
+        extract($vars, EXTR_SKIP);
         ob_start();
-        $viewData = [
-            'mode'           => $mode,
-            'roleName'       => $roleName,
-            'colleges'       => $colleges,
-            'templates'      => $templates,
-            'currentCollege' => $currentCollege,
-        ];
-        extract($viewData, \EXTR_SKIP);
-        require dirname(__DIR__) . '/Views/index.php';
+        require dirname(__DIR__) . "/Views/{$view}.php";
         return (string)ob_get_clean();
     }
 }

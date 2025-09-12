@@ -1,16 +1,76 @@
 /* /public/assets/css/TemplateBuilder-Scaffold.css */
+
+/* Legacy card hover (kept for any old views still using .tb-card) */
 .tb-card {
   cursor: pointer;
   border: 1px solid rgba(0,0,0,.05);
-  transition: box-shadow .15s ease, border-color .15s ease;
+  transition: box-shadow .15s, border-color .15s;
 }
-.tb-card:focus,
-.tb-card:hover {
+.tb-card:focus, .tb-card:hover {
   border-color: rgba(0,0,0,.1);
   box-shadow: 0 4px 16px rgba(0,0,0,.06);
   outline: 0;
 }
-#tb-info-pane {
-  position: sticky;
+.tb-card.tb-card--active {
+  border-color: rgba(13,110,253,.5);
+  box-shadow: 0 0 0 .2rem rgba(13,110,253,.25);
+}
+
+/* Right info pane */
+#tb-info-pane { position: sticky; top: 12px; }
+
+/* Explorer-style tiles (Large icons) for templates */
+.tb-tile {
+  border: 1px solid rgba(0,0,0,.06);
+  transition: box-shadow .12s ease, border-color .12s ease, transform .06s ease;
+  user-select: none;
+}
+.tb-tile:hover,
+.tb-tile:focus {
+  border-color: rgba(0,0,0,.12);
+  box-shadow: 0 4px 14px rgba(0,0,0,.06);
+  outline: 0;
+}
+.tb-tile.tb-card--active {
+  border-color: rgba(13,110,253,.35);
+  box-shadow: 0 2px 10px rgba(0,0,0,.08), 0 0 0 .15rem rgba(13,110,253,.12);
+}
+.tb-icon-xl { font-size: 3.5rem; line-height: 1; }
+.tb-name, .tb-meta {
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Folders: we’re using anchor rows (list-group) now */
+.list-group .list-group-item.list-group-item-action {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+}
+.list-group .list-group-item.list-group-item-action:hover {
+  background-color: rgba(13,110,253,.06);
+}
+.list-group .list-group-item.list-group-item-action:active {
+  background-color: rgba(13,110,253,.12);
+}
+
+/* Keep two-column layout stable */
+.tb-two-col { /* purely a hook; no styles needed, but nice for future tweaks */ }
+
+/* Sticky right pane */
+#tb-info-pane { position: sticky; top: 12px; }
+
+/* Small fix: prevent adverse wrapping from overly long content */
+#tb-info-pane .card-body { min-height: 120px; }
+
+/* Flex layout for persistent right pane (>= md) */
+.tb-flex-wrap { /* d-block on xs, d-md-flex above */ }
+.tb-flex-main { min-width: 0; } /* allow inner grids to shrink without pushing aside down */
+.tb-flex-aside {
+  width: 320px;        /* fixed right pane width (tweak as you like) */
+  max-width: 100%;
+  position: sticky;    /* keep it visible while scrolling the left column */
   top: 12px;
 }

@@ -1,4 +1,4 @@
-
+// /public/assets/js/TemplateBuilder-New.js
 // TipTapTest.js
 // Sidebar blocks that stack/drag/snap like TemplateBuilder,
 // AND the original top bar now works again. Toolbar actions

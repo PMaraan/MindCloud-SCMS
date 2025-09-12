@@ -1,4 +1,5 @@
 <?php
+// /app/Views/TemplateBuilder-New.php
 // Fallback for asset base when this file is opened outside the normal app flow
 if (!defined('BASE_PATH')) {
     // Example request: /MindCloud-SCMS/app/Views/TemplateBuilder-New.php
