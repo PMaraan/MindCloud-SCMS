@@ -554,9 +554,9 @@ function makeTable() {
       <div class="row"><label>Columns</label><input type="number" id="mc-split-cols" min="1" value="2"></div>
       <div class="row"><label>Rows</label><input type="number" id="mc-split-rows" min="1" value="1"></div>
       <div class="actions">
-        <button class="mc-btn" data-act="cancel">Cancel</button>
-        < ="mc-btn primary" data-act="ok">Split</button>
-      </div>
+       <button class="mc-btn" data-act="cancel">Cancel</button>
+       <button class="mc-btn primary" data-act="ok">Split</button>
+     </div>
     `;
     overlay.appendChild(dlg);
     document.body.appendChild(overlay);
@@ -1281,14 +1281,15 @@ function makeTable() {
 
 
       switch (action) {
-        case 'toggleBold':
-            const ed = getEd(); if (!ed) return;
+        case 'toggleBold': {
+          if (!ed) return;
           execOnBlockOrEditor(
             ed,
             (eed) => eed.chain().focus().toggleBold().run(),
             'bold'
           );
           break;
+        }
         case 'toggleItalic':
           execOnBlockOrEditor(ed, (eed) => eed.chain().focus().toggleItalic().run(), 'italic');
           break;

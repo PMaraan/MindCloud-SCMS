@@ -266,6 +266,9 @@ if (!defined('BASE_PATH')) {
     all() { return Array.from(this.map.values()); }
   };
 
+  // Expose for non-module scripts (Toolbar/Sidebar wiring)
+  window.MCEditors = MCEditors;
+
   // Create a TipTap editor inside a given page's [data-editor] container
   async function makeEditorFor(pageEl) {
     const holder = pageEl.querySelector('[data-editor]');
