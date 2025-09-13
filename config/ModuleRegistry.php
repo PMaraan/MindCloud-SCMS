@@ -79,6 +79,12 @@ return [
             'delete' => Permissions::TEMPLATEBUILDER_DELETE,
         ],
     ],
+    'notifications' => [
+        'label'      => 'Notifications',
+        'permission' => null, // no special permission; uses session user
+        'controller' => \App\Modules\Notifications\Controllers\NotificationsController::class,
+        'actions'    => [],
+    ],
     
     // add more...
 ];

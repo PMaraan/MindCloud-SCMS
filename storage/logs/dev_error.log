@@ -1810,3 +1810,8 @@ HINT:  Perhaps you meant to reference the column "programs.program_id" or the co
 [13-Sep-2025 10:31:49 Europe/Berlin] accounts.page rows=10 total=18 limit=10 offset=0
 [13-Sep-2025 10:31:49 Europe/Berlin] accounts.index total=18 rows=10
 [13-Sep-2025 10:31:49 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[13-Sep-2025 10:47:52 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:47:52 Europe/Berlin] Probe users count = 18
+[13-Sep-2025 10:47:52 Europe/Berlin] accounts.page rows=10 total=18 limit=10 offset=0
+[13-Sep-2025 10:47:52 Europe/Berlin] accounts.index total=18 rows=10
+[13-Sep-2025 10:47:52 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}

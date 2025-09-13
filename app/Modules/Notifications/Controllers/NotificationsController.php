@@ -16,6 +16,44 @@ final class NotificationsController
         if (session_status() !== \PHP_SESSION_ACTIVE) session_start();
     }
 
+    public function index(): string
+    {
+        // Current user (AuthController stores in $_SESSION['user_id'])
+        $idNo = (string)($_SESSION['user_id'] ?? '');
+        if ($idNo === '') {
+            return '<div class="container py-4"><div class="alert alert-danger">Unauthorized.</div></div>';
+        }
+
+        // Filters & pagination
+        $status = strtolower((string)($_GET['status'] ?? 'all'));
+        if (!in_array($status, ['all','unread','read'], true)) $status = 'all';
+
+        $pg     = max(1, (int)($_GET['pg'] ?? 1));
+        $limit  = 10;
+        $offset = ($pg - 1) * $limit;
+
+        // Query via model (read-only)
+        $model = new NotificationsModel($this->db);
+        $total = $model->countForUser($idNo, $status);
+        $rows  = $model->listForUser($idNo, $offset, $limit, $status);
+        $pages = (int)max(1, (int)ceil($total / $limit));
+
+        // Standard pager structure used by your modules
+        $pager = [
+            'baseUrl' => BASE_PATH . '/dashboard?page=notifications',
+            'pg'      => $pg,
+            'perPage' => $limit,
+            'total'   => $total,
+            'pages'   => $pages,
+            'query'   => '',
+            'status'  => $status,
+        ];
+
+        // Render view
+        ob_start();
+        require dirname(__DIR__) . '/Views/index.php';
+        return (string)ob_get_clean();
+    }
     /**
      * GET /notifications/latest
      * Returns JSON: { items: [ {id,title,body,url,is_read,created_at}, ... ] }

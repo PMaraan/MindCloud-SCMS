@@ -140,4 +140,44 @@ final class NotificationsModel
         $stmt->execute();
         return (int)$stmt->rowCount();
     }
+
+    /** Count notifications for list view with optional status filter (all|unread|read) */
+    public function countForUser(string $idNo, string $status = 'all'): int
+    {
+        $idNo = substr(str_pad(trim($idNo), 13, ' ', STR_PAD_RIGHT), 0, 13);
+
+        $where = 'user_id_no = :idno';
+        if ($status === 'unread') $where .= ' AND is_read = FALSE';
+        if ($status === 'read')   $where .= ' AND is_read = TRUE';
+
+        $sql = "SELECT COUNT(*)::int AS cnt FROM notifications WHERE {$where}";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue(':idno', $idNo, \PDO::PARAM_STR);
+        $stmt->execute();
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+        return (int)($row['cnt'] ?? 0);
+    }
+
+    /** List notifications for view with filter + pagination (newest first). */
+    public function listForUser(string $idNo, int $offset, int $limit, string $status = 'all'): array
+    {
+        $idNo   = substr(str_pad(trim($idNo), 13, ' ', STR_PAD_RIGHT), 0, 13);
+        $limit  = max(1, min($limit, 50));
+        $offset = max(0, $offset);
+
+        $where = 'user_id_no = :idno';
+        if ($status === 'unread') $where .= ' AND is_read = FALSE';
+        if ($status === 'read')   $where .= ' AND is_read = TRUE';
+
+        $sql = "SELECT id, title, body, url, is_read, created_at
+                FROM notifications
+                WHERE {$where}
+                ORDER BY created_at DESC
+                LIMIT {$limit} OFFSET {$offset}";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue(':idno', $idNo, \PDO::PARAM_STR);
+        $stmt->execute();
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+    }
 }
