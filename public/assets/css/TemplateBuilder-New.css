@@ -520,6 +520,16 @@ body { margin:0; background: var(--bg); font-family: system-ui, -apple-system, S
   border: 0;
 }
 
+/* === Typing & drag safety: overlay should never eat clicks unless dragging === */
+.page .mc-block-overlay{
+  z-index: 2;
+  pointer-events: none; /* JS flips to 'auto' only during drag */
+}
 
-
-
+/* Make sure the editor remains a proper click/typing target */
+.page .tiptap, .page .tiptap *{
+  position: relative;
+  z-index: 1;           /* sits above page background but under overlay */
+  pointer-events: auto; /* always interactive for typing/clicking */
+  cursor: text;
+}

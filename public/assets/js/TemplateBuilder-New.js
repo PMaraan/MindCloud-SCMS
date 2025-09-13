@@ -5,9 +5,6 @@
 // apply to TipTap OR to the focused sidebar block text.
 
 (function () {
-  function MC_all()   { return window.__mc?.MCEditors?.all?.()   || []; }
-  function MC_first() { return window.__mc?.MCEditors?.first?.() || null; }
-
   const GRID = 20;
   const PAGE_PADDING_TOP = 10;
 
@@ -1225,20 +1222,28 @@ function makeTable() {
   function wireDropTargets() {
     const pages = document.querySelectorAll('.page');
     if (!pages.length) return;
+
     pages.forEach((page) => {
       const overlay = ensureOverlay(page);
-      ['dragenter', 'dragover'].forEach((evt) => {
-        overlay.addEventListener(evt, (ev) => {
-          if (ev.dataTransfer?.types?.includes('application/x-mc')) ev.preventDefault();
-        });
-      });
-      overlay.addEventListener('drop', (ev) => {
+
+      // 🛡️ Prevent duplicate listener binding
+      if (overlay.dataset.dndWired === '1') return;
+      overlay.dataset.dndWired = '1';
+
+      const allow = (ev) => {
+        if (ev.dataTransfer?.types?.includes('application/x-mc')) {
+          ev.preventDefault();
+        }
+      };
+
+      const onDrop = (ev) => {
         ev.preventDefault();
         const raw = ev.dataTransfer.getData('application/x-mc');
         if (!raw) return;
         const { type } = JSON.parse(raw);
         const factory = FACTORY[type];
         if (!factory) return;
+
         const block = factory();
         const y = snap(ev.offsetY);
         block.style.top = `${Math.max(PAGE_PADDING_TOP, y)}px`;
@@ -1247,22 +1252,35 @@ function makeTable() {
         pushDownFrom(block, overlay);
         paginateOverlayIfNeeded(overlay);
         setOverlaysDragEnabled(false);
+      };
+
+      // Bind once
+      ['dragenter', 'dragover'].forEach((evt) => {
+        overlay.addEventListener(evt, allow, { passive: false });
       });
+      overlay.addEventListener('drop', onDrop);
     });
   }
 
   // Initial wiring
   document.addEventListener('mc:rewire', wireDropTargets);
+  wireDropTargets();
 
   function wireSidebarDrag() {
     document.querySelectorAll('#mc-sidebar .sb-item').forEach((btn) => {
+      // 🛡️ Bind once per button
+      if (btn.dataset.dndWired === '1') return;
+      btn.dataset.dndWired = '1';
+
       if (!btn.hasAttribute('draggable')) btn.setAttribute('draggable', 'true');
+
       btn.addEventListener('dragstart', (e) => {
         const type = btn.dataset.type || '';
         e.dataTransfer.effectAllowed = 'copy';
         e.dataTransfer.setData('application/x-mc', JSON.stringify({ type }));
         setOverlaysDragEnabled(true);
       });
+
       btn.addEventListener('dragend', () => {
         setOverlaysDragEnabled(false);
       });
@@ -1638,10 +1656,8 @@ function makeTable() {
       // expose a rewire hook so new pages can be made drop targets
   window.__mc = window.__mc || {};
   window.__mc.rewireDropTargets = () => {
-    // re-run the internal drop-target wiring for any pages that don't have an overlay yet
     document.querySelectorAll('.page').forEach((page) => {
       if (!page.querySelector('.mc-block-overlay')) {
-        // create overlay identical to initial wiring
         const overlay = document.createElement('div');
         overlay.className = 'mc-block-overlay';
         Object.assign(overlay.style, {
@@ -1655,12 +1671,11 @@ function makeTable() {
       }
     });
 
-    // let TipTapTest’s original listeners attach (they’re bound on `.mc-block-overlay`)
-    const evt = new Event('mc:rewire');
-    document.dispatchEvent(evt);
+    // Wire (idempotent) directly
+    wireDropTargets();
   };
 
-
+  window.__mc.rewireDropTargets();
 
   });
 })();
