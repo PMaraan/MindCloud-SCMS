@@ -25,6 +25,8 @@ function mc_url_with(string $base, array $qs): string {
     </div>
   </div>
 
+  <?php require dirname(__DIR__, 3) . '/Views/partials/Pagination.php'; ?>
+
   <div class="card shadow-sm">
     <div class="list-group list-group-flush">
       <?php if (!empty($rows)): ?>
@@ -62,24 +64,7 @@ function mc_url_with(string $base, array $qs): string {
     </div>
   </div>
 
-  <?php if ($pages > 1): ?>
-    <nav class="mt-3" aria-label="Page navigation">
-      <ul class="pagination mb-0">
-        <?php $prev = max(1, $pg - 1); $next = min($pages, $pg + 1); ?>
-        <li class="page-item<?= $pg <= 1 ? ' disabled' : '' ?>">
-          <a class="page-link" href="<?= htmlspecialchars(mc_url_with($base, ['status'=>$status, 'pg'=>$prev])) ?>">Prev</a>
-        </li>
-
-        <?php for ($i = 1; $i <= $pages; $i++): ?>
-          <li class="page-item<?= $i === $pg ? ' active' : '' ?>">
-            <a class="page-link" href="<?= htmlspecialchars(mc_url_with($base, ['status'=>$status, 'pg'=>$i])) ?>"><?= $i ?></a>
-          </li>
-        <?php endfor; ?>
-
-        <li class="page-item<?= $pg >= $pages ? ' disabled' : '' ?>">
-          <a class="page-link" href="<?= htmlspecialchars(mc_url_with($base, ['status'=>$status, 'pg'=>$next])) ?>">Next</a>
-        </li>
-      </ul>
-    </nav>
-  <?php endif; ?>
+  
 </div>
+
+<?php require dirname(__DIR__, 3) . '/Views/partials/Pagination.php'; ?>

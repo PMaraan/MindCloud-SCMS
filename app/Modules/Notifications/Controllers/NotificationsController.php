@@ -28,25 +28,24 @@ final class NotificationsController
         $status = strtolower((string)($_GET['status'] ?? 'all'));
         if (!in_array($status, ['all','unread','read'], true)) $status = 'all';
 
-        $pg     = max(1, (int)($_GET['pg'] ?? 1));
-        $limit  = 10;
-        $offset = ($pg - 1) * $limit;
+        $pg      = max(1, (int)($_GET['pg'] ?? 1));
+        $perPage  = 10;
+        $offset   = ($pg - 1) * $perPage;
 
         // Query via model (read-only)
         $model = new NotificationsModel($this->db);
         $total = $model->countForUser($idNo, $status);
-        $rows  = $model->listForUser($idNo, $offset, $limit, $status);
-        $pages = (int)max(1, (int)ceil($total / $limit));
+        $rows  = $model->listForUser($idNo, $offset, $perPage, $status);
+        $pages = (int)max(1, (int)ceil($total / $perPage));
 
         // Standard pager structure used by your modules
         $pager = [
             'baseUrl' => BASE_PATH . '/dashboard?page=notifications',
-            'pg'      => $pg,
-            'perPage' => $limit,
+            'pg'      => $pg,        // standardized
+            'perPage' => $perPage,   // standardized
             'total'   => $total,
-            'pages'   => $pages,
-            'query'   => '',
-            'status'  => $status,
+            'query'   => '',         // optional
+            'extra'   => ['status' => $status], // optional; forwards &status=...
         ];
 
         // Render view
