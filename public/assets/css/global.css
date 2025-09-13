@@ -154,3 +154,94 @@ html.dark-mode a:hover, body.dark-mode a:hover { color: #c6e0ff; }
 
 /* Consistent spacing between topbar icons */
 .navbar .navbar-nav.d-flex.flex-row { gap: 1rem; } /* <- equal spacing for bell, gear, logout */
+
+/* === Dark Mode: Tables =================================================== */
+html.dark-mode .table {
+  background-color: #161616;       /* table body bg */
+  color: #e8e8e8;                  /* table text */
+}
+
+html.dark-mode .table > :not(caption) > * > * {
+  background-color: transparent;   /* let rows control their own bg */
+  box-shadow: none;
+  border-color: #2d2d2d;           /* cell borders */
+}
+
+html.dark-mode .table thead th,
+html.dark-mode .table thead td {
+  background-color: #1f1f1f;       /* header row bg */
+  color: #f2f2f2;
+  border-bottom-color: #2d2d2d;
+}
+
+html.dark-mode .table tfoot th,
+html.dark-mode .table tfoot td {
+  background-color: #1b1b1b;       /* footer row bg (if any) */
+  color: #e8e8e8;
+  border-top-color: #2d2d2d;
+}
+
+/* Zebra striping */
+html.dark-mode .table.table-striped > tbody > tr:nth-of-type(odd) > * {
+  background-color: #181818;
+}
+html.dark-mode .table.table-striped > tbody > tr:nth-of-type(even) > * {
+  background-color: #141414;
+}
+
+/* Hover state */
+html.dark-mode .table.table-hover > tbody > tr:hover > * {
+  background-color: #252525;
+}
+
+/* Active/selected row */
+html.dark-mode .table .table-active > * {
+  background-color: #222222 !important;
+}
+
+/* Bordered tables */
+html.dark-mode .table-bordered {
+  border-color: #2d2d2d;
+}
+
+/* Small text contrast helpers */
+html.dark-mode .table .text-muted { color: #b9b9b9 !important; }
+html.dark-mode .table a { color: #9ecbff; }
+html.dark-mode .table a:hover { color: #c6e0ff; }
+
+/* Buttons inside tables (link-style) */
+html.dark-mode .table .btn-link { color: #9ecbff; }
+html.dark-mode .table .btn-link:hover { color: #c6e0ff; }
+
+/* === Fix: Table cell text color in dark mode  */
+html.dark-mode .table td,
+html.dark-mode .table th {
+  color: #e8e8e8 !important;  /* readable light text */
+}
+
+/* Muted text inside tables */
+html.dark-mode .table td .text-muted,
+html.dark-mode .table th .text-muted {
+  color: #a0a0a0 !important;
+}
+
+/* === Dark Mode: Pagination (your shared Pagination.php) ================ */
+html.dark-mode .pagination .page-link {
+  background-color: #1f1f1f;
+  color: #e8e8e8;
+  border-color: #2a2a2a;
+}
+html.dark-mode .pagination .page-link:hover {
+  background-color: #2a2a2a;
+  color: #ffffff;
+}
+html.dark-mode .pagination .page-item.active .page-link {
+  background-color: #670003;   /* brand maroon */
+  border-color: #670003;
+  color: #ffffff;
+}
+html.dark-mode .pagination .page-item.disabled .page-link {
+  background-color: #151515;
+  color: #7a7a7a;
+  border-color: #232323;
+}
