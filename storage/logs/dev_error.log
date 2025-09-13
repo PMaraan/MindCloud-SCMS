@@ -1650,3 +1650,163 @@ HINT:  Perhaps you meant to reference the column "programs.program_id" or the co
 [13-Sep-2025 09:27:14 Europe/Berlin] accounts.page rows=8 total=18 limit=10 offset=10
 [13-Sep-2025 09:27:14 Europe/Berlin] accounts.index total=18 rows=8
 [13-Sep-2025 09:27:14 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-60002","fname":"Russel","mname":"","lname":"Domingo","email":"russeldomingo@lpunetwork.edu.ph","role_id":4,"college_id":null,"role_name":"Dean","college_short_name":""}
+[13-Sep-2025 10:12:28 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:12:28 Europe/Berlin] Probe users count = 18
+[13-Sep-2025 10:12:28 Europe/Berlin] accounts.page rows=8 total=18 limit=10 offset=10
+[13-Sep-2025 10:12:28 Europe/Berlin] accounts.index total=18 rows=8
+[13-Sep-2025 10:12:28 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-60002","fname":"Russel","mname":"","lname":"Domingo","email":"russeldomingo@lpunetwork.edu.ph","role_id":4,"college_id":null,"role_name":"Dean","college_short_name":""}
+[13-Sep-2025 10:12:36 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:12:36 Europe/Berlin] Probe users count = 18
+[13-Sep-2025 10:12:36 Europe/Berlin] accounts.page rows=8 total=18 limit=10 offset=10
+[13-Sep-2025 10:12:36 Europe/Berlin] accounts.index total=18 rows=8
+[13-Sep-2025 10:12:36 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-60002","fname":"Russel","mname":"","lname":"Domingo","email":"russeldomingo@lpunetwork.edu.ph","role_id":4,"college_id":null,"role_name":"Dean","college_short_name":""}
+[13-Sep-2025 10:12:44 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:12:44 Europe/Berlin] Probe users count = 18
+[13-Sep-2025 10:12:44 Europe/Berlin] accounts.page rows=10 total=18 limit=10 offset=0
+[13-Sep-2025 10:12:44 Europe/Berlin] accounts.index total=18 rows=10
+[13-Sep-2025 10:12:44 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[13-Sep-2025 10:13:04 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:13:04 Europe/Berlin] Probe users count = 18
+[13-Sep-2025 10:13:04 Europe/Berlin] accounts.page rows=4 total=4 limit=10 offset=0
+[13-Sep-2025 10:13:04 Europe/Berlin] accounts.index total=4 rows=4
+[13-Sep-2025 10:13:04 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-60002","fname":"Russel","mname":"","lname":"Domingo","email":"russeldomingo@lpunetwork.edu.ph","role_id":4,"college_id":null,"role_name":"Dean","college_short_name":""}
+[13-Sep-2025 10:13:12 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:13:12 Europe/Berlin] Probe users count = 18
+[13-Sep-2025 10:13:12 Europe/Berlin] accounts.page rows=10 total=18 limit=10 offset=0
+[13-Sep-2025 10:13:12 Europe/Berlin] accounts.index total=18 rows=10
+[13-Sep-2025 10:13:12 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[13-Sep-2025 10:13:59 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:13:59 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:13:59 Europe/Berlin] Probe users count = 19
+[13-Sep-2025 10:13:59 Europe/Berlin] accounts.page rows=10 total=19 limit=10 offset=0
+[13-Sep-2025 10:13:59 Europe/Berlin] accounts.index total=19 rows=10
+[13-Sep-2025 10:13:59 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[13-Sep-2025 10:14:15 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:14:15 Europe/Berlin] Probe users count = 19
+[13-Sep-2025 10:14:15 Europe/Berlin] accounts.page rows=10 total=19 limit=10 offset=0
+[13-Sep-2025 10:14:15 Europe/Berlin] accounts.index total=19 rows=10
+[13-Sep-2025 10:14:15 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[13-Sep-2025 10:14:35 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:14:35 Europe/Berlin] Probe users count = 19
+[13-Sep-2025 10:14:35 Europe/Berlin] accounts.page rows=1 total=1 limit=10 offset=0
+[13-Sep-2025 10:14:35 Europe/Berlin] accounts.index total=1 rows=1
+[13-Sep-2025 10:14:35 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-60005","fname":"Notif","mname":null,"lname":"Test","email":"notiftest@lpunetwork.edu.ph","role_id":7,"college_id":1,"role_name":"Professor","college_short_name":"CCS"}
+[13-Sep-2025 10:15:17 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:15:17 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:15:17 Europe/Berlin] Probe users count = 19
+[13-Sep-2025 10:15:17 Europe/Berlin] accounts.page rows=10 total=19 limit=10 offset=0
+[13-Sep-2025 10:15:17 Europe/Berlin] accounts.index total=19 rows=10
+[13-Sep-2025 10:15:17 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[13-Sep-2025 10:15:25 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:15:25 Europe/Berlin] Probe users count = 19
+[13-Sep-2025 10:15:25 Europe/Berlin] accounts.page rows=1 total=1 limit=10 offset=0
+[13-Sep-2025 10:15:25 Europe/Berlin] accounts.index total=1 rows=1
+[13-Sep-2025 10:15:25 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-60005","fname":"Notif","mname":"A","lname":"Test","email":"notif@lpunetwork.edu.ph","role_id":6,"college_id":2,"role_name":"Chair","college_short_name":"CEA"}
+[13-Sep-2025 10:15:34 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:15:34 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:15:34 Europe/Berlin] Probe users count = 18
+[13-Sep-2025 10:15:34 Europe/Berlin] accounts.page rows=10 total=18 limit=10 offset=0
+[13-Sep-2025 10:15:34 Europe/Berlin] accounts.index total=18 rows=10
+[13-Sep-2025 10:15:34 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[13-Sep-2025 10:16:40 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:16:40 Europe/Berlin] Probe users count = 18
+[13-Sep-2025 10:16:40 Europe/Berlin] accounts.page rows=8 total=18 limit=10 offset=10
+[13-Sep-2025 10:16:40 Europe/Berlin] accounts.index total=18 rows=8
+[13-Sep-2025 10:16:40 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-60002","fname":"Russel","mname":"","lname":"Domingo","email":"russeldomingo@lpunetwork.edu.ph","role_id":4,"college_id":null,"role_name":"Dean","college_short_name":""}
+[13-Sep-2025 10:16:57 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:16:57 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:16:57 Europe/Berlin] Probe users count = 18
+[13-Sep-2025 10:16:57 Europe/Berlin] accounts.page rows=10 total=18 limit=10 offset=0
+[13-Sep-2025 10:16:57 Europe/Berlin] accounts.index total=18 rows=10
+[13-Sep-2025 10:16:57 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[13-Sep-2025 10:17:44 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:17:44 Europe/Berlin] Probe users count = 18
+[13-Sep-2025 10:17:44 Europe/Berlin] accounts.page rows=8 total=18 limit=10 offset=10
+[13-Sep-2025 10:17:44 Europe/Berlin] accounts.index total=18 rows=8
+[13-Sep-2025 10:17:44 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-60002","fname":"Russel","mname":"","lname":"Domingo","email":"russeldomingo@lpunetwork.edu.ph","role_id":4,"college_id":null,"role_name":"Dean","college_short_name":""}
+[13-Sep-2025 10:17:51 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:17:51 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:17:51 Europe/Berlin] Probe users count = 18
+[13-Sep-2025 10:17:51 Europe/Berlin] accounts.page rows=10 total=18 limit=10 offset=0
+[13-Sep-2025 10:17:51 Europe/Berlin] accounts.index total=18 rows=10
+[13-Sep-2025 10:17:51 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[13-Sep-2025 10:18:05 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:18:05 Europe/Berlin] Probe users count = 18
+[13-Sep-2025 10:18:05 Europe/Berlin] accounts.page rows=10 total=18 limit=10 offset=0
+[13-Sep-2025 10:18:05 Europe/Berlin] accounts.index total=18 rows=10
+[13-Sep-2025 10:18:05 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[13-Sep-2025 10:18:11 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:18:11 Europe/Berlin] Probe users count = 18
+[13-Sep-2025 10:18:11 Europe/Berlin] accounts.page rows=8 total=18 limit=10 offset=10
+[13-Sep-2025 10:18:11 Europe/Berlin] accounts.index total=18 rows=8
+[13-Sep-2025 10:18:11 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-60002","fname":"Russel","mname":"","lname":"Domingo","email":"russeldomingo@lpunetwork.edu.ph","role_id":4,"college_id":null,"role_name":"Dean","college_short_name":""}
+[13-Sep-2025 10:18:17 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:18:17 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:18:17 Europe/Berlin] Probe users count = 18
+[13-Sep-2025 10:18:17 Europe/Berlin] accounts.page rows=10 total=18 limit=10 offset=0
+[13-Sep-2025 10:18:17 Europe/Berlin] accounts.index total=18 rows=10
+[13-Sep-2025 10:18:17 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[13-Sep-2025 10:22:04 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:22:04 Europe/Berlin] Probe users count = 18
+[13-Sep-2025 10:22:04 Europe/Berlin] accounts.page rows=10 total=18 limit=10 offset=0
+[13-Sep-2025 10:22:04 Europe/Berlin] accounts.index total=18 rows=10
+[13-Sep-2025 10:22:04 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[13-Sep-2025 10:22:08 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:22:08 Europe/Berlin] Probe users count = 18
+[13-Sep-2025 10:22:08 Europe/Berlin] accounts.page rows=8 total=18 limit=10 offset=10
+[13-Sep-2025 10:22:08 Europe/Berlin] accounts.index total=18 rows=8
+[13-Sep-2025 10:22:08 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-60002","fname":"Russel","mname":"","lname":"Domingo","email":"russeldomingo@lpunetwork.edu.ph","role_id":4,"college_id":null,"role_name":"Dean","college_short_name":""}
+[13-Sep-2025 10:22:20 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:22:20 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:22:20 Europe/Berlin] Probe users count = 18
+[13-Sep-2025 10:22:20 Europe/Berlin] accounts.page rows=10 total=18 limit=10 offset=0
+[13-Sep-2025 10:22:20 Europe/Berlin] accounts.index total=18 rows=10
+[13-Sep-2025 10:22:20 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[13-Sep-2025 10:22:31 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:22:31 Europe/Berlin] Probe users count = 18
+[13-Sep-2025 10:22:31 Europe/Berlin] accounts.page rows=8 total=18 limit=10 offset=10
+[13-Sep-2025 10:22:31 Europe/Berlin] accounts.index total=18 rows=8
+[13-Sep-2025 10:22:31 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-60002","fname":"Russel","mname":"","lname":"Domingo","email":"russeldomingo@lpunetwork.edu.ph","role_id":4,"college_id":null,"role_name":"Dean","college_short_name":""}
+[13-Sep-2025 10:23:41 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:23:41 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:23:41 Europe/Berlin] Probe users count = 18
+[13-Sep-2025 10:23:41 Europe/Berlin] accounts.page rows=10 total=18 limit=10 offset=0
+[13-Sep-2025 10:23:41 Europe/Berlin] accounts.index total=18 rows=10
+[13-Sep-2025 10:23:41 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[13-Sep-2025 10:30:18 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:30:19 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:30:19 Europe/Berlin] Probe users count = 19
+[13-Sep-2025 10:30:19 Europe/Berlin] accounts.page rows=10 total=19 limit=10 offset=0
+[13-Sep-2025 10:30:19 Europe/Berlin] accounts.index total=19 rows=10
+[13-Sep-2025 10:30:19 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[13-Sep-2025 10:30:23 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:30:23 Europe/Berlin] Probe users count = 19
+[13-Sep-2025 10:30:23 Europe/Berlin] accounts.page rows=1 total=1 limit=10 offset=0
+[13-Sep-2025 10:30:23 Europe/Berlin] accounts.index total=1 rows=1
+[13-Sep-2025 10:30:23 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-60005","fname":"Notif","mname":null,"lname":"Test","email":"notiftest@lpunetwork.edu.ph","role_id":7,"college_id":1,"role_name":"Professor","college_short_name":"CCS"}
+[13-Sep-2025 10:30:46 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:30:46 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:30:46 Europe/Berlin] Probe users count = 19
+[13-Sep-2025 10:30:46 Europe/Berlin] accounts.page rows=10 total=19 limit=10 offset=0
+[13-Sep-2025 10:30:46 Europe/Berlin] accounts.index total=19 rows=10
+[13-Sep-2025 10:30:46 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[13-Sep-2025 10:30:50 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:30:50 Europe/Berlin] Probe users count = 19
+[13-Sep-2025 10:30:50 Europe/Berlin] accounts.page rows=1 total=1 limit=10 offset=0
+[13-Sep-2025 10:30:50 Europe/Berlin] accounts.index total=1 rows=1
+[13-Sep-2025 10:30:50 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-60005","fname":"Notif","mname":null,"lname":"Test","email":"notif@lpunetwork.edu.ph","role_id":7,"college_id":2,"role_name":"Professor","college_short_name":"CEA"}
+[13-Sep-2025 10:31:06 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:31:06 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:31:06 Europe/Berlin] Probe users count = 18
+[13-Sep-2025 10:31:06 Europe/Berlin] accounts.page rows=10 total=18 limit=10 offset=0
+[13-Sep-2025 10:31:06 Europe/Berlin] accounts.index total=18 rows=10
+[13-Sep-2025 10:31:06 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[13-Sep-2025 10:31:14 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:31:14 Europe/Berlin] Probe users count = 18
+[13-Sep-2025 10:31:14 Europe/Berlin] accounts.page rows=0 total=0 limit=10 offset=0
+[13-Sep-2025 10:31:14 Europe/Berlin] accounts.index total=0 rows=0
+[13-Sep-2025 10:31:49 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 10:31:49 Europe/Berlin] Probe users count = 18
+[13-Sep-2025 10:31:49 Europe/Berlin] accounts.page rows=10 total=18 limit=10 offset=0
+[13-Sep-2025 10:31:49 Europe/Berlin] accounts.index total=18 rows=10
+[13-Sep-2025 10:31:49 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}

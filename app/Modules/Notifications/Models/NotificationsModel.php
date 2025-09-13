@@ -27,11 +27,12 @@ final class NotificationsModel
         $idNo = substr(str_pad(trim($idNo), 13, ' ', STR_PAD_RIGHT), 0, 13);
 
         $limit = max(1, min($limit, 20)); // bounded safety
+        // Unread first (is_read=false → 0), then read; newest first within each group
         $sql = <<<SQL
         SELECT id, title, body, url, is_read, created_at
         FROM notifications
         WHERE user_id_no = :idno
-        ORDER BY created_at DESC
+        ORDER BY CASE WHEN is_read = FALSE THEN 0 ELSE 1 END, created_at DESC
         LIMIT {$limit}
         SQL;
 
@@ -109,5 +110,34 @@ final class NotificationsModel
             $this->pdo->rollBack();
             throw $e;
         }
+    }
+
+    /**
+     * Mark a set of notifications as read for the given user id_no.
+     * Returns the number of updated rows.
+     */
+    public function markReadBulk(string $idNo, array $ids): int
+    {
+        $idNo = substr(str_pad(trim($idNo), 13, ' ', STR_PAD_RIGHT), 0, 13);
+        // sanitize ids -> unique ints
+        $ids = array_values(array_unique(array_map(static fn($v) => (int)$v, $ids)));
+        if (empty($ids)) return 0;
+
+        // dynamic placeholders
+        $ph = [];
+        foreach ($ids as $i => $_) { $ph[] = ':id' . $i; }
+        $in = implode(',', $ph);
+
+        $sql = "UPDATE notifications
+                SET is_read = TRUE
+                WHERE user_id_no = :idno AND id IN ($in)";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue(':idno', $idNo, PDO::PARAM_STR);
+        foreach ($ids as $i => $val) {
+            $stmt->bindValue(':id' . $i, $val, PDO::PARAM_INT);
+        }
+        $stmt->execute();
+        return (int)$stmt->rowCount();
     }
 }

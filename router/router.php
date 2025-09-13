@@ -53,6 +53,7 @@
         ],
         'POST' => [
             '/dashboard' => [DashboardController::class, 'render'],
+            '/notifications/mark-read' => [NotificationsController::class, 'markReadJson'],
             // add POST private routes here
         ],
     ];

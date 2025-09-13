@@ -1,12 +1,13 @@
 // /public/assets/js/notifications.js
-// - Loads the latest 5 notifications when the bell opens.
-// - Polls unread count periodically to keep the red badge live.
+// - Dropdown shows up to 5: unread first (newest→oldest), then read (newest→oldest).
+// - On open, marks the displayed unread items as read -> clears the badge.
+// - Badge is kept fresh via unread-count polling.
 
 (function () {
   const toggle = document.getElementById('notifDropdown');
   if (!toggle) return;
 
-  const dropdownRoot = toggle.closest('.dropdown'); // <li class="nav-item dropdown">
+  const dropdownRoot = toggle.closest('.dropdown');
   const menu = dropdownRoot ? dropdownRoot.querySelector('.dropdown-menu') : null;
   if (!menu) return;
 
@@ -18,7 +19,7 @@
   if (!list) {
     list = document.createElement('li');
     list.id = 'notif-items';
-    menu.insertBefore(list, menu.lastElementChild); // before footer
+    menu.insertBefore(list, menu.lastElementChild);
   }
   if (!loading) {
     loading = document.createElement('li');
@@ -70,12 +71,12 @@
       li.className = 'py-3 text-center text-muted small';
       li.textContent = 'No notifications';
       menu.insertBefore(li, menu.lastElementChild);
-      return;
+      return [];
     }
 
+    const unreadIds = [];
     items.forEach(n => {
       const li = document.createElement('li');
-
       const a = document.createElement('a');
       a.className = 'dropdown-item py-2';
       a.href = n.url || '#';
@@ -93,19 +94,22 @@
       right.textContent = n.created_at ? timeAgo(n.created_at) : '';
       meta.append(left, right);
 
-      if (!n.is_read) a.classList.add('bg-light');
+      if (!n.is_read) {
+        a.classList.add('bg-light'); // visual unread
+        if (Number.isInteger(n.id)) unreadIds.push(n.id);
+      }
 
       a.append(title, meta);
       li.append(a);
       list.append(li);
     });
+    return unreadIds;
   }
 
   // Networking
   let latestAbort = null;
-  async function loadLatest() {
+  async function loadLatestAndMaybeMarkRead() {
     try {
-      // (Re)show loading row
       if (!menu.querySelector('#notif-loading')) {
         const li = document.createElement('li');
         li.id = 'notif-loading';
@@ -133,7 +137,18 @@
       }
 
       const data = await res.json();
-      render(Array.isArray(data?.items) ? data.items : []);
+      const unreadIds = render(Array.isArray(data?.items) ? data.items : []);
+
+      // If any unread were shown, mark them read now so the badge clears.
+      if (unreadIds.length > 0) {
+        try {
+          await markRead(unreadIds);
+          // Remove bg-light from just-marked rows
+          list.querySelectorAll('.dropdown-item.bg-light').forEach(el => el.classList.remove('bg-light'));
+          // Refresh badge
+          await loadUnreadCount();
+        } catch { /* ignore */ }
+      }
     } catch (e) {
       if (e.name !== 'AbortError') {
         showFailed('Failed to load notifications');
@@ -158,7 +173,6 @@
       });
 
       if (!res.ok) {
-        // Don’t spam errors in UI; just hide badge on auth issues
         if (res.status === 401) setBadge(0);
         return;
       }
@@ -166,48 +180,44 @@
       const data = await res.json();
       const total = Number(data?.total_unread ?? 0);
       setBadge(Number.isFinite(total) ? total : 0);
-    } catch (e) {
-      // ignore transient errors; keep last known badge
-    }
+    } catch { /* transient errors ignored */ }
   }
 
-  // Event binding
-  dropdownRoot.addEventListener('show.bs.dropdown', loadLatest);
+  async function markRead(ids) {
+    const basePath = toggle.dataset.basePath || '';
+    const url = `${basePath}/notifications/mark-read`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ ids })
+    });
+    if (!res.ok) throw new Error('mark-read failed');
+    return res.json();
+  }
 
-  // Fallback hookup (in case bootstrap events are blocked by other scripts):
+  // Events
+  dropdownRoot.addEventListener('show.bs.dropdown', loadLatestAndMaybeMarkRead);
   toggle.addEventListener('click', () => {
-    if (!menu.classList.contains('show')) loadLatest();
+    if (!menu.classList.contains('show')) loadLatestAndMaybeMarkRead();
   });
 
-  // Polling: every 2 minutes; pause when tab is hidden; refresh on focus
+  // Poll badge: every 2 min; pause when hidden; refresh on focus
   let pollTimer = null;
   function startPolling() {
     if (pollTimer) return;
-    // Kick off immediately, then every 120s
     loadUnreadCount();
     pollTimer = setInterval(loadUnreadCount, 120000);
   }
   function stopPolling() {
-    if (pollTimer) {
-      clearInterval(pollTimer);
-      pollTimer = null;
-    }
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
   }
-
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      startPolling();
-    } else {
-      stopPolling();
-    }
+    if (document.visibilityState === 'visible') startPolling(); else stopPolling();
   });
-
   window.addEventListener('focus', loadUnreadCount);
 
-  // Initial start
-  if (document.visibilityState === 'visible') {
-    startPolling();
-  }
+  if (document.visibilityState === 'visible') startPolling();
 
   // Ensure bootstrap instance exists (optional)
   try {

@@ -171,7 +171,7 @@ final class AccountsController{
                 array_filter([$currentAdminIdNo, $targetIdNo]),
                 'Account created',
                 'A new account has been created. With id No: ' . $targetIdNo,
-                BASE_PATH . '/dashboard?page=accounts'
+                BASE_PATH . '/dashboard?page=accounts&q=' . urlencode($targetIdNo)
             );
         } else {
             FlashHelper::set('danger', 'Failed to create user. Make sure ID/email are unique.');
@@ -236,14 +236,14 @@ final class AccountsController{
             // Acting admin (stored by AuthController into $_SESSION['user_id'])
             $currentAdminIdNo = (string)($_SESSION['user_id'] ?? '');
             // New user’s id_no from the create logic
-            $targetIdNo      = (string)($id_no ?? '');
+            $targetIdNo      = (string)($data['id_no'] ?? '');
 
             // Send one row per recipient (per-user is_read works as-is)
             NotifyHelper::toUsers(
                 array_filter([$currentAdminIdNo, $targetIdNo]),
                 'Account updated',
-                'Account ' . $targetIdNo . ' was updated.',
-                BASE_PATH . '/dashboard?page=accounts'
+                'Account with ID No: ' . $targetIdNo . ' was updated.',
+                BASE_PATH . '/dashboard?page=accounts&q=' . urlencode($targetIdNo)
             );
         } else {
             FlashHelper::set('danger', 'Failed to update user.');
@@ -298,7 +298,7 @@ final class AccountsController{
                 [$currentAdminIdNo],
                 'Account deleted',
                 'Account ' . $targetIdNo . ' was deleted.',
-                BASE_PATH . '/dashboard?page=accounts'
+                BASE_PATH . '/dashboard?page=accounts&q=' . urlencode($targetIdNo)
             );
         } else {
             FlashHelper::set('danger', 'Failed to delete user.');

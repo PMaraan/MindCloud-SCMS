@@ -24,27 +24,10 @@ final class NotificationsController
     {
         header('Content-Type: application/json; charset=utf-8');
 
-        // DEV OVERRIDE: allow ?debug_id_no=2025-01-20001 to test without login/session
+        // DEV: allow manual override for testing e.g. /notifications/latest?debug_id_no=2025-01-20001
         $debugId = isset($_GET['debug_id_no']) ? (string)$_GET['debug_id_no'] : '';
-        $debugId = trim($debugId);
+        $idNo = $debugId !== '' ? trim($debugId) : (string)($_SESSION['user_id'] ?? '');
 
-        // normalize id_no to CHAR(13): it must be exactly 13 chars (pad/right-trim later in model)
-        $normalize = static function (string $v): string {
-            return substr(str_pad($v, 13, ' ', STR_PAD_RIGHT), 0, 13);
-        };
-
-        $idNo = '';
-        if ($debugId !== '') {
-            $idNo = $debugId;
-        } elseif (!empty($_SESSION['id_no'])) {
-            $idNo = (string)$_SESSION['id_no'];
-        } elseif (!empty($_SESSION['user_id_no'])) {
-            $idNo = (string)$_SESSION['user_id_no'];
-        } elseif (!empty($_SESSION['user_id'])) {
-            $idNo = (string)$_SESSION['user_id'];
-        }
-
-        $idNo = trim($idNo);
         if ($idNo === '') {
             http_response_code(401);
             echo json_encode(['items' => []], JSON_UNESCAPED_SLASHES);
@@ -52,7 +35,7 @@ final class NotificationsController
         }
 
         $items = (new \App\Modules\Notifications\Models\NotificationsModel($this->db))
-            ->latestForUserIdNo($normalize($idNo), 5);
+            ->latestForUserIdNo($idNo, 5);
 
         $safe = array_map(static function(array $n): array {
             return [
@@ -106,5 +89,36 @@ final class NotificationsController
             ->countUnreadForUserIdNo($normalize($idNo));
 
         echo json_encode(['total_unread' => (int)$count], JSON_UNESCAPED_SLASHES);
+    }
+
+    /**
+     * POST /notifications/mark-read
+     * Body: { "ids": [1,2,3] }
+     * Marks given IDs as read for the logged in user.
+     * Returns: { "updated": <int> }
+     */
+    public function markReadJson(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        $idNo = (string)($_SESSION['user_id'] ?? '');
+        if ($idNo === '') {
+            http_response_code(401);
+            echo json_encode(['updated' => 0], JSON_UNESCAPED_SLASHES);
+            return;
+        }
+
+        $raw = file_get_contents('php://input') ?: '';
+        $data = json_decode($raw, true);
+        $ids  = is_array($data['ids'] ?? null) ? $data['ids'] : [];
+
+        try {
+            $model = new \App\Modules\Notifications\Models\NotificationsModel($this->db);
+            $updated = $model->markReadBulk($idNo, $ids);
+            echo json_encode(['updated' => (int)$updated], JSON_UNESCAPED_SLASHES);
+        } catch (\Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['updated' => 0], JSON_UNESCAPED_SLASHES);
+        }
     }
 }
