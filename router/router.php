@@ -5,6 +5,7 @@
     use App\Modules\Auth\Controllers\AuthController;
     use App\Interfaces\StorageInterface;
     use App\Modules\Notifications\Controllers\NotificationsController;
+    use App\Modules\Settings\Controllers\SettingsController;
 
     /**
      * Build an absolute URL from BASE_PATH and a path.
@@ -49,11 +50,13 @@
             '/dashboard' => [DashboardController::class, 'render'],
             '/notifications/latest' => [NotificationsController::class, 'latestJson'],
             '/notifications/unread-count' => [NotificationsController::class, 'unreadCountJson'],
+            '/api/settings/get'  => [SettingsController::class, 'getPreference'],
             // add more GET private routes here
         ],
         'POST' => [
             '/dashboard' => [DashboardController::class, 'render'],
             '/notifications/mark-read' => [NotificationsController::class, 'markReadJson'],
+            '/api/settings/save' => [SettingsController::class, 'savePreference'],
             // add POST private routes here
         ],
     ];

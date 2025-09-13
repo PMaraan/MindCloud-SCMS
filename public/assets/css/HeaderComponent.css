@@ -41,3 +41,17 @@
   vertical-align: middle;
 }
 
+/* === Dark Mode: Header stays maroon ===================================== */
+html.dark-mode .navbar {
+  background-color: #670003 !important; /* your hex */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .6) !important;
+}
+
+html.dark-mode .navbar .navbar-brand,
+html.dark-mode .navbar .navbar-brand i,
+html.dark-mode .navbar .header-link i {
+  color: #ffffff !important;
+}
+
+/* Equal spacing between bell, gear, logout (no manual me-4 needed) */
+.navbar .navbar-nav.d-flex.flex-row { gap: 1rem; }

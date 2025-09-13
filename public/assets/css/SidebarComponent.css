@@ -32,7 +32,7 @@
   flex: 1;
   min-width: 0;
   margin-left: 250px; /* space for sidebar */
-  padding: 0, 8px;
+  padding: 0 8px;
   width: calc(100% - 250px); /* prevent overflow */
   height: calc(100vh - 64px); /* fill remaining vertical space */
   overflow-y: auto;
@@ -167,4 +167,53 @@ body.sidebar-collapsed .main-content {
   body.sidebar-collapsed .main-content {
     width: 100% !important;
   }
+}
+
+/* === Dark Mode: Sidebar ================================================== */
+html.dark-mode .sidebar {
+  background-color: #171717;
+  box-shadow: 2px 0 6px rgba(0, 0, 0, .6);
+}
+
+html.dark-mode .profile-name { color: #e9e9e9; }
+html.dark-mode .profile-role { color: #b0b0b0; }
+
+html.dark-mode .sidebar-img {
+  filter: brightness(.85) contrast(1.05);
+}
+
+/* Links */
+html.dark-mode .nav-link {
+  background-color: #1f1f1f;
+  color: #eaeaea;
+  box-shadow: none;
+  border: 1px solid #2a2a2a;
+}
+
+html.dark-mode .nav-link:hover {
+  background-color: #2a2a2a;
+  color: #ffffff;
+}
+
+/* Active state: keep brand maroon in dark mode */
+html.dark-mode .nav-link.active,
+html.dark-mode .nav-link.active:focus,
+html.dark-mode .nav-link.active:visited,
+html.dark-mode .nav-link.active:hover,
+html.dark-mode .nav-link:focus,
+html.dark-mode .nav-link:active {
+  background-color: #670003 !important; /* your hex */
+  color: #ffffff !important;
+  border-color: #670003 !important;
+}
+
+/* Toggle button color in dark mode */
+html.dark-mode .toggle-btn {
+  color: #f0b3b3; /* subtle maroon-ish tint */
+}
+
+/* Main content scrollbar/area (optional, looks nicer in dark) */
+html.dark-mode .main-content {
+  background-color: #121212;
+  color: #e4e4e4;
 }

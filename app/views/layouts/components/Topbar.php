@@ -5,8 +5,9 @@
       <img src="<?= $basePath . "/public/assets/images/logo_lpu.png" ?>" alt="LPU Icon" class="lpu-icon">
       <span class="brand-text">LPU-SCMS</span>
     </a>
+
     <ul class="navbar-nav ms-auto d-flex flex-row">
-      <li class="nav-item dropdown me-4">
+      <li class="nav-item dropdown">
         <a
           class="header-link position-relative"
           href="#"
@@ -33,11 +34,31 @@
           </li>
         </ul>
       </li>
-      <li class="nav-item me-4">
-        <a class="header-link" href="#" title="Settings">
+
+      <li class="nav-item dropdown">
+        <a
+          class="header-link dropdown-toggle d-flex align-items-center"
+          href="#"
+          id="settingsDropdown"
+          role="button"
+          data-bs-toggle="dropdown"
+          data-bs-auto-close="outside"
+          aria-expanded="false"
+          title="Settings"
+        >
           <i class="bi bi-gear fs-4"></i>
         </a>
+
+        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="settingsDropdown">
+          <li>
+            <button class="dropdown-item d-flex justify-content-between align-items-center" id="toggleDarkMode" type="button">
+              <span>Dark Mode</span>
+              <i class="bi bi-moon-stars"></i>
+            </button>
+          </li>
+        </ul>
       </li>
+
       <li class="nav-item">
         <form method="POST" action="<?= $basePath ?>/logout" class="d-inline">
           <button class="header-link btn btn-link p-0 m-0 border-0" type="submit" title="Logout">
@@ -45,6 +66,10 @@
           </button>
         </form>
       </li>
+
     </ul>
   </div>
 </nav>
+
+<script>window.__BASE_PATH__ = '<?= rtrim($basePath ?? '', '/') ?>';</script>
+<script src="<?= rtrim($basePath ?? '', '/') ?>/public/assets/js/settings.js" defer></script>
