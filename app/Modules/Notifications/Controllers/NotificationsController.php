@@ -67,4 +67,44 @@ final class NotificationsController
 
         echo json_encode(['items' => $safe], JSON_UNESCAPED_SLASHES);
     }
+
+    /**
+     * GET /notifications/unread-count
+     * Returns JSON: { total_unread: <int> }
+     * Supports ?debug_id_no=2025-01-20001 for quick testing (same as latestJson).
+     */
+    public function unreadCountJson(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        $debugId = isset($_GET['debug_id_no']) ? (string)$_GET['debug_id_no'] : '';
+        $debugId = trim($debugId);
+
+        $normalize = static function (string $v): string {
+            return substr(str_pad($v, 13, ' ', STR_PAD_RIGHT), 0, 13);
+        };
+
+        $idNo = '';
+        if ($debugId !== '') {
+            $idNo = $debugId;
+        } elseif (!empty($_SESSION['id_no'])) {
+            $idNo = (string)$_SESSION['id_no'];
+        } elseif (!empty($_SESSION['user_id_no'])) {
+            $idNo = (string)$_SESSION['user_id_no'];
+        } elseif (!empty($_SESSION['user_id'])) {
+            $idNo = (string)$_SESSION['user_id'];
+        }
+
+        $idNo = trim($idNo);
+        if ($idNo === '') {
+            http_response_code(401);
+            echo json_encode(['total_unread' => 0], JSON_UNESCAPED_SLASHES);
+            return;
+        }
+
+        $count = (new \App\Modules\Notifications\Models\NotificationsModel($this->db))
+            ->countUnreadForUserIdNo($normalize($idNo));
+
+        echo json_encode(['total_unread' => (int)$count], JSON_UNESCAPED_SLASHES);
+    }
 }

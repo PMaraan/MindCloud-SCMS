@@ -48,6 +48,7 @@
         'GET' => [
             '/dashboard' => [DashboardController::class, 'render'],
             '/notifications/latest' => [NotificationsController::class, 'latestJson'],
+            '/notifications/unread-count' => [NotificationsController::class, 'unreadCountJson'],
             // add more GET private routes here
         ],
         'POST' => [

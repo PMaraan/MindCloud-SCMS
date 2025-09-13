@@ -1,9 +1,8 @@
 // /public/assets/js/notifications.js
-// Robust loader for the bell dropdown: fetches 5 latest notifications,
-// handles edge cases where Bootstrap events or Popper are not firing as expected.
+// - Loads the latest 5 notifications when the bell opens.
+// - Polls unread count periodically to keep the red badge live.
 
 (function () {
-  // --- Grab elements
   const toggle = document.getElementById('notifDropdown');
   if (!toggle) return;
 
@@ -29,7 +28,7 @@
     menu.insertBefore(loading, menu.firstElementChild);
   }
 
-  // --- Helpers
+  // Helpers
   function timeAgo(iso) {
     if (!iso) return '';
     const d = new Date(iso);
@@ -43,13 +42,22 @@
     return `${days}d ago`;
   }
 
+  function setBadge(count) {
+    if (!badge) return;
+    if (count > 0) {
+      badge.textContent = String(count);
+      badge.classList.remove('d-none');
+    } else {
+      badge.classList.add('d-none');
+    }
+  }
+
   function showFailed(msg) {
     if (loading) loading.remove();
     list.innerHTML = '';
     const li = document.createElement('li');
     li.className = 'py-3 text-center text-danger small';
     li.textContent = msg || 'Failed to load notifications';
-    // insert before footer (last li)
     menu.insertBefore(li, menu.lastElementChild);
   }
 
@@ -62,18 +70,7 @@
       li.className = 'py-3 text-center text-muted small';
       li.textContent = 'No notifications';
       menu.insertBefore(li, menu.lastElementChild);
-      if (badge) badge.classList.add('d-none');
       return;
-    }
-
-    const unread = items.filter(n => !n.is_read).length;
-    if (badge) {
-      if (unread > 0) {
-        badge.textContent = String(unread);
-        badge.classList.remove('d-none');
-      } else {
-        badge.classList.add('d-none');
-      }
     }
 
     items.forEach(n => {
@@ -104,10 +101,11 @@
     });
   }
 
-  // --- Fetcher
+  // Networking
+  let latestAbort = null;
   async function loadLatest() {
     try {
-      // Add a fresh loading row if needed
+      // (Re)show loading row
       if (!menu.querySelector('#notif-loading')) {
         const li = document.createElement('li');
         li.id = 'notif-loading';
@@ -117,16 +115,19 @@
         loading = li;
       }
 
+      if (latestAbort) latestAbort.abort();
+      latestAbort = new AbortController();
+
       const basePath = toggle.dataset.basePath || '';
       const url = `${basePath}/notifications/latest`;
 
       const res = await fetch(url, {
         headers: { 'Accept': 'application/json' },
         credentials: 'same-origin',
+        signal: latestAbort.signal,
       });
 
       if (!res.ok) {
-        // Surface status to help debugging (401/404/etc.)
         showFailed(`Failed (${res.status})`);
         return;
       }
@@ -134,39 +135,83 @@
       const data = await res.json();
       render(Array.isArray(data?.items) ? data.items : []);
     } catch (e) {
-      showFailed('Failed to load notifications');
+      if (e.name !== 'AbortError') {
+        showFailed('Failed to load notifications');
+      }
     }
   }
 
-  // --- Bind robustly
+  let countAbort = null;
+  async function loadUnreadCount() {
+    try {
+      if (countAbort) countAbort.abort();
+      countAbort = new AbortController();
 
-  // 1) Preferred: Bootstrap event on root .dropdown (fires when opening)
+      const basePath = toggle.dataset.basePath || '';
+      const url = `${basePath}/notifications/unread-count`;
+
+      const res = await fetch(url, {
+        headers: { 'Accept': 'application/json' },
+        credentials: 'same-origin',
+        signal: countAbort.signal,
+        cache: 'no-store'
+      });
+
+      if (!res.ok) {
+        // Don’t spam errors in UI; just hide badge on auth issues
+        if (res.status === 401) setBadge(0);
+        return;
+      }
+
+      const data = await res.json();
+      const total = Number(data?.total_unread ?? 0);
+      setBadge(Number.isFinite(total) ? total : 0);
+    } catch (e) {
+      // ignore transient errors; keep last known badge
+    }
+  }
+
+  // Event binding
   dropdownRoot.addEventListener('show.bs.dropdown', loadLatest);
 
-  // 2) Fallback: click on the toggle (in case events are blocked by something custom)
-  toggle.addEventListener('click', function () {
-    // If menu is not shown yet, try to pre-load
-    if (!menu.classList.contains('show')) {
-      loadLatest();
+  // Fallback hookup (in case bootstrap events are blocked by other scripts):
+  toggle.addEventListener('click', () => {
+    if (!menu.classList.contains('show')) loadLatest();
+  });
+
+  // Polling: every 2 minutes; pause when tab is hidden; refresh on focus
+  let pollTimer = null;
+  function startPolling() {
+    if (pollTimer) return;
+    // Kick off immediately, then every 120s
+    loadUnreadCount();
+    pollTimer = setInterval(loadUnreadCount, 120000);
+  }
+  function stopPolling() {
+    if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      startPolling();
+    } else {
+      stopPolling();
     }
   });
 
-  // 3) Fallback: observe when Bootstrap adds the "show" class (MutationObserver)
-  const obs = new MutationObserver((mutations) => {
-    for (const m of mutations) {
-      if (m.type === 'attributes' && m.attributeName === 'class') {
-        if (menu.classList.contains('show')) {
-          loadLatest();
-        }
-      }
-    }
-  });
-  obs.observe(menu, { attributes: true });
+  window.addEventListener('focus', loadUnreadCount);
 
-  // 4) Defensive: if devs manually instantiate, keep it compatible
+  // Initial start
+  if (document.visibilityState === 'visible') {
+    startPolling();
+  }
+
+  // Ensure bootstrap instance exists (optional)
   try {
     if (window.bootstrap?.Dropdown) {
-      // Do not force open; just ensure the instance exists
       new window.bootstrap.Dropdown(toggle, { autoClose: 'outside', display: 'static' });
     }
   } catch {}

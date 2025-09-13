@@ -40,4 +40,21 @@ final class NotificationsModel
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
+
+    /**
+     * Count unread notifications for the given user id_no (CHAR(13)).
+     */
+    public function countUnreadForUserIdNo(string $idNo): int
+    {
+        // normalize to exactly 13 chars (DB column is CHAR(13))
+        $idNo = substr(str_pad(trim($idNo), 13, ' ', STR_PAD_RIGHT), 0, 13);
+
+        $sql = "SELECT COUNT(*)::int AS cnt FROM notifications WHERE user_id_no = :idno AND is_read = FALSE";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue(':idno', $idNo, PDO::PARAM_STR);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return (int)($row['cnt'] ?? 0);
+    }
+    
 }
