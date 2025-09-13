@@ -1,17 +1,37 @@
 // /public/assets/js/notifications.js
-// Loads 5 latest notifications into the bell dropdown and manages the badge.
+// Robust loader for the bell dropdown: fetches 5 latest notifications,
+// handles edge cases where Bootstrap events or Popper are not firing as expected.
 
 (function () {
-  const dropdown = document.getElementById('notifDropdown');
-  if (!dropdown) return;
+  // --- Grab elements
+  const toggle = document.getElementById('notifDropdown');
+  if (!toggle) return;
 
-  const menu = dropdown.nextElementSibling;
-  const list = menu?.querySelector('#notif-items');
-  const loading = menu?.querySelector('#notif-loading');
+  const dropdownRoot = toggle.closest('.dropdown'); // <li class="nav-item dropdown">
+  const menu = dropdownRoot ? dropdownRoot.querySelector('.dropdown-menu') : null;
+  if (!menu) return;
+
+  let list = menu.querySelector('#notif-items');
+  let loading = menu.querySelector('#notif-loading');
   const badge = document.getElementById('notif-badge');
 
-  // Format time-ago text from ISO date
+  // Ensure containers exist
+  if (!list) {
+    list = document.createElement('li');
+    list.id = 'notif-items';
+    menu.insertBefore(list, menu.lastElementChild); // before footer
+  }
+  if (!loading) {
+    loading = document.createElement('li');
+    loading.id = 'notif-loading';
+    loading.className = 'py-3 text-center text-muted small';
+    loading.textContent = 'Loading…';
+    menu.insertBefore(loading, menu.firstElementChild);
+  }
+
+  // --- Helpers
   function timeAgo(iso) {
+    if (!iso) return '';
     const d = new Date(iso);
     const diff = Math.floor((Date.now() - d.getTime()) / 1000);
     if (diff < 60) return `${diff}s ago`;
@@ -23,23 +43,29 @@
     return `${days}d ago`;
   }
 
-  // Render notifications into the dropdown
-  function render(items) {
-    // clear loading
+  function showFailed(msg) {
     if (loading) loading.remove();
+    list.innerHTML = '';
+    const li = document.createElement('li');
+    li.className = 'py-3 text-center text-danger small';
+    li.textContent = msg || 'Failed to load notifications';
+    // insert before footer (last li)
+    menu.insertBefore(li, menu.lastElementChild);
+  }
 
-    // clear previous list
-    if (list) list.innerHTML = '';
+  function render(items) {
+    if (loading) loading.remove();
+    list.innerHTML = '';
 
-    if (!items || items.length === 0) {
+    if (!Array.isArray(items) || items.length === 0) {
       const li = document.createElement('li');
       li.className = 'py-3 text-center text-muted small';
       li.textContent = 'No notifications';
-      menu.insertBefore(li, menu.lastElementChild); // before footer
+      menu.insertBefore(li, menu.lastElementChild);
+      if (badge) badge.classList.add('d-none');
       return;
     }
 
-    // Update badge (count of unread among the five)
     const unread = items.filter(n => !n.is_read).length;
     if (badge) {
       if (unread > 0) {
@@ -50,9 +76,7 @@
       }
     }
 
-    // Build list items
     items.forEach(n => {
-      // Each item lives inside a <li> within the UL .dropdown-menu (Bootstrap 5 pattern)
       const li = document.createElement('li');
 
       const a = document.createElement('a');
@@ -66,53 +90,84 @@
       const meta = document.createElement('div');
       meta.className = 'small text-muted d-flex justify-content-between gap-2';
       const left = document.createElement('span');
+      left.className = 'text-truncate';
       left.textContent = n.body ? n.body : '';
-      left.classList.add('text-truncate');
       const right = document.createElement('span');
       right.textContent = n.created_at ? timeAgo(n.created_at) : '';
       meta.append(left, right);
 
-      if (!n.is_read) {
-        // subtle unread indicator
-        a.classList.add('bg-light');
-      }
+      if (!n.is_read) a.classList.add('bg-light');
 
       a.append(title, meta);
       li.append(a);
-      if (list) list.append(li);
+      list.append(li);
     });
   }
 
-  // Fetch latest notifications (top 5)
+  // --- Fetcher
   async function loadLatest() {
-    // show a loading row if not present
-    if (loading && !menu.contains(loading)) {
-      const li = document.createElement('li');
-      li.id = 'notif-loading';
-      li.className = 'py-3 text-center text-muted small';
-      li.textContent = 'Loading…';
-      menu.insertBefore(li, menu.firstElementChild);
-    }
-
     try {
-      const basePath = dropdown?.dataset?.basePath || '';
-      const res = await fetch(`${basePath}/notifications/latest`, {
+      // Add a fresh loading row if needed
+      if (!menu.querySelector('#notif-loading')) {
+        const li = document.createElement('li');
+        li.id = 'notif-loading';
+        li.className = 'py-3 text-center text-muted small';
+        li.textContent = 'Loading…';
+        menu.insertBefore(li, menu.firstElementChild);
+        loading = li;
+      }
+
+      const basePath = toggle.dataset.basePath || '';
+      const url = `${basePath}/notifications/latest`;
+
+      const res = await fetch(url, {
         headers: { 'Accept': 'application/json' },
         credentials: 'same-origin',
       });
-      if (!res.ok) throw new Error('Network error');
+
+      if (!res.ok) {
+        // Surface status to help debugging (401/404/etc.)
+        showFailed(`Failed (${res.status})`);
+        return;
+      }
+
       const data = await res.json();
       render(Array.isArray(data?.items) ? data.items : []);
     } catch (e) {
-      if (loading) loading.remove();
-      const li = document.createElement('li');
-      li.className = 'py-3 text-center text-danger small';
-      li.textContent = 'Failed to load notifications';
-      menu.insertBefore(li, menu.lastElementChild);
+      showFailed('Failed to load notifications');
     }
   }
 
-  // Load on open
-  menu?.addEventListener('show.bs.dropdown', loadLatest);
-  // NOTE: If your Bootstrap is the bundle, the event name is 'show.bs.dropdown' on the .dropdown element.
+  // --- Bind robustly
+
+  // 1) Preferred: Bootstrap event on root .dropdown (fires when opening)
+  dropdownRoot.addEventListener('show.bs.dropdown', loadLatest);
+
+  // 2) Fallback: click on the toggle (in case events are blocked by something custom)
+  toggle.addEventListener('click', function () {
+    // If menu is not shown yet, try to pre-load
+    if (!menu.classList.contains('show')) {
+      loadLatest();
+    }
+  });
+
+  // 3) Fallback: observe when Bootstrap adds the "show" class (MutationObserver)
+  const obs = new MutationObserver((mutations) => {
+    for (const m of mutations) {
+      if (m.type === 'attributes' && m.attributeName === 'class') {
+        if (menu.classList.contains('show')) {
+          loadLatest();
+        }
+      }
+    }
+  });
+  obs.observe(menu, { attributes: true });
+
+  // 4) Defensive: if devs manually instantiate, keep it compatible
+  try {
+    if (window.bootstrap?.Dropdown) {
+      // Do not force open; just ensure the instance exists
+      new window.bootstrap.Dropdown(toggle, { autoClose: 'outside', display: 'static' });
+    }
+  } catch {}
 })();

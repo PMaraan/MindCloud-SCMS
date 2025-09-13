@@ -24,14 +24,23 @@ final class NotificationsController
     {
         header('Content-Type: application/json; charset=utf-8');
 
-        // Be tolerant to various session keys; prefer id_no.
+        // DEV OVERRIDE: allow ?debug_id_no=2025-01-20001 to test without login/session
+        $debugId = isset($_GET['debug_id_no']) ? (string)$_GET['debug_id_no'] : '';
+        $debugId = trim($debugId);
+
+        // normalize id_no to CHAR(13): it must be exactly 13 chars (pad/right-trim later in model)
+        $normalize = static function (string $v): string {
+            return substr(str_pad($v, 13, ' ', STR_PAD_RIGHT), 0, 13);
+        };
+
         $idNo = '';
-        if (!empty($_SESSION['id_no'])) {
+        if ($debugId !== '') {
+            $idNo = $debugId;
+        } elseif (!empty($_SESSION['id_no'])) {
             $idNo = (string)$_SESSION['id_no'];
         } elseif (!empty($_SESSION['user_id_no'])) {
             $idNo = (string)$_SESSION['user_id_no'];
         } elseif (!empty($_SESSION['user_id'])) {
-            // fallback: if older code stored id_no under 'user_id'
             $idNo = (string)$_SESSION['user_id'];
         }
 
@@ -42,7 +51,8 @@ final class NotificationsController
             return;
         }
 
-        $items = (new NotificationsModel($this->db))->latestForUserIdNo($idNo, 5);
+        $items = (new \App\Modules\Notifications\Models\NotificationsModel($this->db))
+            ->latestForUserIdNo($normalize($idNo), 5);
 
         $safe = array_map(static function(array $n): array {
             return [
