@@ -43,10 +43,6 @@ if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
 // 3b. Request ID for correlation
 if (empty($_SERVER['REQUEST_ID'])) {
     $_SERVER['REQUEST_ID'] = bin2hex(random_bytes(8));
@@ -109,7 +105,11 @@ use App\Factories\DatabaseFactory;
 /** @var \App\Interfaces\StorageInterface $db */
 $db = DatabaseFactory::create(DB_DRIVER);
 
-// 5. Start router (function-style for now)
+// 5. Notifications
+use App\Helpers\NotifyHelper;
+NotifyHelper::boot($db);
+
+// 6. Start router (function-style for now)
 require_once dirname(__DIR__) . '/Router/router.php';
 
 // Dispatch the request (normalize method default)

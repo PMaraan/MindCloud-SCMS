@@ -56,5 +56,58 @@ final class NotificationsModel
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return (int)($row['cnt'] ?? 0);
     }
-    
+
+    /**
+     * Insert a single notification for one user (id_no: CHAR(13)).
+     * Returns the inserted notification id.
+     */
+    public function create(string $idNo, string $title, string $body = '', string $url = ''): int
+    {
+        $idNo = substr(str_pad(trim($idNo), 13, ' ', STR_PAD_RIGHT), 0, 13);
+
+        $sql = "INSERT INTO notifications (user_id_no, title, body, url) 
+                VALUES (:idno, :title, :body, :url)
+                RETURNING id";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue(':idno', $idNo, PDO::PARAM_STR);
+        $stmt->bindValue(':title', $title, PDO::PARAM_STR);
+        $stmt->bindValue(':body', $body, PDO::PARAM_STR);
+        $stmt->bindValue(':url', $url, PDO::PARAM_STR);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return (int)($row['id'] ?? 0);
+    }
+
+    /**
+     * Insert notifications for many users in one transaction.
+     * Returns the number of inserted rows.
+     */
+    public function createBulk(array $idNos, string $title, string $body = '', string $url = ''): int
+    {
+        if (empty($idNos)) return 0;
+
+        $this->pdo->beginTransaction();
+        try {
+            $sql = "INSERT INTO notifications (user_id_no, title, body, url) VALUES (:idno, :title, :body, :url)";
+            $stmt = $this->pdo->prepare($sql);
+
+            $count = 0;
+            foreach ($idNos as $idNo) {
+                $idNo = substr(str_pad(trim((string)$idNo), 13, ' ', STR_PAD_RIGHT), 0, 13);
+                if ($idNo === '') continue;
+
+                $stmt->bindValue(':idno', $idNo, PDO::PARAM_STR);
+                $stmt->bindValue(':title', $title, PDO::PARAM_STR);
+                $stmt->bindValue(':body', $body, PDO::PARAM_STR);
+                $stmt->bindValue(':url', $url, PDO::PARAM_STR);
+                $stmt->execute();
+                $count++;
+            }
+            $this->pdo->commit();
+            return $count;
+        } catch (\Throwable $e) {
+            $this->pdo->rollBack();
+            throw $e;
+        }
+    }
 }

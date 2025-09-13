@@ -1645,3 +1645,8 @@ HINT:  Perhaps you meant to reference the column "programs.program_id" or the co
 [13-Sep-2025 08:38:12 Europe/Berlin] accounts.page rows=8 total=18 limit=10 offset=10
 [13-Sep-2025 08:38:12 Europe/Berlin] accounts.index total=18 rows=8
 [13-Sep-2025 08:38:12 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-60002","fname":"Russel","mname":"","lname":"Domingo","email":"russeldomingo@lpunetwork.edu.ph","role_id":4,"college_id":null,"role_name":"Dean","college_short_name":""}
+[13-Sep-2025 09:27:14 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[13-Sep-2025 09:27:14 Europe/Berlin] Probe users count = 18
+[13-Sep-2025 09:27:14 Europe/Berlin] accounts.page rows=8 total=18 limit=10 offset=10
+[13-Sep-2025 09:27:14 Europe/Berlin] accounts.index total=18 rows=8
+[13-Sep-2025 09:27:14 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-60002","fname":"Russel","mname":"","lname":"Domingo","email":"russeldomingo@lpunetwork.edu.ph","role_id":4,"college_id":null,"role_name":"Dean","college_short_name":""}
