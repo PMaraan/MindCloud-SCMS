@@ -4,6 +4,7 @@
     use App\Controllers\DashboardController;
     use App\Modules\Auth\Controllers\AuthController;
     use App\Interfaces\StorageInterface;
+    use App\Modules\Notifications\Controllers\NotificationsController;
 
     /**
      * Build an absolute URL from BASE_PATH and a path.
@@ -46,6 +47,7 @@
     $privateRoutes = [
         'GET' => [
             '/dashboard' => [DashboardController::class, 'render'],
+            '/notifications/latest' => [NotificationsController::class, 'latestJson'],
             // add more GET private routes here
         ],
         'POST' => [

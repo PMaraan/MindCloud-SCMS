@@ -1,0 +1,60 @@
+<?php
+declare(strict_types=1);
+
+namespace App\Modules\Notifications\Controllers;
+
+use App\Interfaces\StorageInterface;
+use App\Modules\Notifications\Models\NotificationsModel;
+
+final class NotificationsController
+{
+    private StorageInterface $db;
+
+    public function __construct(StorageInterface $db)
+    {
+        $this->db = $db;
+        if (session_status() !== \PHP_SESSION_ACTIVE) session_start();
+    }
+
+    /**
+     * GET /notifications/latest
+     * Returns JSON: { items: [ {id,title,body,url,is_read,created_at}, ... ] }
+     */
+    public function latestJson(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        // Be tolerant to various session keys; prefer id_no.
+        $idNo = '';
+        if (!empty($_SESSION['id_no'])) {
+            $idNo = (string)$_SESSION['id_no'];
+        } elseif (!empty($_SESSION['user_id_no'])) {
+            $idNo = (string)$_SESSION['user_id_no'];
+        } elseif (!empty($_SESSION['user_id'])) {
+            // fallback: if older code stored id_no under 'user_id'
+            $idNo = (string)$_SESSION['user_id'];
+        }
+
+        $idNo = trim($idNo);
+        if ($idNo === '') {
+            http_response_code(401);
+            echo json_encode(['items' => []], JSON_UNESCAPED_SLASHES);
+            return;
+        }
+
+        $items = (new NotificationsModel($this->db))->latestForUserIdNo($idNo, 5);
+
+        $safe = array_map(static function(array $n): array {
+            return [
+                'id'         => (int)($n['id'] ?? 0),
+                'title'      => (string)($n['title'] ?? ''),
+                'body'       => (string)($n['body'] ?? ''),
+                'url'        => (string)($n['url'] ?? ''),
+                'is_read'    => (bool)($n['is_read'] ?? false),
+                'created_at' => (string)($n['created_at'] ?? ''),
+            ];
+        }, $items);
+
+        echo json_encode(['items' => $safe], JSON_UNESCAPED_SLASHES);
+    }
+}
