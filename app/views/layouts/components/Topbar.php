@@ -13,6 +13,8 @@
           id="notifDropdown"
           role="button"
           data-bs-toggle="dropdown"
+          data-bs-auto-close="outside"
+          data-bs-display="static"
           aria-expanded="false"
           title="Notifications"
           data-base-path="<?= $basePath ?>"
@@ -22,13 +24,8 @@
         </a>
 
         <ul class="dropdown-menu dropdown-menu-end p-0 shadow" aria-labelledby="notifDropdown" style="width: 360px;">
-          <!-- Loading state (replaced by JS on open) -->
           <li id="notif-loading" class="py-3 text-center text-muted small">Loading…</li>
-
-          <!-- List container that JS populates -->
-          <li id="notif-items" class="list-group list-group-flush"></li>
-
-          <!-- Footer link -->
+          <li id="notif-items" class=""></li>
           <li class="border-top">
             <a class="dropdown-item text-center fw-semibold" href="<?= $basePath ?>/dashboard?page=notifications">
               Show all notifications

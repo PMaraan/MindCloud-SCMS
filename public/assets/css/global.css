@@ -9,3 +9,39 @@ body {
 .dropdown-menu .dropdown-item .small { 
   line-height: 1.2; 
 }
+
+/* --- Fix notification dropdown reflow in navbar --- */
+.navbar .container,
+.navbar .container-fluid {
+  align-items: center; /* keep everything vertically centered */
+}
+
+.navbar .navbar-nav {
+  align-items: center; /* align icons vertically */
+}
+
+.navbar .navbar-nav .nav-item {
+  flex: 0 0 auto;      /* prevent flex-grow or shrinking */
+}
+
+.navbar .dropdown-menu {
+  position: absolute !important; /* must float */
+  left: auto !important;
+  right: 0 !important;           /* snap to the right edge of the bell */
+  transform: none !important;    /* avoid transform pushing it around if Popper is missing/overridden */
+  will-change: auto;             /* avoid weird GPU side-effects */
+  min-width: 360px;              /* your desired width */
+}
+
+.navbar .dropdown-menu.show {
+  display: block; /* explicit, harmless with absolute positioning */
+}
+
+.navbar .lpu-icon {
+  height: 28px;   /* optional: keep logo steady */
+  width: auto;
+}
+
+.navbar.sticky-top {
+  overflow: visible; /* ensure dropdown can overflow */
+}
