@@ -7,18 +7,21 @@
   const snap = (v) => Math.round(v / GRID) * GRID;
   
   // --- flowing signature table (used when dropping "Signature Field" into TipTap)
-  function signatureTableHTML(cols = 4) {
-    const cell = () => `
-      <td>
-        <p class="sig-box">&nbsp;</p>
-        <p class="sig-line"></p>
-        <p class="sig-meta"><span>Name</span> &nbsp; <span class="muted">Date</span> &nbsp; <span class="muted">Role</span></p>
-      </td>
-    `;
-    const cells = Array.from({ length: cols }, cell).join('');
-    // trailing empty paragraph gives you a caret after the block
-    return `<table class="sig-table"><tbody><tr>${cells}</tr></tbody></table><p></p>`;
-  }
+// signatureTableHTML() – used when dropping "Signature Field" into TipTap
+function signatureTableHTML(cols = 4) {
+  const cell = () => `
+    <td class="sig-cell">
+      <p class="sig-img">Upload Image</p>
+      <p class="sig-name">Name</p>
+      <p class="sig-date"><span class="sig-date-blank">mm / dd / yyyy</span> <span class="muted">Date</span></p>
+      <p class="sig-role">Role</p>
+    </td>
+  `;
+  const cells = Array.from({ length: cols }, cell).join('');
+  return `<table class="sig-table"><tbody><tr>${cells}</tr></tbody></table><p></p>`;
+}
+
+
 
 
   const waitForEditor = () =>
@@ -1108,25 +1111,41 @@
         const ed = window.__mc?.getActiveEditor?.();
         if (ed) {
         if (type === 'table') {
-          const ok = ed.chain().focus()
+          // If dropping while the caret is inside an existing table,
+          // decide above/below from pointer Y and move the caret outside first.
+          const dir = moveCaretOutsideEnclosingTable(ed, ev) || null;
+
+          // If we're adding *below* the current table, prefix a blank line
+          // so the two tables don't weld together.
+          let chain = ed.chain().focus();
+          if (dir === 'after') chain = chain.insertContent('<p></p>');
+
+          const ok = chain
             .insertTable({ rows: 3, cols: 4, withHeaderRow: false })
             .run();
 
-          // Fallback: insert plain HTML table if the command didn't run
-          if (!ok) {
-            const html = (() => {
-              const r = 3, c = 4;
-              const rows = Array.from({ length: r }, () =>
-                `<tr>${'<td><p><br/></p></td>'.repeat(c)}</tr>`
-              ).join('');
-              return `<table><tbody>${rows}</tbody></table><p></p>`;
-            })();
-            ed.chain().focus().insertContent(html).run();
+          // Always leave a caret after the inserted table
+          if (ok) {
+            ed.chain().focus().insertContent('<p></p>').run();
+          } else {
+            // Fallback: raw HTML
+            const r = 3, c = 4;
+            const rows = Array.from({ length: r }, () =>
+              `<tr>${'<td><p><br/></p></td>'.repeat(c)}</tr>`
+            ).join('');
+            const html = `<table><tbody>${rows}</tbody></table>`;
+            if (dir === 'after') {
+              ed.chain().focus().insertContent('<p></p>' + html + '<p></p>').run();
+            } else {
+              ed.chain().focus().insertContent(html + '<p></p>').run();
+            }
           }
 
           setOverlaysDragEnabled(false);
           return; // done
         }
+
+
           // OPTIONAL: map a few simple sidebar items to flowing HTML in TipTap
           if (type === 'label') {
             ed.chain().focus().insertContent('<p><strong>Label text</strong></p>').run();
@@ -1153,12 +1172,23 @@
             return;
           }
           if (type === 'signature') {
+            // Decide above/below relative to the current table (if we're inside one)
+            const dir = moveCaretOutsideEnclosingTable(ed, ev) || null;
+
+            // signatureTableHTML() already ends with <p></p>
             const html = signatureTableHTML(4);
-            ed.chain().focus().insertContent(html).run();
+
+            if (dir === 'after') {
+              // below the existing table → add a blank before the signature block
+              ed.chain().focus().insertContent('<p></p>' + html).run();
+            } else {
+              // above or not inside a table → just insert; the trailing <p></p> keeps caret free
+              ed.chain().focus().insertContent(html).run();
+            }
+
             setOverlaysDragEnabled(false);
             return;
           }
-
         }
 
         // (B) Everything else: still use the overlay (free-positioned canvas items)
@@ -1359,24 +1389,33 @@
         case 'insertTable': {
           const ed = getEd(); if (!ed) return;
 
-          // Try native TipTap table insertion first
-          const ok = ed.chain().focus()
+          // If caret is inside a table, decide above/below using caret geometry
+          const dir = moveCaretOutsideEnclosingTable(ed, 'auto') || null;
+
+          let chain = ed.chain().focus();
+          if (dir === 'after') chain = chain.insertContent('<p></p>');
+
+          const ok = chain
             .insertTable({ rows: 3, cols: 4, withHeaderRow: false })
             .run();
 
-          // Fallback: inject plain HTML table if the command didn't run
-          if (!ok) {
-            const html = (() => {
-              const r = 3, c = 4;
-              const rows = Array.from({ length: r }, () =>
-                `<tr>${'<td><p><br/></p></td>'.repeat(c)}</tr>`
-              ).join('');
-              return `<table><tbody>${rows}</tbody></table><p></p>`;
-            })();
-            ed.chain().focus().insertContent(html).run();
+          if (ok) {
+            ed.chain().focus().insertContent('<p></p>').run();
+          } else {
+            const r = 3, c = 4;
+            const rows = Array.from({ length: r }, () =>
+              `<tr>${'<td><p><br/></p></td>'.repeat(c)}</tr>`
+            ).join('');
+            const html = `<table><tbody>${rows}</tbody></table>`;
+            if (dir === 'after') {
+              ed.chain().focus().insertContent('<p></p>' + html + '<p></p>').run();
+            } else {
+              ed.chain().focus().insertContent(html + '<p></p>').run();
+            }
           }
           break;
         }
+
 
         case 'insertImage': {
           const url = prompt('Image URL');
@@ -1466,6 +1505,63 @@
     selSize?.addEventListener('change', () => applyFontSize(selSize.value));
   } // end wireTopbar
 
+// Decide above/below and move caret outside the enclosing TipTap table.
+// Returns 'before' | 'after' | false (if not inside a table).
+function moveCaretOutsideEnclosingTable(ed, evOrPref) {
+  try {
+    if (!ed?.isActive?.('table')) return false;
+
+    // Find the table node depth at the current selection
+    const { $from } = ed.state.selection;
+    let tableDepth = -1;
+    for (let d = $from.depth; d >= 0; d--) {
+      const n = $from.node(d);
+      if (n?.type?.name === 'table') { tableDepth = d; break; }
+    }
+    if (tableDepth < 0) return false;
+
+    // DOM + geometry to decide above/below
+    const cellEl = currentCellElement?.(ed);
+    const tblEl  = cellEl?.closest('table');
+    const rect   = tblEl?.getBoundingClientRect?.();
+    const midY   = rect ? (rect.top + rect.height / 2) : null;
+
+    // Pointer/caret Y
+    let y = null;
+    if (evOrPref && typeof evOrPref === 'object' && 'clientY' in evOrPref) {
+      y = evOrPref.clientY; // drop event
+    } else {
+      const sel = window.getSelection?.();
+      if (sel && sel.rangeCount) {
+        const r = sel.getRangeAt(0);
+        const rr = r.getClientRects?.()[0] || r.getBoundingClientRect?.();
+        if (rr) y = rr.top + rr.height / 2;
+      }
+    }
+
+    // Preference may be 'before'/'after' or 'auto'
+    let pref = (typeof evOrPref === 'string') ? evOrPref : 'auto';
+    if (pref !== 'before' && pref !== 'after') pref = 'auto';
+
+    let dir = 'after';
+    if (pref === 'before') dir = 'before';
+    else if (pref === 'after') dir = 'after';
+    else if (midY != null && y != null) dir = y < midY ? 'before' : 'after';
+
+    // Compute positions at that depth and move caret
+    const pos = dir === 'before' ? $from.before(tableDepth) : $from.after(tableDepth);
+    ed.chain().setTextSelection(pos).run();
+    return dir;
+  } catch { return false; }
+}
+
+// Back-compat wrapper used by some call sites
+function moveCaretAfterEnclosingTable(ed) {
+  return moveCaretOutsideEnclosingTable(ed, 'after') !== false;
+}
+
+
+
 // --- TipTap in-editor table toolbar (global, outside pages) ---
 function ensureTTTablebar() {
   let bar = document.body.querySelector('.tt-tablebar');
@@ -1490,8 +1586,27 @@ function ensureTTTablebar() {
     `;
     document.body.appendChild(bar);
   }
+
+  // Guard so clicking the bar doesn't count as “lose focus → hide”
+  if (!bar._mcGuarded) {
+    bar._mcGuarded = true;
+    const set = (v) => {
+      window.__mc = window.__mc || {};
+      window.__mc._ttBarInteracting = !!v;
+    };
+    const clearSoon = () => setTimeout(() => set(false), 0);
+
+    bar.addEventListener('pointerdown', () => set(true));
+    bar.addEventListener('pointerup', clearSoon);
+    bar.addEventListener('pointercancel', clearSoon);
+    bar.addEventListener('pointerleave', clearSoon);
+    bar.addEventListener('mouseenter', () => set(true));
+    bar.addEventListener('mouseleave', clearSoon);
+  }
+
   return bar;
 }
+
 
 function isInTipTapTable(ed) {
   try { return !!ed?.isActive?.('table'); } catch { return false; }
@@ -1553,13 +1668,31 @@ function bindTablebarActions(ed) {
   if (bar._wiredFor === ed) return;
   bar._wiredFor = ed;
 
+  // 🔒 Keep the editor focused so the CellSelection survives.
+  // If we let focus move to the toolbar, ProseMirror collapses the cell selection.
+  const keepPMFocus = (ev) => {
+    ev.preventDefault();                   // don't steal focus
+    window.__mc && (window.__mc._ttBarInteracting = true);
+    try { ed.view?.focus(); } catch {}
+  };
+  bar.addEventListener('mousedown', keepPMFocus);
+  bar.addEventListener('pointerdown', keepPMFocus);
+
   bar.onclick = (e) => {
     const b = e.target.closest('button[data-act]');
     if (!b) return;
     const act = b.dataset.act;
-    const c = ed.chain().focus();
 
+    // stay in "interacting" mode until we finish; prevents blur-hide
+    if (window.__mc) window.__mc._ttBarInteracting = true;
+
+    // ⚠️ DO NOT rebuild selection here. Just refocus; the selection must remain a CellSelection.
+    try { ed.view?.focus(); } catch {}
+
+    // run the command
     let ok = true;
+    const c = ed.chain();
+
     switch (act) {
       case 'row-above':   ok = c.addRowBefore().run(); break;
       case 'row-below':   ok = c.addRowAfter().run(); break;
@@ -1567,15 +1700,33 @@ function bindTablebarActions(ed) {
       case 'col-right':   ok = c.addColumnAfter().run(); break;
       case 'del-row':     ok = c.deleteRow().run(); break;
       case 'del-col':     ok = c.deleteColumn().run(); break;
+
+      // ✅ These require a real CellSelection. With focus preserved, they now work.
       case 'merge':       ok = c.mergeCells().run(); break;
       case 'split':       ok = c.splitCell().run(); break;
+
       case 'toggle-head': ok = c.toggleHeaderRow().run(); break;
-      case 'del-table':   ok = c.deleteTable().run(); bar.style.display = 'none'; break;
-      default: ok = false;
+      case 'del-table':
+        ok = c.deleteTable().run();
+        ensureTTTablebar().style.display = 'none';
+        break;
+      default:
+        ok = false;
     }
-    if (ok) requestAnimationFrame(() => positionTablebarForEditor(ed));
+
+    // Reposition bar relative to the (new) cell state
+    requestAnimationFrame(() => {
+      if (ok) positionTablebarForEditor(ed);
+      setTimeout(() => { if (window.__mc) window.__mc._ttBarInteracting = false; }, 0);
+    });
   };
 }
+
+
+
+
+
+let _ttBarInteracting = false;
 
 
 function wireTipTapTableUI() {
@@ -1587,7 +1738,20 @@ function wireTipTapTableUI() {
     ed.on('selectionUpdate', () => positionTablebarForEditor(ed));
     ed.on('update',           () => positionTablebarForEditor(ed));
     ed.on('focus',            () => positionTablebarForEditor(ed));
-    ed.on('blur',             () => { ensureTTTablebar().style.display = 'none'; });
+    // SAFETY: the flag is set in ensureTTTablebar() step #2
+    // If the user is interacting with the floating bar, ignore the blur.
+    ed.on('blur', () => {
+      if (window.__mc && window.__mc._ttBarInteracting) return;
+      ensureTTTablebar().style.display = 'none';
+    });
+
+        // Keep PM focus on cell selections while interacting around the editor
+    ed.options.element.addEventListener('mousedown', (ev) => {
+      // If you start a gesture on the editor root, keep focus there.
+      // This prevents transient focus jumps that can drop a CellSelection.
+      try { ed.view?.focus(); } catch {}
+    });
+
 
     const sync = () => positionTablebarForEditor(ed);
     window.addEventListener('resize', sync);
@@ -1632,4 +1796,4 @@ function wireTipTapTableUI() {
     const evt = new Event('mc:rewire');
     document.dispatchEvent(evt);
   };
-})(); // <-- CLOSE THE IIFE HERE (was an extra "});" before)
+})(); 

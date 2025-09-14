@@ -256,130 +256,7 @@ import TableCell   from "https://esm.sh/@tiptap/extension-table-cell@2.6.6";
 /* ==== Multi-page editor manager ==== */
 import { Node } from "https://esm.sh/@tiptap/core@2.6.6";
 
-const SIG_DEFAULT = Array.from({ length: 4 }, () => ({ name: "", date: "", role: "", img: "" }));
 
-const SignatureRow = Node.create({
-  name: "signatureRow",
-  group: "block",
-  atom: true,          // keep it as a single block that flows
-  selectable: true,
-
-  addAttributes() {
-    return {
-      items: {
-        default: SIG_DEFAULT,
-        parseHTML: el => {
-          try { return JSON.parse(el.getAttribute("data-items") || "[]"); }
-          catch { return SIG_DEFAULT; }
-        },
-        renderHTML: attrs => ({ "data-items": JSON.stringify(attrs.items || SIG_DEFAULT) }),
-      },
-    };
-  },
-
-  parseHTML() { return [{ tag: 'div[data-node="signature-row"]' }]; },
-  renderHTML({ HTMLAttributes }) {
-    return ['div', { ...HTMLAttributes, 'data-node': 'signature-row', class: 'tt-signature-row' }];
-  },
-
-  addCommands() {
-    return {
-      insertSignatureRow:
-        () => ({ chain }) =>
-          chain()
-            .insertContent({ type: this.name })   // insert the node
-            .insertContent('<p></p>')             // caret after
-            .run(),
-    };
-  },
-
-  addNodeView() {
-    return ({ node, updateAttributes }) => {
-      const items = Array.isArray(node.attrs.items) ? node.attrs.items.slice() : SIG_DEFAULT.slice();
-
-      const dom = document.createElement('div');
-      dom.className = 'tt-signature-row';
-      dom.setAttribute('data-node', 'signature-row');
-
-      const sync = () => updateAttributes({ items });
-
-      const makeCard = (i) => {
-        const card = document.createElement('div');
-        card.className = 'sig-card';
-
-        const imgWrap = document.createElement('div');
-        imgWrap.className = 'img';
-
-        const img = document.createElement('img');
-        const upBtn = document.createElement('button');
-        upBtn.type = 'button';
-        upBtn.textContent = 'Upload';
-        const file = document.createElement('input');
-        file.type = 'file'; file.accept = 'image/*'; file.hidden = true;
-
-        upBtn.addEventListener('click', () => file.click());
-        file.addEventListener('change', () => {
-          const f = file.files?.[0];
-          if (!f) return;
-          const r = new FileReader();
-          r.onload = () => {
-            items[i].img = r.result;
-            img.src = r.result;
-            img.style.display = 'block';
-            upBtn.style.display = 'none';
-            sync();
-          };
-          r.readAsDataURL(f);
-        });
-
-        if (items[i].img) {
-          img.src = items[i].img;
-          img.style.display = 'block';
-          upBtn.style.display = 'none';
-        }
-
-        imgWrap.append(img, upBtn, file);
-        card.appendChild(imgWrap);
-
-        const line = document.createElement('div');
-        line.className = 'line';
-        card.appendChild(line);
-
-        const name = document.createElement('div');
-        name.className = 'meta editable';
-        name.contentEditable = 'true';
-        name.textContent = items[i].name || 'Name';
-        name.addEventListener('focus', () => { if (name.textContent === 'Name') name.textContent = ''; });
-        name.addEventListener('input', () => { items[i].name = name.textContent; sync(); });
-        card.appendChild(name);
-
-        const dateRow = document.createElement('div');
-        dateRow.className = 'date-row';
-        const dateIn = document.createElement('input');
-        dateIn.type = 'date';
-        dateIn.value = items[i].date || '';
-        dateIn.addEventListener('input', () => { items[i].date = dateIn.value; sync(); });
-        const dateLbl = document.createElement('span');
-        dateLbl.textContent = 'Date';
-        dateRow.append(dateIn, dateLbl);
-        card.appendChild(dateRow);
-
-        const role = document.createElement('div');
-        role.className = 'meta editable';
-        role.contentEditable = 'true';
-        role.textContent = items[i].role || 'Role';
-        role.addEventListener('focus', () => { if (role.textContent === 'Role') role.textContent = ''; });
-        role.addEventListener('input', () => { items[i].role = role.textContent; sync(); });
-        card.appendChild(role);
-
-        return card;
-      };
-
-      for (let i = 0; i < 4; i++) dom.appendChild(makeCard(i));
-      return { dom, update: () => true };
-    };
-  },
-});
 
 
 
@@ -453,6 +330,32 @@ const LineHeight = Extension.create({
   },
 });
 
+/* ---- TabListIndent (keep focus; Tab/Shift+Tab behave like Google Docs in lists) ---- */
+const TabListIndent = Extension.create({
+  name: 'tabListIndent',
+  addKeyboardShortcuts() {
+    return {
+      Tab: () => {
+        // If we’re in a list item, try to indent. Even if it can’t indent,
+        // return true to prevent the browser from tabbing focus to the footer.
+        if (this.editor.isActive('listItem')) {
+          const ok = this.editor.chain().focus().sinkListItem('listItem').run();
+          return ok || true; // handled -> prevent default focus jump
+        }
+        return false; // not in a list -> let Tab behave normally
+      },
+      'Shift-Tab': () => {
+        if (this.editor.isActive('listItem')) {
+          const ok = this.editor.chain().focus().liftListItem('listItem').run();
+          return ok || true; // handled (even if no outdent possible)
+        }
+        return false;
+      },
+    };
+  },
+});
+
+
 /* Create a TipTap editor inside a page’s [data-editor] container */
 async function makeEditorFor(pageEl) {
   const holder = pageEl.querySelector('[data-editor]');
@@ -485,7 +388,7 @@ async function makeEditorFor(pageEl) {
       TableRow,
       TableHeader,
       TableCell,
-      SignatureRow
+      TabListIndent,
     ],
     content: '<p></p>',
     autofocus: false,
@@ -664,7 +567,7 @@ async function flowBackward(ed){
 
     // If that made us overflow, put it back and stop.
     const m = measureEditor(ed);
-    if (m.used > m.limit - FLOW_GUARD){
+    if (m.used > m.limit - getFlowGuardPx(ed)){
       // revert move
       popLastBlock(ed);       // remove what we just appended
       prependBlock(nextEd, node);

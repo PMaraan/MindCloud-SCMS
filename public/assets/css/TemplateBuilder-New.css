@@ -537,21 +537,73 @@ body {
   line-height: 1.4;
 }
 
-/* Signature tables: works even if TipTap strips classes */
-.tiptap table:has(.sig-box) {
+/* Signature table (TipTap) — 4 stacked rows per column */
+.tiptap table.sig-table{
   width: 100%;
   table-layout: fixed;
-  border-collapse: collapse;
+  border-collapse: collapse;   /* keep columns aligned */
   margin: 12px 0;
 }
-.tiptap table:has(.sig-box) td,
-.tiptap table:has(.sig-box) th {
+.tiptap table.sig-table td,
+.tiptap table.sig-table th{
   border: none;
-  padding: 6px 10px;
+  padding: 10px 12px;          /* outer cell padding */
   vertical-align: top;
 }
 
-/* keep your existing .sig-box / .sig-line / .sig-meta rules */
+/* Make each TD look like a card with 4 stacked items */
+.tiptap table.sig-table td.sig-cell{
+  border: 1px dashed #d9dce3;
+  border-radius: 8px;
+  background: #fff;
+  padding: 8px;                /* inner card padding */
+  display: grid;
+  grid-template-rows: 1fr auto auto auto; /* Upload, Name, Date, Role */
+  gap: 8px;
+}
+
+/* Top “Upload” box (visual only in table version) */
+.tiptap .sig-img{
+  aspect-ratio: 4 / 3;
+  display: grid;
+  place-items: center;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #111827;
+}
+
+/* Labels below the line */
+.tiptap .sig-name,
+.tiptap .sig-role,
+.tiptap .sig-date{
+  font-size: 12px;
+  color: #111827;
+  line-height: 1.25;
+}
+
+/* thin line above “Name” like the mock */
+.tiptap .sig-name{
+  position: relative;
+  padding-top: 6px;
+}
+.tiptap .sig-name::before{
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  border-top: 1px solid #9ca3af;
+}
+
+/* Date row formatting */
+.tiptap .sig-date{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tiptap .sig-date .sig-date-blank{ color: #6b7280; }  /* mm / dd / yyyy */
+.tiptap .sig-date .muted{ color: #64748b; white-space: nowrap; }
+
 
 
 /* Flowing signature table (inside editor, not overlay) */
@@ -568,26 +620,6 @@ body {
   vertical-align: top;
 }
 
-.tiptap .sig-box {
-  height: 56px;               /* signature scribble area */
-  background: #f8fafc;
-  border: 1px dashed #cbd5e1;
-  border-radius: 6px;
-  display: none;
-}
-.tiptap .sig-line {
-  height: 1px;
-  border-bottom: 1px solid #111827;
-  margin: 6px 0 4px;
-  margin-top: 18px;
-}
-.tiptap .sig-meta {
-  text-align: center;
-  font-size: 12px;
-  color: #64748b;
-  line-height: 1.25;
-}
-.tiptap .sig-meta .muted { color: #94a3b8; }
 
 .tiptap th {
   font-weight: 600;
@@ -651,7 +683,8 @@ body {
   border-radius: 8px;
   padding: 4px 6px;
   box-shadow: 0 2px 10px rgba(16,24,40,.05);
-  z-index: 3000;               /* above pages and their overflow */
+  z-index: 3000;      
+  pointer-events: auto;         /* above pages and their overflow */
 }
 
 .tt-tablebar .btn{
