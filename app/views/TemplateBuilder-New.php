@@ -250,11 +250,140 @@ import TableRow    from "https://esm.sh/@tiptap/extension-table-row@2.6.6";
 import TableHeader from "https://esm.sh/@tiptap/extension-table-header@2.6.6";
 import TableCell   from "https://esm.sh/@tiptap/extension-table-cell@2.6.6";
 
-
 /* Load your sidebar/toolbar/blocks wiring (waits for window.__mc.editor) */
   import "<?= $ASSET_BASE ?>/assets/js/TemplateBuilder-New.js?v=<?= time() ?>";
 
 /* ==== Multi-page editor manager ==== */
+import { Node } from "https://esm.sh/@tiptap/core@2.6.6";
+
+const SIG_DEFAULT = Array.from({ length: 4 }, () => ({ name: "", date: "", role: "", img: "" }));
+
+const SignatureRow = Node.create({
+  name: "signatureRow",
+  group: "block",
+  atom: true,          // keep it as a single block that flows
+  selectable: true,
+
+  addAttributes() {
+    return {
+      items: {
+        default: SIG_DEFAULT,
+        parseHTML: el => {
+          try { return JSON.parse(el.getAttribute("data-items") || "[]"); }
+          catch { return SIG_DEFAULT; }
+        },
+        renderHTML: attrs => ({ "data-items": JSON.stringify(attrs.items || SIG_DEFAULT) }),
+      },
+    };
+  },
+
+  parseHTML() { return [{ tag: 'div[data-node="signature-row"]' }]; },
+  renderHTML({ HTMLAttributes }) {
+    return ['div', { ...HTMLAttributes, 'data-node': 'signature-row', class: 'tt-signature-row' }];
+  },
+
+  addCommands() {
+    return {
+      insertSignatureRow:
+        () => ({ chain }) =>
+          chain()
+            .insertContent({ type: this.name })   // insert the node
+            .insertContent('<p></p>')             // caret after
+            .run(),
+    };
+  },
+
+  addNodeView() {
+    return ({ node, updateAttributes }) => {
+      const items = Array.isArray(node.attrs.items) ? node.attrs.items.slice() : SIG_DEFAULT.slice();
+
+      const dom = document.createElement('div');
+      dom.className = 'tt-signature-row';
+      dom.setAttribute('data-node', 'signature-row');
+
+      const sync = () => updateAttributes({ items });
+
+      const makeCard = (i) => {
+        const card = document.createElement('div');
+        card.className = 'sig-card';
+
+        const imgWrap = document.createElement('div');
+        imgWrap.className = 'img';
+
+        const img = document.createElement('img');
+        const upBtn = document.createElement('button');
+        upBtn.type = 'button';
+        upBtn.textContent = 'Upload';
+        const file = document.createElement('input');
+        file.type = 'file'; file.accept = 'image/*'; file.hidden = true;
+
+        upBtn.addEventListener('click', () => file.click());
+        file.addEventListener('change', () => {
+          const f = file.files?.[0];
+          if (!f) return;
+          const r = new FileReader();
+          r.onload = () => {
+            items[i].img = r.result;
+            img.src = r.result;
+            img.style.display = 'block';
+            upBtn.style.display = 'none';
+            sync();
+          };
+          r.readAsDataURL(f);
+        });
+
+        if (items[i].img) {
+          img.src = items[i].img;
+          img.style.display = 'block';
+          upBtn.style.display = 'none';
+        }
+
+        imgWrap.append(img, upBtn, file);
+        card.appendChild(imgWrap);
+
+        const line = document.createElement('div');
+        line.className = 'line';
+        card.appendChild(line);
+
+        const name = document.createElement('div');
+        name.className = 'meta editable';
+        name.contentEditable = 'true';
+        name.textContent = items[i].name || 'Name';
+        name.addEventListener('focus', () => { if (name.textContent === 'Name') name.textContent = ''; });
+        name.addEventListener('input', () => { items[i].name = name.textContent; sync(); });
+        card.appendChild(name);
+
+        const dateRow = document.createElement('div');
+        dateRow.className = 'date-row';
+        const dateIn = document.createElement('input');
+        dateIn.type = 'date';
+        dateIn.value = items[i].date || '';
+        dateIn.addEventListener('input', () => { items[i].date = dateIn.value; sync(); });
+        const dateLbl = document.createElement('span');
+        dateLbl.textContent = 'Date';
+        dateRow.append(dateIn, dateLbl);
+        card.appendChild(dateRow);
+
+        const role = document.createElement('div');
+        role.className = 'meta editable';
+        role.contentEditable = 'true';
+        role.textContent = items[i].role || 'Role';
+        role.addEventListener('focus', () => { if (role.textContent === 'Role') role.textContent = ''; });
+        role.addEventListener('input', () => { items[i].role = role.textContent; sync(); });
+        card.appendChild(role);
+
+        return card;
+      };
+
+      for (let i = 0; i < 4; i++) dom.appendChild(makeCard(i));
+      return { dom, update: () => true };
+    };
+  },
+});
+
+
+
+
 const MCEditors = {
   map: new Map(), // pageId -> Editor
   get(pageId) { return this.map.get(pageId) || null; },
@@ -356,6 +485,7 @@ async function makeEditorFor(pageEl) {
       TableRow,
       TableHeader,
       TableCell,
+      SignatureRow
     ],
     content: '<p></p>',
     autofocus: false,
