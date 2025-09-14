@@ -6,6 +6,7 @@
     use App\Interfaces\StorageInterface;
     use App\Modules\Notifications\Controllers\NotificationsController;
     use App\Modules\Settings\Controllers\SettingsController;
+    use App\Modules\Profile\Controllers\ProfileController;
 
     /**
      * Build an absolute URL from BASE_PATH and a path.
@@ -48,6 +49,7 @@
     $privateRoutes = [
         'GET' => [
             '/dashboard' => [DashboardController::class, 'render'],
+            '/profile'   => [ProfileController::class, 'render'],
             '/notifications/latest' => [NotificationsController::class, 'latestJson'],
             '/notifications/unread-count' => [NotificationsController::class, 'unreadCountJson'],
             '/api/settings/get'  => [SettingsController::class, 'getPreference'],
@@ -88,10 +90,17 @@
                 header('Location: ' . url('/login'));
                 exit;
             }
+
             [$controller, $action] = $privateRoutes[$method][$path];
-            // preserve your page param convention
-            $page = $_GET['page'] ?? 'dashboard';
-            (new $controller($db))->$action($page);
+            $instance = new $controller($db);
+
+            // Only DashboardController expects a $page argument
+            if ($controller === DashboardController::class) {
+                $page = $_GET['page'] ?? 'dashboard';
+                $instance->$action($page);
+            } else {
+                $instance->$action();
+            }
             return;
         }
 

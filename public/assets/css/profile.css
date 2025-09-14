@@ -1,0 +1,177 @@
+/* Centered page look comes from Bootstrap container + col-xl-8 in the view */
+
+/* Avatar sizing + border */
+.pf-avatar {
+  width: 140px;
+  height: 140px;
+  border: 4px solid #f1f1f1;
+}
+
+/* Default SVG avatar appearance (uses currentColor for path fill) */
+#pf-avatar[src$="user-default.svg"] {
+  background-color: #f8f9fa;
+  color: #6c757d;
+  padding: 20px;
+  border-radius: 50%;
+}
+
+/* Pencil overlay button */
+.pf-avatar-wrap {
+  display: inline-block;
+}
+
+.pf-avatar-wrap .pf-avatar-edit {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,.15);
+}
+
+/* Form labels on left get a subtle color that works in light/dark */
+@media (min-width: 768px) {
+  .text-md-end.fw-semibold {
+    color: var(--bs-body-color);
+    opacity: .92;
+  }
+}
+
+/* Dark theme: make labels lighter */
+[data-bs-theme="dark"] .text-md-end.fw-semibold,
+.dark .text-md-end.fw-semibold,
+.dark-mode .text-md-end.fw-semibold {
+  color: rgba(255,255,255,.92);
+  opacity: 1;
+}
+
+/* Toast spacing (used by JS helper) */
+.profile-toast {
+  z-index: 1080;
+}
+
+/* Readable disabled form controls in light & dark mode */
+.form-control.pf-readonly:disabled,
+.pf-readonly[disabled] {
+  background-color: var(--bs-tertiary-bg);
+  color: var(--bs-body-color);
+  border-color: var(--bs-border-color);
+  opacity: 1; /* override default faded look */
+}
+
+/* ===== Theme-aware form controls (editable) ===== */
+#pf-form .form-control:not(.pf-readonly):not([disabled]) {
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  border-color: var(--bs-border-color);
+}
+#pf-form .form-control:not(.pf-readonly):not([disabled]):focus {
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  border-color: var(--bs-primary);
+  box-shadow: 0 0 0 .2rem rgba(var(--bs-primary-rgb), .25);
+}
+/* Placeholders */
+#pf-form .form-control::placeholder {
+  color: var(--bs-secondary-color);
+  opacity: .9;
+}
+[data-bs-theme="dark"] #pf-form .form-control::placeholder,
+.dark #pf-form .form-control::placeholder,
+.dark-mode #pf-form .form-control::placeholder {
+  color: rgba(255,255,255,.55);
+  opacity: 1;
+}
+
+/* ===== Non-editable fields (borderless, readable in dark mode) ===== */
+.form-control.pf-readonly:disabled,
+.pf-readonly[disabled] {
+  background-color: transparent;
+  color: var(--bs-secondary-color);
+  border-color: transparent;
+  box-shadow: none;
+  opacity: 1;
+  padding-left: .25rem;
+}
+/* Dark theme: slightly brighter text for readability */
+[data-bs-theme="dark"] .form-control.pf-readonly:disabled,
+.dark .form-control.pf-readonly:disabled,
+.dark-mode .form-control.pf-readonly:disabled {
+  color: rgba(255,255,255,.75);
+}
+
+/* Optional: if you prefer a faint separator instead of fully borderless,
+   uncomment this bottom border line:
+.form-control.pf-readonly:disabled { border-bottom: 1px dashed var(--bs-border-color); }
+*/
+
+/* Alternative style: greyed-out box
+.form-control.pf-readonly:disabled {
+  background-color: var(--bs-tertiary-bg);
+  color: var(--bs-secondary-color);
+  border-color: var(--bs-border-color);
+  opacity: 1;
+}
+*/
+
+/* ===== Default SVG avatar tones in dark ===== */
+[data-bs-theme="dark"] #pf-avatar[src$="user-default.svg"],
+.dark #pf-avatar[src$="user-default.svg"],
+.dark-mode #pf-avatar[src$="user-default.svg"] {
+  background-color: rgba(255,255,255,.09); /* subtle halo in dark */
+  color: rgba(255,255,255,.88);            /* icon is bright enough */
+}
+
+/* --- Strong dark-mode fixes for editable inputs --- */
+[data-bs-theme="dark"] #pf-form .form-control:not(.pf-readonly):not([disabled]),
+.dark #pf-form .form-control:not(.pf-readonly):not([disabled]),
+.dark-mode #pf-form .form-control:not(.pf-readonly):not([disabled]) {
+  background-color: #1f2937 !important; /* slate-800 */
+  color: #e5e7eb !important;            /* slate-200 */
+  border-color: #374151 !important;     /* slate-700 */
+}
+
+[data-bs-theme="dark"] #pf-form .form-control:not(.pf-readonly):not([disabled]):focus,
+.dark #pf-form .form-control:not(.pf-readonly):not([disabled]):focus,
+.dark-mode #pf-form .form-control:not(.pf-readonly):not([disabled]):focus {
+  background-color: #1f2937 !important;
+  color: #ffffff !important;
+  border-color: #60a5fa !important;     /* blue-400 */
+  box-shadow: 0 0 0 .2rem rgba(96,165,250,.25) !important;
+}
+
+[data-bs-theme="dark"] #pf-form .form-control::placeholder,
+.dark #pf-form .form-control::placeholder,
+.dark-mode #pf-form .form-control::placeholder {
+  color: rgba(255,255,255,.55) !important;
+}
+
+/* Non-editable (pf-readonly): keep borderless but readable in dark */
+[data-bs-theme="dark"] .form-control.pf-readonly:disabled,
+.dark .form-control.pf-readonly:disabled,
+.dark-mode .form-control.pf-readonly:disabled {
+  background-color: transparent !important;
+  color: rgba(255,255,255,.82) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+}
+
+/* --- Chrome autofill in dark mode --- */
+[data-bs-theme="dark"] #pf-form input:-webkit-autofill,
+[data-bs-theme="dark"] #pf-form input:-webkit-autofill:hover,
+[data-bs-theme="dark"] #pf-form input:-webkit-autofill:focus,
+.dark #pf-form input:-webkit-autofill,
+.dark #pf-form input:-webkit-autofill:hover,
+.dark #pf-form input:-webkit-autofill:focus,
+.dark-mode #pf-form input:-webkit-autofill,
+.dark-mode #pf-form input:-webkit-autofill:hover,
+.dark-mode #pf-form input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #e5e7eb !important;
+  box-shadow: 0 0 0 1000px #1f2937 inset !important; /* paint dark bg */
+  transition: background-color 9999s ease-out 0s;    /* suppress flash */
+  border-color: #374151 !important;
+}
