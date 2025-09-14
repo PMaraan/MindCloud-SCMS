@@ -1,90 +1,10 @@
 // /public/assets/js/TemplateBuilder-New.js
-// TipTapTest.js
 // Sidebar blocks that stack/drag/snap like TemplateBuilder,
-// AND the original top bar now works again. Toolbar actions
-// apply to TipTap OR to the focused sidebar block text.
-
+// and the top maroon toolbar also drives TipTap OR focused block text.
 (function () {
   const GRID = 20;
   const PAGE_PADDING_TOP = 10;
-
-  function MC_all() {
-    const mod = (window.__mc && window.__mc.MCEditors && typeof window.__mc.MCEditors.all === 'function')
-      ? window.__mc.MCEditors
-      : null;
-    return mod ? mod.all() : [];
-  }
-  function MC_first() {
-    const list = MC_all();
-    return list.length ? list[0] : null;
-  }
-
   const snap = (v) => Math.round(v / GRID) * GRID;
-
-  // --- Content bounds & pagination helpers ---
-  const CONTENT_BOTTOM_GUARD = 24; // space above footer
-
-  function getPage(el) {
-    return el.closest('.page');
-  }
-  function getPageContentBounds(page) {
-    const box = page.querySelector('[data-editor]');
-    const footer = page.querySelector('.page-footer');
-    const top = box ? box.offsetTop : 40;
-    const bottom = page.clientHeight - ((footer?.offsetHeight || 0) + CONTENT_BOTTOM_GUARD);
-    return { top, bottom };
-  }
-  function ensureNextPage() {
-    if (typeof window.createPage === 'function') return window.createPage();
-  }
-  function getOrCreateNextOverlay(curPage) {
-    const pages = Array.from(document.querySelectorAll('.page'));
-    const idx = pages.indexOf(curPage);
-    let next = pages[idx + 1];
-    if (!next) {
-      ensureNextPage();
-      const pagesAfter = Array.from(document.querySelectorAll('.page'));
-      next = pagesAfter[pagesAfter.length - 1];
-    }
-    // ask the app to build overlays for new pages
-    document.dispatchEvent(new Event('mc:rewire'));
-    let overlay = next.querySelector('.mc-block-overlay');
-    if (!overlay) {
-      overlay = document.createElement('div');
-      overlay.className = 'mc-block-overlay';
-      Object.assign(overlay.style, {
-        position: 'absolute', inset: '0', pointerEvents: 'none', paddingTop: `${PAGE_PADDING_TOP}px`,
-      });
-      if (getComputedStyle(next).position === 'static') next.style.position = 'relative';
-      next.appendChild(overlay);
-    }
-    return overlay;
-  }
-  function moveBlockToNextPage(block) {
-    const curPage = getPage(block);
-    if (!curPage) return;
-    const nextOverlay = getOrCreateNextOverlay(curPage);
-    block.style.top = `${PAGE_PADDING_TOP}px`;
-    nextOverlay.appendChild(block);
-    // reflow stacks on both pages
-    const newOverlay = nextOverlay;
-    if (newOverlay) reflowStack(newOverlay);
-    const prevOverlay = curPage.querySelector('.mc-block-overlay');
-    if (prevOverlay) reflowStack(prevOverlay);
-  }
-  function paginateOverlayIfNeeded(overlay) {
-    if (!overlay) return;
-    const page = getPage(overlay);
-    if (!page) return;
-    const { bottom: contentBottom } = getPageContentBounds(page);
-    const pageTop = page.getBoundingClientRect().top;
-
-    for (const blk of overlay.querySelectorAll('.mc-block')) {
-      const br = blk.getBoundingClientRect();
-      const blkBottom = br.bottom - pageTop;
-      if (blkBottom > contentBottom) moveBlockToNextPage(blk);
-    }
-  }
 
   const waitForEditor = () =>
     new Promise((resolve) => {
@@ -100,71 +20,57 @@
       }, 20);
     });
 
-
   // Track which sidebar block body is focused
   let currentBlockBody = null;
-  let pickingColor = false; // guards focus while the native color dialog is open
-
+  let pickingColor = false; // guards focus while native color dialog is open
 
   // --- Selection locker for contentEditable blocks ---
-const selectionStore = new WeakMap();
-
-function saveSelection(body) {
-  const sel = window.getSelection();
-  if (!sel || sel.rangeCount === 0) return;
-  const range = sel.getRangeAt(0);
-  if (!body.contains(range.commonAncestorContainer)) return;
-  selectionStore.set(body, range.cloneRange());
-}
-
-function restoreSelection(body) {
-  const range = selectionStore.get(body);
-  if (!range) return false;
-  const sel = window.getSelection();
-  sel.removeAllRanges();
-  sel.addRange(range);
-  return true;
-}
-
-function withRestoredSelection(cb) {
-  if (!currentBlockBody) return;
-  restoreSelection(currentBlockBody);
-  cb();
-  // store the new location after mutation
-  saveSelection(currentBlockBody);
-}
-
-function wrapSelectionWithSpan(styleText) {
-  withRestoredSelection(() => {
+  const selectionStore = new WeakMap();
+  function saveSelection(body) {
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0) return;
     const range = sel.getRangeAt(0);
-
-    if (range.collapsed) {
-      // insert a styled zero-width placeholder so typing uses the style
-      const span = document.createElement('span');
-      span.setAttribute('style', styleText);
-      span.appendChild(document.createTextNode('\u200b')); // ZWSP
-      range.insertNode(span);
-      // move caret to end of span
-      const newRange = document.createRange();
-      newRange.setStart(span.firstChild, span.firstChild.length);
-      newRange.collapse(true);
-      sel.removeAllRanges();
-      sel.addRange(newRange);
-      return;
-    }
-
-    // Non-collapsed: replace selection with styled HTML
-    const frag = range.cloneContents();
-    const div = document.createElement('div');
-    div.appendChild(frag);
-    const html = `<span style="${styleText}">${div.innerHTML}</span>`;
-    document.execCommand('insertHTML', false, html);
-  });
-}
-
-
+    if (!body.contains(range.commonAncestorContainer)) return;
+    selectionStore.set(body, range.cloneRange());
+  }
+  function restoreSelection(body) {
+    const range = selectionStore.get(body);
+    if (!range) return false;
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    return true;
+  }
+  function withRestoredSelection(cb) {
+    if (!currentBlockBody) return;
+    restoreSelection(currentBlockBody);
+    cb();
+    saveSelection(currentBlockBody);
+  }
+  function wrapSelectionWithSpan(styleText) {
+    withRestoredSelection(() => {
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0) return;
+      const range = sel.getRangeAt(0);
+      if (range.collapsed) {
+        const span = document.createElement('span');
+        span.setAttribute('style', styleText);
+        span.appendChild(document.createTextNode('\u200b')); // ZWSP
+        range.insertNode(span);
+        const newRange = document.createRange();
+        newRange.setStart(span.firstChild, span.firstChild.length);
+        newRange.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(newRange);
+        return;
+      }
+      const frag = range.cloneContents();
+      const div = document.createElement('div');
+      div.appendChild(frag);
+      const html = `<span style="${styleText}">${div.innerHTML}</span>`;
+      document.execCommand('insertHTML', false, html);
+    });
+  }
 
   // ---------- Overlay host (lets TipTap remain editable) ----------
   function ensureOverlay(pageEl) {
@@ -175,7 +81,7 @@ function wrapSelectionWithSpan(styleText) {
       Object.assign(overlay.style, {
         position: 'absolute',
         inset: '0',
-        pointerEvents: 'none',         // don’t block clicks by default
+        pointerEvents: 'none', // don’t block clicks by default
         paddingTop: `${PAGE_PADDING_TOP}px`,
       });
       if (getComputedStyle(pageEl).position === 'static') pageEl.style.position = 'relative';
@@ -203,7 +109,6 @@ function wrapSelectionWithSpan(styleText) {
       padding: '0 32px',
       pointerEvents: 'auto',
     });
-
     if (!el.querySelector('.drag-handle')) {
       const grip = document.createElement('div');
       grip.className = 'drag-handle';
@@ -222,7 +127,6 @@ function wrapSelectionWithSpan(styleText) {
       grip.innerHTML = '⋮⋮';
       el.appendChild(grip);
     }
-
     if (!el.querySelector('.remove-btn')) {
       const btn = document.createElement('button');
       btn.className = 'remove-btn';
@@ -252,9 +156,29 @@ function wrapSelectionWithSpan(styleText) {
   }
 
   // ---------- Block factories ----------
+  function registerBlockBody(bodyEl) {
+    bodyEl.addEventListener('focusin', () => {
+      currentBlockBody = bodyEl;
+      setTimeout(() => saveSelection(bodyEl), 0);
+    });
+    bodyEl.addEventListener('mousedown', () => {
+      currentBlockBody = bodyEl;
+    });
+    bodyEl.addEventListener('mouseup', () => saveSelection(bodyEl));
+    bodyEl.addEventListener('keyup', () => saveSelection(bodyEl));
+    bodyEl.addEventListener('focusout', () => {
+      if (currentBlockBody === bodyEl) currentBlockBody = null;
+      selectionStore.delete(bodyEl);
+      document.addEventListener('selectionchange', () => {
+        if (currentBlockBody) saveSelection(currentBlockBody);
+      });
+    });
+  }
+
   function makeTextField() {
     const el = document.createElement('div');
     frameBlock(el);
+    el.classList.add('mc-textfield');
     const body = document.createElement('div');
     body.className = 'element-body';
     body.contentEditable = 'true';
@@ -265,6 +189,7 @@ function wrapSelectionWithSpan(styleText) {
       minWidth: '240px',
       padding: '2px 0',
       font: 'inherit',
+      color: 'inherit',
     });
     el.appendChild(body);
     el.style.height = `${GRID}px`;
@@ -276,6 +201,7 @@ function wrapSelectionWithSpan(styleText) {
   function makeLabel() {
     const el = document.createElement('div');
     frameBlock(el);
+    el.classList.add('mc-label');
     const body = document.createElement('div');
     body.className = 'element-body';
     body.contentEditable = 'true';
@@ -285,6 +211,7 @@ function wrapSelectionWithSpan(styleText) {
       padding: '2px 0',
       fontWeight: '600',
       font: 'inherit',
+      color: 'inherit',
     });
     body.textContent = 'Label text';
     el.appendChild(body);
@@ -297,6 +224,7 @@ function wrapSelectionWithSpan(styleText) {
   function makeParagraph() {
     const el = document.createElement('div');
     frameBlock(el);
+    el.classList.add('mc-paragraph');
     const body = document.createElement('div');
     body.className = 'element-body';
     body.contentEditable = 'true';
@@ -307,10 +235,10 @@ function wrapSelectionWithSpan(styleText) {
       lineHeight: '1.5',
       padding: '2px 0',
       font: 'inherit',
+      color: 'inherit',
     });
     body.textContent = 'Paragraph text';
     el.appendChild(body);
-
     el.style.height = `${GRID * 2}px`;
     el.dataset.rows = '2';
 
@@ -322,15 +250,11 @@ function wrapSelectionWithSpan(styleText) {
       if (h !== parseInt(el.style.height || '0', 10)) {
         el.style.height = `${h}px`;
         el.dataset.rows = String(rows);
-        if (overlay) {
-          pushDownFrom(el, overlay);
-          paginateOverlayIfNeeded(overlay);
-        }
+        if (overlay) pushDownFrom(el, overlay);
       }
     };
     body.addEventListener('input', () => requestAnimationFrame(autosize));
     requestAnimationFrame(autosize);
-
     registerBlockBody(body);
     return el;
   }
@@ -352,10 +276,10 @@ function wrapSelectionWithSpan(styleText) {
       borderRadius: '6px',
       background: '#fff',
       font: 'inherit',
+      color: 'inherit',
     });
     body.textContent = 'Text block';
     el.appendChild(body);
-
     el.style.height = `${GRID * 4}px`;
     el.dataset.rows = '4';
 
@@ -367,547 +291,519 @@ function wrapSelectionWithSpan(styleText) {
       if (h !== parseInt(el.style.height || '0', 10)) {
         el.style.height = `${h}px`;
         el.dataset.rows = String(rows);
-        if (overlay) {
-          pushDownFrom(el, overlay);
-          paginateOverlayIfNeeded(overlay);
-        }
+        if (overlay) pushDownFrom(el, overlay);
       }
     };
     body.addEventListener('input', () => requestAnimationFrame(autosize));
     requestAnimationFrame(autosize);
-
     registerBlockBody(body);
     return el;
   }
 
-function makeTable() {
-  const el = document.createElement('div');
-  frameBlock(el);
+  function makeTable() {
+    const el = document.createElement('div');
+    frameBlock(el);
 
-  // --- TABLE ---
-  const tbl = document.createElement('table');
-  Object.assign(tbl.style, {
-    width: '100%',
-    borderCollapse: 'collapse',
-    tableLayout: 'fixed',
-  });
-
-  // Helper to make a nicely spaced cell
-  function makeTD() {
-    const td = document.createElement('td');
-    Object.assign(td.style, {
-      border: '1px solid #d1d5db',
-      padding: '10px 12px',   // comfy padding like the "top" table
-      verticalAlign: 'top',
-      overflowWrap: 'anywhere',
-      minHeight: '32px',      // keep row height looking good
-      lineHeight: '1.4',      // readable spacing
+    // --- TABLE ---
+    const tbl = document.createElement('table');
+    Object.assign(tbl.style, {
+      width: '100%',
+      borderCollapse: 'collapse',
+      tableLayout: 'fixed',
     });
-    td.contentEditable = 'true';
-    // Place caret on its own line; keeps the cell height from collapsing
-    td.innerHTML = '<p><br></p>';
-    return td;
-  }
 
-  const START_ROWS = 3;
-  const START_COLS = 4;
-  for (let r = 0; r < START_ROWS; r++) {
-    const tr = document.createElement('tr');
-    for (let c = 0; c < START_COLS; c++) {
-      tr.appendChild(makeTD());
+    function makeTD() {
+      const td = document.createElement('td');
+      Object.assign(td.style, {
+        border: '1px solid #d1d5db',
+        padding: '10px 12px',
+        verticalAlign: 'top',
+        overflowWrap: 'anywhere',
+        minHeight: '32px',
+        lineHeight: '1.4'
+      });
+      td.contentEditable = 'true';
+      td.innerHTML = '<p><br></p>';
+      return td;
     }
-    tbl.appendChild(tr);
-  }
-  el.appendChild(tbl);
 
-  // --- INLINE TOOLBAR ---
-  const bar = document.createElement('div');
-  bar.className = 'mc-table-toolbar';
-  bar.innerHTML = `
-    <button data-act="row-above"   title="Insert row above">↥ Row</button>
-    <button data-act="row-below"   title="Insert row below">↧ Row</button>
-    <button data-act="col-left"    title="Insert column left">↤ Col</button>
-    <button data-act="col-right"   title="Insert column right">↦ Col</button>
-    <span class="sep"></span>
-    <button data-act="del-row"     title="Delete row">✖ Row</button>
-    <button data-act="del-col"     title="Delete column">✖ Col</button>
-    <button data-act="del-cell-local" title="Delete cell (local)">✖ Cell</button>
-    <span class="sep"></span>
-    <button data-act="even-cols"   title="Distribute columns evenly">⇔</button>
-    <button data-act="toggle-head" title="Toggle header row">H</button>
-    <span class="sep"></span>
-    <button data-act="split-cell"  title="Split cell…">Split…</button>
-  `;
-  el.appendChild(bar);
-
-  // --- RESIZE GRIPS ---
-  const gripsX = document.createElement('div'); // between columns
-  const gripsY = document.createElement('div'); // between rows
-  gripsX.className = 'mc-col-grips';
-  gripsY.className = 'mc-row-grips';
-  el.appendChild(gripsX);
-  el.appendChild(gripsY);
-
-  // ===== focus tracking for current cell =====
-  let lastCell = null;
-  const getActiveCell = () =>
-    (document.activeElement && /^(TD|TH)$/.test(document.activeElement.tagName))
-      ? document.activeElement
-      : lastCell;
-  tbl.addEventListener('mousedown', (e) => {
-    const td = e.target.closest('td,th');
-    if (td) lastCell = td;
-  });
-  tbl.addEventListener('focusin', (e) => {
-    const td = e.target.closest('td,th');
-    if (td) lastCell = td;
-  });
-
-  // ===== Helpers =====
-  const getFocusedCell = () =>
-    (document.activeElement && (document.activeElement.tagName === 'TD' || document.activeElement.tagName === 'TH'))
-      ? document.activeElement
-      : null;
-
-  function visualColCount(tr) {
-    return Array.from(tr.children).reduce((s, c) => s + (c.colSpan || 1), 0);
-  }
-  function ensureAtLeast1RowCol() {
-    if (!tbl.rows.length) {
-      const tr = tbl.insertRow();
-      tr.appendChild(makeTD());
+    const START_ROWS = 3;
+    const START_COLS = 4;
+    for (let r = 0; r < START_ROWS; r++) {
+      const tr = document.createElement('tr');
+      for (let c = 0; c < START_COLS; c++) tr.appendChild(makeTD());
+      tbl.appendChild(tr);
     }
-    if (!tbl.rows[0].cells.length) {
-      for (const row of tbl.rows) row.appendChild(makeTD());
-    }
-  }
+    el.appendChild(tbl);
 
-  // ---------- GLOBAL GRID (COLGROUP) ----------
-  function ensureColGroup() {
-    let cg = tbl.querySelector('colgroup');
-    if (!cg) {
-      cg = document.createElement('colgroup');
-      const vcols = tbl.rows[0] ? visualColCount(tbl.rows[0]) : 1;
-      for (let i = 0; i < Math.max(1, vcols); i++) {
+    // --- INLINE TOOLBAR ---
+    const bar = document.createElement('div');
+    bar.className = 'mc-table-toolbar';
+    bar.innerHTML = `
+      <button data-act="row-above"   title="Insert row above">↥ Row</button>
+      <button data-act="row-below"   title="Insert row below">↧ Row</button>
+      <button data-act="col-left"    title="Insert column left">↤ Col</button>
+      <button data-act="col-right"   title="Insert column right">↦ Col</button>
+      <span class="sep"></span>
+      <button data-act="del-row"     title="Delete row">✖ Row</button>
+      <button data-act="del-col"     title="Delete column">✖ Col</button>
+      <button data-act="del-cell-local" title="Delete cell (local)">✖ Cell</button>
+      <span class="sep"></span>
+      <button data-act="even-cols"   title="Distribute columns evenly">⇔</button>
+      <button data-act="toggle-head" title="Toggle header row">H</button>
+      <span class="sep"></span>
+      <button data-act="split-cell"  title="Split cell…">Split…</button>
+    `;
+    el.appendChild(bar);
+
+    // --- RESIZE GRIPS ---
+    const gripsX = document.createElement('div'); // between columns
+    const gripsY = document.createElement('div'); // between rows
+    gripsX.className = 'mc-col-grips';
+    gripsY.className = 'mc-row-grips';
+    el.appendChild(gripsX);
+    el.appendChild(gripsY);
+
+    // ===== focus tracking for current cell =====
+    let lastCell = null;
+    const getActiveCell = () =>
+      (document.activeElement && /^(TD|TH)$/.test(document.activeElement.tagName))
+        ? document.activeElement
+        : lastCell;
+
+    tbl.addEventListener('mousedown', (e) => {
+      const td = e.target.closest('td,th');
+      if (td) lastCell = td;
+    });
+    tbl.addEventListener('focusin', (e) => {
+      const td = e.target.closest('td,th');
+      if (td) lastCell = td;
+    });
+
+    // ===== Helpers =====
+    const getFocusedCell = () =>
+      (document.activeElement && (document.activeElement.tagName === 'TD' || document.activeElement.tagName === 'TH'))
+        ? document.activeElement
+        : null;
+
+    function visualColCount(tr) {
+      return Array.from(tr.children).reduce((s, c) => s + (c.colSpan || 1), 0);
+    }
+    function ensureAtLeast1RowCol() {
+      if (!tbl.rows.length) {
+        const tr = tbl.insertRow();
+        tr.appendChild(makeTD());
+      }
+      if (!tbl.rows[0].cells.length) {
+        for (const row of tbl.rows) row.appendChild(makeTD());
+      }
+    }
+
+    // ---------- GLOBAL GRID (COLGROUP) ----------
+    function ensureColGroup() {
+      let cg = tbl.querySelector('colgroup');
+      if (!cg) {
+        cg = document.createElement('colgroup');
+        const vcols = tbl.rows[0] ? visualColCount(tbl.rows[0]) : 1;
+        for (let i = 0; i < Math.max(1, vcols); i++) {
+          const col = document.createElement('col');
+          col.style.width = (100 / Math.max(1, vcols)) + '%';
+          cg.appendChild(col);
+        }
+        tbl.insertBefore(cg, tbl.firstChild);
+      }
+      return cg;
+    }
+    function gridColCount() {
+      return ensureColGroup().children.length;
+    }
+    function readColPercents() {
+      const cg = ensureColGroup();
+      const n = cg.children.length;
+      const out = [];
+      let total = 0;
+      for (const c of cg.children) {
+        const w = parseFloat(c.style.width || '0');
+        out.push(isFinite(w) && w > 0 ? w : 100 / n);
+        total += out[out.length - 1];
+      }
+      return out.map(w => w * (100 / total));
+    }
+    function writeColPercents(arr) {
+      const cg = ensureColGroup();
+      while (cg.firstChild) cg.removeChild(cg.firstChild);
+      for (const w of arr) {
         const col = document.createElement('col');
-        col.style.width = (100 / Math.max(1, vcols)) + '%';
+        col.style.width = w + '%';
         cg.appendChild(col);
       }
-      tbl.insertBefore(cg, tbl.firstChild);
     }
-    return cg;
-  }
-  function gridColCount() {
-    return ensureColGroup().children.length;
-  }
-  function readColPercents() {
-    const cg = ensureColGroup();
-    const n = cg.children.length;
-    const out = [];
-    let total = 0;
-    for (const c of cg.children) {
-      const w = parseFloat(c.style.width || '0');
-      out.push(isFinite(w) && w > 0 ? w : 100 / n);
-      total += out[out.length - 1];
-    }
-    return out.map(w => w * (100 / total));
-  }
-  function writeColPercents(arr) {
-    const cg = ensureColGroup();
-    while (cg.firstChild) cg.removeChild(cg.firstChild);
-    for (const w of arr) {
-      const col = document.createElement('col');
-      col.style.width = w + '%';
-      cg.appendChild(col);
-    }
-  }
-  function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+    function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
 
-  // Row map (grid positions of cells)
-  function makeRowMap(tr) {
-    const map = [];
-    let cursor = 0;
-    for (const cell of tr.children) {
-      const span = Math.max(1, cell.colSpan || 1);
-      map.push({ cell, start: cursor, span });
-      cursor += span;
-    }
-    return map;
-  }
-  function findCoveringCell(tr, colIndex) {
-    const map = makeRowMap(tr);
-    return map.find(m => colIndex >= m.start && colIndex < m.start + m.span);
-  }
-
-  // ---------- Replace grid columns in-place (used by split) ----------
-  function replaceCols(start, removeCount, addCount) {
-    const widths = readColPercents();
-    const removedWidth = widths.slice(start, start + removeCount).reduce((a, b) => a + b, 0);
-    const per = removedWidth / addCount;
-    const newWidths = [
-      ...widths.slice(0, start),
-      ...Array.from({ length: addCount }, () => per),
-      ...widths.slice(start + removeCount),
-    ];
-    writeColPercents(newWidths);
-  }
-
-  // ---------- SPLIT (only clicked cell changes; others keep count) ----------
-  function splitCell(td, cols, rows) {
-    cols = Math.max(1, parseInt(cols || 1, 10));
-    rows = Math.max(1, parseInt(rows || 1, 10));
-    if (cols <= 1 && rows <= 1) return;
-
-    ensureColGroup();
-    const tr = td.parentElement;
-
-    const rowMap = makeRowMap(tr);
-    const me = rowMap.find(m => m.cell === td);
-    if (!me) return;
-
-    const currentSpan = Math.max(1, td.colSpan || 1);
-    const desiredPieces = Math.max(1, cols);
-    const deltaCols = desiredPieces - currentSpan;
-
-    // 1) update global grid within my region (preserves total width)
-    if (deltaCols !== 0) replaceCols(me.start, currentSpan, desiredPieces);
-
-    // 2) replace ONLY this cell with N cells (each 1 grid column wide)
-    const newCells = Array.from({ length: desiredPieces }, () => {
-      const c = document.createElement(td.tagName.toLowerCase());
-      Object.assign(c.style, {
-        border: td.style.border || '1px solid #d1d5db',
-        padding: td.style.padding || '10px 12px',
-        verticalAlign: td.style.verticalAlign || 'top',
-        overflowWrap: td.style.overflowWrap || 'anywhere',
-        minHeight: td.style.minHeight || '32px',
-        lineHeight: td.style.lineHeight || '1.4',
-      });
-      c.contentEditable = 'true';
-      c.colSpan = 1;
-      c.innerHTML = '<p><br></p>';
-      return c;
-    });
-    td.replaceWith(...newCells);
-
-    // 3) other rows: adjust only the single covering cell’s colSpan by delta
-    if (deltaCols !== 0) {
-      const tbody = tbl.tBodies[0] || tbl;
-      for (const row of tbody.rows) {
-        if (row === tr) continue;
-        const covering = findCoveringCell(row, me.start);
-        if (covering) covering.cell.colSpan = Math.max(1, (covering.cell.colSpan || 1) + deltaCols);
+    function makeRowMap(tr) {
+      const map = [];
+      let cursor = 0;
+      for (const cell of tr.children) {
+        const span = Math.max(1, cell.colSpan || 1);
+        map.push({ cell, start: cursor, span });
+        cursor += span;
       }
+      return map;
+    }
+    function findCoveringCell(tr, colIndex) {
+      const map = makeRowMap(tr);
+      return map.find(m => colIndex >= m.start && colIndex < m.start + m.span);
     }
 
-    rebuildGrips(true);
-  }
-
-  // ---------- DELETE CELL (local; only this row changes) ----------
-  function deleteCellLocal(td) {
-    ensureColGroup(); // keep the grid as-is
-    const tr = td.parentElement;
-
-    const span = Math.max(1, td.colSpan || 1);
-
-    // pick a receiver in *this row only* (prefer left, else right)
-    let receiver = td.previousElementSibling || td.nextElementSibling;
-
-    if (!receiver) {
-      const repl = makeTD();
-      tr.replaceChild(repl, td);
-      rebuildGrips(true);
-      return;
-    }
-
-    receiver.colSpan = Math.max(1, (receiver.colSpan || 1) + span);
-    td.remove();
-
-    ensureAtLeast1RowCol();
-    rebuildGrips(true);
-  }
-
-  function openSplitDialog(td) {
-    const overlay = document.createElement('div');
-    overlay.className = 'mc-modal';
-    const dlg = document.createElement('div');
-    dlg.className = 'mc-dialog';
-    dlg.innerHTML = `
-      <h3>Split cell</h3>
-      <div class="row"><label>Columns</label><input type="number" id="mc-split-cols" min="1" value="2"></div>
-      <div class="row"><label>Rows</label><input type="number" id="mc-split-rows" min="1" value="1"></div>
-      <div class="actions">
-       <button class="mc-btn" data-act="cancel">Cancel</button>
-       <button class="mc-btn primary" data-act="ok">Split</button>
-     </div>
-    `;
-    overlay.appendChild(dlg);
-    document.body.appendChild(overlay);
-    dlg.querySelector('[data-act="cancel"]').onclick = () => overlay.remove();
-    dlg.querySelector('[data-act="ok"]').onclick = () => {
-      const cols = dlg.querySelector('#mc-split-cols').value;
-      const rows = dlg.querySelector('#mc-split-rows').value;
-      splitCell(getActiveCell() || tbl.rows[0].cells[0], cols, rows);
-      overlay.remove();
-    };
-  }
-
-  // ===== Row/Col ops =====
-  function insertRow(where) {
-    const cell = getFocusedCell();
-    const rowIndex = cell ? cell.parentElement.rowIndex : tbl.rows.length - 1;
-    const refIndex = where === 'above' ? rowIndex : rowIndex + 1;
-    const cols = gridColCount() || visualColCount(tbl.rows[0]) || 1;
-    const tr = tbl.insertRow(refIndex);
-    for (let i = 0; i < cols; i++) tr.appendChild(makeTD());
-    rebuildGrips(true);
-  }
-  function insertCol(where) {
-    const cell = getFocusedCell();
-    const colIndex = cell ? cell.cellIndex : (tbl.rows[0]?.cells.length - 1) || 0;
-    const ref = where === 'left' ? colIndex : colIndex + 1;
-
-    for (const row of tbl.rows) {
-      const td = makeTD();
-      row.insertBefore(td, row.children[ref] || null);
-    }
-
-    const perc = readColPercents();
-    const splitFrom = clamp(ref - 1, 0, perc.length - 1);
-    const half = perc[splitFrom] / 2;
-    perc.splice(splitFrom, 1, half, half);
-    writeColPercents(perc);
-
-    rebuildGrips(true);
-  }
-  function deleteRow() {
-    const cell = getFocusedCell();
-    const idx = cell ? cell.parentElement.rowIndex : tbl.rows.length - 1;
-    if (tbl.rows.length > 1) tbl.deleteRow(idx);
-    ensureAtLeast1RowCol();
-    rebuildGrips(true);
-  }
-  function deleteCol() {
-    const cell = getFocusedCell();
-    const idx = cell ? cell.cellIndex : (tbl.rows[0]?.cells.length - 1) || 0;
-    if ((tbl.rows[0]?.cells.length || 0) > 1) {
-      for (const row of tbl.rows) row.deleteCell(idx);
+    function replaceCols(start, removeCount, addCount) {
       const widths = readColPercents();
-      if (widths.length > 1) {
-        const merged = widths.slice();
-        if (idx < merged.length - 1) { merged[idx] += merged[idx + 1]; merged.splice(idx + 1, 1); }
-        else { merged[idx - 1] += merged[idx]; merged.splice(idx, 1); }
-        writeColPercents(merged);
+      const removedWidth = widths.slice(start, start + removeCount).reduce((a, b) => a + b, 0);
+      const per = removedWidth / addCount;
+      const newWidths = [
+        ...widths.slice(0, start),
+        ...Array.from({ length: addCount }, () => per),
+        ...widths.slice(start + removeCount),
+      ];
+      writeColPercents(newWidths);
+    }
+
+    function splitCell(td, cols, rows) {
+      cols = Math.max(1, parseInt(cols || 1, 10));
+      rows = Math.max(1, parseInt(rows || 1, 10));
+      if (cols <= 1 && rows <= 1) return;
+
+      ensureColGroup();
+      const tr = td.parentElement;
+      const rowMap = makeRowMap(tr);
+      const me = rowMap.find(m => m.cell === td);
+      if (!me) return;
+
+      const currentSpan = Math.max(1, td.colSpan || 1);
+      const desiredPieces = Math.max(1, cols);
+      const deltaCols = desiredPieces - currentSpan;
+
+      if (deltaCols !== 0) replaceCols(me.start, currentSpan, desiredPieces);
+
+      const newCells = Array.from({ length: desiredPieces }, () => {
+        const c = document.createElement(td.tagName.toLowerCase());
+        Object.assign(c.style, {
+          border: td.style.border || '1px solid #d1d5db',
+          padding: td.style.padding || '10px 12px',
+          verticalAlign: td.style.verticalAlign || 'top',
+          overflowWrap: td.style.overflowWrap || 'anywhere',
+          minHeight: td.style.minHeight || '32px',
+          lineHeight: td.style.lineHeight || '1.4',
+        });
+        c.contentEditable = 'true';
+        c.colSpan = 1;
+        c.innerHTML = '<p><br></p>';
+        return c;
+      });
+      td.replaceWith(...newCells);
+
+      if (deltaCols !== 0) {
+        const tbody = tbl.tBodies[0] || tbl;
+        for (const row of tbody.rows) {
+          if (row === tr) continue;
+          const covering = findCoveringCell(row, me.start);
+          if (covering) covering.cell.colSpan = Math.max(1, (covering.cell.colSpan || 1) + deltaCols);
+        }
       }
+      rebuildGrips(true);
     }
-    ensureAtLeast1RowCol();
-    rebuildGrips(true);
-  }
-  function evenColumns() {
-    const cols = gridColCount();
-    const pct = 100 / cols;
-    writeColPercents(Array.from({ length: cols }, () => pct));
-    for (const row of tbl.rows) for (const cell of row.cells) cell.style.width = '';
-    rebuildGrips(true);
-  }
-  function toggleHeaderRow() {
-    if (!tbl.tHead) {
-      const thead = tbl.createTHead();
-      thead.insertBefore(tbl.rows[0], null);
-      for (const th of thead.rows[0].cells) {
-        const cell = document.createElement('th');
-        while (th.firstChild) cell.appendChild(th.firstChild);
-        for (const a of th.getAttributeNames()) cell.setAttribute(a, th.getAttribute(a));
-        cell.contentEditable = 'true';
-        cell.style.fontWeight = '600';
-        cell.style.background = '#f8fafc';
-        th.replaceWith(cell);
+
+    function deleteCellLocal(td) {
+      ensureColGroup();
+      const tr = td.parentElement;
+      const span = Math.max(1, td.colSpan || 1);
+      let receiver = td.previousElementSibling || td.nextElementSibling;
+      if (!receiver) {
+        const repl = makeTD();
+        tr.replaceChild(repl, td);
+        rebuildGrips(true);
+        return;
       }
-    } else {
-      const headRow = tbl.tHead.rows[0];
-      const bodyRow = tbl.tBodies[0].insertRow(0);
-      for (const th of [...headRow.cells]) {
-        const td = document.createElement('td');
-        while (th.firstChild) td.appendChild(th.firstChild);
-        for (const a of th.getAttributeNames()) td.setAttribute(a, th.getAttribute(a));
-        td.contentEditable = 'true';
-        td.innerHTML = '<p><br></p>';
-        bodyRow.appendChild(td);
+      receiver.colSpan = Math.max(1, (receiver.colSpan || 1) + span);
+      td.remove();
+      ensureAtLeast1RowCol();
+      rebuildGrips(true);
+    }
+
+    function openSplitDialog(td) {
+      const overlay = document.createElement('div');
+      overlay.className = 'mc-modal';
+      const dlg = document.createElement('div');
+      dlg.className = 'mc-dialog';
+      dlg.innerHTML = `
+        <h3>Split cell</h3>
+        <div class="row"><label>Columns</label><input type="number" id="mc-split-cols" min="1" value="2"></div>
+        <div class="row"><label>Rows</label><input type="number" id="mc-split-rows" min="1" value="1"></div>
+        <div class="actions">
+          <button class="mc-btn" data-act="cancel">Cancel</button>
+          <button class="mc-btn primary" data-act="ok">Split</button>
+        </div>
+      `;
+      overlay.appendChild(dlg);
+      document.body.appendChild(overlay);
+      dlg.querySelector('[data-act="cancel"]').onclick = () => overlay.remove();
+      dlg.querySelector('[data-act="ok"]').onclick = () => {
+        const cols = dlg.querySelector('#mc-split-cols').value;
+        const rows = dlg.querySelector('#mc-split-rows').value;
+        splitCell(getActiveCell() || tbl.rows[0].cells[0], cols, rows);
+        overlay.remove();
+      };
+    }
+
+    // ===== Row/Col ops =====
+    function insertRow(where) {
+      const cell = getFocusedCell();
+      const rowIndex = cell ? cell.parentElement.rowIndex : tbl.rows.length - 1;
+      const refIndex = where === 'above' ? rowIndex : rowIndex + 1;
+      const cols = gridColCount() || visualColCount(tbl.rows[0]) || 1;
+      const tr = tbl.insertRow(refIndex);
+      for (let i = 0; i < cols; i++) tr.appendChild(makeTD());
+      rebuildGrips(true);
+    }
+    function insertCol(where) {
+      const cell = getFocusedCell();
+      const colIndex = cell ? cell.cellIndex : (tbl.rows[0]?.cells.length - 1) || 0;
+      const ref = where === 'left' ? colIndex : colIndex + 1;
+      for (const row of tbl.rows) {
+        const td = makeTD();
+        row.insertBefore(td, row.children[ref] || null);
       }
-      tbl.tHead.remove();
+      const perc = readColPercents();
+      const splitFrom = clamp(ref - 1, 0, perc.length - 1);
+      const half = perc[splitFrom] / 2;
+      perc.splice(splitFrom, 1, half, half);
+      writeColPercents(perc);
+      rebuildGrips(true);
     }
-    rebuildGrips(true);
-  }
-
-  // Toolbar actions
-  bar.addEventListener('click', (e) => {
-    const btn = e.target.closest('button[data-act]');
-    if (!btn) return;
-    const act = btn.dataset.act;
-    if (act === 'row-above') insertRow('above');
-    else if (act === 'row-below') insertRow('below');
-    else if (act === 'col-left') insertCol('left');
-    else if (act === 'col-right') insertCol('right');
-    else if (act === 'del-row') deleteRow();
-    else if (act === 'del-col') deleteCol();
-    else if (act === 'del-cell-local') {
-      const cell = getActiveCell();
-      if (cell) deleteCellLocal(cell);
+    function deleteRow() {
+      const cell = getFocusedCell();
+      const idx = cell ? cell.parentElement.rowIndex : tbl.rows.length - 1;
+      if (tbl.rows.length > 1) tbl.deleteRow(idx);
+      ensureAtLeast1RowCol();
+      rebuildGrips(true);
     }
-    else if (act === 'even-cols') evenColumns();
-    else if (act === 'toggle-head') toggleHeaderRow();
-    else if (act === 'split-cell') {
-      const cell = getActiveCell();
-      if (cell) openSplitDialog(cell);
-    }
-  });
-
-  // Keep toolbar visible when inside the table
-  tbl.addEventListener('focusin', (e) => {
-    if (e.target && (e.target.tagName === 'TD' || e.target.tagName === 'TH')) {
-      currentBlockBody = e.target;
-      el.classList.add('mc-table-active');
-    }
-  });
-  tbl.addEventListener('focusout', (e) => {
-    if (currentBlockBody === e.target) currentBlockBody = null;
-    setTimeout(() => { if (!el.contains(document.activeElement)) el.classList.remove('mc-table-active'); }, 0);
-  });
-
-  // ===== Resizing grips / autosize =====
-  function rebuildGrips(preserveWidth) {
-    // autosize block height & push siblings
-    const rowsForHeight = Math.max(2, Math.ceil(tbl.offsetHeight / GRID));
-    el.style.height = `${rowsForHeight * GRID}px`;
-    el.dataset.rows = String(rowsForHeight);
-    const overlay = el.closest('.mc-block-overlay');
-    if (overlay) {
-      pushDownFrom(el, overlay);
-      paginateOverlayIfNeeded(overlay);
-    }
-
-    if (!preserveWidth) evenColumns(); // normalize on first build
-
-    gripsX.innerHTML = '';
-    gripsY.innerHTML = '';
-
-    const rect = tbl.getBoundingClientRect();
-    const blockRect = el.getBoundingClientRect();
-
-    // ---- Column grips (resize <colgroup>) ----
-    const colsCount = gridColCount();
-    if (colsCount > 1) {
-      const percents = readColPercents();
-      const cum = [];
-      let acc = 0;
-      for (let i = 0; i < colsCount - 1; i++) {
-        acc += percents[i];
-        cum.push((acc / 100) * rect.width);
+    function deleteCol() {
+      const cell = getFocusedCell();
+      const idx = cell ? cell.cellIndex : (tbl.rows[0]?.cells.length - 1) || 0;
+      if ((tbl.rows[0]?.cells.length || 0) > 1) {
+        for (const row of tbl.rows) row.deleteCell(idx);
+        const widths = readColPercents();
+        if (widths.length > 1) {
+          const merged = widths.slice();
+          if (idx < merged.length - 1) {
+            merged[idx] += merged[idx + 1];
+            merged.splice(idx + 1, 1);
+          } else {
+            merged[idx - 1] += merged[idx];
+            merged.splice(idx, 1);
+          }
+          writeColPercents(merged);
+        }
       }
-      for (let i = 0; i < cum.length; i++) {
-        const x = cum[i];
-        const g = document.createElement('div');
-        g.className = 'mc-grip-x';
-        g.style.left = `${rect.left - blockRect.left + x - 3}px`;
-        g.style.top = `${rect.top - blockRect.top}px`;
-        g.style.height = `${rect.height}px`;
-        gripsX.appendChild(g);
+      ensureAtLeast1RowCol();
+      rebuildGrips(true);
+    }
+    function evenColumns() {
+      const cols = gridColCount();
+      const pct = 100 / cols;
+      writeColPercents(Array.from({ length: cols }, () => pct));
+      for (const row of tbl.rows)
+        for (const cell of row.cells) cell.style.width = '';
+      rebuildGrips(true);
+    }
+    function toggleHeaderRow() {
+      if (!tbl.tHead) {
+        const thead = tbl.createTHead();
+        thead.insertBefore(tbl.rows[0], null);
+        for (const th of thead.rows[0].cells) {
+          const cell = document.createElement('th');
+          while (th.firstChild) cell.appendChild(th.firstChild);
+          for (const a of th.getAttributeNames()) cell.setAttribute(a, th.getAttribute(a));
+          cell.contentEditable = 'true';
+          cell.style.fontWeight = '600';
+          cell.style.background = '#f8fafc';
+          th.replaceWith(cell);
+        }
+      } else {
+        const headRow = tbl.tHead.rows[0];
+        const bodyRow = tbl.tBodies[0].insertRow(0);
+        for (const th of [...headRow.cells]) {
+          const td = document.createElement('td');
+          while (th.firstChild) td.appendChild(th.firstChild);
+          for (const a of th.getAttributeNames()) td.setAttribute(a, th.getAttribute(a));
+          td.contentEditable = 'true';
+          td.innerHTML = '<p><br></p>';
+          bodyRow.appendChild(td);
+        }
+        tbl.tHead.remove();
+      }
+      rebuildGrips(true);
+    }
 
-        g.addEventListener('mousedown', (md) => {
-          md.preventDefault();
-          const startX = md.clientX;
-          const startPerc = readColPercents();
-          const minPx = 40;
-          const minPct = (minPx / rect.width) * 100;
+    // Toolbar actions
+    bar.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-act]');
+      if (!btn) return;
+      const act = btn.dataset.act;
+      if (act === 'row-above') insertRow('above');
+      else if (act === 'row-below') insertRow('below');
+      else if (act === 'col-left') insertCol('left');
+      else if (act === 'col-right') insertCol('right');
+      else if (act === 'del-row') deleteRow();
+      else if (act === 'del-col') deleteCol();
+      else if (act === 'del-cell-local') {
+        const cell = getActiveCell();
+        if (cell) deleteCellLocal(cell);
+      } else if (act === 'even-cols') evenColumns();
+      else if (act === 'toggle-head') toggleHeaderRow();
+      else if (act === 'split-cell') {
+        const cell = getActiveCell();
+        if (cell) openSplitDialog(cell);
+      }
+    });
 
-          function onMove(mm) {
-            const dxPx = mm.clientX - startX;
-            const dxPct = (dxPx / rect.width) * 100;
-            const left0  = startPerc[i];
-            const right0 = startPerc[i + 1];
+    // Keep toolbar visible when inside the table
+    tbl.addEventListener('focusin', (e) => {
+      if (e.target && (e.target.tagName === 'TD' || e.target.tagName === 'TH')) {
+        currentBlockBody = e.target;
+        el.classList.add('mc-table-active');
+      }
+    });
+    tbl.addEventListener('focusout', (e) => {
+      if (currentBlockBody === e.target) currentBlockBody = null;
+      setTimeout(() => {
+        if (!el.contains(document.activeElement)) el.classList.remove('mc-table-active');
+      }, 0);
+    });
 
-            let left  = clamp(left0  + dxPct, minPct, 100 - minPct);
-            let right = clamp(right0 - dxPct, minPct, 100 - minPct);
+    // ===== Resizing grips / autosize =====
+    function rebuildGrips(preserveWidth) {
+      const rowsForHeight = Math.max(2, Math.ceil(tbl.offsetHeight / GRID));
+      el.style.height = `${rowsForHeight * GRID}px`;
+      el.dataset.rows = String(rowsForHeight);
+      const overlay = el.closest('.mc-block-overlay');
+      if (overlay) pushDownFrom(el, overlay);
 
-            const totalPair = left0 + right0;
-            if (Math.abs((left + right) - totalPair) > 0.0001) {
-              if (left === minPct) right = totalPair - left;
-              else if (right === minPct) left = totalPair - right;
+      if (!preserveWidth) evenColumns();
+
+      gripsX.innerHTML = '';
+      gripsY.innerHTML = '';
+      const rect = tbl.getBoundingClientRect();
+      const blockRect = el.getBoundingClientRect();
+
+      // Column grips
+      const colsCount = gridColCount();
+      if (colsCount > 1) {
+        const percents = readColPercents();
+        const cum = [];
+        let acc = 0;
+        for (let i = 0; i < colsCount - 1; i++) {
+          acc += percents[i];
+          cum.push((acc / 100) * rect.width);
+        }
+        for (let i = 0; i < cum.length; i++) {
+          const x = cum[i];
+          const g = document.createElement('div');
+          g.className = 'mc-grip-x';
+          g.style.left = `${rect.left - blockRect.left + x - 3}px`;
+          g.style.top = `${rect.top - blockRect.top}px`;
+          g.style.height = `${rect.height}px`;
+          gripsX.appendChild(g);
+
+          g.addEventListener('mousedown', (md) => {
+            md.preventDefault();
+            const startX = md.clientX;
+            const startPerc = readColPercents();
+            const minPx = 40;
+            const minPct = (minPx / rect.width) * 100;
+
+            function onMove(mm) {
+              const dxPx = mm.clientX - startX;
+              const dxPct = (dxPx / rect.width) * 100;
+              const left0 = startPerc[i];
+              const right0 = startPerc[i + 1];
+              let left = clamp(left0 + dxPct, minPct, 100 - minPct);
+              let right = clamp(right0 - dxPct, minPct, 100 - minPct);
+              const totalPair = left0 + right0;
+              if (Math.abs((left + right) - totalPair) > 0.0001) {
+                if (left === minPct) right = totalPair - left;
+                else if (right === minPct) left = totalPair - right;
+              }
+              const next = startPerc.slice();
+              next[i] = left;
+              next[i + 1] = right;
+              writeColPercents(next);
+              rebuildGrips(true);
             }
+            function onUp() {
+              document.removeEventListener('mousemove', onMove);
+              document.removeEventListener('mouseup', onUp);
+            }
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+          });
+        }
+      }
 
-            const next = startPerc.slice();
-            next[i]     = left;
-            next[i + 1] = right;
-            writeColPercents(next);
-            rebuildGrips(true);
-          }
-          function onUp() {
-            document.removeEventListener('mousemove', onMove);
-            document.removeEventListener('mouseup', onUp);
-          }
-          document.addEventListener('mousemove', onMove);
-          document.addEventListener('mouseup', onUp);
-        });
+      // Row grips
+      const rows = tbl.rows.length;
+      if (rows > 0) {
+        for (let r = 0; r < rows - 1; r++) {
+          const rr = tbl.rows[r].getBoundingClientRect();
+          const y = rr.bottom - blockRect.top;
+          const g = document.createElement('div');
+          g.className = 'mc-grip-y';
+          g.style.top = `${y - 3}px`;
+          g.style.left = `${rect.left - blockRect.left}px`;
+          g.style.width = `${rect.width}px`;
+          gripsY.appendChild(g);
+
+          g.addEventListener('mousedown', (md) => {
+            md.preventDefault();
+            const startY = md.clientY;
+            const hTop0 = tbl.rows[r].getBoundingClientRect().height;
+            const hBot0 = tbl.rows[r + 1].getBoundingClientRect().height;
+
+            function onMove(mm) {
+              const dy = mm.clientY - startY;
+              const hTop = Math.max(28, hTop0 + dy);
+              const hBot = Math.max(28, hBot0 - dy);
+              for (const cell of tbl.rows[r].cells) cell.style.height = hTop + 'px';
+              for (const cell of tbl.rows[r + 1].cells) cell.style.height = hBot + 'px';
+              rebuildGrips(true);
+            }
+            function onUp() {
+              document.removeEventListener('mousemove', onMove);
+              document.removeEventListener('mouseup', onUp);
+            }
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+          });
+        }
       }
     }
 
-    // ---- Row grips (heights) ----
-    const rows = tbl.rows.length;
-    if (rows > 0) {
-      for (let r = 0; r < rows - 1; r++) {
-        const rr = tbl.rows[r].getBoundingClientRect();
-        const y = rr.bottom - blockRect.top;
-        const g = document.createElement('div');
-        g.className = 'mc-grip-y';
-        g.style.top = `${y - 3}px`;
-        g.style.left = `${rect.left - blockRect.left}px`;
-        g.style.width = `${rect.width}px`;
-        gripsY.appendChild(g);
+    requestAnimationFrame(() => {
+      evenColumns();
+      rebuildGrips(true);
+    });
+    tbl.addEventListener('input', () => requestAnimationFrame(() => rebuildGrips(true)));
+    window.addEventListener('resize', () => requestAnimationFrame(() => rebuildGrips(true)));
 
-        g.addEventListener('mousedown', (md) => {
-          md.preventDefault();
-          const startY = md.clientY;
-          const hTop0 = tbl.rows[r].getBoundingClientRect().height;
-          const hBot0 = tbl.rows[r + 1].getBoundingClientRect().height;
+    // Focus tracking so topbar styles cell text
+    tbl.addEventListener('focusin', (e) => {
+      if (e.target && (e.target.tagName === 'TD' || e.target.tagName === 'TH')) currentBlockBody = e.target;
+    });
+    tbl.addEventListener('focusout', (e) => {
+      if (currentBlockBody === e.target) currentBlockBody = null;
+    });
 
-          function onMove(mm) {
-            const dy = mm.clientY - startY;
-            const hTop = Math.max(28, hTop0 + dy);
-            const hBot = Math.max(28, hBot0 - dy);
-            for (const cell of tbl.rows[r].cells) { cell.style.height = hTop + 'px'; }
-            for (const cell of tbl.rows[r + 1].cells) { cell.style.height = hBot + 'px'; }
-            rebuildGrips(true);
-          }
-          function onUp() {
-            document.removeEventListener('mousemove', onMove);
-            document.removeEventListener('mouseup', onUp);
-          }
-          document.addEventListener('mousemove', onMove);
-          document.addEventListener('mouseup', onUp);
-        });
-      }
-    }
+    return el;
   }
-
-  // initial size & grips
-  requestAnimationFrame(() => {
-    evenColumns();               // nice, even starting widths
-    rebuildGrips(true);
-  });
-  tbl.addEventListener('input', () => requestAnimationFrame(() => rebuildGrips(true)));
-  window.addEventListener('resize', () => requestAnimationFrame(() => rebuildGrips(true)));
-
-  // Focus tracking so topbar styles cell text
-  tbl.addEventListener('focusin', (e) => {
-    if (e.target && (e.target.tagName === 'TD' || e.target.tagName === 'TH')) currentBlockBody = e.target;
-  });
-  tbl.addEventListener('focusout', (e) => {
-    if (currentBlockBody === e.target) currentBlockBody = null;
-  });
-
-  return el;
-}
-
 
   function makeSignatureRow() {
     const el = document.createElement('div');
@@ -931,7 +827,6 @@ function makeTable() {
         gap: '6px',
       });
 
-      // --- signature image upload box (unchanged) ---
       const imgWrap = document.createElement('div');
       Object.assign(imgWrap.style, {
         aspectRatio: '4/3',
@@ -941,10 +836,13 @@ function makeTable() {
         placeItems: 'center',
         overflow: 'hidden',
       });
-
       const img = document.createElement('img');
-      Object.assign(img.style, { display: 'none', width: '100%', height: '100%', objectFit: 'contain' });
-
+      Object.assign(img.style, {
+        display: 'none',
+        width: '100%',
+        height: '100%',
+        objectFit: 'contain'
+      });
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.textContent = 'Upload';
@@ -955,21 +853,22 @@ function makeTable() {
         borderRadius: '4px',
         cursor: 'pointer',
       });
-
       const inputFile = document.createElement('input');
       inputFile.type = 'file';
       inputFile.accept = 'image/*';
       inputFile.style.display = 'none';
-
       btn.onclick = () => inputFile.click();
       inputFile.onchange = () => {
         if (inputFile.files[0]) {
           const reader = new FileReader();
-          reader.onload = () => { img.src = reader.result; img.style.display = 'block'; btn.style.display = 'none'; };
+          reader.onload = () => {
+            img.src = reader.result;
+            img.style.display = 'block';
+            btn.style.display = 'none';
+          };
           reader.readAsDataURL(inputFile.files[0]);
         }
       };
-
       imgWrap.appendChild(img);
       imgWrap.appendChild(btn);
       cell.appendChild(imgWrap);
@@ -978,13 +877,10 @@ function makeTable() {
       Object.assign(line.style, { borderBottom: '1px solid #9ca3af', marginTop: '4px' });
       cell.appendChild(line);
 
-      // --- labels row: Name / Date / Role ---
       ['Name', 'Date', 'Role'].forEach((t) => {
         if (t === 'Date') {
-          // STRICT date-only field
           const dateWrap = document.createElement('div');
           Object.assign(dateWrap.style, { display: 'flex', alignItems: 'center', gap: '6px' });
-
           const dateInput = document.createElement('input');
           dateInput.type = 'date';
           dateInput.placeholder = 'YYYY-MM-DD';
@@ -998,85 +894,59 @@ function makeTable() {
             color: '#111827',
             background: '#fff',
           });
-
-          // focus tracking (don’t route toolbar actions here)
           dateInput.addEventListener('focusin', () => { currentBlockBody = null; });
-          dateInput.addEventListener('focusout', () => { /* no-op */ });
-
-          // Fallback hardening: block letters even on browsers that allow free typing
           dateInput.addEventListener('keydown', (e) => {
             const k = e.key;
-            const ctrlCombo = e.ctrlKey || e.metaKey; // allow copy/paste, select-all, etc.
-            const allowed =
-              ctrlCombo ||
-              ['Backspace','Delete','Tab','Enter','Escape','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(k) ||
-              // digits and separators
-              /^[0-9]$/.test(k) || k === '-' || k === '/';
+            const ctrlCombo = e.ctrlKey || e.metaKey;
+            const allowed = ctrlCombo
+              || ['Backspace','Delete','Tab','Enter','Escape','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(k)
+              || /^[0-9]$/.test(k) || k === '-' || k === '/';
             if (!allowed) e.preventDefault();
           });
-
-          // Normalize input to YYYY-MM-DD; strip letters if pasted
           dateInput.addEventListener('input', () => {
             let v = dateInput.value.replace(/[^\d/-]/g, '');
-            // If user typed with slashes, convert to dashes
             v = v.replaceAll('/', '-');
             dateInput.value = v;
           });
-
-          // On blur, attempt to coerce e.g. 9-5-2025 or 09-05-25 into YYYY-MM-DD
           dateInput.addEventListener('blur', () => {
             const v = dateInput.value.trim();
             if (!v) return;
-            // Already good? (YYYY-MM-DD)
             if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return;
-
-            // Try to parse tolerant formats
             const parts = v.split('-').map(s => s.trim());
             if (parts.length === 3) {
-              let [a,b,c] = parts;
-              // Guess formats: YYYY-M-D or M-D-YYYY or D-M-YYYY
+              let [a, b, c] = parts;
               if (a.length === 4) { // YYYY-M-D
                 const yyyy = a;
                 const mm = String(b).padStart(2, '0');
                 const dd = String(c).padStart(2, '0');
                 if (isValidYMD(yyyy, mm, dd)) dateInput.value = `${yyyy}-${mm}-${dd}`;
-              } else if (c.length === 4) { // M-D-YYYY (US-ish)
+              } else if (c.length === 4) { // M-D-YYYY
                 const yyyy = c;
                 const mm = String(a).padStart(2, '0');
                 const dd = String(b).padStart(2, '0');
                 if (isValidYMD(yyyy, mm, dd)) dateInput.value = `${yyyy}-${mm}-${dd}`;
               }
             }
-            // Final guard: if still invalid, clear
             if (!/^\d{4}-\d{2}-\d{2}$/.test(dateInput.value)) {
               dateInput.value = '';
             }
           });
-
-          // simple validator
           function isValidYMD(y, m, d) {
             const yyyy = +y, mm = +m, dd = +d;
             if (!yyyy || mm < 1 || mm > 12 || dd < 1 || dd > 31) return false;
             const dt = new Date(`${y}-${m}-${d}T00:00:00`);
             return !Number.isNaN(dt.getTime()) &&
-                  dt.getUTCFullYear() === yyyy &&
-                  dt.getUTCMonth() + 1 === mm &&
-                  dt.getUTCDate() === dd;
+                   dt.getUTCFullYear() === yyyy &&
+                   dt.getUTCMonth() + 1 === mm &&
+                   dt.getUTCDate() === dd;
           }
-
-          // Optional: set today
-          // dateInput.valueAsDate = new Date();
-
-          // small label to the right (muted)
           const hint = document.createElement('span');
           hint.textContent = 'Date';
           Object.assign(hint.style, { fontSize: '12px', color: '#64748b', whiteSpace: 'nowrap' });
-
           dateWrap.appendChild(dateInput);
           dateWrap.appendChild(hint);
           cell.appendChild(dateWrap);
         } else {
-          // Name / Role remain contentEditable
           const lab = document.createElement('div');
           lab.textContent = t;
           lab.contentEditable = 'true';
@@ -1104,48 +974,25 @@ function makeTable() {
     return el;
   }
 
-
   const FACTORY = {
     label: makeLabel,
     paragraph: makeParagraph,
     textField: makeTextField,
     text: makeTextField,
     textarea: makeTextArea,
-    table: makeTable,
     signature: makeSignatureRow,
   };
-
-  function registerBlockBody(bodyEl) {
-    bodyEl.addEventListener('focusin', () => {
-      currentBlockBody = bodyEl;
-      // defer so the caret has landed
-      setTimeout(() => saveSelection(bodyEl), 0);
-    });
-    bodyEl.addEventListener('mousedown', () => {
-      currentBlockBody = bodyEl;
-      // caret will update on mouseup
-    });
-    bodyEl.addEventListener('mouseup', () => saveSelection(bodyEl));
-    bodyEl.addEventListener('keyup',  () => saveSelection(bodyEl));
-    bodyEl.addEventListener('focusout', () => {
-      if (currentBlockBody === bodyEl) currentBlockBody = null;
-      selectionStore.delete(bodyEl);
-      document.addEventListener('selectionchange', () => {
-      if (currentBlockBody) saveSelection(currentBlockBody);
-    });
-
-    });
-  }
-
 
   // ---------- Drag / stack logic ----------
   function pushDownFrom(source, overlay) {
     const blocks = Array.from(overlay.querySelectorAll('.mc-block'))
       .filter((b) => b !== source)
       .sort((a, b) => (parseInt(a.style.top || 0, 10) - parseInt(b.style.top || 0, 10)));
+
     const srcTop = parseInt(source.style.top || 0, 10);
     const srcBottom = srcTop + source.offsetHeight;
     let cursor = srcBottom;
+
     for (const blk of blocks) {
       let top = parseInt(blk.style.top || 0, 10);
       const h = blk.offsetHeight;
@@ -1159,13 +1006,12 @@ function makeTable() {
         cursor = Math.max(cursor, bottom);
       }
     }
-    // ensure anything past bottom goes to next page
-    paginateOverlayIfNeeded(overlay);
   }
 
   function reflowStack(overlay) {
     const items = Array.from(overlay.querySelectorAll('.mc-block'))
       .sort((a, b) => (parseInt(a.style.top || 0, 10) - parseInt(b.style.top || 0, 10)));
+
     let cursor = PAGE_PADDING_TOP;
     for (const blk of items) {
       let top = parseInt(blk.style.top || 0, 10);
@@ -1176,15 +1022,18 @@ function makeTable() {
       cursor = top + blk.offsetHeight;
     }
   }
+
   function makeDraggable(block, overlay) {
     const grip = block.querySelector('.drag-handle');
     if (!grip) return;
+
     let ghost;
     const startDrag = (e) => {
       e.preventDefault();
       const startRect = block.getBoundingClientRect();
       const ovRect = overlay.getBoundingClientRect();
       const offsetY = e.clientY - startRect.top;
+
       ghost = overlay.querySelector('.mc-ghost-line');
       if (!ghost) {
         ghost = document.createElement('div');
@@ -1199,6 +1048,7 @@ function makeTable() {
         });
         overlay.appendChild(ghost);
       }
+
       const onMove = (mv) => {
         const proposed = mv.clientY - ovRect.top - offsetY;
         const snapped = snap(Math.max(PAGE_PADDING_TOP, proposed));
@@ -1216,71 +1066,103 @@ function makeTable() {
       document.addEventListener('mousemove', onMove);
       document.addEventListener('mouseup', onUp);
     };
+
     grip.addEventListener('mousedown', startDrag);
   }
 
   function wireDropTargets() {
     const pages = document.querySelectorAll('.page');
     if (!pages.length) return;
-
     pages.forEach((page) => {
       const overlay = ensureOverlay(page);
-
-      // 🛡️ Prevent duplicate listener binding
-      if (overlay.dataset.dndWired === '1') return;
-      overlay.dataset.dndWired = '1';
-
-      const allow = (ev) => {
-        if (ev.dataTransfer?.types?.includes('application/x-mc')) {
+      if (overlay.dataset.dropWired === '1') return;   // add this
+      overlay.dataset.dropWired = '1';                  // add this
+      ['dragenter', 'dragover'].forEach((evt) => {
+        overlay.addEventListener(evt, (ev) => {
+          // Always allow drop; some browsers won't expose custom types until 'drop'
           ev.preventDefault();
-        }
-      };
-
-      const onDrop = (ev) => {
+        });
+      });
+      overlay.addEventListener('drop', (ev) => {
         ev.preventDefault();
         const raw = ev.dataTransfer.getData('application/x-mc');
         if (!raw) return;
         const { type } = JSON.parse(raw);
+
+        // (A) Flow-into-editor types — these should push text and be styled via toolbar
+        const ed = window.__mc?.getActiveEditor?.();
+        if (ed) {
+        if (type === 'table') {
+          const ok = ed.chain().focus()
+            .insertTable({ rows: 3, cols: 4, withHeaderRow: false })
+            .run();
+
+          // Fallback: insert plain HTML table if the command didn't run
+          if (!ok) {
+            const html = (() => {
+              const r = 3, c = 4;
+              const rows = Array.from({ length: r }, () =>
+                `<tr>${'<td><p><br/></p></td>'.repeat(c)}</tr>`
+              ).join('');
+              return `<table><tbody>${rows}</tbody></table><p></p>`;
+            })();
+            ed.chain().focus().insertContent(html).run();
+          }
+
+          setOverlaysDragEnabled(false);
+          return; // done
+        }
+          // OPTIONAL: map a few simple sidebar items to flowing HTML in TipTap
+          if (type === 'label') {
+            ed.chain().focus().insertContent('<p><strong>Label text</strong></p>').run();
+            setOverlaysDragEnabled(false);
+            return;
+          }
+          if (type === 'paragraph') {
+            ed.chain().focus().insertContent('<p>Paragraph text</p>').run();
+            setOverlaysDragEnabled(false);
+            return;
+          }
+          if (type === 'textField') {
+            ed.chain().focus().insertContent(
+              '<p><span style="display:inline-block;min-width:240px;border-bottom:1px solid #9ca3af">&nbsp;</span></p>'
+            ).run();
+            setOverlaysDragEnabled(false);
+            return;
+          }
+          if (type === 'textarea') {
+            ed.chain().focus().insertContent(
+              '<p style="display:block;border:1px solid #111827;border-radius:6px;padding:8px;min-height:120px;">Text block</p>'
+            ).run();
+            setOverlaysDragEnabled(false);
+            return;
+          }
+        }
+
+        // (B) Everything else: still use the overlay (free-positioned canvas items)
         const factory = FACTORY[type];
         if (!factory) return;
 
         const block = factory();
-        const y = snap(ev.offsetY);
+        const y = Math.round(ev.offsetY / 20) * 20; // snap to GRID
         block.style.top = `${Math.max(PAGE_PADDING_TOP, y)}px`;
         overlay.appendChild(block);
         makeDraggable(block, overlay);
         pushDownFrom(block, overlay);
-        paginateOverlayIfNeeded(overlay);
         setOverlaysDragEnabled(false);
-      };
-
-      // Bind once
-      ['dragenter', 'dragover'].forEach((evt) => {
-        overlay.addEventListener(evt, allow, { passive: false });
       });
-      overlay.addEventListener('drop', onDrop);
     });
   }
 
-  // Initial wiring
-  document.addEventListener('mc:rewire', wireDropTargets);
-  wireDropTargets();
-
   function wireSidebarDrag() {
     document.querySelectorAll('#mc-sidebar .sb-item').forEach((btn) => {
-      // 🛡️ Bind once per button
-      if (btn.dataset.dndWired === '1') return;
-      btn.dataset.dndWired = '1';
-
       if (!btn.hasAttribute('draggable')) btn.setAttribute('draggable', 'true');
-
       btn.addEventListener('dragstart', (e) => {
         const type = btn.dataset.type || '';
         e.dataTransfer.effectAllowed = 'copy';
         e.dataTransfer.setData('application/x-mc', JSON.stringify({ type }));
         setOverlaysDragEnabled(true);
       });
-
       btn.addEventListener('dragend', () => {
         setOverlaysDragEnabled(false);
       });
@@ -1289,15 +1171,9 @@ function makeTable() {
 
   function execOnBlockOrEditor(editor, fnForEditor, fallback /* string or function */) {
     if (currentBlockBody && currentBlockBody.isContentEditable !== false) {
-      // put the caret back where the user left it
       restoreSelection(currentBlockBody);
-
-      if (typeof fallback === 'function') {
-        fallback();
-      } else if (typeof fallback === 'string') {
-        document.execCommand(fallback, false, null);
-      }
-
+      if (typeof fallback === 'function') fallback();
+      else if (typeof fallback === 'string') document.execCommand(fallback, false, null);
       currentBlockBody.focus();
       saveSelection(currentBlockBody);
     } else {
@@ -1305,100 +1181,86 @@ function makeTable() {
     }
   }
 
- 
-    function wireTopbar() {
-        // Which TipTap editor is currently focused?
-      function getEd() {
+  function wireTopbar() {
+    function getEd() {
       const el = document.activeElement;
       if (el) {
         const page = el.closest('.page');
         if (page) {
-          for (const ed of MC_all()) {
+          for (const ed of (window.__mc?.MCEditors?.all?.() || [])) {
             if (page.contains(ed.options.element)) return ed;
           }
         }
       }
-      return MC_first();
+      return window.__mc?.getActiveEditor?.() || null;
     }
 
-      // When the TipTap editor gains focus, clear block selection
-      const tiptapEl = document.querySelector('.tiptap');
-      tiptapEl?.addEventListener('focusin', () => { currentBlockBody = null; });
+    const tiptapEl = document.querySelector('.tiptap');
+    tiptapEl?.addEventListener('focusin', () => { currentBlockBody = null; });
 
-      // ✅ get toolbar first
-      const toolbar = document.getElementById('tt-toolbar');
-      if (!toolbar) return;
+    const toolbar = document.getElementById('tt-toolbar');
+    if (!toolbar) return;
 
-      // ✅ keep focus in the current contentEditable BEFORE Bootstrap dropdown handles the click
-      const keepFocus = (e) => {
-        // limit to toolbar actions that can steal focus, esp. color menu
-        const el = e.target.closest(
-          '.dropdown-item[data-action="setColor"], .dropdown-item[data-action="pickColor"]'
-        );
-        if (!el) return;
-        e.preventDefault();
-        if (currentBlockBody) restoreSelection(currentBlockBody);
-      };
-      toolbar.addEventListener('pointerdown', keepFocus);
-      toolbar.addEventListener('mousedown', keepFocus);
+    const keepFocus = (e) => {
+      const el = e.target.closest(
+        '.dropdown-item[data-action="setColor"], .dropdown-item[data-action="pickColor"]'
+      );
+      if (!el) return;
+      e.preventDefault();
+      if (currentBlockBody) restoreSelection(currentBlockBody);
+    };
+    toolbar.addEventListener('pointerdown', keepFocus);
+    toolbar.addEventListener('mousedown', keepFocus);
 
-      // Keep caret in the block when pressing toolbar buttons (general case)
-      toolbar.addEventListener('mousedown', (e) => {
-        e.preventDefault();
-        if (currentBlockBody) restoreSelection(currentBlockBody);
-      });
+    toolbar.addEventListener('mousedown', (e) => {
+      // allow native interaction for selects, dropdown toggles, and color inputs
+      const isInteractive = e.target.closest('select, .dropdown-toggle, .dropdown-menu, input[type="color"]');
+      if (isInteractive) return;
 
-
-      toolbar.addEventListener('click', (e) => {
-        const el = e.target.closest('[data-action]');
-        if (!el) return;
-        const action = el.dataset.action;
-        const level = +el.dataset.level || undefined;
-        const ed = getEd(); // TipTap editor for the currently focused page
+      // otherwise keep caret in the block/editor
+      e.preventDefault();
+      if (currentBlockBody) restoreSelection(currentBlockBody);
+    });
 
 
-        if (action === 'pickColor') {
-          const hidden = document.getElementById('ctl-color-hidden');
-          if (!hidden) return;
+    toolbar.addEventListener('click', (e) => {
+      const el = e.target.closest('[data-action]');
+      if (!el) return;
+      const action = el.dataset.action;
+      const level = +el.dataset.level || undefined;
+      const ed = getEd();
 
-          if (currentBlockBody) saveSelection(currentBlockBody);
-          pickingColor = true; // 🔒 lock while the native dialog is open
+      if (action === 'pickColor') {
+        const hidden = document.getElementById('ctl-color-hidden');
+        if (!hidden) return;
+        if (currentBlockBody) saveSelection(currentBlockBody);
+        pickingColor = true;
+        hidden.click();
+        return;
+      }
 
-          hidden.click();
-          return; // actual apply happens in the input/change handlers below
+      if (action === 'setLineHeight') {
+        if (!ed) return;
+        let lh = el.dataset.lh || '';
+        if (lh === 'custom') {
+          const v = prompt('Enter line spacing (e.g., 1, 1.15, 1.5, 2, or CSS like "24px")', '1.5');
+          if (v === null) return;
+          lh = v.trim();
+          if (!lh) return;
         }
-
-
-      
-
-            // === Line height ===
-          if (action === 'setLineHeight') {
-            if (!ed) return;
-            let lh = el.dataset.lh || '';
-            if (lh === 'custom') {
-              const v = prompt('Enter line spacing (e.g., 1, 1.15, 1.5, 2, or CSS like "24px")', '1.5');
-              if (v === null) return;
-              lh = v.trim();
-              if (!lh) return;
-            }
-            ed.chain().focus().setLineHeight(lh).run();
-            return;
-          }
-          if (action === 'unsetLineHeight') {
-            if (!ed) return;
-            ed.chain().focus().unsetLineHeight().run();
-            return;
-          }
-
+        ed.chain().focus().setLineHeight(lh).run();
+        return;
+      }
+      if (action === 'unsetLineHeight') {
+        if (!ed) return;
+        ed.chain().focus().unsetLineHeight().run();
+        return;
+      }
 
       switch (action) {
         case 'toggleBold':
           if (!ed) return;
-          execOnBlockOrEditor(
-            ed,
-            (eed) => eed.chain().focus().toggleBold().run(),
-            'bold'
-          );
+          execOnBlockOrEditor(ed, (eed) => eed.chain().focus().toggleBold().run(), 'bold');
           break;
         case 'toggleItalic':
           execOnBlockOrEditor(ed, (eed) => eed.chain().focus().toggleItalic().run(), 'italic');
@@ -1409,36 +1271,24 @@ function makeTable() {
         case 'toggleStrike':
           execOnBlockOrEditor(ed, (eed) => eed.chain().focus().toggleStrike().run(), () => document.execCommand('strikethrough'));
           break;
-
         case 'setParagraph':
           execOnBlockOrEditor(ed, (eed) => eed.chain().focus().setParagraph().run(), () => document.execCommand('formatBlock', false, 'P'));
           break;
         case 'setHeading':
-          execOnBlockOrEditor(
-            ed,
-            (eed) => eed.chain().focus().toggleHeading({ level }).run(),
-            () => document.execCommand('formatBlock', false, 'H' + (level || 1))
-          );
+          execOnBlockOrEditor(ed, (eed) => eed.chain().focus().toggleHeading({ level }).run(), () => document.execCommand('formatBlock', false, 'H' + (level || 1)));
           break;
-
         case 'toggleBulletList':
           execOnBlockOrEditor(ed, (eed) => eed.chain().focus().toggleBulletList().run(), 'insertUnorderedList');
           break;
         case 'toggleOrderedList':
           execOnBlockOrEditor(ed, (eed) => eed.chain().focus().toggleOrderedList().run(), 'insertOrderedList');
           break;
-
         case 'toggleBlockquote':
-          execOnBlockOrEditor(
-            ed,
-            (eed) => eed.chain().focus().toggleBlockquote().run(),
-            () => document.execCommand('formatBlock', false, 'BLOCKQUOTE')
-          );
+          execOnBlockOrEditor(ed, (eed) => eed.chain().focus().toggleBlockquote().run(), () => document.execCommand('formatBlock', false, 'BLOCKQUOTE'));
           break;
         case 'toggleCodeBlock':
           execOnBlockOrEditor(ed, (eed) => eed.chain().focus().toggleCodeBlock().run(), null);
           break;
-
         case 'alignLeft':
           execOnBlockOrEditor(ed, (eed) => eed.chain().focus().setTextAlign('left').run(), 'justifyLeft');
           break;
@@ -1451,64 +1301,60 @@ function makeTable() {
         case 'alignJustify':
           execOnBlockOrEditor(ed, (eed) => eed.chain().focus().setTextAlign('justify').run(), 'justifyFull');
           break;
-
         case 'toggleSuperscript':
-          execOnBlockOrEditor(
-            ed,
-            (eed) => eed.chain().focus().toggleSuperscript().run(),
-            () => document.execCommand('superscript')
-          );
+          execOnBlockOrEditor(ed, (eed) => eed.chain().focus().toggleSuperscript().run(), () => document.execCommand('superscript'));
           break;
-
         case 'toggleSubscript':
-          execOnBlockOrEditor(
-            ed,
-            (eed) => eed.chain().focus().toggleSubscript().run(),
-            () => document.execCommand('subscript')
-          );
+          execOnBlockOrEditor(ed, (eed) => eed.chain().focus().toggleSubscript().run(), () => document.execCommand('subscript'));
           break;
-
         case 'toggleTaskList':
-          execOnBlockOrEditor(
-            ed,
-            (eed) => eed.chain().focus().toggleTaskList().run(),
-            'insertUnorderedList'
-          );
+          execOnBlockOrEditor(ed, (eed) => eed.chain().focus().toggleTaskList().run(), 'insertUnorderedList');
           break;
-
-
         case 'setColor': {
           const value = el.dataset.value || null;
-
           if (currentBlockBody) {
-            // snapshot before dropdown closes
             saveSelection(currentBlockBody);
             restoreSelection(currentBlockBody);
           }
-
           execOnBlockOrEditor(
             ed,
             (eed) => {
               if (value) eed.chain().focus().setColor(value).run();
-              else       eed.chain().focus().unsetColor().run();
+              else eed.chain().focus().unsetColor().run();
             },
-            () => {
-              if (value) wrapSelectionWithSpan(`color:${value}`);
-              else       wrapSelectionWithSpan('color:inherit');
-            }
+            () => { if (value) wrapSelectionWithSpan(`color:${value}`); else wrapSelectionWithSpan('color:inherit'); }
           );
-
           if (currentBlockBody) {
             currentBlockBody.focus();
             saveSelection(currentBlockBody);
           }
           break;
         }
-        
         case 'setHorizontalRule':
           if (!ed) return;
           ed.chain().focus().setHorizontalRule().run();
           break;
+        case 'insertTable': {
+          const ed = getEd(); if (!ed) return;
+
+          // Try native TipTap table insertion first
+          const ok = ed.chain().focus()
+            .insertTable({ rows: 3, cols: 4, withHeaderRow: false })
+            .run();
+
+          // Fallback: inject plain HTML table if the command didn't run
+          if (!ok) {
+            const html = (() => {
+              const r = 3, c = 4;
+              const rows = Array.from({ length: r }, () =>
+                `<tr>${'<td><p><br/></p></td>'.repeat(c)}</tr>`
+              ).join('');
+              return `<table><tbody>${rows}</tbody></table><p></p>`;
+            })();
+            ed.chain().focus().insertContent(html).run();
+          }
+          break;
+        }
 
         case 'insertImage': {
           const url = prompt('Image URL');
@@ -1516,17 +1362,13 @@ function makeTable() {
           execOnBlockOrEditor(
             ed,
             (eed) => (eed.chain().focus().setImage?.({ src: url }).run() || eed.chain().focus().insertContent(`<img src="${url}" alt="">`).run()),
-            () => {
-              // insert into block at caret
-              document.execCommand('insertImage', false, url);
-            }
+            () => { document.execCommand('insertImage', false, url); }
           );
           break;
         }
-
         case 'setLink': {
           if (!ed) return;
-          const prev = ed.getAttributes('link')?.href || '';
+          const prev = ed.getAttributes?.('link')?.href || '';
           const url = prompt('Enter URL', prev);
           if (url === null) return;
           if (currentBlockBody) {
@@ -1534,149 +1376,221 @@ function makeTable() {
             else document.execCommand('createLink', false, url);
             currentBlockBody.focus();
           } else {
-            if (!ed) return;
             if (url === '') ed.chain().focus().unsetLink().run();
             else ed.chain().focus().setLink({ href: url }).run();
           }
           break;
         }
         case 'unsetLink':
-          if (currentBlockBody) {
-            document.execCommand('unlink');
-            currentBlockBody.focus();
-          } else {
-            ed.chain().focus().unsetLink().run();
-          }
+          if (currentBlockBody) { document.execCommand('unlink'); currentBlockBody.focus(); }
+          else ed?.chain().focus().unsetLink().run();
           break;
-
         case 'undo':
-          if (currentBlockBody) document.execCommand('undo'); else ed.commands.undo();
+          if (currentBlockBody) document.execCommand('undo');
+          else ed?.commands.undo();
           break;
         case 'redo':
-          if (currentBlockBody) document.execCommand('redo'); else ed.commands.redo();
+          if (currentBlockBody) document.execCommand('redo');
+          else ed?.commands.redo();
           break;
-
         default:
-          // no-op for unknown buttons
           break;
       }
     });
 
-      const hiddenColor = document.getElementById('ctl-color-hidden');
-      hiddenColor?.addEventListener('input', () => {
-        const value = hiddenColor.value;
-        if (currentBlockBody) restoreSelection(currentBlockBody);
+    const hiddenColor = document.getElementById('ctl-color-hidden');
+    hiddenColor?.addEventListener('input', () => {
+      const value = hiddenColor.value;
+      if (currentBlockBody) restoreSelection(currentBlockBody);
+      const curEd = getEd();
+      if (!curEd && !currentBlockBody) return;
+      execOnBlockOrEditor(
+        curEd,
+        (eed) => (value ? eed.chain().focus().setColor(value).run() : eed.chain().focus().unsetColor().run()),
+        () => { if (value) wrapSelectionWithSpan(`color:${value}`); else wrapSelectionWithSpan('color:inherit'); }
+      );
+      if (currentBlockBody) { currentBlockBody.focus(); saveSelection(currentBlockBody); }
+      setTimeout(() => { pickingColor = false; }, 0);
+    });
+    hiddenColor?.addEventListener('change', () => { setTimeout(() => { pickingColor = false; }, 0); });
 
-        const curEd = getEd(); if (!curEd && !currentBlockBody) return;
-
-        execOnBlockOrEditor(
-          curEd,
-          (eed) => (value ? eed.chain().focus().setColor(value).run()
-                          : eed.chain().focus().unsetColor().run()),
-          () => {
-            if (value) wrapSelectionWithSpan(`color:${value}`);
-            else       wrapSelectionWithSpan('color:inherit');
-          }
-        );
-
-        if (currentBlockBody) {
-          currentBlockBody.focus();
-          saveSelection(currentBlockBody);
-        }
-        setTimeout(() => { pickingColor = false; }, 0);
-      });
-
-
-      // Some browsers only fire 'change' after the dialog closes – also unlock there
-      hiddenColor?.addEventListener('change', () => {
-        setTimeout(() => { pickingColor = false; }, 0);
-      });
-
-
-
-    // Font / size / color controls if present
-    const selFont  = document.getElementById('ctl-font');
-    const selSize  = document.getElementById('ctl-size');
-    const inpColor = document.getElementById('ctl-color');
-    const clrColor = document.getElementById('ctl-color-clear');
+    const selFont = document.getElementById('ctl-font');
+    const selSize = document.getElementById('ctl-size');
 
     function applyFontFamily(value) {
       if (currentBlockBody) {
         if (value) wrapSelectionWithSpan(`font-family:${value}`);
-        else wrapSelectionWithSpan(`font-family:inherit`);
+        else wrapSelectionWithSpan('font-family:inherit');
       } else {
-        const ed = getEd(); if (!ed) return;
+        const ed = getEd();
+        if (!ed) return;
         const c = ed.chain().focus();
-        value ? c.setFontFamily?.(value).run()
-              : c.unsetFontFamily?.().run();
+        value ? c.setFontFamily?.(value).run() : c.unsetFontFamily?.().run();
       }
     }
-
-
     function applyFontSize(value) {
       if (currentBlockBody) {
         if (value) wrapSelectionWithSpan(`font-size:${value}`);
-        else wrapSelectionWithSpan(`font-size:inherit`);
+        else wrapSelectionWithSpan('font-size:inherit');
       } else {
-        const ed = getEd(); if (!ed) return;
+        const ed = getEd();
+        if (!ed) return;
         const c = ed.chain().focus();
         value ? c.setMark('textStyle', { fontSize: value }).run()
               : c.setMark('textStyle', { fontSize: null }).run();
       }
     }
+    selFont?.addEventListener('change', () => applyFontFamily(selFont.value));
+    selSize?.addEventListener('change', () => applyFontSize(selSize.value));
+  } // end wireTopbar
 
-    function applyColor(value) {
-      if (currentBlockBody) {
-        if (value) {
-          withRestoredSelection(() => document.execCommand('foreColor', false, value));
-        } else {
-          // Clear color by wrapping with inherit (fallback)
-          wrapSelectionWithSpan('color:inherit');
-        }
-      } else {
-        const ed = getEd(); if (!ed) return;
-        const c = ed.chain().focus();
-        value ? c.setColor?.(value).run()
-              : c.unsetColor?.().run();
-      }
-    }
-    selFont?.addEventListener('change',  () => applyFontFamily(selFont.value));
-    selSize?.addEventListener('change',  () => applyFontSize(selSize.value));
-    inpColor?.addEventListener('input',  () => applyColor(inpColor.value));
-    clrColor?.addEventListener('click',  () => applyColor(null));
+// --- TipTap in-editor table toolbar (global, outside pages) ---
+function ensureTTTablebar() {
+  let bar = document.body.querySelector('.tt-tablebar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.className = 'tt-tablebar';
+    bar.innerHTML = `
+      <button class="btn" data-act="row-above"   title="Insert row above">↥ Row</button>
+      <button class="btn" data-act="row-below"   title="Insert row below">↧ Row</button>
+      <button class="btn" data-act="col-left"    title="Insert col left">↤ Col</button>
+      <button class="btn" data-act="col-right"   title="Insert col right">↦ Col</button>
+      <span class="sep"></span>
+      <button class="btn" data-act="del-row"     title="Delete row">✖ Row</button>
+      <button class="btn" data-act="del-col"     title="Delete column">✖ Col</button>
+      <span class="sep"></span>
+      <button class="btn" data-act="merge"       title="Merge selected cells">Merge</button>
+      <button class="btn" data-act="split"       title="Split cell">Split</button>
+      <span class="sep"></span>
+      <button class="btn" data-act="toggle-head" title="Toggle header row">H</button>
+      <span class="sep"></span>
+      <button class="btn" data-act="del-table"   title="Delete table">🗑</button>
+    `;
+    document.body.appendChild(bar);
   }
-  // ========= END TOP BAR WIRING =========
+  return bar;
+}
 
-      // ---------- Boot ----------
-      waitForEditor().then((editor) => {
-        wireSidebarDrag();
-        wireDropTargets();
-        wireTopbar(); // <— restore toolbar + make it affect sidebar text too
+function isInTipTapTable(ed) {
+  try { return !!ed?.isActive?.('table'); } catch { return false; }
+}
 
-      // expose a rewire hook so new pages can be made drop targets
+function currentCellElement(ed) {
+  try {
+    const { view, state } = ed;
+    const pos = state.selection.from;
+    const domAt = view.domAtPos(pos);
+    const start = domAt?.node || view.dom;
+    return (start.nodeType === 1 ? start : start.parentElement)?.closest('td,th') || null;
+  } catch { return null; }
+}
+
+function positionTablebarForEditor(ed) {
+  const bar = ensureTTTablebar();
+  if (!ed || !isInTipTapTable(ed)) { bar.style.display = 'none'; return; }
+
+  const cell = currentCellElement(ed);
+  if (!cell) { bar.style.display = 'none'; return; }
+
+  const cr = cell.getBoundingClientRect();   // viewport coords
+  bar.style.display = 'flex';
+
+  // Let layout compute height once visible
+  const bh = bar.offsetHeight || 28;
+
+  // Prefer above the cell; if not enough room, show below
+  let top = Math.round(cr.top - bh - 6);
+  if (top < 8) top = Math.round(cr.bottom + 6);
+
+  // Start aligned with cell's left; keep inside the viewport (not the page)
+  let left = Math.round(cr.left);
+
+  // If the bar would be cut off at the left, flip to the cell's right edge.
+  if (left < 8) left = Math.round(cr.right - bar.offsetWidth);
+
+  // Clamp to viewport so it stays reachable
+  left = Math.max(8, Math.min(window.innerWidth - bar.offsetWidth - 8, left));
+
+  bar.style.top = `${top}px`;
+  bar.style.left = `${left}px`;
+}
+
+function bindTablebarActions(ed) {
+  const bar = ensureTTTablebar();
+  if (bar._wiredFor === ed) return;
+  bar._wiredFor = ed;
+
+  bar.onclick = (e) => {
+    const b = e.target.closest('button[data-act]');
+    if (!b) return;
+    const act = b.dataset.act;
+    const c = ed.chain().focus();
+
+    let ok = true;
+    switch (act) {
+      case 'row-above':   ok = c.addRowBefore().run(); break;
+      case 'row-below':   ok = c.addRowAfter().run(); break;
+      case 'col-left':    ok = c.addColumnBefore().run(); break;
+      case 'col-right':   ok = c.addColumnAfter().run(); break;
+      case 'del-row':     ok = c.deleteRow().run(); break;
+      case 'del-col':     ok = c.deleteColumn().run(); break;
+      case 'merge':       ok = c.mergeCells().run(); break;
+      case 'split':       ok = c.splitCell().run(); break;
+      case 'toggle-head': ok = c.toggleHeaderRow().run(); break;
+      case 'del-table':   ok = c.deleteTable().run(); bar.style.display = 'none'; break;
+      default: ok = false;
+    }
+    if (ok) requestAnimationFrame(() => positionTablebarForEditor(ed));
+  };
+}
+
+
+function wireTipTapTableUI() {
+  const all = (window.__mc?.MCEditors?.all?.() || []);
+  all.forEach((ed) => {
+    if (ed._mcTableUIBound) return;
+    ed._mcTableUIBound = true;
+
+    ed.on('selectionUpdate', () => positionTablebarForEditor(ed));
+    ed.on('update',           () => positionTablebarForEditor(ed));
+    ed.on('focus',            () => positionTablebarForEditor(ed));
+    ed.on('blur',             () => { ensureTTTablebar().style.display = 'none'; });
+
+    const sync = () => positionTablebarForEditor(ed);
+    window.addEventListener('resize', sync);
+    window.addEventListener('scroll', sync, true);
+
+    bindTablebarActions(ed);
+    positionTablebarForEditor(ed);
+  });
+}
+
+
+
+
+
+  // ---------- Boot ----------
+  // ---------- Boot ----------
+  waitForEditor().then(() => {
+    wireSidebarDrag();
+    wireDropTargets();
+    wireTopbar();
+    wireTipTapTableUI();
+
+    document.addEventListener('mc:rewire', () => {
+      wireTipTapTableUI();
+    });
+
+    document.addEventListener('mouseup', () => wireTipTapTableUI(), true);
+  });
+
+  // expose a rewire hook so new pages can be made drop targets
   window.__mc = window.__mc || {};
   window.__mc.rewireDropTargets = () => {
     document.querySelectorAll('.page').forEach((page) => {
-      if (!page.querySelector('.mc-block-overlay')) {
-        const overlay = document.createElement('div');
-        overlay.className = 'mc-block-overlay';
-        Object.assign(overlay.style, {
-          position: 'absolute',
-          inset: '0',
-          pointerEvents: 'none',
-          paddingTop: '10px',
-        });
-        if (getComputedStyle(page).position === 'static') page.style.position = 'relative';
-        page.appendChild(overlay);
-      }
+      ensureOverlay(page);
     });
-
-    // Wire (idempotent) directly
-    wireDropTargets();
+    const evt = new Event('mc:rewire');
+    document.dispatchEvent(evt);
   };
-
-  window.__mc.rewireDropTargets();
-
-  });
-})();
-
+})(); // <-- CLOSE THE IIFE HERE (was an extra "});" before)
