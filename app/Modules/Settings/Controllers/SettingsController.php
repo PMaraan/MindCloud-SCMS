@@ -26,23 +26,19 @@ final class SettingsController
      */
     private function currentUserIdNo(): ?string
     {
+        // Preferred: you've standardized to store id_no directly in $_SESSION['user_id']
+        $sid = $_SESSION['user_id'] ?? null;
+        if (is_string($sid) && preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{5}$/', $sid)) {
+            return $sid;
+        }
+
+        // Fallbacks (if some legacy code sets these)
         $idNo = $_SESSION['id_no'] ?? ($_SESSION['user']['id_no'] ?? null);
         if (is_string($idNo) && $idNo !== '') {
             return $idNo;
         }
 
-        $numericId = $_SESSION['user_id'] ?? ($_SESSION['user']['user_id'] ?? null);
-        if (!is_null($numericId)) {
-            $pdo = $this->db->getConnection();
-            $stmt = $pdo->prepare('SELECT id_no FROM users WHERE user_id = :uid');
-            $stmt->execute([':uid' => $numericId]);
-            $found = $stmt->fetchColumn();
-            if (is_string($found) && $found !== '') {
-                return $found;
-            }
-        }
-
-        return null;
+        return null; // not authenticated / not found
     }
 
     /** GET /api/settings/get?key=dark_mode */
