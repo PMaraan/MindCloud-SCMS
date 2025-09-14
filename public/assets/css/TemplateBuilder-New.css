@@ -536,59 +536,6 @@ body {
   overflow-wrap: anywhere;
   line-height: 1.4;
 }
-
-/* Signature tables: works even if TipTap strips classes */
-.tiptap table:has(.sig-box) {
-  width: 100%;
-  table-layout: fixed;
-  border-collapse: collapse;
-  margin: 12px 0;
-}
-.tiptap table:has(.sig-box) td,
-.tiptap table:has(.sig-box) th {
-  border: none;
-  padding: 6px 10px;
-  vertical-align: top;
-}
-
-/* keep your existing .sig-box / .sig-line / .sig-meta rules */
-
-
-/* Flowing signature table (inside editor, not overlay) */
-.tiptap table.sig-table {
-  width: 100%;
-  table-layout: fixed;
-  border-collapse: collapse;
-  margin: 12px 0;
-}
-.tiptap table.sig-table td,
-.tiptap table.sig-table th {
-  border: none;               /* override generic table borders */
-  padding: 6px 10px;
-  vertical-align: top;
-}
-
-.tiptap .sig-box {
-  height: 56px;               /* signature scribble area */
-  background: #f8fafc;
-  border: 1px dashed #cbd5e1;
-  border-radius: 6px;
-  display: none;
-}
-.tiptap .sig-line {
-  height: 1px;
-  border-bottom: 1px solid #111827;
-  margin: 6px 0 4px;
-  margin-top: 18px;
-}
-.tiptap .sig-meta {
-  text-align: center;
-  font-size: 12px;
-  color: #64748b;
-  line-height: 1.25;
-}
-.tiptap .sig-meta .muted { color: #94a3b8; }
-
 .tiptap th {
   font-weight: 600;
   background: #f8fafc;
@@ -601,46 +548,6 @@ body {
   border: none !important;
   box-shadow: none !important;
 }
-/* Flowing signature row inside TipTap */
-.tiptap .tt-signature-row{
-  display:grid;
-  grid-template-columns:repeat(4, 1fr);
-  gap:16px;
-  margin:12px 0;
-}
-.tiptap .tt-signature-row .sig-card{
-  border:1px dashed #d9dce3;
-  border-radius:8px;
-  background:#fff;
-  padding:8px;
-  display:grid;
-  gap:8px;
-}
-.tiptap .tt-signature-row .img{
-  aspect-ratio:4/3;
-  background:#f8fafc;
-  border-radius:6px;
-  display:grid;
-  place-items:center;
-  overflow:hidden;
-}
-.tiptap .tt-signature-row .img img{
-  display:none;
-  width:100%; height:100%; object-fit:contain;
-}
-.tiptap .tt-signature-row .img button{
-  border:1px solid #e5e7eb; background:#fff;
-  padding:6px 12px; border-radius:6px; cursor:pointer;
-}
-.tiptap .tt-signature-row .line{ border-bottom:1px solid #9ca3af; margin:4px 0 2px; }
-.tiptap .tt-signature-row .meta{ font-size:12px; color:#111827; line-height:1.25; }
-.tiptap .tt-signature-row .date-row{ display:flex; align-items:center; gap:6px; }
-.tiptap .tt-signature-row .date-row input[type="date"]{
-  width:100%; padding:4px 6px;
-  border:1px solid #cbd5e1; border-radius:6px; font-size:12px;
-}
-
-
 /* Floating toolbar for TipTap tables (global, not clipped by .page) */
 .tt-tablebar{
   position: fixed;             /* was absolute */

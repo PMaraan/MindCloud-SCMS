@@ -5,21 +5,6 @@
   const GRID = 20;
   const PAGE_PADDING_TOP = 10;
   const snap = (v) => Math.round(v / GRID) * GRID;
-  
-  // --- flowing signature table (used when dropping "Signature Field" into TipTap)
-  function signatureTableHTML(cols = 4) {
-    const cell = () => `
-      <td>
-        <p class="sig-box">&nbsp;</p>
-        <p class="sig-line"></p>
-        <p class="sig-meta"><span>Name</span> &nbsp; <span class="muted">Date</span> &nbsp; <span class="muted">Role</span></p>
-      </td>
-    `;
-    const cells = Array.from({ length: cols }, cell).join('');
-    // trailing empty paragraph gives you a caret after the block
-    return `<table class="sig-table"><tbody><tr>${cells}</tr></tbody></table><p></p>`;
-  }
-
 
   const waitForEditor = () =>
     new Promise((resolve) => {
@@ -1152,13 +1137,6 @@
             setOverlaysDragEnabled(false);
             return;
           }
-          if (type === 'signature') {
-            const html = signatureTableHTML(4);
-            ed.chain().focus().insertContent(html).run();
-            setOverlaysDragEnabled(false);
-            return;
-          }
-
         }
 
         // (B) Everything else: still use the overlay (free-positioned canvas items)
@@ -1512,18 +1490,7 @@ function positionTablebarForEditor(ed) {
   if (!ed || !isInTipTapTable(ed)) { bar.style.display = 'none'; return; }
 
   const cell = currentCellElement(ed);
-// Don't show the TipTap table toolbar on our signature block
-const tbl = cell?.closest('table');
-const isSig = !!tbl && (
-  tbl.classList?.contains('sig-table') || tbl.querySelector('.sig-box')
-);
-if (!cell || isSig) {
-  bar.style.display = 'none';
-  return;
-}
-
   if (!cell) { bar.style.display = 'none'; return; }
-  
 
   const cr = cell.getBoundingClientRect();   // viewport coords
   bar.style.display = 'flex';
@@ -1616,12 +1583,6 @@ function wireTipTapTableUI() {
 
     document.addEventListener('mouseup', () => wireTipTapTableUI(), true);
   });
-
-    document.addEventListener('DOMContentLoaded', () => {
-    wireSidebarDrag();
-    wireDropTargets();
-  });
-
 
   // expose a rewire hook so new pages can be made drop targets
   window.__mc = window.__mc || {};
