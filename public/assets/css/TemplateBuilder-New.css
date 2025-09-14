@@ -1,4 +1,3 @@
-TemplateBuilder-New.css
 :root{
   --maroon: #660003;
   --bg: #eef1f4;
@@ -43,19 +42,46 @@ body {
 }
 
 .bg-maroon{
-  background: var(--maroon);
+  /* fallback keeps the bar maroon even if :root fails */
+  background: var(--maroon, #7b0f14);
 }
 
-/* logo pinned at the far left, centered vertically */
-.mc-logo{
+
+/* clickable wrapper */
+.mc-logo-link{
   position: absolute;
   left: 8px;
   top: 50%;
   transform: translateY(-50%);
-  height: 64px; /* fits inside the bar */
+  display: block;
+  padding: 4px;            /* keeps a comfy click target */
+  border-radius: 6px;
+}
+.mc-logo-link:focus-visible{
+  outline: 2px solid rgba(255,255,255,.6);
+  outline-offset: 2px;
+}
+
+/* image */
+.mc-logo{
+  height: 64px;
   width: auto;
   display: block;
 }
+
+
+/* actions pinned at the far right (with a little breathing room) */
+.mc-actions{
+  position: absolute;
+  right: 12px;                 /* <-- space from the right edge */
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+}
+/* inherits #mc-topbar .btn-icon styles so they match the toolbar */
+
 
 /* unified, centered controls strip */
 #mc-topbar .container-fluid {
@@ -111,9 +137,58 @@ body {
   font-size: 0.85rem; /* was 1rem */
   line-height: 1; /* keep icons centered */
 }
-#mc-topbar .btn-icon i {
-  font-size: 0.9rem; /* directly shrink the <i> icons */
+
+/* Right-side actions: icon-only (no border box) */
+.mc-actions .btn,
+.mc-actions .btn-icon {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: .35rem !important;   /* keeps a good click target */
+
 }
+
+.mc-actions .btn-icon i {
+  font-size: 1.25rem;   /* tweak: 1.15–1.3rem if you want */
+  line-height: 1;
+}
+
+/* keep the click target comfy */
+.mc-actions .btn-icon {
+  min-width: 36px;
+  min-height: 36px;
+}
+
+.mc-actions .btn-icon:hover,
+.mc-actions .btn:hover {
+  background: transparent !important; /* no hover box */
+  opacity: .85;                       /* subtle feedback */
+}
+.mc-actions .btn:focus-visible,
+.mc-actions .btn-icon:focus-visible {
+  outline: 2px solid rgba(255,255,255,.6); /* keyboard focus ring */
+  outline-offset: 2px;
+}
+
+/* Make the right-side icons a bit larger */
+#mc-topbar .mc-actions .btn-icon i {
+  font-size: 1.25rem;
+}
+
+/* tighten spacing so it doesn’t just look “padded bigger” */
+#mc-topbar .mc-actions .btn-icon {
+  padding: .2rem !important;   /* was .35rem */
+  min-width: 32px;
+  min-height: 32px;
+}
+
+
+/* AFTER — shrink only the middle toolbar icons */
+#tt-toolbar .btn-icon i {
+  font-size: 0.9rem;
+}
+
+
 #mc-topbar .btn-icon:hover{
   background: rgba(255,255,255,.12);
 }
@@ -133,18 +208,21 @@ body {
   display:none !important;
 }
 
-/* Shell fills the viewport below the topbar so children can scroll */
 #mc-shell{
   display: grid;
-  grid-template-columns: minmax(0,1fr) var(--sb-w);
+  /* fallback keeps the sidebar on the right even if vars are missing */
+  grid-template-columns: minmax(0,1fr) var(--sb-w, 320px);
   transition: grid-template-columns .2s ease;
-  height: calc(100vh - var(--topbar-h)); /* IMPORTANT: let grid children be allowed to overflow/scroll */
+  /* ensure we still reserve space for the topbar if --topbar-h is missing */
+  height: calc(100vh - var(--topbar-h, 56px)); /* IMPORTANT: let grid children be allowed to overflow/scroll */
   min-height: 0;
 }
 
+
 #mc-shell.sb-collapsed{
-  grid-template-columns: minmax(0,1fr) var(--sb-w-collapsed);
+  grid-template-columns: minmax(0,1fr) var(--sb-w-collapsed, 48px);
 }
+
 
 /* Work area = the ONLY scroll container for pages */
 #mc-work{
@@ -498,19 +576,19 @@ body {
 }
 
 
-/* Sidebar base */
 #mc-sidebar{
   position: sticky;
-  top: var(--topbar-h);
-  height: calc(100vh - var(--topbar-h));
+  top: var(--topbar-h, 56px);
+  height: calc(100vh - var(--topbar-h, 56px));
   overflow: auto;
-  background: var(--sidebar-bg);
-  border-left: 1px solid var(--sidebar-border);
+  background: var(--sidebar-bg, #f8f9fb);
+  border-left: 1px solid var(--sidebar-border, #e5e7eb);
   padding: 12px;
-  width: var(--sb-w);
+  width: var(--sb-w, 320px);
   transition: width .2s ease, padding .2s ease;
   z-index: 2;
 }
+
 
 /* Collapsed: keep grid visible, but hide all items EXCEPT the toggle */
 #mc-shell.sb-collapsed #mc-sidebar{
@@ -563,9 +641,9 @@ body {
 }
 
 /* Paper sizes */
-.page.size-A4{ width: var(--A4-w); height: var(--A4-h); } /* 🔒 */
-.page.size-Letter{ width: var(--Letter-w); height: var(--Letter-h); }
-.page.size-Legal{ width: var(--Legal-w); height: var(--Legal-h); }
+.page.size-A4{ width: var(--A4-w, 794px); height: var(--A4-h, 1123px); } /* 🔒 */
+.page.size-Letter{ width: var(--Letter-w, 816px); height: var(--Letter-h, 1056px); }
+.page.size-Legal{ width: var(--Legal-w, 816px); height: var(--Legal-h, 1344px); }
 
 /* Centered TipTap toolbar grouping */
 #tt-toolbar {

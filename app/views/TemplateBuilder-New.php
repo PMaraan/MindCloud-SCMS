@@ -1,22 +1,35 @@
-TemplateBuilder-New.php
 <?php
-// Fallback for asset base when this file is opened outside the normal app flow
+// Robust $ASSET_BASE for both routed and "open file in browser" cases
 if (!defined('BASE_PATH')) {
-    // Example request: /MindCloud-SCMS/app/Views/TemplateBuilder-New.php
-    $reqUri = $_SERVER['REQUEST_URI'] ?? '';
-    // Everything before "/app/..." becomes the project base (e.g., "/MindCloud-SCMS")
-    $projectBase = '';
-    if ($reqUri !== '') {
-        $parts = explode('/app/', $reqUri, 2);
-        $projectBase = rtrim($parts[0] ?? '', '/');
+    // Example URLs we must support:
+    //  1) /MindCloud-SCMS/app/Views/TemplateBuilder-New.php           (direct open)
+    //  2) /MindCloud-SCMS/public/...                                  (normal routed)
+    // We want $ASSET_BASE to resolve to: /MindCloud-SCMS/public
+
+    $script = $_SERVER['SCRIPT_NAME'] ?? '';              // URL path to THIS php, e.g. /MindCloud-SCMS/app/Views/TemplateBuilder-New.php
+    $script = str_replace('\\', '/', $script);
+
+    // If URL contains "/app/", strip from there to the end -> gives "/MindCloud-SCMS"
+    if (strpos($script, '/app/') !== false) {
+        $projectBase = preg_replace('#/app/.*$#', '', $script);
+    } else {
+        // Fallback: strip the filename, then go up until project root guess
+        // e.g. /MindCloud-SCMS/TemplateBuilder-New.php  -> /MindCloud-SCMS
+        $projectBase = rtrim(dirname($script), '/');
     }
-    // When not routed through /public, serve assets from "/{project}/public"
-    $ASSET_BASE = ($projectBase !== '' ? $projectBase : '') . '/public';
+
+    // Project root (no /public)
+    $PROJECT_ROOT = rtrim($projectBase, '/');            // => /MindCloud-SCMS
+    // Finally point to /public
+    $ASSET_BASE   = $PROJECT_ROOT . '/public';           // => /MindCloud-SCMS/public
 } else {
     // When routed properly, BASE_PATH already points to /public
-    $ASSET_BASE = BASE_PATH;
+    $ASSET_BASE   = BASE_PATH;                           // => /MindCloud-SCMS/public
+    $PROJECT_ROOT = rtrim(dirname(BASE_PATH), '/');      // => /MindCloud-SCMS
 }
 ?>
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -29,7 +42,7 @@ if (!defined('BASE_PATH')) {
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
   <!-- Styles -->
-  <link rel="stylesheet" href="<?= $ASSET_BASE ?>/assets/css/TemplateBuilder-New.css">
+  <link rel="stylesheet" href="<?= $ASSET_BASE ?>/assets/css/TemplateBuilder-New.css?v=<?= time() ?>">
 </head>
 <body>
 
@@ -37,7 +50,10 @@ if (!defined('BASE_PATH')) {
   <header id="mc-topbar" class="bg-maroon text-white">
     <div class="container-fluid d-flex align-items-center gap-2">
 
-      <img src="<?= $ASSET_BASE ?>/assets/images/logo_lpu.png" alt="Logo" class="mc-logo">
+      <a href="<?= $PROJECT_ROOT ?>/" class="mc-logo-link" title="Go to Home" aria-label="Go to Home">
+        <img src="<?= $ASSET_BASE ?>/assets/images/logo_lpu.png" alt="Logo" class="mc-logo">
+      </a>
+
 
       <!-- Left: doc controls -->
       <div class="d-flex align-items-center gap-2 flex-wrap">
@@ -158,12 +174,18 @@ if (!defined('BASE_PATH')) {
 
 
       </div>
-
-      <!-- Right icons (optional) -->
-      <i class="bi bi-send"></i>
-      <i class="bi bi-gear"></i>
+      <!-- Right: Send / Settings (pinned at right like the logo is at left) -->
+      <div class="mc-actions">
+        <button id="ctl-send" class="btn btn-icon" title="Save">
+          <i class="bi bi-send"></i>
+        </button>
+        <button id="ctl-settings" class="btn btn-icon" title="Settings">
+          <i class="bi bi-gear"></i>
+        </button>
+      </div>
     </div>
   </header>
+
 
   <!-- Editor Shell -->
   <div id="mc-shell">
@@ -195,7 +217,6 @@ if (!defined('BASE_PATH')) {
         <button id="sb-toggle" class="sb-item">
           <i class="bi bi-grid-3x3-gap"></i>
         </button>
-        <button class="sb-item" draggable="true" data-type="textField"><i class="bi bi-ui-checks-grid"></i> Text Field</button>
         <button class="sb-item" draggable="true" data-type="label"><i class="bi bi-tag"></i> Label</button>
         <button class="sb-item" draggable="true" data-type="paragraph"><i class="bi bi-card-text"></i> Paragraph</button>
         <button class="sb-item" draggable="true" data-type="text"><i class="bi bi-textarea-t"></i> Text Field</button>
@@ -231,7 +252,7 @@ import TableCell   from "https://esm.sh/@tiptap/extension-table-cell@2.6.6";
 
 
 /* Load your sidebar/toolbar/blocks wiring (waits for window.__mc.editor) */
-import "<?= $ASSET_BASE ?>/assets/js/TemplateBuilder-New.js";
+  import "<?= $ASSET_BASE ?>/assets/js/TemplateBuilder-New.js?v=<?= time() ?>";
 
 /* ==== Multi-page editor manager ==== */
 const MCEditors = {
