@@ -17,6 +17,12 @@ $extra = (isset($pager['extra']) && is_array($pager['extra'])) ? $pager['extra']
 $from = isset($pager['from']) ? (int)$pager['from'] : ($total > 0 ? (($pg - 1) * $perpage + 1) : 0);
 $to   = isset($pager['to'])   ? (int)$pager['to']   : ($total > 0 ? min($total, $pg * $perpage) : 0);
 
+// Safe label for search term
+$searchLabel = '';
+if ($query !== '') {
+    $searchLabel = ' for &quot;' . htmlspecialchars($query, ENT_QUOTES, 'UTF-8') . '&quot;';
+}
+
 // URL builder (uses &pg=... to avoid clashing with your router's ?page=module)
 $mk = function (int $p) use ($base, $query, $extra) {
     $url = $base . '&pg=' . $p;
@@ -37,7 +43,7 @@ $end    = min($pages, $pg + $window);
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 my-2">
   <div class="text-muted small">
     Showing <strong><?= $from ?></strong>–<strong><?= $to ?></strong>
-    of <strong><?= $total ?></strong>
+    of <strong><?= $total ?></strong><?= $searchLabel ?>
   </div>
 
   <?php if ($pages > 1): ?>
