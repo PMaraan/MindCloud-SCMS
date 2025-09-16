@@ -8,20 +8,34 @@
   
   // --- flowing signature table (used when dropping "Signature Field" into TipTap)
 // signatureTableHTML() – used when dropping "Signature Field" into TipTap
-function signatureTableHTML(cols = 4) {
-  const cell = () => `
-    <td class="sig-cell">
-      <p class="sig-img">Upload Image</p>
-      <p class="sig-name">Name</p>
-      <p class="sig-date"><span class="sig-date-blank">mm / dd / yyyy</span> <span class="muted">Date</span></p>
-      <p class="sig-role">Role</p>
-    </td>
-  `;
-  const cells = Array.from({ length: cols }, cell).join('');
-  return `<table class="sig-table"><tbody><tr>${cells}</tr></tbody></table><p></p>`;
+// --- flowing signature table (used when dropping "Signature Field" into TipTap)
+// Now: just a plain 4x4 table with empty cells
+// Plain 4×4 table, flagged as a "signature" table
+// Plain 4×4 table, flagged as a "signature" table
+// 4×4 signature table; top row = upload widgets
+function signatureTableHTML() {
+  const rows = 4, cols = 4;
+  let html = '<table class="sig-table" data-sig="1"><tbody>';
+
+  for (let r = 0; r < rows; r++) {
+    html += '<tr>';
+    for (let c = 0; c < cols; c++) {
+      if (r === 0) {
+        html += '<td><upload-box></upload-box></td>';
+      } else if (r === 1) {
+        html += '<td data-ph="Name"><p data-ph="Name">Name</p></td>';
+      } else if (r === 2) {
+        html += '<td data-ph="Date"><p><date-input></date-input></p></td>';
+      } else {
+        html += '<td data-ph="Role"><p data-ph="Role">Role</p></td>';
+      }
+    }
+    html += '</tr>';
+  }
+
+  html += '</tbody></table><p></p>';
+  return html;
 }
-
-
 
 
   const waitForEditor = () =>
@@ -318,510 +332,6 @@ function signatureTableHTML(cols = 4) {
     return el;
   }
 
-  function makeTable() {
-    const el = document.createElement('div');
-    frameBlock(el);
-
-    // --- TABLE ---
-    const tbl = document.createElement('table');
-    Object.assign(tbl.style, {
-      width: '100%',
-      borderCollapse: 'collapse',
-      tableLayout: 'fixed',
-    });
-
-    function makeTD() {
-      const td = document.createElement('td');
-      Object.assign(td.style, {
-        border: '1px solid #d1d5db',
-        padding: '10px 12px',
-        verticalAlign: 'top',
-        overflowWrap: 'anywhere',
-        minHeight: '32px',
-        lineHeight: '1.4'
-      });
-      td.contentEditable = 'true';
-      td.innerHTML = '<p><br></p>';
-      return td;
-    }
-
-    const START_ROWS = 3;
-    const START_COLS = 4;
-    for (let r = 0; r < START_ROWS; r++) {
-      const tr = document.createElement('tr');
-      for (let c = 0; c < START_COLS; c++) tr.appendChild(makeTD());
-      tbl.appendChild(tr);
-    }
-    el.appendChild(tbl);
-
-    // --- INLINE TOOLBAR ---
-    const bar = document.createElement('div');
-    bar.className = 'mc-table-toolbar';
-    bar.innerHTML = `
-      <button data-act="row-above"   title="Insert row above">↥ Row</button>
-      <button data-act="row-below"   title="Insert row below">↧ Row</button>
-      <button data-act="col-left"    title="Insert column left">↤ Col</button>
-      <button data-act="col-right"   title="Insert column right">↦ Col</button>
-      <span class="sep"></span>
-      <button data-act="del-row"     title="Delete row">✖ Row</button>
-      <button data-act="del-col"     title="Delete column">✖ Col</button>
-      <button data-act="del-cell-local" title="Delete cell (local)">✖ Cell</button>
-      <span class="sep"></span>
-      <button data-act="even-cols"   title="Distribute columns evenly">⇔</button>
-      <button data-act="toggle-head" title="Toggle header row">H</button>
-      <span class="sep"></span>
-      <button data-act="split-cell"  title="Split cell…">Split…</button>
-    `;
-    el.appendChild(bar);
-
-    // --- RESIZE GRIPS ---
-    const gripsX = document.createElement('div'); // between columns
-    const gripsY = document.createElement('div'); // between rows
-    gripsX.className = 'mc-col-grips';
-    gripsY.className = 'mc-row-grips';
-    el.appendChild(gripsX);
-    el.appendChild(gripsY);
-
-    // ===== focus tracking for current cell =====
-    let lastCell = null;
-    const getActiveCell = () =>
-      (document.activeElement && /^(TD|TH)$/.test(document.activeElement.tagName))
-        ? document.activeElement
-        : lastCell;
-
-    tbl.addEventListener('mousedown', (e) => {
-      const td = e.target.closest('td,th');
-      if (td) lastCell = td;
-    });
-    tbl.addEventListener('focusin', (e) => {
-      const td = e.target.closest('td,th');
-      if (td) lastCell = td;
-    });
-
-    // ===== Helpers =====
-    const getFocusedCell = () =>
-      (document.activeElement && (document.activeElement.tagName === 'TD' || document.activeElement.tagName === 'TH'))
-        ? document.activeElement
-        : null;
-
-    function visualColCount(tr) {
-      return Array.from(tr.children).reduce((s, c) => s + (c.colSpan || 1), 0);
-    }
-    function ensureAtLeast1RowCol() {
-      if (!tbl.rows.length) {
-        const tr = tbl.insertRow();
-        tr.appendChild(makeTD());
-      }
-      if (!tbl.rows[0].cells.length) {
-        for (const row of tbl.rows) row.appendChild(makeTD());
-      }
-    }
-
-    // ---------- GLOBAL GRID (COLGROUP) ----------
-    function ensureColGroup() {
-      let cg = tbl.querySelector('colgroup');
-      if (!cg) {
-        cg = document.createElement('colgroup');
-        const vcols = tbl.rows[0] ? visualColCount(tbl.rows[0]) : 1;
-        for (let i = 0; i < Math.max(1, vcols); i++) {
-          const col = document.createElement('col');
-          col.style.width = (100 / Math.max(1, vcols)) + '%';
-          cg.appendChild(col);
-        }
-        tbl.insertBefore(cg, tbl.firstChild);
-      }
-      return cg;
-    }
-    function gridColCount() {
-      return ensureColGroup().children.length;
-    }
-    function readColPercents() {
-      const cg = ensureColGroup();
-      const n = cg.children.length;
-      const out = [];
-      let total = 0;
-      for (const c of cg.children) {
-        const w = parseFloat(c.style.width || '0');
-        out.push(isFinite(w) && w > 0 ? w : 100 / n);
-        total += out[out.length - 1];
-      }
-      return out.map(w => w * (100 / total));
-    }
-    function writeColPercents(arr) {
-      const cg = ensureColGroup();
-      while (cg.firstChild) cg.removeChild(cg.firstChild);
-      for (const w of arr) {
-        const col = document.createElement('col');
-        col.style.width = w + '%';
-        cg.appendChild(col);
-      }
-    }
-    function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
-
-    function makeRowMap(tr) {
-      const map = [];
-      let cursor = 0;
-      for (const cell of tr.children) {
-        const span = Math.max(1, cell.colSpan || 1);
-        map.push({ cell, start: cursor, span });
-        cursor += span;
-      }
-      return map;
-    }
-    function findCoveringCell(tr, colIndex) {
-      const map = makeRowMap(tr);
-      return map.find(m => colIndex >= m.start && colIndex < m.start + m.span);
-    }
-
-    function replaceCols(start, removeCount, addCount) {
-      const widths = readColPercents();
-      const removedWidth = widths.slice(start, start + removeCount).reduce((a, b) => a + b, 0);
-      const per = removedWidth / addCount;
-      const newWidths = [
-        ...widths.slice(0, start),
-        ...Array.from({ length: addCount }, () => per),
-        ...widths.slice(start + removeCount),
-      ];
-      writeColPercents(newWidths);
-    }
-
-    function splitCell(td, cols, rows) {
-      cols = Math.max(1, parseInt(cols || 1, 10));
-      rows = Math.max(1, parseInt(rows || 1, 10));
-      if (cols <= 1 && rows <= 1) return;
-
-      ensureColGroup();
-      const tr = td.parentElement;
-      const rowMap = makeRowMap(tr);
-      const me = rowMap.find(m => m.cell === td);
-      if (!me) return;
-
-      const currentSpan = Math.max(1, td.colSpan || 1);
-      const desiredPieces = Math.max(1, cols);
-      const deltaCols = desiredPieces - currentSpan;
-
-      if (deltaCols !== 0) replaceCols(me.start, currentSpan, desiredPieces);
-
-      const newCells = Array.from({ length: desiredPieces }, () => {
-        const c = document.createElement(td.tagName.toLowerCase());
-        Object.assign(c.style, {
-          border: td.style.border || '1px solid #d1d5db',
-          padding: td.style.padding || '10px 12px',
-          verticalAlign: td.style.verticalAlign || 'top',
-          overflowWrap: td.style.overflowWrap || 'anywhere',
-          minHeight: td.style.minHeight || '32px',
-          lineHeight: td.style.lineHeight || '1.4',
-        });
-        c.contentEditable = 'true';
-        c.colSpan = 1;
-        c.innerHTML = '<p><br></p>';
-        return c;
-      });
-      td.replaceWith(...newCells);
-
-      if (deltaCols !== 0) {
-        const tbody = tbl.tBodies[0] || tbl;
-        for (const row of tbody.rows) {
-          if (row === tr) continue;
-          const covering = findCoveringCell(row, me.start);
-          if (covering) covering.cell.colSpan = Math.max(1, (covering.cell.colSpan || 1) + deltaCols);
-        }
-      }
-      rebuildGrips(true);
-    }
-
-    function deleteCellLocal(td) {
-      ensureColGroup();
-      const tr = td.parentElement;
-      const span = Math.max(1, td.colSpan || 1);
-      let receiver = td.previousElementSibling || td.nextElementSibling;
-      if (!receiver) {
-        const repl = makeTD();
-        tr.replaceChild(repl, td);
-        rebuildGrips(true);
-        return;
-      }
-      receiver.colSpan = Math.max(1, (receiver.colSpan || 1) + span);
-      td.remove();
-      ensureAtLeast1RowCol();
-      rebuildGrips(true);
-    }
-
-    function openSplitDialog(td) {
-      const overlay = document.createElement('div');
-      overlay.className = 'mc-modal';
-      const dlg = document.createElement('div');
-      dlg.className = 'mc-dialog';
-      dlg.innerHTML = `
-        <h3>Split cell</h3>
-        <div class="row"><label>Columns</label><input type="number" id="mc-split-cols" min="1" value="2"></div>
-        <div class="row"><label>Rows</label><input type="number" id="mc-split-rows" min="1" value="1"></div>
-        <div class="actions">
-          <button class="mc-btn" data-act="cancel">Cancel</button>
-          <button class="mc-btn primary" data-act="ok">Split</button>
-        </div>
-      `;
-      overlay.appendChild(dlg);
-      document.body.appendChild(overlay);
-      dlg.querySelector('[data-act="cancel"]').onclick = () => overlay.remove();
-      dlg.querySelector('[data-act="ok"]').onclick = () => {
-        const cols = dlg.querySelector('#mc-split-cols').value;
-        const rows = dlg.querySelector('#mc-split-rows').value;
-        splitCell(getActiveCell() || tbl.rows[0].cells[0], cols, rows);
-        overlay.remove();
-      };
-    }
-
-    // ===== Row/Col ops =====
-    function insertRow(where) {
-      const cell = getFocusedCell();
-      const rowIndex = cell ? cell.parentElement.rowIndex : tbl.rows.length - 1;
-      const refIndex = where === 'above' ? rowIndex : rowIndex + 1;
-      const cols = gridColCount() || visualColCount(tbl.rows[0]) || 1;
-      const tr = tbl.insertRow(refIndex);
-      for (let i = 0; i < cols; i++) tr.appendChild(makeTD());
-      rebuildGrips(true);
-    }
-    function insertCol(where) {
-      const cell = getFocusedCell();
-      const colIndex = cell ? cell.cellIndex : (tbl.rows[0]?.cells.length - 1) || 0;
-      const ref = where === 'left' ? colIndex : colIndex + 1;
-      for (const row of tbl.rows) {
-        const td = makeTD();
-        row.insertBefore(td, row.children[ref] || null);
-      }
-      const perc = readColPercents();
-      const splitFrom = clamp(ref - 1, 0, perc.length - 1);
-      const half = perc[splitFrom] / 2;
-      perc.splice(splitFrom, 1, half, half);
-      writeColPercents(perc);
-      rebuildGrips(true);
-    }
-    function deleteRow() {
-      const cell = getFocusedCell();
-      const idx = cell ? cell.parentElement.rowIndex : tbl.rows.length - 1;
-      if (tbl.rows.length > 1) tbl.deleteRow(idx);
-      ensureAtLeast1RowCol();
-      rebuildGrips(true);
-    }
-    function deleteCol() {
-      const cell = getFocusedCell();
-      const idx = cell ? cell.cellIndex : (tbl.rows[0]?.cells.length - 1) || 0;
-      if ((tbl.rows[0]?.cells.length || 0) > 1) {
-        for (const row of tbl.rows) row.deleteCell(idx);
-        const widths = readColPercents();
-        if (widths.length > 1) {
-          const merged = widths.slice();
-          if (idx < merged.length - 1) {
-            merged[idx] += merged[idx + 1];
-            merged.splice(idx + 1, 1);
-          } else {
-            merged[idx - 1] += merged[idx];
-            merged.splice(idx, 1);
-          }
-          writeColPercents(merged);
-        }
-      }
-      ensureAtLeast1RowCol();
-      rebuildGrips(true);
-    }
-    function evenColumns() {
-      const cols = gridColCount();
-      const pct = 100 / cols;
-      writeColPercents(Array.from({ length: cols }, () => pct));
-      for (const row of tbl.rows)
-        for (const cell of row.cells) cell.style.width = '';
-      rebuildGrips(true);
-    }
-    function toggleHeaderRow() {
-      if (!tbl.tHead) {
-        const thead = tbl.createTHead();
-        thead.insertBefore(tbl.rows[0], null);
-        for (const th of thead.rows[0].cells) {
-          const cell = document.createElement('th');
-          while (th.firstChild) cell.appendChild(th.firstChild);
-          for (const a of th.getAttributeNames()) cell.setAttribute(a, th.getAttribute(a));
-          cell.contentEditable = 'true';
-          cell.style.fontWeight = '600';
-          cell.style.background = '#f8fafc';
-          th.replaceWith(cell);
-        }
-      } else {
-        const headRow = tbl.tHead.rows[0];
-        const bodyRow = tbl.tBodies[0].insertRow(0);
-        for (const th of [...headRow.cells]) {
-          const td = document.createElement('td');
-          while (th.firstChild) td.appendChild(th.firstChild);
-          for (const a of th.getAttributeNames()) td.setAttribute(a, th.getAttribute(a));
-          td.contentEditable = 'true';
-          td.innerHTML = '<p><br></p>';
-          bodyRow.appendChild(td);
-        }
-        tbl.tHead.remove();
-      }
-      rebuildGrips(true);
-    }
-
-    // Toolbar actions
-    bar.addEventListener('click', (e) => {
-      const btn = e.target.closest('button[data-act]');
-      if (!btn) return;
-      const act = btn.dataset.act;
-      if (act === 'row-above') insertRow('above');
-      else if (act === 'row-below') insertRow('below');
-      else if (act === 'col-left') insertCol('left');
-      else if (act === 'col-right') insertCol('right');
-      else if (act === 'del-row') deleteRow();
-      else if (act === 'del-col') deleteCol();
-      else if (act === 'del-cell-local') {
-        const cell = getActiveCell();
-        if (cell) deleteCellLocal(cell);
-      } else if (act === 'even-cols') evenColumns();
-      else if (act === 'toggle-head') toggleHeaderRow();
-      else if (act === 'split-cell') {
-        const cell = getActiveCell();
-        if (cell) openSplitDialog(cell);
-      }
-    });
-
-    // Keep toolbar visible when inside the table
-    tbl.addEventListener('focusin', (e) => {
-      if (e.target && (e.target.tagName === 'TD' || e.target.tagName === 'TH')) {
-        currentBlockBody = e.target;
-        el.classList.add('mc-table-active');
-      }
-    });
-    tbl.addEventListener('focusout', (e) => {
-      if (currentBlockBody === e.target) currentBlockBody = null;
-      setTimeout(() => {
-        if (!el.contains(document.activeElement)) el.classList.remove('mc-table-active');
-      }, 0);
-    });
-
-    // ===== Resizing grips / autosize =====
-    function rebuildGrips(preserveWidth) {
-      const rowsForHeight = Math.max(2, Math.ceil(tbl.offsetHeight / GRID));
-      el.style.height = `${rowsForHeight * GRID}px`;
-      el.dataset.rows = String(rowsForHeight);
-      const overlay = el.closest('.mc-block-overlay');
-      if (overlay) pushDownFrom(el, overlay);
-
-      if (!preserveWidth) evenColumns();
-
-      gripsX.innerHTML = '';
-      gripsY.innerHTML = '';
-      const rect = tbl.getBoundingClientRect();
-      const blockRect = el.getBoundingClientRect();
-
-      // Column grips
-      const colsCount = gridColCount();
-      if (colsCount > 1) {
-        const percents = readColPercents();
-        const cum = [];
-        let acc = 0;
-        for (let i = 0; i < colsCount - 1; i++) {
-          acc += percents[i];
-          cum.push((acc / 100) * rect.width);
-        }
-        for (let i = 0; i < cum.length; i++) {
-          const x = cum[i];
-          const g = document.createElement('div');
-          g.className = 'mc-grip-x';
-          g.style.left = `${rect.left - blockRect.left + x - 3}px`;
-          g.style.top = `${rect.top - blockRect.top}px`;
-          g.style.height = `${rect.height}px`;
-          gripsX.appendChild(g);
-
-          g.addEventListener('mousedown', (md) => {
-            md.preventDefault();
-            const startX = md.clientX;
-            const startPerc = readColPercents();
-            const minPx = 40;
-            const minPct = (minPx / rect.width) * 100;
-
-            function onMove(mm) {
-              const dxPx = mm.clientX - startX;
-              const dxPct = (dxPx / rect.width) * 100;
-              const left0 = startPerc[i];
-              const right0 = startPerc[i + 1];
-              let left = clamp(left0 + dxPct, minPct, 100 - minPct);
-              let right = clamp(right0 - dxPct, minPct, 100 - minPct);
-              const totalPair = left0 + right0;
-              if (Math.abs((left + right) - totalPair) > 0.0001) {
-                if (left === minPct) right = totalPair - left;
-                else if (right === minPct) left = totalPair - right;
-              }
-              const next = startPerc.slice();
-              next[i] = left;
-              next[i + 1] = right;
-              writeColPercents(next);
-              rebuildGrips(true);
-            }
-            function onUp() {
-              document.removeEventListener('mousemove', onMove);
-              document.removeEventListener('mouseup', onUp);
-            }
-            document.addEventListener('mousemove', onMove);
-            document.addEventListener('mouseup', onUp);
-          });
-        }
-      }
-
-      // Row grips
-      const rows = tbl.rows.length;
-      if (rows > 0) {
-        for (let r = 0; r < rows - 1; r++) {
-          const rr = tbl.rows[r].getBoundingClientRect();
-          const y = rr.bottom - blockRect.top;
-          const g = document.createElement('div');
-          g.className = 'mc-grip-y';
-          g.style.top = `${y - 3}px`;
-          g.style.left = `${rect.left - blockRect.left}px`;
-          g.style.width = `${rect.width}px`;
-          gripsY.appendChild(g);
-
-          g.addEventListener('mousedown', (md) => {
-            md.preventDefault();
-            const startY = md.clientY;
-            const hTop0 = tbl.rows[r].getBoundingClientRect().height;
-            const hBot0 = tbl.rows[r + 1].getBoundingClientRect().height;
-
-            function onMove(mm) {
-              const dy = mm.clientY - startY;
-              const hTop = Math.max(28, hTop0 + dy);
-              const hBot = Math.max(28, hBot0 - dy);
-              for (const cell of tbl.rows[r].cells) cell.style.height = hTop + 'px';
-              for (const cell of tbl.rows[r + 1].cells) cell.style.height = hBot + 'px';
-              rebuildGrips(true);
-            }
-            function onUp() {
-              document.removeEventListener('mousemove', onMove);
-              document.removeEventListener('mouseup', onUp);
-            }
-            document.addEventListener('mousemove', onMove);
-            document.addEventListener('mouseup', onUp);
-          });
-        }
-      }
-    }
-
-    requestAnimationFrame(() => {
-      evenColumns();
-      rebuildGrips(true);
-    });
-    tbl.addEventListener('input', () => requestAnimationFrame(() => rebuildGrips(true)));
-    window.addEventListener('resize', () => requestAnimationFrame(() => rebuildGrips(true)));
-
-    // Focus tracking so topbar styles cell text
-    tbl.addEventListener('focusin', (e) => {
-      if (e.target && (e.target.tagName === 'TD' || e.target.tagName === 'TH')) currentBlockBody = e.target;
-    });
-    tbl.addEventListener('focusout', (e) => {
-      if (currentBlockBody === e.target) currentBlockBody = null;
-    });
-
-    return el;
-  }
 
   function makeSignatureRow() {
     const el = document.createElement('div');
@@ -992,14 +502,6 @@ function signatureTableHTML(cols = 4) {
     return el;
   }
 
-  const FACTORY = {
-    label: makeLabel,
-    paragraph: makeParagraph,
-    textField: makeTextField,
-    text: makeTextField,
-    textarea: makeTextArea,
-    signature: makeSignatureRow,
-  };
 
   // ---------- Drag / stack logic ----------
   function pushDownFrom(source, overlay) {
@@ -1111,39 +613,22 @@ function signatureTableHTML(cols = 4) {
         const ed = window.__mc?.getActiveEditor?.();
         if (ed) {
         if (type === 'table') {
-          // If dropping while the caret is inside an existing table,
-          // decide above/below from pointer Y and move the caret outside first.
-          const dir = moveCaretOutsideEnclosingTable(ed, ev) || null;
+          // If selection is inside any table, move caret out first
+          if (isSelectionInsideTable(ed)) {
+            forceCaretOutsideTable(ed, ev); // uses pointer Y to pick above/below
+          }
 
-          // If we're adding *below* the current table, prefix a blank line
-          // so the two tables don't weld together.
-          let chain = ed.chain().focus();
-          if (dir === 'after') chain = chain.insertContent('<p></p>');
-
-          const ok = chain
+          ed.chain().focus()
             .insertTable({ rows: 3, cols: 4, withHeaderRow: false })
             .run();
 
           // Always leave a caret after the inserted table
-          if (ok) {
-            ed.chain().focus().insertContent('<p></p>').run();
-          } else {
-            // Fallback: raw HTML
-            const r = 3, c = 4;
-            const rows = Array.from({ length: r }, () =>
-              `<tr>${'<td><p><br/></p></td>'.repeat(c)}</tr>`
-            ).join('');
-            const html = `<table><tbody>${rows}</tbody></table>`;
-            if (dir === 'after') {
-              ed.chain().focus().insertContent('<p></p>' + html + '<p></p>').run();
-            } else {
-              ed.chain().focus().insertContent(html + '<p></p>').run();
-            }
-          }
+          ed.chain().focus().insertContent('<p></p>').run();
 
           setOverlaysDragEnabled(false);
-          return; // done
+          return;
         }
+
 
 
           // OPTIONAL: map a few simple sidebar items to flowing HTML in TipTap
@@ -1172,23 +657,22 @@ function signatureTableHTML(cols = 4) {
             return;
           }
           if (type === 'signature') {
-            // Decide above/below relative to the current table (if we're inside one)
-            const dir = moveCaretOutsideEnclosingTable(ed, ev) || null;
-
-            // signatureTableHTML() already ends with <p></p>
-            const html = signatureTableHTML(4);
-
-            if (dir === 'after') {
-              // below the existing table → add a blank before the signature block
-              ed.chain().focus().insertContent('<p></p>' + html).run();
-            } else {
-              // above or not inside a table → just insert; the trailing <p></p> keeps caret free
-              ed.chain().focus().insertContent(html).run();
+            if (isSelectionInsideTable(ed)) {
+              forceCaretOutsideTable(ed, ev);
             }
+
+            const html = signatureTableHTML();
+            ed.chain().focus().insertContent(html).run();
+
+            // Leave a caret after
+            ed.chain().focus().insertContent('<p></p>').run();
 
             setOverlaysDragEnabled(false);
             return;
           }
+
+
+
         }
 
         // (B) Everything else: still use the overlay (free-positioned canvas items)
@@ -1389,32 +873,25 @@ function signatureTableHTML(cols = 4) {
         case 'insertTable': {
           const ed = getEd(); if (!ed) return;
 
-          // If caret is inside a table, decide above/below using caret geometry
-          const dir = moveCaretOutsideEnclosingTable(ed, 'auto') || null;
+          // Never allow nested tables: if inside a table, move out first
+          if (isSelectionInsideTable(ed)) {
+            forceCaretOutsideTable(ed, 'auto'); // chooses above/below by caret geometry
+          }
 
-          let chain = ed.chain().focus();
-          if (dir === 'after') chain = chain.insertContent('<p></p>');
-
-          const ok = chain
+          ed.chain().focus()
             .insertTable({ rows: 3, cols: 4, withHeaderRow: false })
             .run();
 
-          if (ok) {
-            ed.chain().focus().insertContent('<p></p>').run();
-          } else {
-            const r = 3, c = 4;
-            const rows = Array.from({ length: r }, () =>
-              `<tr>${'<td><p><br/></p></td>'.repeat(c)}</tr>`
-            ).join('');
-            const html = `<table><tbody>${rows}</tbody></table>`;
-            if (dir === 'after') {
-              ed.chain().focus().insertContent('<p></p>' + html + '<p></p>').run();
-            } else {
-              ed.chain().focus().insertContent(html + '<p></p>').run();
-            }
-          }
+          // Leave a caret after
+          ed.chain().focus().insertContent('<p></p>').run();
           break;
         }
+
+        case 'insertUploadBox':
+        if (!ed) return;
+        ed.chain().focus().insertUploadBox().run();
+        break;
+
 
 
         case 'insertImage': {
@@ -1555,6 +1032,26 @@ function moveCaretOutsideEnclosingTable(ed, evOrPref) {
   } catch { return false; }
 }
 
+// === Anti nested-table helpers ===
+function isSelectionInsideTable(ed) {
+  try {
+    const { $from } = ed.state.selection;
+    for (let d = $from.depth; d >= 0; d--) {
+      const n = $from.node(d);
+      if (n?.type?.name === 'table') return true;
+    }
+  } catch {}
+  return false;
+}
+
+function forceCaretOutsideTable(ed, evOrPref = 'auto') {
+  const dir = moveCaretOutsideEnclosingTable(ed, evOrPref);
+  // If we’re after the table, add a blank paragraph so inserts don’t weld to it
+  if (dir === 'after') ed.chain().insertContent('<p></p>').run();
+  return dir;
+}
+
+
 // Back-compat wrapper used by some call sites
 function moveCaretAfterEnclosingTable(ed) {
   return moveCaretOutsideEnclosingTable(ed, 'after') !== false;
@@ -1583,6 +1080,7 @@ function ensureTTTablebar() {
       <button class="btn" data-act="toggle-head" title="Toggle header row">H</button>
       <span class="sep"></span>
       <button class="btn" data-act="del-table"   title="Delete table">🗑</button>
+      <div class="tt-bar-hint" aria-live="polite" style="display:none"></div>
     `;
     document.body.appendChild(bar);
   }
@@ -1622,113 +1120,177 @@ function currentCellElement(ed) {
   } catch { return null; }
 }
 
+function isSignatureTablePM(ed) {
+  try {
+    const { $from } = ed.state.selection;
+    for (let d = $from.depth; d >= 0; d--) {
+      const n = $from.node(d);
+      if (n?.type?.name === 'table') {
+        const cls = String(n.attrs?.class || '');
+        const sig = n.attrs?.['data-sig'];
+        return /\bsig-table\b/.test(cls) || sig === '1';
+      }
+    }
+  } catch {}
+  return false;
+}
+
+
+/* Position the floating table toolbar for the given TipTap editor.
+   Hides it for signature tables (data-sig="1" or .sig-table). */
 function positionTablebarForEditor(ed) {
   const bar = ensureTTTablebar();
   if (!ed || !isInTipTapTable(ed)) { bar.style.display = 'none'; return; }
 
+  // Hide on signature tables (locked 4×4)
+  if (isSignatureTablePM(ed)) { bar.style.display = 'none'; return; }
+
   const cell = currentCellElement(ed);
-// Don't show the TipTap table toolbar on our signature block
-const tbl = cell?.closest('table');
-const isSig = !!tbl && (
-  tbl.classList?.contains('sig-table') || tbl.querySelector('.sig-box')
-);
-if (!cell || isSig) {
-  bar.style.display = 'none';
-  return;
-}
+  const tbl  = cell?.closest('table');
+  if (!cell || !tbl) { bar.style.display = 'none'; return; }
 
-  if (!cell) { bar.style.display = 'none'; return; }
-  
+  // Make sure toolbar actions hit THIS editor
+  try {
+    const page = ed?.options?.element?.closest('.page');
+    bar.dataset.editorKey = page?.id || page?.dataset?.page || '';
+  } catch {}
 
-  const cr = cell.getBoundingClientRect();   // viewport coords
   bar.style.display = 'flex';
 
-  // Let layout compute height once visible
-  const bh = bar.offsetHeight || 28;
+  // Clamp to the page box (not the window)
+  const pageEl = ed?.options?.element?.closest('.page');
+  const pr     = pageEl?.getBoundingClientRect?.();
+  const pad    = 12;                          // margin inside the page
+  const bw     = bar.offsetWidth  || 260;
+  const bh     = bar.offsetHeight || 28;
 
-  // Prefer above the cell; if not enough room, show below
-  let top = Math.round(cr.top - bh - 6);
-  if (top < 8) top = Math.round(cr.bottom + 6);
+  // Use the WHOLE TABLE rect so the bar doesn't jump per column
+  const tr = tbl.getBoundingClientRect();
 
-  // Start aligned with cell's left; keep inside the viewport (not the page)
-  let left = Math.round(cr.left);
+  // Y: prefer above the table; if no room, put it below. Always keep inside page.
+  let top = Math.round(tr.top - bh - 6);
+  if (pr) {
+    const minTop = pr.top + pad;
+    const maxTop = pr.bottom - pad - bh;
+    if (top < minTop) top = Math.min(Math.round(tr.bottom + 6), maxTop);
+    top = Math.max(minTop, Math.min(maxTop, top));
+  } else {
+    if (top < 8) top = Math.round(tr.bottom + 6);
+  }
 
-  // If the bar would be cut off at the left, flip to the cell's right edge.
-  if (left < 8) left = Math.round(cr.right - bar.offsetWidth);
+  // X: center over the TABLE (not the current cell) and clamp to page
+  let left = Math.round(tr.left + (tr.width - bw) / 2);
+  if (pr) {
+    const minLeft = pr.left + pad;
+    const maxLeft = pr.right - pad - bw;
+    left = Math.max(minLeft, Math.min(maxLeft, left));
+  } else {
+    left = Math.max(8, Math.min(window.innerWidth - bw - 8, left));
+  }
 
-  // Clamp to viewport so it stays reachable
-  left = Math.max(8, Math.min(window.innerWidth - bar.offsetWidth - 8, left));
-
-  bar.style.top = `${top}px`;
+  bar.style.top  = `${top}px`;
   bar.style.left = `${left}px`;
 }
 
-function bindTablebarActions(ed) {
-  const bar = ensureTTTablebar();
-  if (bar._wiredFor === ed) return;
-  bar._wiredFor = ed;
 
-  // 🔒 Keep the editor focused so the CellSelection survives.
-  // If we let focus move to the toolbar, ProseMirror collapses the cell selection.
+
+/* Bind the floating table toolbar once (global).
+   On click it resolves the correct TipTap editor (TT = TipTap)
+   using bar.dataset.editorKey set by positionTablebarForEditor(). */
+function bindTablebarActions() {
+  const bar = ensureTTTablebar();
+  if (bar._mcBound) return;   // bind only once globally
+  bar._mcBound = true;
+
+  // Keep PM focus so CellSelection survives while clicking the toolbar
   const keepPMFocus = (ev) => {
-    ev.preventDefault();                   // don't steal focus
+    ev.preventDefault();
     window.__mc && (window.__mc._ttBarInteracting = true);
-    try { ed.view?.focus(); } catch {}
+    try { resolveEditorForBar()?.view?.focus(); } catch {}
   };
   bar.addEventListener('mousedown', keepPMFocus);
   bar.addEventListener('pointerdown', keepPMFocus);
 
-  bar.onclick = (e) => {
-    const b = e.target.closest('button[data-act]');
-    if (!b) return;
-    const act = b.dataset.act;
-
-    // stay in "interacting" mode until we finish; prevents blur-hide
-    if (window.__mc) window.__mc._ttBarInteracting = true;
-
-    // ⚠️ DO NOT rebuild selection here. Just refocus; the selection must remain a CellSelection.
-    try { ed.view?.focus(); } catch {}
-
-    // run the command
-    let ok = true;
-    const c = ed.chain();
-
-    switch (act) {
-      case 'row-above':   ok = c.addRowBefore().run(); break;
-      case 'row-below':   ok = c.addRowAfter().run(); break;
-      case 'col-left':    ok = c.addColumnBefore().run(); break;
-      case 'col-right':   ok = c.addColumnAfter().run(); break;
-      case 'del-row':     ok = c.deleteRow().run(); break;
-      case 'del-col':     ok = c.deleteColumn().run(); break;
-
-      // ✅ These require a real CellSelection. With focus preserved, they now work.
-      case 'merge':       ok = c.mergeCells().run(); break;
-      case 'split':       ok = c.splitCell().run(); break;
-
-      case 'toggle-head': ok = c.toggleHeaderRow().run(); break;
-      case 'del-table':
-        ok = c.deleteTable().run();
-        ensureTTTablebar().style.display = 'none';
-        break;
-      default:
-        ok = false;
-    }
-
-    // Reposition bar relative to the (new) cell state
-    requestAnimationFrame(() => {
-      if (ok) positionTablebarForEditor(ed);
-      setTimeout(() => { if (window.__mc) window.__mc._ttBarInteracting = false; }, 0);
-    });
-  };
+  function flashBarHint(msg){
+  const bar = ensureTTTablebar();
+  const hint = bar.querySelector('.tt-bar-hint');
+  if (!hint) return;
+  hint.textContent = msg;
+  hint.style.display = 'block';
+  clearTimeout(hint._t);
+  hint._t = setTimeout(() => { hint.style.display = 'none'; }, 2200);
 }
 
 
+  function resolveEditorForBar() {
+    try {
+      const key = bar.dataset.editorKey || '';
+      const MC = window.__mc?.MCEditors;
+      if (key && MC && typeof MC.get === 'function') {
+        const edByKey = MC.get(key);
+        if (edByKey) return edByKey;
+      }
+    } catch {}
+    return window.__mc?.getActiveEditor?.() || null;
+  }
 
+bar.onclick = (e) => {
+  const btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+
+  if (window.__mc) window.__mc._ttBarInteracting = true;
+
+  const ed = resolveEditorForBar();
+  if (!ed) return;
+
+  try { ed.view?.focus(); } catch {}
+
+  const c = ed.chain().focus();
+
+  switch (btn.dataset.act) {
+    case 'row-above':   c.addRowBefore().run(); break;
+    case 'row-below':   c.addRowAfter().run(); break;
+    case 'col-left':    c.addColumnBefore().run(); break;
+    case 'col-right':   c.addColumnAfter().run(); break;
+    case 'del-row':     c.deleteRow().run(); break;
+    case 'del-col':     c.deleteColumn().run(); break;
+
+    case 'merge': {
+      // If not a valid multi-cell selection, show hint and bail
+      if (!ed.can().mergeCells()) {
+        flashBarHint('Hold Alt and drag to select multiple cells, then click Merge');
+        return;
+      }
+      c.mergeCells().run();
+      break;
+    }
+
+    case 'split': {
+      // If current cell can’t be split (not merged), show hint and bail
+      if (!ed.can().splitCell()) {
+        flashBarHint('Split only works on merged cells — merge first, then split');
+        return;
+      }
+      c.splitCell().run();
+      break;
+    }
+
+    case 'toggle-head': c.toggleHeaderRow().run(); break;
+    case 'del-table':   c.deleteTable().run(); ensureTTTablebar().style.display='none'; break;
+  }
+
+  requestAnimationFrame(() => { positionTablebarForEditor(ed); });
+  setTimeout(() => { if (window.__mc) window.__mc._ttBarInteracting = false; }, 0);
+};
+
+}
 
 
 let _ttBarInteracting = false;
 
 
+/* Wire the floating toolbar to all TipTap editors.
+   Repositions on selection changes / updates / focus / window events. */
 function wireTipTapTableUI() {
   const all = (window.__mc?.MCEditors?.all?.() || []);
   all.forEach((ed) => {
@@ -1738,33 +1300,27 @@ function wireTipTapTableUI() {
     ed.on('selectionUpdate', () => positionTablebarForEditor(ed));
     ed.on('update',           () => positionTablebarForEditor(ed));
     ed.on('focus',            () => positionTablebarForEditor(ed));
-    // SAFETY: the flag is set in ensureTTTablebar() step #2
-    // If the user is interacting with the floating bar, ignore the blur.
     ed.on('blur', () => {
       if (window.__mc && window.__mc._ttBarInteracting) return;
       ensureTTTablebar().style.display = 'none';
     });
 
-        // Keep PM focus on cell selections while interacting around the editor
-    ed.options.element.addEventListener('mousedown', (ev) => {
-      // If you start a gesture on the editor root, keep focus there.
-      // This prevents transient focus jumps that can drop a CellSelection.
+    // Keep PM focus when interacting inside the editor wrapper
+    ed.options.element.addEventListener('mousedown', () => {
       try { ed.view?.focus(); } catch {}
     });
-
 
     const sync = () => positionTablebarForEditor(ed);
     window.addEventListener('resize', sync);
     window.addEventListener('scroll', sync, true);
 
-    bindTablebarActions(ed);
+    // Bind the toolbar globally (no editor param)
+    bindTablebarActions();
+
+    // Initial placement (in case cursor is already in a table)
     positionTablebarForEditor(ed);
   });
 }
-
-
-
-
 
   // ---------- Boot ----------
   // ---------- Boot ----------

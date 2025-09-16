@@ -118,6 +118,10 @@ if (!defined('BASE_PATH')) {
         <button class="btn btn-icon" data-action="insertTable" title="Insert table">
           <i class="bi bi-table"></i>
         </button>
+        <button class="btn btn-icon" data-action="insertUploadBox" title="Image upload">
+          <i class="bi bi-image"></i>
+        </button>
+
 
         <div class="toolbar-sep"></div>
 
@@ -254,10 +258,301 @@ import TableCell   from "https://esm.sh/@tiptap/extension-table-cell@2.6.6";
   import "<?= $ASSET_BASE ?>/assets/js/TemplateBuilder-New.js?v=<?= time() ?>";
 
 /* ==== Multi-page editor manager ==== */
+// --- Tiny UploadBox node (block atom) ---
+
+import { Plugin } from "https://esm.sh/prosemirror-state@1.4.3";
+
+const NoNestedTables = Extension.create({
+  name: 'noNestedTables',
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        filterTransaction(tr, state) {
+          if (!tr.docChanged) return true;
+
+          let ok = true;
+          tr.doc.descendants((node, pos) => {
+            if (!ok) return false;
+
+            if (node.type.name === 'table') {
+              // Walk up from this position; if any ancestor is a table → block
+              const $pos = tr.doc.resolve(pos);
+              for (let d = $pos.depth - 1; d >= 0; d--) {
+                if ($pos.node(d).type.name === 'table') { ok = false; break; }
+              }
+            }
+            return ok;
+          });
+
+          return ok; // returning false cancels the transaction
+        }
+      })
+    ];
+  },
+});
+
+
 import { Node } from "https://esm.sh/@tiptap/core@2.6.6";
 
 
+const UploadBox = Node.create({
+  name: 'uploadBox',
+  group: 'block',
+  atom: true,
+  selectable: true,
 
+  addAttributes() {
+    return {
+      src: { default: null },
+      alt: { default: '' },
+    };
+  },
+
+  parseHTML() { return [{ tag: 'upload-box' }]; },
+  renderHTML({ HTMLAttributes }) { return ['upload-box', HTMLAttributes]; },
+
+  addCommands() {
+    return {
+      insertUploadBox:
+        (attrs = {}) =>
+        ({ chain }) =>
+          chain().insertContent({ type: this.name, attrs }).run(),
+    };
+  },
+
+  addNodeView() {
+    return ({ node, updateAttributes }) => {
+      const dom = document.createElement('div');
+      dom.className = 'mc-upload-box';
+      dom.setAttribute('contenteditable', 'false');
+
+      const img = document.createElement('img');
+      img.className = 'mc-upload-img';
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'mc-upload-btn';
+      btn.textContent = 'Upload';
+
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.style.display = 'none';
+
+      const show = (src) => {
+        if (src) {
+          dom.dataset.hasImage = '1';
+          img.src = src;
+          img.style.display = 'block';
+          btn.style.display = 'none';
+        } else {
+          dom.dataset.hasImage = '0';
+          img.removeAttribute('src');
+          img.style.display = 'none';
+          btn.style.display = 'inline-block';
+        }
+      };
+
+      // keep PM from swallowing clicks
+      const stop = (e) => { e.preventDefault(); e.stopPropagation(); };
+      dom.addEventListener('mousedown', stop);
+      btn.addEventListener('mousedown', stop);
+      img.addEventListener('mousedown', stop);
+      input.addEventListener('mousedown', stop);
+
+      btn.addEventListener('click', (e) => { e.preventDefault(); input.value = ''; input.click(); });
+      img.addEventListener('click', () => { input.value = ''; input.click(); });
+
+      // add this near the other locals inside addNodeView()
+      let objectUrl = null;
+
+      input.addEventListener('change', () => {
+        const file = input.files && input.files[0];
+        if (!file) return;
+
+        // clean up any previous blob URL
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
+        objectUrl = URL.createObjectURL(file);
+
+        // 1) update the DOM immediately so the user sees it right away
+        dom.dataset.hasImage = '1';
+        img.src = objectUrl;
+        img.style.display = 'block';
+        btn.style.display = 'none';
+
+        // 2) also persist to the document (so it survives re-renders)
+        updateAttributes({ src: objectUrl, alt: file.name || '' });
+        console.log('[UploadBox] file picked:', file?.name, objectUrl);
+
+      });
+
+
+      dom.append(img, btn, input);
+      show(node.attrs.src);
+
+      return {
+        dom,
+        update(updatedNode) {
+          if (updatedNode.type.name !== 'uploadBox') return false;
+          show(updatedNode.attrs.src);
+          return true;
+        },
+        ignoreMutation: () => true,
+        destroy() {
+          // prevent memory leaks if this node view is destroyed
+          if (objectUrl) URL.revokeObjectURL(objectUrl);
+        }
+      };
+    };
+  },
+});
+export default UploadBox;
+
+
+// --- DateInput (inline atom) ---
+const DateInput = Node.create({
+  name: 'dateInput',
+  group: 'inline',
+  inline: true,
+  atom: true,
+  selectable: true,
+  draggable: false,
+
+  addAttributes() {
+    return {
+      value: { default: '' },           // persisted YYYY-MM-DD
+      placeholder: { default: 'YYYY-MM-DD' }
+    };
+  },
+
+  // allow <date-input> in HTML import/export
+  parseHTML() { return [{ tag: 'date-input' }]; },
+  renderHTML({ HTMLAttributes }) { return ['date-input', HTMLAttributes]; },
+
+  addCommands() {
+    return {
+      insertDateInput:
+        (attrs = {}) =>
+        ({ commands }) =>
+          commands.insertContent({ type: this.name, attrs }),
+    };
+  },
+
+  addNodeView() {
+    return ({ node, editor, getPos }) => {
+      const input = document.createElement('input');
+      input.type = 'date';
+      input.className = 'sig-date-input';           // use your existing CSS
+      input.value = node.attrs.value || '';
+      input.placeholder = node.attrs.placeholder || 'YYYY-MM-DD';
+      input.setAttribute('data-tt', 'date-input');
+      input.contentEditable = 'false';              // let the input handle focus, not PM
+
+      // keep TipTap attrs in sync with UI
+      const updateAttr = (val) => {
+        const pos = getPos && getPos();
+        if (typeof pos === 'number') {
+          editor.view.dispatch(
+            editor.state.tr.setNodeMarkup(pos, undefined, { ...node.attrs, value: val })
+          );
+        }
+      };
+
+      input.addEventListener('change', () => updateAttr(input.value));
+      input.addEventListener('input',  () => updateAttr(input.value));
+
+      // Let clicks focus the input (don’t select the node)
+      input.addEventListener('mousedown', (e) => e.stopPropagation());
+
+      return {
+        dom: input,
+        update(updated) {
+          if (updated.type.name !== 'dateInput') return false;
+          if (updated.attrs.value !== input.value) input.value = updated.attrs.value || '';
+          return true;
+        },
+        ignoreMutation: () => true,
+      };
+    };
+  },
+});
+
+
+
+// Preserve "data-sig" and "class" on TipTap table nodes
+// Preserve attrs AND lock structure for signature tables (data-sig="1"/.sig-table)
+const TableWithAttrs = Table.extend({
+  addAttributes() {
+    return {
+      class: {
+        default: null,
+        parseHTML: el => el.getAttribute('class'),
+        renderHTML: attrs => (attrs.class ? { class: attrs.class } : {}),
+      },
+      'data-sig': {
+        default: null,
+        parseHTML: el => el.getAttribute('data-sig'),
+        renderHTML: attrs => (attrs['data-sig'] ? { 'data-sig': attrs['data-sig'] } : {}),
+      },
+    };
+  },
+
+  // ✅ Allow ALL table commands everywhere (no signature lock)
+  addCommands() {
+    const parent = this.parent?.();
+    return { ...parent };
+  },
+
+  // keep your Tab/Shift-Tab overrides as-is
+  addKeyboardShortcuts() {
+    const parentKeys = this.parent?.() || {};
+    const move = (dir) => () => {
+      if (!isSignatureTablePM?.(this.editor)) {
+        return parentKeys[dir === 1 ? 'Tab' : 'Shift-Tab']
+          ? parentKeys[dir === 1 ? 'Tab' : 'Shift-Tab']()
+          : false;
+      }
+      const cell = currentCellElement?.(this.editor);
+      const tbl  = cell?.closest?.('table');
+      if (!cell || !tbl) return true;
+
+      const firstCell = tbl.querySelector('tr:first-child td:first-child, tr:first-child th:first-child');
+      const lastCell  = tbl.querySelector('tr:last-child  td:last-child');
+      if (dir === 1 && cell === lastCell) {
+        moveCaretOutsideEnclosingTable?.(this.editor, 'after');
+        return true;
+      }
+      if (dir === -1 && cell === firstCell) {
+        moveCaretOutsideEnclosingTable?.(this.editor, 'before');
+        return true;
+      }
+      return this.editor.commands.goToNextCell?.(dir) || true;
+    };
+
+    return { ...parentKeys, Tab: move(1), 'Shift-Tab': move(-1) };
+  },
+});
+
+
+// Keep custom attrs on table cells (e.g., data-ph)
+const TableCellWithAttrs = TableCell.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      'data-ph': {
+        default: null,
+        parseHTML: el => el.getAttribute('data-ph'),
+        renderHTML: attrs => attrs['data-ph'] ? { 'data-ph': attrs['data-ph'] } : {},
+      },
+      // (optional) allow class on TD/TH too
+      class: {
+        default: null,
+        parseHTML: el => el.getAttribute('class'),
+        renderHTML: attrs => attrs.class ? { class: attrs.class } : {},
+      },
+    };
+  },
+});
 
 
 
@@ -384,15 +679,34 @@ async function makeEditorFor(pageEl) {
       TaskList.configure({ HTMLAttributes: { class: 'tt-tasklist' } }),
       TaskItem.configure({ nested: true, HTMLAttributes: { class: 'tt-taskitem' } }),
       // ADD ↓↓↓
-      Table.configure({ resizable: true }),
+      TableWithAttrs.configure({ resizable: true }),
       TableRow,
       TableHeader,
-      TableCell,
+      TableCellWithAttrs,
       TabListIndent,
+      UploadBox,
+      DateInput,
+      NoNestedTables,
     ],
     content: '<p></p>',
     autofocus: false,
   });
+
+    // Prevent table-in-table on paste (must be bound per editor)
+  ed.view.dom.addEventListener('paste', (e) => {
+    try {
+      const html = e.clipboardData?.getData('text/html') || '';
+      if (!html) return;
+      if (/<table[\s>]/i.test(html) && isSelectionInsideTable(ed)) {
+        e.preventDefault();
+        // Move after enclosing table, then paste there
+        forceCaretOutsideTable(ed, 'after');
+        ed.chain().focus().insertContent(html).run();
+        ed.chain().focus().insertContent('<p></p>').run();
+      }
+    } catch {}
+  }, true);
+
 
   MCEditors.set(pageId, ed);
   // Bind the Flow Engine (no inner scrolling; move blocks across pages)
@@ -400,6 +714,7 @@ async function makeEditorFor(pageEl) {
 
   return ed;
 }
+
 
 
 /* Boot editors for all existing pages */
@@ -699,6 +1014,67 @@ function updatePageNumbers() {
   });
 }
 
+// ==== Google Docs–style: Backspace on an empty page removes the page ====
+(function setupDeleteEmptyPageHotkey(){
+  // A page can be deleted only if its editor is empty and it has no overlay blocks
+  const isEditorEmpty = (ed) => !hasAnyRealContent(ed);
+  const canDeletePage = (pageEl) => {
+    const ov = pageEl?.querySelector('.mc-block-overlay');
+    return !(ov && ov.querySelector('.mc-block')); // don't nuke a page that has free-positioned blocks
+  };
+
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key !== 'Backspace' || ev.defaultPrevented) return;
+
+    // Only act when the event came from a TipTap editor
+    const pm = ev.target?.closest?.('.ProseMirror');
+    if (!pm) return;
+
+    const ed = window.__mc?.getActiveEditor?.();
+    if (!ed) return;
+
+    const sel = ed.state?.selection;
+    // Must be at the very start of the doc and the editor must be empty
+    if (!sel?.empty || sel.from !== 1 || !isEditorEmpty(ed)) return;
+
+    const pageEl  = getPageOfEditor(ed);
+    const prevEl  = getPrevPageEl(pageEl);
+    if (!pageEl || !prevEl || !canDeletePage(pageEl)) return;
+
+    // We handle it: prevent the default and do the Google Docs behavior
+    ev.preventDefault();
+    ev.stopPropagation();
+
+    // Tear-down must run after TipTap finishes its own handlers
+    setTimeout(() => {
+      try { ed.destroy(); } catch {}
+
+      // Remove from the MCEditors registry
+      try {
+        for (const [k, v] of MCEditors.map.entries()) {
+          if (v === ed) { MCEditors.map.delete(k); break; }
+        }
+      } catch {}
+
+      // Remove page from DOM and renumber
+      try { pageEl.remove(); } catch {}
+      updatePageNumbers();
+
+      // Put the caret at the end of the previous page
+      const prevEd = getEditorOfPage(prevEl) || MCEditors.first();
+      try {
+        prevEd?.chain().focus('end', { scrollIntoView: true }).run();
+      } catch {
+        try { prevEd?.commands?.focus?.('end'); } catch {}
+      }
+
+      // Keep drag/drop targets healthy
+      window.__mc?.rewireDropTargets?.();
+    }, 0);
+  }, true); // capture so we beat ProseMirror's own Backspace handling
+})();
+
+
 /* Buttons */
 addBtn?.addEventListener('click', createPage);
 
@@ -722,13 +1098,18 @@ function setLogo(src) {
   wrapper.classList.toggle('has-image', !!src);
 }
 
+let logoUrl = null;
+
 upload?.addEventListener('change', () => {
   const file = upload.files?.[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => setLogo(reader.result);
-  reader.readAsDataURL(file);
+
+  if (logoUrl) URL.revokeObjectURL(logoUrl);
+  logoUrl = URL.createObjectURL(file);
+
+  setLogo(logoUrl); // your setLogo() already toggles .has-image and sets img.src
 });
+
 
 /* ===== Sidebar collapse toggle ===== */
 const STORAGE_KEY = 'mc-sb-collapsed';

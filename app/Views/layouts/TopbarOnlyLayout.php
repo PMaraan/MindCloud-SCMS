@@ -29,7 +29,6 @@ $contentHtml = isset($contentHtml) ? (string)$contentHtml : '';
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>LPU-SCMS — Profile</title>
 
-
 <!-- Global CSS -->
  <link rel="stylesheet" href="<?= BASE_PATH ?>/public/assets/css/global.css">
 
@@ -54,7 +53,5 @@ $contentHtml = isset($contentHtml) ? (string)$contentHtml : '';
   <!-- Bootstrap bundle -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-  <!-- If your topbar/notifications rely on a site-wide script, include it here -->
-  <!-- <script src="<?= BASE_PATH ?>/assets/js/app.js"></script> -->
 </body>
 </html>

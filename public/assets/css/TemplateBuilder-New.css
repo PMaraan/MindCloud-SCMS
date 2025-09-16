@@ -561,6 +561,31 @@ body {
   grid-template-rows: 1fr auto auto auto; /* Upload, Name, Date, Role */
   gap: 8px;
 }
+/* Placeholder for signature-table column #2 cells */
+.tiptap table.sig-table td[data-ph] { position: relative; }
+
+/* Primary, no-:has() fallback: if the inner paragraph is truly empty */
+.tiptap table.sig-table td[data-ph] > p[data-ph]:empty::before {
+  content: attr(data-ph);
+  position: absolute;
+  left: 10px;
+  top: 6px;
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+/* If the browser supports :has(), also handle <p><br/></p> */
+@supports(selector(:has(*))) {
+  .tiptap table.sig-table td[data-ph]:has(> p[data-ph]:only-child > br:only-child)::before {
+    content: attr(data-ph);
+    position: absolute;
+    left: 10px;
+    top: 6px;
+    color: #9ca3af;
+    pointer-events: none;
+  }
+}
+
 
 /* Top “Upload” box (visual only in table version) */
 .tiptap .sig-img{
@@ -675,17 +700,17 @@ body {
 
 /* Floating toolbar for TipTap tables (global, not clipped by .page) */
 .tt-tablebar{
-  position: fixed;             /* was absolute */
-  display: none;
-  gap: 6px;
+  position: fixed;       /* required so top/left work in viewport coords */
+  z-index: 4000;         /* above the page */
+  display: none;         /* JS flips to flex */
+  gap: .25rem;
+  padding: .25rem .35rem;
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
-  padding: 4px 6px;
-  box-shadow: 0 2px 10px rgba(16,24,40,.05);
-  z-index: 3000;      
-  pointer-events: auto;         /* above pages and their overflow */
+  box-shadow: 0 6px 20px rgba(0,0,0,.08);
 }
+
 
 .tt-tablebar .btn{
   border:1px solid #e5e7eb;
@@ -908,3 +933,151 @@ body {
 /* label / paragraph have no borders */
 .mc-label .element-body,
 .mc-paragraph .element-body { border: 0; }
+
+.tiptap .mc-upload-box{
+  display:grid;
+  place-items:center;
+  width:100%;
+  aspect-ratio:4/3;
+  background:#f8fafc;
+  border:1px dashed #cbd5e1;
+  border-radius:6px;
+  padding:6px;
+}
+.tiptap td .mc-upload-box{ width:100%; } /* fills table cell */
+.tiptap .mc-upload-img{
+  max-width:100%;
+  max-height:100%;
+  object-fit:contain;
+  display:none;
+}
+.tiptap .mc-upload-btn{
+  border:1px solid #e5e7eb;
+  background:#fff;
+  padding:6px 10px;
+  border-radius:6px;
+  font-size:12px;
+  line-height:1;
+  cursor:pointer;
+}
+.tiptap .mc-upload-btn:hover{ background:#f8fafc; }
+
+.sig-table .sig-date-input {
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.sig-table td[data-ph="Date"] p {
+  display: inline-block;
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  line-height: 1.2;
+}
+
+/* Ensure the image definitely shows once we have a src */
+.tiptap .mc-upload-box[data-has-image="1"] .mc-upload-img { display: block; }
+.tiptap .mc-upload-box[data-has-image="1"] .mc-upload-btn { display: none; }
+
+/* If an <img> has a src, always show it (extra safety) */
+.tiptap .mc-upload-box .mc-upload-img[src] { display: block; }
+
+
+/* =========================================================
+   TABLES — keep inside page margins (Google Docs behavior)
+   ========================================================= */
+.tiptap table {
+  /* Fill the available editor width (the page content box) */
+  width: 100% !important;
+  max-width: 100% !important;
+
+  /* Make columns share available width and shrink instead of overflowing */
+  table-layout: fixed !important;
+
+  /* Nice, compact table rendering */
+  border-collapse: collapse;
+  border-spacing: 0;
+  box-sizing: border-box;
+  margin: 0;                 /* no extra left/right margin that can push it out */
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* Cells also need to allow shrinking & wrapping */
+.tiptap table td,
+.tiptap table th {
+  max-width: 1px;           /* enables proportional shrinking with table-layout:fixed */
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;      /* avoid no-wrap cells forcing overflow */
+}
+
+/* Optional: keep header row tidy if you use <th> */
+.tiptap table th {
+  font-weight: 600;
+}
+
+/* Signature tables (you already flag them with .sig-table / data-sig) */
+.tiptap table.sig-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+}
+
+/* If you prefer borders visible on normal tables but not on signature tables */
+.tiptap table:not(.sig-table),
+.tiptap table:not(.sig-table) td,
+.tiptap table:not(.sig-table) th {
+  border: 1px solid #d1d5db;
+}
+
+/* Force TipTap tables to shrink inside page margins */
+.tiptap .tableWrapper {
+  max-width: 100% !important;     /* never exceed the page width */
+  overflow-x: auto;               /* optional: allow scroll if needed */
+}
+
+.tiptap .tableWrapper table {
+  width: 100% !important;         /* scale table to fit wrapper */
+  min-width: 0 !important;        /* override TipTap’s inline min-width */
+  table-layout: fixed !important; /* shrink columns proportionally */
+}
+
+/* Space above/below any TipTap table */
+.tiptap .ProseMirror table {
+  margin-block: 12px;         /* ← space above & below */
+  border-collapse: collapse;  /* your existing look */
+  width: 100%;
+}
+
+/* Signature tables can have a bit more space, if you like */
+.tiptap .ProseMirror table.sig-table,
+.tiptap .ProseMirror table[data-sig="1"] {
+  margin-block: 16px;
+}
+
+/* Make empty paragraphs show as a visible gap (so the
+   <p></p> you insert after a table is a clear spacer) */
+.tiptap .ProseMirror p:empty {
+  min-height: 1em;
+}
+
+.tt-tablebar .tt-bar-hint{
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #111827;
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.3;
+  padding: 6px 8px;
+  border-radius: 6px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.18);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1;
+}

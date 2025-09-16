@@ -1,3 +1,4 @@
+<?php // /app/Views/layouts/components/Topbar.php ?>
 <!-- header component -->
 <nav class="navbar px-3 sticky-top">
   <div class="container-fluid">
@@ -58,7 +59,8 @@
           </li>
           <li><hr class="dropdown-divider"></li>
           <li>
-            <a class="dropdown-item d-flex align-items-center gap-2" href="#" id="toggle-darkmode">
+            <a class="dropdown-item d-flex align-items-center gap-2" href="#"
+              id="toggleDarkMode" title="Toggle dark mode">
               <i class="bi bi-moon-stars"></i>
               <span>Dark Mode</span>
             </a>
@@ -79,4 +81,5 @@
 </nav>
 
 <script>window.__BASE_PATH__ = '<?= rtrim(BASE_PATH ?? '', '/') ?>';</script>
-<script src="<?= rtrim(BASE_PATH ?? '', '/') ?>/public/assets/js/settings.js" defer></script>
+<script src="<?= BASE_PATH ?>/public/assets/js/Settings.js" defer></script>
+<script src="<?= BASE_PATH ?>/public/assets/js/notifications.js" defer></script>
