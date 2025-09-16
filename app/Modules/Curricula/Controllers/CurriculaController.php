@@ -1,4 +1,5 @@
 <?php
+// /app/Modules/Curricula/Controllers/CurriculaController.php
 declare(strict_types=1);
 
 namespace App\Modules\Curricula\Controllers;
@@ -34,20 +35,29 @@ final class CurriculaController
 
         $qRaw = $_GET['q'] ?? '';
         $q = strtolower(trim((string)$qRaw));
-        $page = max(1, (int)($_GET['pg'] ?? 1));
-        $limit = 10;
-        $offset = ($page - 1) * $limit;
+
+        // Standardize to global pager keys:
+        $pg      = max(1, (int)($_GET['pg'] ?? 1));
+        $perpage = 10;
+        $offset  = ($pg - 1) * $perpage;
 
         $model = new CurriculaModel($this->db);
         $total = $model->count($q);
-        $rows  = $model->getPage($q, $limit, $offset);
+        $rows  = $model->getPage($q, $perpage, $offset);
 
+        // Compute from/to once here so the partial can just render
+        $from = $total > 0 ? ($offset + 1) : 0;
+        $to   = $total > 0 ? min($offset + $perpage, $total) : 0;
+
+        // Build pager exactly for the global Pagination.php
         $pager = [
             'total'   => $total,
-            'page'    => $page,
-            'limit'   => $limit,
+            'pg'      => $pg,
+            'perpage' => $perpage,
             'baseUrl' => BASE_PATH . '/dashboard?page=curricula',
             'query'   => $qRaw,
+            'from'    => $from,
+            'to'      => $to,
         ];
 
         $canCreate = !empty($def['actions']['create']) && $this->rbac->has($userId, (string)$def['actions']['create']);
@@ -59,9 +69,9 @@ final class CurriculaController
         }
 
         ob_start();
-        $rowsVar = $rows;
-        $canCreateVar = $canCreate; $canEditVar = $canEdit; $canDeleteVar = $canDelete;
-        $pagerVar = $pager;
+        // Expose standardized names directly
+        $csrf       = $_SESSION['csrf_token'];
+        // $rows, $canCreate, $canEdit, $canDelete, $pager already defined above
         require dirname(__DIR__) . '/Views/index.php';
         return (string)ob_get_clean();
     }

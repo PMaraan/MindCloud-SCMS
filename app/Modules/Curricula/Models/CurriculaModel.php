@@ -1,4 +1,5 @@
 <?php
+// /app/Modules/Curricula/Models/CurriculaModel.php
 declare(strict_types=1);
 
 namespace App\Modules\Curricula\Models;
