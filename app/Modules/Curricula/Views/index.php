@@ -1,4 +1,5 @@
 <?php
+// /app/Modules/Curricula/Views/index.php
 /** @var array $rowsVar */
 /** @var bool $canCreateVar */
 /** @var bool $canEditVar */
