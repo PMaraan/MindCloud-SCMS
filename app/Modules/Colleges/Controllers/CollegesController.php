@@ -48,18 +48,18 @@ final class CollegesController
         $rows   = $result['rows'];
         $total  = $result['total'];
 
-        $pages = max(1, (int)ceil($total / $perPage));
+        // Compute from/to once so the partial (and the view) can reuse them
+        $from = ($total > 0) ? (($page - 1) * $perPage + 1) : 0;
+        $to   = ($total > 0) ? min($total, $page * $perPage) : 0;
+
         $pager = [
-            'page'     => $page,
-            'perPage'  => $perPage,
             'total'    => $total,
-            'pages'    => $pages,
-            'hasPrev'  => $page > 1,
-            'hasNext'  => $page < $pages,
-            'prev'     => max(1, $page - 1),
-            'next'     => min($pages, $page + 1),
-            'baseUrl'  => BASE_PATH . '/dashboard?page=colleges', // <- plural page
-            'query'    => $rawQ,
+            'pg'       => $page,
+            'perpage'  => $perPage,
+            'baseUrl'  => BASE_PATH . '/dashboard?page=colleges',
+            'query'    => $rawQ ?? '',
+            'from'     => $from,
+            'to'       => $to,
         ];
 
         // Get a list of users who are deans.
@@ -150,7 +150,7 @@ final class CollegesController
         try {
             $ok = (new CollegesModel($this->db))->update($id, $data);
             try {
-                (new \App\Services\AssignmentsService($this->db))->setCollegeDean($id, $deanIdNo !== '' ? $deanIdNo : null);
+                (new AssignmentsService($this->db))->setCollegeDean($id, $deanIdNo !== '' ? $deanIdNo : null);
                 $ok ? FlashHelper::set('success', 'College updated.')
                     : FlashHelper::set('warning', 'No changes were made.');
             } catch (\DomainException $e) {

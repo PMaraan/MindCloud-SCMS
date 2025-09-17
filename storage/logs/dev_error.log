@@ -2454,3 +2454,13 @@ LINE 1: SELECT id_no FROM users WHERE user_id = $1
 [17-Sep-2025 11:38:30 Europe/Berlin] accounts.page rows=10 total=18 limit=10 offset=0
 [17-Sep-2025 11:38:30 Europe/Berlin] accounts.index total=18 rows=10
 [17-Sep-2025 11:38:30 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[17-Sep-2025 12:18:05 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[17-Sep-2025 12:18:05 Europe/Berlin] Probe users count = 18
+[17-Sep-2025 12:18:05 Europe/Berlin] accounts.page rows=10 total=18 limit=10 offset=0
+[17-Sep-2025 12:18:05 Europe/Berlin] accounts.index total=18 rows=10
+[17-Sep-2025 12:18:05 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[17-Sep-2025 12:18:11 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[17-Sep-2025 12:18:11 Europe/Berlin] Probe users count = 18
+[17-Sep-2025 12:18:11 Europe/Berlin] accounts.page rows=10 total=18 limit=10 offset=0
+[17-Sep-2025 12:18:11 Europe/Berlin] accounts.index total=18 rows=10
+[17-Sep-2025 12:18:11 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}

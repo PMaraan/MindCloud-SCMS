@@ -1,5 +1,10 @@
-<?php /* app/Modules/College/Views/partials/Table.php */ ?>
-<?php // expects: $rows (array), $canEdit (bool), $canDelete (bool) ?>
+<?php 
+// app/Modules/Colleges/Views/partials/Table.php
+// Expects the following variables from CollegesController.php
+/** @var array $rows */
+/** @var bool  $canEdit */
+/** @var bool  $canDelete */
+?>
 <div class="table-responsive">
   <table class="table table-bordered table-striped table-hover align-middle mb-0">
     <thead class="table-light">
