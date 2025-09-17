@@ -793,6 +793,21 @@ function ensureDocNotEmpty(json){
   return json;
 }
 
+// ——— helpers for keeping a visible line above tables ———
+function nbspParagraph() {
+  return { type: 'paragraph', content: [{ type: 'text', text: '\u00A0' }] }; // visible blank line
+}
+function isTableNode(n) {
+  return n && n.type === 'table';
+}
+function isEmptyParagraphNode(n) {
+  if (!n || n.type !== 'paragraph') return false;
+  const c = n.content || [];
+  if (!c.length) return true;
+  return c.length === 1 && c[0].type === 'text' && (!c[0].text || !c[0].text.trim());
+}
+
+
 function popLastBlock(ed){
   const json = cloneJSON(ed.getJSON());
   const arr  = json.content || [];
@@ -813,14 +828,43 @@ function shiftFirstBlock(ed){
 }
 function prependBlock(ed, node){
   const json = cloneJSON(ed.getJSON());
-  json.content = [node, ...(json.content || [])];
+  const arr  = json.content || [];
+
+  if (isTableNode(node)) {
+    // Ensure a visible paragraph sits *above* the table
+    if (isEmptyParagraphNode(arr[0])) {
+      arr[0] = nbspParagraph();                 // make the first paragraph visible
+      json.content = [arr[0], node, ...arr.slice(1)];
+    } else {
+      json.content = [nbspParagraph(), node, ...arr];
+    }
+  } else {
+    json.content = [node, ...arr];
+  }
+
   ed.commands.setContent(json, false);
 }
+
 function appendBlock(ed, node){
   const json = cloneJSON(ed.getJSON());
-  json.content = [...(json.content || []), node];
+  const arr  = json.content || [];
+  const last = arr[arr.length - 1];
+
+  if (isTableNode(node)) {
+    // Ensure a visible paragraph sits *above* the table
+    if (isEmptyParagraphNode(last)) {
+      arr[arr.length - 1] = nbspParagraph();    // upgrade the existing last paragraph
+      json.content = [...arr, node];
+    } else {
+      json.content = [...arr, nbspParagraph(), node];
+    }
+  } else {
+    json.content = [...arr, node];
+  }
+
   ed.commands.setContent(json, false);
 }
+
 function hasAnyRealContent(ed){
   const json = ed.getJSON();
   const arr = json.content || [];

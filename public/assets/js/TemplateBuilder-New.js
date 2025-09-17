@@ -590,105 +590,126 @@ function signatureTableHTML() {
     grip.addEventListener('mousedown', startDrag);
   }
 
-  function wireDropTargets() {
-    const pages = document.querySelectorAll('.page');
-    if (!pages.length) return;
-    pages.forEach((page) => {
-      const overlay = ensureOverlay(page);
-      if (overlay.dataset.dropWired === '1') return;   // add this
-      overlay.dataset.dropWired = '1';                  // add this
-      ['dragenter', 'dragover'].forEach((evt) => {
-        overlay.addEventListener(evt, (ev) => {
-          // Always allow drop; some browsers won't expose custom types until 'drop'
-          ev.preventDefault();
-        });
-      });
-      overlay.addEventListener('drop', (ev) => {
-        ev.preventDefault();
-        const raw = ev.dataTransfer.getData('application/x-mc');
-        if (!raw) return;
-        const { type } = JSON.parse(raw);
+function wireDropTargets() {
+  const pages = document.querySelectorAll('.page');
+  if (!pages.length) return;
 
-        // (A) Flow-into-editor types — these should push text and be styled via toolbar
-        const ed = window.__mc?.getActiveEditor?.();
-        if (ed) {
+  pages.forEach((page) => {
+    const overlay = ensureOverlay(page);
+    if (overlay.dataset.dropWired === '1') return; // already wired
+    overlay.dataset.dropWired = '1';
+
+    // Always allow drag-over so custom data types are exposed on drop
+    ['dragenter', 'dragover'].forEach((evt) => {
+      overlay.addEventListener(evt, (ev) => ev.preventDefault());
+    });
+
+    overlay.addEventListener('drop', (ev) => {
+      ev.preventDefault();
+
+      const raw = ev.dataTransfer?.getData('application/x-mc');
+      if (!raw) return;
+
+      let type = '';
+      try { ({ type } = JSON.parse(raw) || {}); } catch { return; }
+      if (!type) return;
+
+      // 🔑 Resolve the TipTap editor that belongs to THIS page (not the "active" one).
+      const ed = (() => {
+        const pageEl = overlay.closest('.page');
+        const all = window.__mc?.MCEditors?.all?.() || [];
+        for (const e of all) {
+          const el = e?.options?.element;
+          if (pageEl && el && pageEl.contains(el)) return e;
+        }
+        return window.__mc?.getActiveEditor?.() || null; // fallback
+      })();
+
+      // (A) Flow-into-editor types — insert into TipTap
+      if (ed) {
         if (type === 'table') {
-          // If selection is inside any table, move caret out first
+          // If caret is in a table, move it out first to avoid nested tables
           if (isSelectionInsideTable(ed)) {
             forceCaretOutsideTable(ed, ev); // uses pointer Y to pick above/below
           }
 
+          // 1) Insert a visible paragraph BEFORE the table (nbsp keeps the line visible)
+          ed.chain().focus().insertContent('<p>&nbsp;</p>').run();
+
+          // Capture a position inside that paragraph (one char back puts us in the <p>)
+          const paraPos = Math.max(1, ed.state.selection.from - 1);
+
+          // 2) Insert the table AFTER that paragraph
           ed.chain().focus()
             .insertTable({ rows: 3, cols: 4, withHeaderRow: false })
             .run();
 
-          // Always leave a caret after the inserted table
-          ed.chain().focus().insertContent('<p></p>').run();
+          // 3) Put caret back into the paragraph ABOVE the table
+          if (ed.isActive('table')) {
+            moveCaretOutsideEnclosingTable(ed, 'before');
+          }
+          ed.chain().focus().setTextSelection(paraPos).run();
 
           setOverlaysDragEnabled(false);
           return;
         }
 
-
-
-          // OPTIONAL: map a few simple sidebar items to flowing HTML in TipTap
-          if (type === 'label') {
-            ed.chain().focus().insertContent('<p><strong>Label text</strong></p>').run();
-            setOverlaysDragEnabled(false);
-            return;
-          }
-          if (type === 'paragraph') {
-            ed.chain().focus().insertContent('<p>Paragraph text</p>').run();
-            setOverlaysDragEnabled(false);
-            return;
-          }
-          if (type === 'textField') {
-            ed.chain().focus().insertContent(
-              '<p><span style="display:inline-block;min-width:240px;border-bottom:1px solid #9ca3af">&nbsp;</span></p>'
-            ).run();
-            setOverlaysDragEnabled(false);
-            return;
-          }
-          if (type === 'textarea') {
-            ed.chain().focus().insertContent(
-              '<p style="display:block;border:1px solid #111827;border-radius:6px;padding:8px;min-height:120px;">Text block</p>'
-            ).run();
-            setOverlaysDragEnabled(false);
-            return;
-          }
-          if (type === 'signature') {
-            if (isSelectionInsideTable(ed)) {
-              forceCaretOutsideTable(ed, ev);
-            }
-
-            const html = signatureTableHTML();
-            ed.chain().focus().insertContent(html).run();
-
-            // Leave a caret after
-            ed.chain().focus().insertContent('<p></p>').run();
-
-            setOverlaysDragEnabled(false);
-            return;
-          }
-
-
-
+        // Simple sidebar items mapped to flowing HTML in TipTap
+        if (type === 'label') {
+          ed.chain().focus().insertContent('<p><strong>Label text</strong></p>').run();
+          setOverlaysDragEnabled(false);
+          return;
         }
+        if (type === 'paragraph') {
+          ed.chain().focus().insertContent('<p>Paragraph text</p>').run();
+          setOverlaysDragEnabled(false);
+          return;
+        }
+        if (type === 'textField') {
+          ed.chain().focus().insertContent(
+            '<p><span style="display:inline-block;min-width:240px;border-bottom:1px solid #9ca3af">&nbsp;</span></p>'
+          ).run();
+          setOverlaysDragEnabled(false);
+          return;
+        }
+        if (type === 'textarea') {
+          ed.chain().focus().insertContent(
+            '<p style="display:block;border:1px solid #111827;border-radius:6px;padding:8px;min-height:120px;">Text block</p>'
+          ).run();
+          setOverlaysDragEnabled(false);
+          return;
+        }
+        if (type === 'signature') {
+          if (isSelectionInsideTable(ed)) {
+            forceCaretOutsideTable(ed, ev);
+          }
 
-        // (B) Everything else: still use the overlay (free-positioned canvas items)
-        const factory = FACTORY[type];
-        if (!factory) return;
+          const html = signatureTableHTML();
+          ed.chain().focus().insertContent(html).run();
 
-        const block = factory();
-        const y = Math.round(ev.offsetY / 20) * 20; // snap to GRID
-        block.style.top = `${Math.max(PAGE_PADDING_TOP, y)}px`;
-        overlay.appendChild(block);
-        makeDraggable(block, overlay);
-        pushDownFrom(block, overlay);
-        setOverlaysDragEnabled(false);
-      });
+          // leave a caret after the signature table
+          ed.chain().focus().insertContent('<p></p>').run();
+
+          setOverlaysDragEnabled(false);
+          return;
+        }
+      }
+
+      // (B) Everything else: free-positioned overlay blocks on this page
+      const factory = FACTORY?.[type];
+      if (!factory) return;
+
+      const block = factory();
+      const y = Math.round(ev.offsetY / 20) * 20; // snap to GRID
+      block.style.top = `${Math.max(10, y)}px`;   // 10 = PAGE_PADDING_TOP
+      overlay.appendChild(block);
+      makeDraggable(block, overlay);
+      pushDownFrom(block, overlay);
+      setOverlaysDragEnabled(false);
     });
-  }
+  });
+}
+
 
   function wireSidebarDrag() {
     document.querySelectorAll('#mc-sidebar .sb-item').forEach((btn) => {
@@ -878,13 +899,20 @@ function signatureTableHTML() {
             forceCaretOutsideTable(ed, 'auto'); // chooses above/below by caret geometry
           }
 
-          ed.chain().focus()
-            .insertTable({ rows: 3, cols: 4, withHeaderRow: false })
-            .run();
+// Paragraph ABOVE the table; nbsp ensures visible blank line
+ed.chain().focus().insertContent('<p>&nbsp;</p>').run();
+const paraPosTop = Math.max(1, ed.state.selection.from - 1);
 
-          // Leave a caret after
-          ed.chain().focus().insertContent('<p></p>').run();
-          break;
+ed.chain().focus()
+  .insertTable({ rows: 3, cols: 4, withHeaderRow: false })
+  .run();
+
+if (ed.isActive('table')) {
+  moveCaretOutsideEnclosingTable(ed, 'before');
+}
+ed.chain().focus().setTextSelection(paraPosTop).run();
+break;
+
         }
 
         case 'insertUploadBox':
@@ -1047,7 +1075,7 @@ function isSelectionInsideTable(ed) {
 function forceCaretOutsideTable(ed, evOrPref = 'auto') {
   const dir = moveCaretOutsideEnclosingTable(ed, evOrPref);
   // If we’re after the table, add a blank paragraph so inserts don’t weld to it
-  if (dir === 'after') ed.chain().insertContent('<p></p>').run();
+if (dir === 'after') ed.chain().insertContent('<p>&nbsp;</p>').run();
   return dir;
 }
 
@@ -1349,7 +1377,11 @@ function wireTipTapTableUI() {
     document.querySelectorAll('.page').forEach((page) => {
       ensureOverlay(page);
     });
+    // ⬇️ Make sure new overlays actually get drag/drop listeners
+    wireDropTargets();
+
     const evt = new Event('mc:rewire');
     document.dispatchEvent(evt);
   };
+
 })(); 
