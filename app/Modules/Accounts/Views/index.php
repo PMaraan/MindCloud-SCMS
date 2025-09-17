@@ -1,13 +1,38 @@
 <?php
 // /app/Modules/Accounts/Views/index.php
-// Expects: $users, $pager, $canCreate, $canEdit, $canDelete
+/**
+ * Accounts module – index view.
+ *
+ * Expects (from controller):
+ * - array  $users      Rows to render in the table (each row has id_no, names, email, role, college, etc.)
+ * - array  $pager      Global paginator contract:
+ *                      ['total','pg','perpage','baseUrl','query'?, 'extra'?, 'from'?, 'to'?]
+ * - bool   $canCreate  Gate for rendering Create modal trigger
+ * - bool   $canEdit    Gate for rendering Edit modal
+ * - bool   $canDelete  Gate for rendering Delete modal
+ * - array  $roles      For Create/Edit modals (role_id, role_name)
+ * - array  $colleges   For Create/Edit modals (college_id, short_name/college_name)
+ * - string $csrf       CSRF token to embed in forms
+ *
+ * @var array  $users
+ * @var array  $pager
+ * @var bool   $canCreate
+ * @var bool   $canEdit
+ * @var bool   $canDelete
+ * @var array  $roles
+ * @var array  $colleges
+ * @var string $csrf
+ */
 
-echo "DEBUG: accounts/index.php reached<br>";
-var_dump(isset($users));
-if (defined('APP_ENV') && APP_ENV === 'dev'):
+$globalPagination = dirname(__DIR__, 3) . '/Views/partials/Pagination.php';
+
+if (defined('APP_ENV') && APP_ENV === 'dev') {
+  echo "DEBUG: accounts/index.php reached<br>";
+  var_dump(isset($users));
+  echo "<!-- dev: rows = " . (isset($users) ? count($users) : -1) . ", total = " . (isset($pager['total']) ? (int)$pager['total'] : -1) . " -->";
+}
 ?>
-<!-- dev: rows = <?= isset($users) ? count($users) : -1 ?>, total = <?= isset($pager['total']) ? (int)$pager['total'] : -1 ?> -->
-<?php endif; ?>
+
 <div class="container-fluid">
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="mb-0">Accounts</h2>
@@ -26,32 +51,22 @@ if (defined('APP_ENV') && APP_ENV === 'dev'):
 
     <?php if (!empty($canCreate)): ?>
       <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createUserModal">
-          + Create
+        + Create
       </button>
     <?php endif; ?>
   </div>
 
-  <div class="d-flex justify-content-between align-items-center mb-2">
-    <div class="text-muted small">
-      <?php
-        $from = $pager['total'] === 0 ? 0 : (($pager['page'] - 1) * $pager['perPage'] + 1);
-        $to   = min($pager['total'], $pager['page'] * $pager['perPage']);
-      ?>
-      Showing <?= $from ?>-<?= $to ?> of <?= (int)$pager['total'] ?>
-      <?php if (!empty($pager['query'])): ?>
-        for “<?= htmlspecialchars($pager['query'], ENT_QUOTES, 'UTF-8') ?>”
-      <?php endif; ?>
-    </div>
-    <div>
-      <?php include __DIR__ . '/partials/Pagination.php'; ?>
-    </div>
-  </div>
+  <?php
+    // Pagination (top)
+    include $globalPagination;
+  ?>
 
   <?php include __DIR__ . '/partials/AccountsTable.php'; ?>
 
-  <div class="d-flex justify-content-end mt-3">
-    <?php include __DIR__ . '/partials/Pagination.php'; ?>
-  </div>
+  <?php
+    // Pagination (bottom)
+    include $globalPagination;
+  ?>
 
   <?php if (!empty($canCreate)) include __DIR__ . '/partials/CreateModal.php'; ?>
   <?php if (!empty($canEdit))   include __DIR__ . '/partials/EditModal.php'; ?>
@@ -59,35 +74,3 @@ if (defined('APP_ENV') && APP_ENV === 'dev'):
 </div>
 
 <script src="<?= BASE_PATH ?>/public/assets/js/accounts.js" defer></script>
-
-<script>
-/*
-document.addEventListener("DOMContentLoaded", () => {
-  // Autofill edit modal
-  document.querySelectorAll("[data-bs-target='#editUserModal']").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const row = btn.closest("tr");
-      document.getElementById("edit-id-no").value   = row.dataset.idNo || "";
-      document.getElementById("edit-fname").value   = row.dataset.fname || "";
-      document.getElementById("edit-mname").value   = row.dataset.mname || "";
-      document.getElementById("edit-lname").value   = row.dataset.lname || "";
-      document.getElementById("edit-email").value   = row.dataset.email || "";
-      // role/college
-      const roleSel = document.getElementById("edit-role");
-      const collegeSel = document.getElementById("edit-college");
-      if (roleSel) roleSel.value = row.dataset.roleId || "";
-      if (collegeSel) collegeSel.value = row.dataset.collegeId || "";
-    });
-  });
-
-  // Autofill delete modal
-  document.querySelectorAll("[data-bs-target='#deleteUserModal']").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const row = btn.closest("tr");
-      document.getElementById("delete-id-no").value = row.dataset.idNo || "";
-      document.getElementById("delete-username").innerText = (row.dataset.fname || '') + " " + (row.dataset.lname || '');
-    });
-  });
-});
-*/
-</script>

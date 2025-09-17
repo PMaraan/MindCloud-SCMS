@@ -1,5 +1,6 @@
 <?php
 // app/Modules/Colleges/Views/index.php
+// Expects: $rows, $pager, $canCreate, $canEdit, $canDelete, $deans
 /** @var array $pager */
 /** @var array $rows */
 /** @var bool  $canCreate */
