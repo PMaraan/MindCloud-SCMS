@@ -6,6 +6,7 @@
 /** @var bool  $canEdit */
 /** @var bool  $canDelete */
 /** @var array $colleges */
+$globalPagination = dirname(__DIR__, 3) . '/Views/partials/Pagination.php';
 ?>
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -25,21 +26,17 @@
         <?php endif; ?>
     </div>
 
-    <div class="d-flex justify-content-between align-items-center mb-2">
-        <div class="text-muted small">
-        Showing <strong><?= (int)$pager['from'] ?></strong>–<strong><?= (int)$pager['to'] ?></strong>
-        of <strong><?= (int)$pager['total'] ?></strong>
-        </div>
-        <div>
-            <?php require __DIR__ . '/partials/Pagination.php'; ?>
-        </div>
-    </div>
+    <?php
+        // Pagination (top)
+        require $globalPagination;
+    ?>
 
     <?php require __DIR__ . '/partials/Table.php'; ?>
 
-    <div class="d-flex justify-content-end mt-3">
-        <?php include __DIR__ . '/partials/Pagination.php'; ?>
-    </div>
+    <?php
+        // Pagination (bottom)
+        require $globalPagination;
+    ?>
 
 <?php if (!empty($canCreate)) require __DIR__ . '/partials/CreateModal.php'; ?>
 <?php if (!empty($canEdit))   require __DIR__ . '/partials/EditModal.php'; ?>

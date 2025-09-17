@@ -29,27 +29,24 @@ final class ProgramsController
         // Dashboard already gates the module, but this keeps direct calls safe:
         $this->rbac->require((string)$_SESSION['user_id'], Permissions::PROGRAMS_VIEW);
 
-        $q       = isset($_GET['q']) ? mb_strtolower(trim((string)$_GET['q'])) : null;
+        // Query params for search and pagination
+        $rawQ    = isset($_GET['q']) ? trim((string)$_GET['q']) : '';
+        $q       = ($rawQ !== '') ? mb_strtolower($rawQ) : null;
+
         $pageNum = max(1, (int)($_GET['pg'] ?? 1));
         $limit   = 10;
         $offset  = ($pageNum - 1) * $limit;
 
         [$rows, $total] = $this->model->getProgramsPage($q, $limit, $offset);
-        $pages = max(1, (int)ceil($total / $limit));
 
         $pager = [
             'total'   => $total,
-            'page'    => $pageNum,
-            'pages'   => $pages,
-            'limit'   => $limit,
+            'pg'      => $pageNum,
+            'perpage' => $limit,
             'baseUrl' => BASE_PATH . '/dashboard?page=programs',
-            'query'   => $q,
+            'query'   => $rawQ,                     // Show/search label preserves user input
             'from'    => ($total === 0) ? 0 : ($offset + 1),
             'to'      => min($offset + $limit, $total),
-            'hasPrev' => $pageNum > 1,
-            'hasNext' => $pageNum < $pages,
-            'prev'    => max(1, $pageNum - 1),
-            'next'    => min($pages, $pageNum + 1),
         ];
 
         $userId    = (string)$_SESSION['user_id'];
