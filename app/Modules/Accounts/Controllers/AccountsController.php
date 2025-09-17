@@ -9,91 +9,105 @@ use App\Helpers\FlashHelper;
 use App\Helpers\PasswordHelper;
 use App\Security\RBAC;
 use App\Helpers\NotifyHelper;
-// Delete these permissions after deprecated confirmation ...
-//use App\Config\Permissions;
-//use App\Helpers\RbacHelper;
-//use App\Helpers\View;
+
+/**
+ * AccountsController
+ *
+ * Handles Accounts module list/create/edit/delete.
+ * - Uses global pagination component contract.
+ * - Gates actions via ModuleRegistry-configured permission keys.
+ * - No caching (always queries DB) to reflect permission/record changes immediately.
+ */
 
 final class AccountsController{
+    private const PER_PAGE = 10;
+
     private StorageInterface $db;
     private AccountsModel $model;
 
-    public function __construct(StorageInterface $db) {
+    public function __construct(StorageInterface $db)
+    {
         $this->db = $db;
         $this->model = new AccountsModel($db);
+
         if (defined('APP_ENV') && APP_ENV === 'dev') {
             error_log('AccountsController using model: ' . get_class($this->model));
         }
-        if (session_status() !== \PHP_SESSION_ACTIVE) session_start();
+        if (session_status() !== \PHP_SESSION_ACTIVE) {
+            session_start();
+        }
     }
 
+    /**
+     * Render the Accounts list.
+     *
+     * @return string HTML for the module region
+     */
     public function index(): string {
-        // RBAC check
+        // RBAC: view list
         (new RBAC($this->db))->require((string)$_SESSION['user_id'], 'AccountViewing');
 
+        // Search & paging
         $rawQ   = isset($_GET['q']) ? trim((string)$_GET['q']) : null;
-        $search = ($rawQ !== null && $rawQ !== '') ? mb_strtolower($rawQ) : null; // Make string lowercase or null
+        $search = ($rawQ !== null && $rawQ !== '') ? mb_strtolower($rawQ) : null;
 
-        $page    = max(1, (int)($_GET['pg'] ?? 1));
-        $perPage = 10;
-        $offset  = ($page - 1) * $perPage;
+        $page   = max(1, (int)($_GET['pg'] ?? 1));
+        $offset = ($page - 1) * self::PER_PAGE;
 
-        $result  = $this->model->getUsersPage($search, $perPage, $offset);
-        $users   = $result['rows'];
-        $total   = $result['total'];
-        $pages   = max(1, (int)ceil($total / $perPage));
+        $result = $this->model->getUsersPage($search, self::PER_PAGE, $offset);
+        $users  = $result['rows'];
+        $total  = $result['total'];
 
+        // Global paginator contract
         $pager = [
-            'page'     => $page,
-            'perPage'  => $perPage,
-            'total'    => $total,
-            'pages'    => $pages,
-            'hasPrev'  => $page > 1,
-            'hasNext'  => $page < $pages,
-            'prev'     => max(1, $page - 1),
-            'next'     => min($pages, $page + 1),
-            'baseUrl'  => BASE_PATH . '/dashboard?page=accounts',
-            'query'    => $rawQ,
+            'total'   => $total,
+            'pg'      => $page,
+            'perpage' => self::PER_PAGE,
+            'baseUrl' => BASE_PATH . '/dashboard?page=accounts',
+            'query'   => $rawQ,
+            // 'extra' => ['sort' => 'lname'],
+            'from'    => $total > 0 ? (($page - 1) * self::PER_PAGE + 1) : 0,
+            'to'      => $total > 0 ? min($total, $page * self::PER_PAGE) : 0,
         ];
 
-        // Permission flags for RBAC
+        // Action gating from ModuleRegistry
+        $registry = require dirname(__DIR__, 4) . '/config/ModuleRegistry.php'; // project root/config/ModuleRegistry.php
+        $actions  = $registry['accounts']['actions'] ?? [];
+
         $rbac = new RBAC($this->db);
         $uid  = (string)$_SESSION['user_id'];
 
-        // Load module actions from registry (path relative to this controller)
-        $registry = require dirname(__DIR__, 4) . '/config/ModuleRegistry.php';
-        $actions  = $registry['accounts']['actions'] ?? [];
-
-        // Check permissions
         $canCreate = !empty($actions['create']) && $rbac->has($uid, $actions['create']);
         $canEdit   = !empty($actions['edit'])   && $rbac->has($uid, $actions['edit']);
         $canDelete = !empty($actions['delete']) && $rbac->has($uid, $actions['delete']);
 
-        // Create modal dropdown data
+        // Dropdown data
         $roles    = $this->model->getAllRoles();
         $colleges = $this->model->getAllColleges();
 
+        // CSRF
         if (empty($_SESSION['csrf_token'])) {
             $_SESSION['csrf_token'] = bin2hex(random_bytes(16));
         }
         $csrf = $_SESSION['csrf_token'];
 
         if (defined('APP_ENV') && APP_ENV === 'dev') {
-            error_log("accounts.index total=" . $total . " rows=" . count($users));
+            error_log("accounts.index total={$total} rows=" . count($users));
             if (!empty($users)) {
                 error_log("accounts.index firstRow=" . json_encode($users[0], JSON_UNESCAPED_SLASHES));
             }
         }
 
+        // Render view
         ob_start();
         // Make vars visible in the view:
-        /** @var array $users */
-        /** @var array $pager */
-        /** @var bool $canCreate */
-        /** @var bool $canEdit */
-        /** @var bool $canDelete */
-        /** @var array $roles */
-        /** @var array $colleges */
+        /** @var array  $users */
+        /** @var array  $pager */
+        /** @var bool   $canCreate */
+        /** @var bool   $canEdit */
+        /** @var bool   $canDelete */
+        /** @var array  $roles */
+        /** @var array  $colleges */
         /** @var string $csrf */
         require __DIR__ . '/../Views/index.php';
         return (string)ob_get_clean();
@@ -102,7 +116,8 @@ final class AccountsController{
     /**
      * Create user (POST from Create modal).
      */
-    public function create(): void {
+    public function create(): void
+    {
         (new RBAC($this->db))->require((string)$_SESSION['user_id'], 'AccountCreation');
 
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
@@ -111,7 +126,7 @@ final class AccountsController{
             exit;
         }
 
-        // CSRF check
+        // CSRF check (form must post `csrf`)
         $token = $_POST['csrf'] ?? '';
         if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $token)) {
             FlashHelper::set('danger', 'Invalid CSRF token.');
@@ -119,24 +134,25 @@ final class AccountsController{
             exit;
         }
 
-        $defaultPassword = 'password'; // you may choose to set a default password
+        $defaultPassword = 'password';
+
         // Collect & validate
-        $id_no   = trim((string)($_POST['id_no']   ?? ''));
-        $fname   = trim((string)($_POST['fname']   ?? ''));
-        $mname   = trim((string)($_POST['mname']   ?? ''));
-        $lname   = trim((string)($_POST['lname']   ?? ''));
-        $email   = trim((string)($_POST['email']   ?? ''));
-        $passwd  = (string)($_POST['password']     ?? $defaultPassword);
-        $role_id = (string)($_POST['role_id']      ?? '');
-        $college_id = (string)($_POST['college_id'] ?? '');
+        $id_no      = trim((string)($_POST['id_no']   ?? ''));
+        $fname      = trim((string)($_POST['fname']   ?? ''));
+        $mname      = trim((string)($_POST['mname']   ?? ''));
+        $lname      = trim((string)($_POST['lname']   ?? ''));
+        $email      = trim((string)($_POST['email']   ?? ''));
+        $passwd     = (string)($_POST['password']     ?? $defaultPassword);
+        $role_id    = (string)($_POST['role_id']      ?? '');
+        $college_id = (string)($_POST['college_id']   ?? '');
 
         $errors = [];
-        if ($id_no === '')   $errors[] = 'ID No is required.';
-        if ($fname === '')   $errors[] = 'First name is required.';
-        if ($lname === '')   $errors[] = 'Last name is required.';
+        if ($id_no === '')                                   $errors[] = 'ID No is required.';
+        if ($fname === '')                                   $errors[] = 'First name is required.';
+        if ($lname === '')                                   $errors[] = 'Last name is required.';
         if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Valid email is required.';
-        if ($passwd === '' || strlen($passwd) < 6) $errors[] = 'Password must be at least 6 characters.';
-        if ($role_id === '') $errors[] = 'Role is required.';
+        if ($passwd === '' || strlen($passwd) < 6)           $errors[] = 'Password must be at least 6 characters.';
+        if ($role_id === '')                                 $errors[] = 'Role is required.';
 
         if ($errors) {
             FlashHelper::set('danger', implode(' ', $errors));
@@ -144,10 +160,9 @@ final class AccountsController{
             exit;
         }
 
-        // Hash password
+        // Hash password & insert
         $hash = PasswordHelper::hash($passwd);
 
-        // Insert (users + user_roles) in a transaction
         $ok = $this->model->createUser([
             'id_no'      => $id_no,
             'fname'      => $fname,
@@ -161,16 +176,14 @@ final class AccountsController{
 
         if ($ok) {
             FlashHelper::set('success', 'User created successfully.');
-            // Acting admin (stored by AuthController into $_SESSION['user_id'])
-            $currentAdminIdNo = (string)($_SESSION['user_id'] ?? '');
-            // New user’s id_no from the create logic
-            $targetIdNo      = (string)($id_no ?? '');
 
-            // Send one row per recipient (per-user is_read works as-is)
+            $currentAdminIdNo = (string)($_SESSION['user_id'] ?? '');
+            $targetIdNo       = (string)$id_no;
+
             NotifyHelper::toUsers(
                 array_filter([$currentAdminIdNo, $targetIdNo]),
                 'Account created',
-                'A new account has been created. With id No: ' . $targetIdNo,
+                'A new account has been created. ID No: ' . $targetIdNo,
                 BASE_PATH . '/dashboard?page=accounts&q=' . urlencode($targetIdNo)
             );
         } else {
@@ -182,13 +195,15 @@ final class AccountsController{
     }
 
     /**
-     * Handle edit user action.
+     * Edit user (POST from Edit modal).
      */
-    public function edit(): void {
+    public function edit(): void
+    {
         (new RBAC($this->db))->require((string)$_SESSION['user_id'], 'AccountModification');
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
             FlashHelper::set('danger', 'Invalid request.');
-            header("Location: " . BASE_PATH . "/dashboard?page=accounts");
+            header('Location: ' . BASE_PATH . '/dashboard?page=accounts');
             exit;
         }
 
@@ -200,7 +215,7 @@ final class AccountsController{
             exit;
         }
 
-        // Collect fields from POST
+        // Collect & validate
         $data = [
             'id_no'      => trim((string)($_POST['id_no'] ?? '')),
             'fname'      => trim((string)($_POST['fname'] ?? '')),
@@ -211,34 +226,31 @@ final class AccountsController{
             'college_id' => (string)($_POST['college_id'] ?? ''),
         ];
 
-        // Validate
         $errs = [];
-        if ($data['id_no'] === '') $errs[] = 'Missing user ID.';
-        if ($data['fname'] === '') $errs[] = 'First name is required.';
-        if ($data['lname'] === '') $errs[] = 'Last name is required.';
+        if ($data['id_no'] === '')                                         $errs[] = 'Missing user ID.';
+        if ($data['fname'] === '')                                         $errs[] = 'First name is required.';
+        if ($data['lname'] === '')                                         $errs[] = 'Last name is required.';
         if ($data['email'] === '' || !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) $errs[] = 'Valid email is required.';
-        if ($data['role_id'] === '') $errs[] = 'Role is required.';
+        if ($data['role_id'] === '')                                       $errs[] = 'Role is required.';
+
         if ($errs) {
             FlashHelper::set('danger', implode(' ', $errs));
             header('Location: ' . BASE_PATH . '/dashboard?page=accounts');
             exit;
         }
 
-        // Normalize nullable mname/college
-        if ($data['mname'] === '') $data['mname'] = null;
+        // Normalize nullable
+        if ($data['mname'] === '')      $data['mname'] = null;
         if ($data['college_id'] === '') $data['college_id'] = null;
 
-        // Update
         $ok = $this->model->updateUserWithRoleCollege($data);
 
         if ($ok) {
             FlashHelper::set('success', 'User updated successfully.');
-            // Acting admin (stored by AuthController into $_SESSION['user_id'])
-            $currentAdminIdNo = (string)($_SESSION['user_id'] ?? '');
-            // New user’s id_no from the create logic
-            $targetIdNo      = (string)($data['id_no'] ?? '');
 
-            // Send one row per recipient (per-user is_read works as-is)
+            $currentAdminIdNo = (string)($_SESSION['user_id'] ?? '');
+            $targetIdNo       = (string)$data['id_no'];
+
             NotifyHelper::toUsers(
                 array_filter([$currentAdminIdNo, $targetIdNo]),
                 'Account updated',
@@ -254,13 +266,15 @@ final class AccountsController{
     }
 
     /**
-     * Handle delete user action.
+     * Delete user (POST from Delete modal).
      */
-    public function delete(): void {
+    public function delete(): void
+    {
         (new RBAC($this->db))->require((string)$_SESSION['user_id'], 'AccountDeletion');
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
             FlashHelper::set('danger', 'Invalid request.');
-            header("Location: " . BASE_PATH . "/dashboard?page=accounts");
+            header('Location: ' . BASE_PATH . '/dashboard?page=accounts');
             exit;
         }
 
@@ -274,16 +288,15 @@ final class AccountsController{
 
         $id_no = trim((string)($_POST['id_no'] ?? ''));
 
-        // Basic validations
         if ($id_no === '') {
             FlashHelper::set('danger', 'Missing user ID.');
             header('Location: ' . BASE_PATH . '/dashboard?page=accounts');
             exit;
         }
 
-        // Optional guard: prevent deleting your own account (MVP-friendly)
+        // Optional guard: prevent deleting your own account
         if (!empty($_SESSION['user_id']) && trim((string)$_SESSION['user_id']) === $id_no) {
-            \App\Helpers\FlashHelper::set('danger', 'You cannot delete your own account while logged in.');
+            FlashHelper::set('danger', 'You cannot delete your own account while logged in.');
             header('Location: ' . BASE_PATH . '/dashboard?page=accounts');
             exit;
         }
@@ -292,8 +305,10 @@ final class AccountsController{
 
         if ($ok) {
             FlashHelper::set('success', 'User deleted successfully.');
-            $currentAdminIdNo  = (string)($_SESSION['user_id'] ?? '');
-            $targetIdNo = (string)($id_no ?? ''); // the account you just deleted
+
+            $currentAdminIdNo = (string)($_SESSION['user_id'] ?? '');
+            $targetIdNo       = (string)$id_no;
+
             NotifyHelper::toUsers(
                 [$currentAdminIdNo],
                 'Account deleted',
