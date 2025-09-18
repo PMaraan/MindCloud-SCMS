@@ -1,4 +1,5 @@
 <?php
+// /app/Views/TemplateBuilder-New.php
 // Robust $ASSET_BASE for both routed and "open file in browser" cases
 if (!defined('BASE_PATH')) {
     // Example URLs we must support:

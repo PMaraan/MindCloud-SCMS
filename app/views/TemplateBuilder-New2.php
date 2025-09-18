@@ -1,4 +1,5 @@
 <?php
+// /app/Views/TemplateBuilder-New2.php
 declare(strict_types=1);
 
 /** Simple HTML escaper for output contexts. */
