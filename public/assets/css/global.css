@@ -2,6 +2,9 @@ body {
   background-color: #f8f4f4;
 }
 
+/* Global: add a small gap between adjacent buttons inside tables */
+.table .btn + .btn { margin-left: .5rem; }
+
 /* Notification dropdown tweaks */
 .dropdown-menu .dropdown-item .fw-semibold { 
   line-height: 1.2; 

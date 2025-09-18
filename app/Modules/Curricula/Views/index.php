@@ -14,7 +14,7 @@ $globalPagination = dirname(__DIR__, 3) . '/Views/partials/Pagination.php';
 
     <form class="d-flex" method="GET" action="<?= BASE_PATH ?>/dashboard">
       <input type="hidden" name="page" value="curricula">
-      <input class="form-control me-2" type="search" name="q" placeholder="Search code/title..."
+      <input class="form-control me-2" type="search" name="q" placeholder="Search..."
              value="<?= htmlspecialchars($pager['query'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
       <button class="btn btn-outline-primary" type="submit">Search</button>
     </form>

@@ -43,7 +43,7 @@ if (defined('APP_ENV') && APP_ENV === 'dev') {
         class="form-control me-2"
         type="search"
         name="q"
-        placeholder="Search users..."
+        placeholder="Search..."
         aria-label="Search"
         value="<?= htmlspecialchars($pager['query'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
       <button class="btn btn-outline-primary" type="submit">Search</button>
@@ -61,7 +61,7 @@ if (defined('APP_ENV') && APP_ENV === 'dev') {
     include $globalPagination;
   ?>
 
-  <?php include __DIR__ . '/partials/AccountsTable.php'; ?>
+  <?php include __DIR__ . '/partials/Table.php'; ?>
 
   <?php
     // Pagination (bottom)

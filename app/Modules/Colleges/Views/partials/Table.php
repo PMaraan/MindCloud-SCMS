@@ -5,7 +5,7 @@
 /** @var bool  $canEdit */
 /** @var bool  $canDelete */
 ?>
-<div class="table-responsive">
+<div class="table-responsive shadow-sm border rounded">
   <table class="table table-bordered table-striped table-hover align-middle mb-0">
     <thead class="table-light">
       <tr>
@@ -28,7 +28,7 @@
           <td><?= htmlspecialchars((string)(($r['dean_full_name']  ?? '') ?: '-unassigned-'), ENT_QUOTES) ?></td>
           <td class="text-end">
             <?php if ($canEdit): ?>
-              <button class="btn btn-sm btn-outline-primary"
+              <button class="btn btn-sm btn-primary <?= $canDelete ? 'me-2' : '' ?>"
                       data-bs-toggle="modal"
                       data-bs-target="#editCollegesModal"
                       data-id="<?= (int)$r['college_id'] ?>"
