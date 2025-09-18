@@ -257,8 +257,21 @@ import TableCell   from "https://esm.sh/@tiptap/extension-table-cell@2.6.6";
 /* Load your sidebar/toolbar/blocks wiring (waits for window.__mc.editor) */
   import "<?= $ASSET_BASE ?>/assets/js/TemplateBuilder-New.js?v=<?= time() ?>";
 
+
+
+
+// /public/assets/js/TemplateBuilder-New.js
+import { createApp, ref } from "https://unpkg.com/vue@3.4.31/dist/vue.esm-browser.prod.js";
+
+document.addEventListener('DOMContentLoaded', () => {
+  const el = document.querySelector('#vue-test');
+  if (!el) return;
+  createApp({ setup(){ const msg = ref('hi'); return { msg }; }, template:`<span>{{ msg }}</span>` }).mount(el);
+});
+
 /* ==== Multi-page editor manager ==== */
 // --- Tiny UploadBox node (block atom) ---
+
 
 import { Plugin } from "https://esm.sh/prosemirror-state@1.4.3";
 

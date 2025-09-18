@@ -627,33 +627,27 @@ function wireDropTargets() {
 
       // (A) Flow-into-editor types — insert into TipTap
       if (ed) {
-        if (type === 'table') {
-          // If caret is in a table, move it out first to avoid nested tables
-          if (isSelectionInsideTable(ed)) {
-            forceCaretOutsideTable(ed, ev); // uses pointer Y to pick above/below
-          }
-
-          // 1) Insert a visible paragraph BEFORE the table (nbsp keeps the line visible)
-          ed.chain().focus().insertContent('<p>&nbsp;</p>').run();
-
-          // Capture a position inside that paragraph (one char back puts us in the <p>)
-          const paraPos = Math.max(1, ed.state.selection.from - 1);
-
-          // 2) Insert the table AFTER that paragraph
-          ed.chain().focus()
-            .insertTable({ rows: 3, cols: 4, withHeaderRow: false })
-            .run();
-
-          // 3) Put caret back into the paragraph ABOVE the table
-          if (ed.isActive('table')) {
-            moveCaretOutsideEnclosingTable(ed, 'before');
-          }
-          ed.chain().focus().setTextSelection(paraPos).run();
-
-          setOverlaysDragEnabled(false);
-          return;
+      if (type === 'table') {
+        if (isSelectionInsideTable(ed)) {
+          forceCaretOutsideTable(ed, ev); // uses drop pointer to choose above/below
         }
 
+        // 1) add a hidden ZWSP paragraph ABOVE the table
+        ed.chain().focus().insertContent('<p>\u200B</p>').run();
+
+        const paraPos = Math.max(1, ed.state.selection.from - 1);
+
+        // 2) insert the table
+        ed.chain().focus()
+          .insertTable({ rows: 3, cols: 4, withHeaderRow: false })
+          .run();
+
+        // 3) ensure caret sits in the line ABOVE the table
+        putCaretAboveJustInsertedTable(ed, paraPos);
+
+        setOverlaysDragEnabled(false);
+        return;
+      }
         // Simple sidebar items mapped to flowing HTML in TipTap
         if (type === 'label') {
           ed.chain().focus().insertContent('<p><strong>Label text</strong></p>').run();
@@ -896,24 +890,25 @@ function wireDropTargets() {
 
           // Never allow nested tables: if inside a table, move out first
           if (isSelectionInsideTable(ed)) {
-            forceCaretOutsideTable(ed, 'auto'); // chooses above/below by caret geometry
+            forceCaretOutsideTable(ed, 'auto');
           }
 
-// Paragraph ABOVE the table; nbsp ensures visible blank line
-ed.chain().focus().insertContent('<p>&nbsp;</p>').run();
-const paraPosTop = Math.max(1, ed.state.selection.from - 1);
+          // 1) add a hidden ZWSP paragraph ABOVE the table
+          ed.chain().focus().insertContent('<p>\u200B</p>').run();
 
-ed.chain().focus()
-  .insertTable({ rows: 3, cols: 4, withHeaderRow: false })
-  .run();
+          // selection is at end of that paragraph; step back 1 to be inside it
+          const paraPosTop = Math.max(1, ed.state.selection.from - 1);
 
-if (ed.isActive('table')) {
-  moveCaretOutsideEnclosingTable(ed, 'before');
-}
-ed.chain().focus().setTextSelection(paraPosTop).run();
-break;
+          // 2) insert the table
+          ed.chain().focus()
+            .insertTable({ rows: 3, cols: 4, withHeaderRow: false })
+            .run();
 
+          // 3) on next tick, put caret back in the paragraph ABOVE the table
+          putCaretAboveJustInsertedTable(ed, paraPosTop);
+          break;
         }
+
 
         case 'insertUploadBox':
         if (!ed) return;
@@ -1075,7 +1070,7 @@ function isSelectionInsideTable(ed) {
 function forceCaretOutsideTable(ed, evOrPref = 'auto') {
   const dir = moveCaretOutsideEnclosingTable(ed, evOrPref);
   // If we’re after the table, add a blank paragraph so inserts don’t weld to it
-if (dir === 'after') ed.chain().insertContent('<p>&nbsp;</p>').run();
+if (dir === 'after') ed.chain().insertContent('<p>\u200B</p>').run();
   return dir;
 }
 
@@ -1084,6 +1079,18 @@ if (dir === 'after') ed.chain().insertContent('<p>&nbsp;</p>').run();
 function moveCaretAfterEnclosingTable(ed) {
   return moveCaretOutsideEnclosingTable(ed, 'after') !== false;
 }
+
+// --- Ensure caret ends up ABOVE a newly inserted table ---
+function putCaretAboveJustInsertedTable(ed, paraPos) {
+  // Defer one frame so this runs after ProseMirror's own selection
+  requestAnimationFrame(() => {
+    try {
+      if (ed.isActive('table')) moveCaretOutsideEnclosingTable(ed, 'before');
+      ed.chain().focus().setTextSelection(paraPos).run();
+    } catch {}
+  });
+}
+
 
 
 
