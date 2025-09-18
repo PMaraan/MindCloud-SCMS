@@ -6,7 +6,7 @@
 
 $total   = (int)($pager['total']   ?? 0);
 $pg      = max(1, (int)($pager['pg']      ?? 1));
-$perpage = max(1, (int)($pager['perpage'] ?? 10));
+$perpage = max(1, (int)($pager['perpage'] ?? 1));
 $pages   = (int)ceil($total / $perpage);
 
 $base  = (string)($pager['baseUrl'] ?? '');
