@@ -1,37 +1,34 @@
-// /public/assets/js/programs.js
-// JavaScript to handle Edit and Delete modals for courses
+// public/assets/js/modules/programs.js
 document.addEventListener('DOMContentLoaded', function () {
-  const editModal = document.getElementById('EditModal');
-if (editModal) {
-  editModal.addEventListener('show.bs.modal', function (ev) {
-    const btn = ev.relatedTarget; if (!btn) return;
-    const row = btn.closest('tr'); if (!row) return;
+  // EDIT
+  const editModal = document.getElementById('editProgramModal');
+  if (editModal) {
+    editModal.addEventListener('show.bs.modal', function (ev) {
+      const btn = ev.relatedTarget; if (!btn) return;
+      const row = btn.closest('tr'); if (!row) return;
 
-    editModal.querySelector('#edit-id').value = row.dataset.courseId || '';
-    editModal.querySelector('#edit-course_code').value = row.dataset.courseCode || '';
-    editModal.querySelector('#edit-course_name').value = row.dataset.courseName || '';
+      const idInput     = editModal.querySelector('#progEditId');
+      const nameInput   = editModal.querySelector('#progEditName');
+      const collegeSel  = editModal.querySelector('#progEditCollege');
 
-    const collegeSel = editModal.querySelector('#edit-college_id');
-    if (collegeSel) collegeSel.value = row.dataset.collegeId || '';
+      if (idInput)    idInput.value    = row.dataset.programId || '';
+      if (nameInput)  nameInput.value  = row.dataset.programName || '';
+      if (collegeSel) collegeSel.value = row.dataset.collegeId || '';
+    });
+  }
 
-    // Preselect curricula
-    const ids = (row.dataset.curriculaIds || '').split(',').map(s => s.trim()).filter(Boolean);
-    const curSel = editModal.querySelector('#edit-curriculum_ids');
-    if (curSel) {
-      for (const opt of curSel.options) opt.selected = ids.includes(opt.value);
-    }
-  });
-}
-
-  const delModal = document.getElementById('DeleteModal');
+  // DELETE
+  const delModal = document.getElementById('deleteProgramModal');
   if (delModal) {
     delModal.addEventListener('show.bs.modal', function (ev) {
       const btn = ev.relatedTarget; if (!btn) return;
       const row = btn.closest('tr'); if (!row) return;
 
-      delModal.querySelector('#delete-id').value = row.dataset.courseId || '';
-      const label = delModal.querySelector('#delete-course-label');
-      if (label) label.textContent = (row.dataset.courseCode || '') + ' — ' + (row.dataset.courseName || '');
+      const idInput = delModal.querySelector('#progDelId');
+      const label   = delModal.querySelector('#progDelName');
+
+      if (idInput) idInput.value = row.dataset.programId || '';
+      if (label)   label.textContent = row.dataset.programName || '';
     });
   }
 });

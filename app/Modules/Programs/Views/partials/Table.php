@@ -21,26 +21,25 @@
     <tbody>
     <?php if (!empty($rows)): ?>
       <?php foreach ($rows as $r): ?>
-        <tr>
+        <tr
+          data-program-id="<?= (int)$r['program_id'] ?>"
+          data-program-name="<?= htmlspecialchars((string)$r['program_name'], ENT_QUOTES) ?>"
+          data-college-id="<?= (int)$r['college_id'] ?>"
+        >
           <td><?= htmlspecialchars((string)$r['program_name'], ENT_QUOTES) ?></td>
           <td><?= htmlspecialchars((string)($r['college_label'] ?? ''), ENT_QUOTES) ?></td>
           <td class="text-end">
             <?php if (!empty($canEdit)): ?>
               <button class="btn btn-sm btn-primary <?= !empty($canDelete) ? 'me-2' : '' ?>"
                       data-bs-toggle="modal"
-                      data-bs-target="#editProgramModal"
-                      data-program-id="<?= (int)$r['program_id'] ?>"
-                      data-program-name="<?= htmlspecialchars((string)$r['program_name'], ENT_QUOTES) ?>"
-                      data-college-id="<?= (int)$r['college_id'] ?>">
+                      data-bs-target="#editProgramModal">
                 <i class="bi bi-pencil"></i> Edit
               </button>
             <?php endif; ?>
             <?php if (!empty($canDelete)): ?>
               <button class="btn btn-sm btn-danger"
                       data-bs-toggle="modal"
-                      data-bs-target="#deleteProgramModal"
-                      data-program-id="<?= (int)$r['program_id'] ?>"
-                      data-program-name="<?= htmlspecialchars((string)$r['program_name'], ENT_QUOTES) ?>">
+                      data-bs-target="#deleteProgramModal">
                 <i class="bi bi-trash"></i> Delete
               </button>
             <?php endif; ?>
