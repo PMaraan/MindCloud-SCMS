@@ -26,26 +26,30 @@ final class NotificationsController
 
         // Filters & pagination
         $status = strtolower((string)($_GET['status'] ?? 'all'));
-        if (!in_array($status, ['all','unread','read'], true)) $status = 'all';
+        if (!in_array($status, ['all', 'unread', 'read'], true)) {
+            $status = 'all';
+        }
 
-        $pg      = max(1, (int)($_GET['pg'] ?? 1));
-        $perPage  = 10;
+        // Pagination
+        $pg       = max(1, (int)($_GET['pg'] ?? 1));
+        $perPage  = max(1, (int)(defined('UI_PER_PAGE_DEFAULT') ? UI_PER_PAGE_DEFAULT : 10));
         $offset   = ($pg - 1) * $perPage;
 
         // Query via model (read-only)
         $model = new NotificationsModel($this->db);
         $total = $model->countForUser($idNo, $status);
         $rows  = $model->listForUser($idNo, $offset, $perPage, $status);
-        $pages = (int)max(1, (int)ceil($total / $perPage));
 
         // Standard pager structure used by your modules
         $pager = [
             'baseUrl' => BASE_PATH . '/dashboard?page=notifications',
-            'pg'      => $pg,        // standardized
-            'perPage' => $perPage,   // standardized
+            'pg'      => $pg,
+            'perpage' => $perPage,
             'total'   => $total,
-            'query'   => '',         // optional
-            'extra'   => ['status' => $status], // optional; forwards &status=...
+            'query'   => '',         // keep if you add search later
+            'extra'   => ['status' => $status], // keeps the filter across pages
+            'from'   => ($total > 0 ? (($pg - 1) * $perPage + 1) : 0),
+            'to'     => ($total > 0 ? min($total, $pg * $perPage) : 0),
         ];
 
         // Render view
@@ -53,6 +57,7 @@ final class NotificationsController
         require dirname(__DIR__) . '/Views/index.php';
         return (string)ob_get_clean();
     }
+    
     /**
      * GET /notifications/latest
      * Returns JSON: { items: [ {id,title,body,url,is_read,created_at}, ... ] }

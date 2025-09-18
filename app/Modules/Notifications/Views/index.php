@@ -10,6 +10,7 @@ function mc_url_with(string $base, array $qs): string {
     foreach ($qs as $k => $v) $q[] = urlencode((string)$k) . '=' . urlencode((string)$v);
     return $base . '&' . implode('&', $q);
 }
+$globalPagination = dirname(__DIR__, 3) . '/Views/partials/Pagination.php';
 ?>
 <div class="container-fluid py-3">
   <div class="d-flex justify-content-between align-items-center mb-3">
@@ -25,7 +26,7 @@ function mc_url_with(string $base, array $qs): string {
     </div>
   </div>
 
-  <?php require dirname(__DIR__, 3) . '/Views/partials/Pagination.php'; ?>
+  <?php include $globalPagination; ?>
 
   <div class="card shadow-sm">
     <div class="list-group list-group-flush">
@@ -67,4 +68,4 @@ function mc_url_with(string $base, array $qs): string {
   
 </div>
 
-<?php require dirname(__DIR__, 3) . '/Views/partials/Pagination.php'; ?>
+<?php include $globalPagination; ?>

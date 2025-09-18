@@ -99,28 +99,30 @@ final class CoursesController
         $canEdit   = ($p = $this->getActionPermission('edit'))   !== '' ? $this->rbac->has($uid, $p) : false;
         $canDelete = ($p = $this->getActionPermission('delete')) !== '' ? $this->rbac->has($uid, $p) : false;
 
-        $rawQ    = isset($_GET['q']) ? trim((string)$_GET['q']) : null;
-        $search  = ($rawQ !== null && $rawQ !== '') ? mb_strtolower($rawQ) : null;
+        $rawQ   = isset($_GET['q']) ? trim((string)$_GET['q']) : null;
+        $search = ($rawQ !== null && $rawQ !== '') ? mb_strtolower($rawQ) : null;
+
         $page    = max(1, (int)($_GET['pg'] ?? 1));
-        $perPage = 10;
+        $perPage = max(1, (int)(defined('UI_PER_PAGE_DEFAULT') ? UI_PER_PAGE_DEFAULT : 10));
         $offset  = ($page - 1) * $perPage;
 
         $result = $this->model->getPage($search, $perPage, $offset);
         $rows   = $result['rows'];
         $total  = $result['total'];
 
-        $pages = max(1, (int)ceil($total / $perPage));
+        // Compute range for "Showing X–Y of Z"
+        $from = $total > 0 ? ($offset + 1) : 0;
+        $to   = $total > 0 ? min($total, $offset + count($rows)) : 0;
+
+        // Build pager expected by /app/Views/partials/Pagination.php
         $pager = [
-            'page'     => $page,
-            'perPage'  => $perPage,
+            'pg'       => $page,
+            'perpage'  => $perPage,
             'total'    => $total,
-            'pages'    => $pages,
-            'hasPrev'  => $page > 1,
-            'hasNext'  => $page < $pages,
-            'prev'     => max(1, $page - 1),
-            'next'     => min($pages, $page + 1),
-            'baseUrl'  => $this->baseUrl,
+            'baseUrl'  => $this->baseUrl,  // e.g., BASE_PATH . '/dashboard?page=courses'
             'query'    => $rawQ,
+            'from'     => $from,
+            'to'       => $to,
         ];
 
         // Data for modals

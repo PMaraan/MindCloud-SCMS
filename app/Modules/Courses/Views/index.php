@@ -1,4 +1,52 @@
-<?php /* app/Modules/Courses/Views/index.php */ ?>
+<?php
+// /app/Modules/Courses/Views/index.php
+/**
+ * Courses Module – Index View
+ *
+ * Renders the Courses list page, including search, pagination (top/bottom),
+ * the table, and CRUD modals.
+ *
+ * Expected variables (extracted in CoursesController::index()):
+ *
+ * @var array<int, array{
+ *     course_id:int,
+ *     course_code:string,
+ *     course_name:string,
+ *     college_id:int|null,
+ *     college_short:string|null,
+ *     curricula:string|null,        // comma-separated curriculum codes for display
+ *     curricula_ids:string|null     // comma-separated curriculum_id values for JS preselect
+ * }> $rows
+ *
+ * @var array{
+ *     pg:int,                       // current page number
+ *     perpage:int,                  // items per page
+ *     total:int,                    // total rows across all pages
+ *     baseUrl:string,               // e.g. BASE_PATH . '/dashboard?page=courses'
+ *     query?:string,                // raw search query for display/links
+ *     from?:int,                    // first item index shown on this page
+ *     to?:int,                      // last item index shown on this page
+ *     extra?:array<string,string>   // extra query params to append to page links
+ * } $pager
+ *
+ * @var bool $canCreate
+ * @var bool $canEdit
+ * @var bool $canDelete
+ *
+ * @var array<int, array{college_id:int, short_name:string}> $colleges
+ * @var array<int, array{curriculum_id:int, curriculum_code:string, curriculum_title:string}> $curricula
+ *
+ * @var string $csrf  CSRF token for forms
+ *
+ * Includes:
+ * - Pagination partial: /app/Views/partials/Pagination.php
+ * - Table partial:      /app/Modules/Courses/Views/partials/Table.php
+ * - Modals:             /app/Modules/Courses/Views/partials/{CreateModal,EditModal,DeleteModal}.php
+ *
+ * Source of variables: App\Modules\Courses\Controllers\CoursesController::index()
+ */
+$globalPagination = dirname(__DIR__, 3) . '/Views/partials/Pagination.php';
+?>
 <div class="container-fluid">
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="mb-0">Courses</h2>
@@ -25,43 +73,18 @@
     </div>
   <?php endif; ?>
 
-  <?php include dirname(__DIR__, 3) . '/Views/partials/Pagination.php'; ?>
+  <?php
+    // Pagination (top)
+    include $globalPagination;
+  ?>
 
   <?php require __DIR__ . '/partials/Table.php'; ?>
 
   <?php
-    // Pagination
-    /*
-    $pages = (int)($pager['pages'] ?? 1);
-    $page  = (int)($pager['page'] ?? 1);
-    $mk = function(int $n) use ($pager) {
-      $url = ($pager['baseUrl'] ?? (BASE_PATH . '/dashboard?page=courses')) . '&pg=' . $n;
-      $q = (string)($pager['query'] ?? '');
-      if ($q !== '') $url .= '&q=' . urlencode($q);
-      return $url;
-    };
-    */
-    include dirname(__DIR__, 3) . '/Views/partials/Pagination.php';
+    // Pagination (bottom)
+    include $globalPagination;
   ?>
-  <?php
-  /*
-  <nav aria-label="Courses pagination">
-    <ul class="pagination">
-      <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>">
-        <a class="page-link" href="<?= $page <= 1 ? '#' : $mk($page - 1) ?>">Prev</a>
-      </li>
-      <?php for ($p = 1; $p <= $pages; $p++): ?>
-        <li class="page-item <?= $p === $page ? 'active' : '' ?>">
-          <a class="page-link" href="<?= $mk($p) ?>"><?= $p ?></a>
-        </li>
-      <?php endfor; ?>
-      <li class="page-item <?= $page >= $pages ? 'disabled' : '' ?>">
-        <a class="page-link" href="<?= $page >= $pages ? '#' : $mk($page + 1) ?>">Next</a>
-      </li>
-    </ul>
-  </nav>
-  */
-  ?>
+
 </div>
 
 <?php
@@ -69,40 +92,6 @@
   include __DIR__ . '/partials/EditModal.php';
   include __DIR__ . '/partials/DeleteModal.php';
 ?>
-
-<script>
-  /*
-document.addEventListener('DOMContentLoaded', function () {
-  const editModal = document.getElementById('EditModal');
-  if (editModal) {
-    editModal.addEventListener('show.bs.modal', function (ev) {
-      const btn = ev.relatedTarget; if (!btn) return;
-      const row = btn.closest('tr'); if (!row) return;
-
-      editModal.querySelector('#edit-id').value = row.dataset.courseId || '';
-      editModal.querySelector('#edit-course_code').value = row.dataset.courseCode || '';
-      editModal.querySelector('#edit-course_name').value = row.dataset.courseName || '';
-      editModal.querySelector('#edit-curriculum_id').value = row.dataset.curriculumId || '';
-
-      const sel = editModal.querySelector('#edit-college_id');
-      if (sel) sel.value = row.dataset.collegeId || '';
-    });
-  }
-
-  const delModal = document.getElementById('DeleteModal');
-  if (delModal) {
-    delModal.addEventListener('show.bs.modal', function (ev) {
-      const btn = ev.relatedTarget; if (!btn) return;
-      const row = btn.closest('tr'); if (!row) return;
-
-      delModal.querySelector('#delete-id').value = row.dataset.courseId || '';
-      const label = delModal.querySelector('#delete-course-label');
-      if (label) label.textContent = (row.dataset.courseCode || '') + ' — ' + (row.dataset.courseName || '');
-    });
-  }
-});
-*/
-</script>
 
 <?php
 $jsPath = '/public/assets/js/programs.js';

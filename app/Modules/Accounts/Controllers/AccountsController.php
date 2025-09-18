@@ -52,9 +52,10 @@ final class AccountsController{
         $search = ($rawQ !== null && $rawQ !== '') ? mb_strtolower($rawQ) : null;
 
         $page   = max(1, (int)($_GET['pg'] ?? 1));
-        $offset = ($page - 1) * self::PER_PAGE;
+        $perPage = max(1, (int)(defined('UI_PER_PAGE_DEFAULT') ? UI_PER_PAGE_DEFAULT : 10));
+        $offset = ($page - 1) * $perPage;
 
-        $result = $this->model->getUsersPage($search, self::PER_PAGE, $offset);
+        $result = $this->model->getUsersPage($search, $perPage, $offset);
         $users  = $result['rows'];
         $total  = $result['total'];
 
@@ -62,12 +63,11 @@ final class AccountsController{
         $pager = [
             'total'   => $total,
             'pg'      => $page,
-            'perpage' => self::PER_PAGE,
+            'perpage' => $perPage,
             'baseUrl' => BASE_PATH . '/dashboard?page=accounts',
             'query'   => $rawQ,
-            // 'extra' => ['sort' => 'lname'],
-            'from'    => $total > 0 ? (($page - 1) * self::PER_PAGE + 1) : 0,
-            'to'      => $total > 0 ? min($total, $page * self::PER_PAGE) : 0,
+            'from'    => $total > 0 ? (($page - 1) * $perPage + 1) : 0,
+            'to'      => $total > 0 ? min($total, $page * $perPage) : 0,
         ];
 
         // Action gating from ModuleRegistry

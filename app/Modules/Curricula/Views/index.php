@@ -6,6 +6,7 @@
 /** @var bool   $canDelete */
 /** @var array  $pager */
 /** @var string $csrf */
+$globalPagination = dirname(__DIR__, 3) . '/Views/partials/Pagination.php';
 ?>
 <div class="container-fluid">
   <div class="d-flex justify-content-between align-items-center mb-3">
@@ -27,7 +28,7 @@
 
   <?php
     // Pagination (top)
-    require dirname(__DIR__, 3) . '/Views/partials/Pagination.php';
+    include $globalPagination;
   ?>
 
   <?php
@@ -37,7 +38,7 @@
 
   <?php
     // Pagination (bottom)
-    require dirname(__DIR__, 3) . '/Views/partials/Pagination.php';
+    include $globalPagination;
   ?>
 </div>
 
