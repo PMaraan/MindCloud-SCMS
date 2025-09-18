@@ -30,23 +30,23 @@ final class ProgramsController
         $this->rbac->require((string)$_SESSION['user_id'], Permissions::PROGRAMS_VIEW);
 
         // Query params for search and pagination
-        $rawQ    = isset($_GET['q']) ? trim((string)$_GET['q']) : '';
-        $q       = ($rawQ !== '') ? mb_strtolower($rawQ) : null;
+        $rawQ = isset($_GET['q']) ? trim((string)$_GET['q']) : '';
+        $q    = ($rawQ !== '') ? mb_strtolower($rawQ) : null;
 
-        $pageNum = max(1, (int)($_GET['pg'] ?? 1));
-        $limit   = 10;
-        $offset  = ($pageNum - 1) * $limit;
+        $page    = max(1, (int)($_GET['pg'] ?? 1));
+        $perPage = max(1, (int)(defined('UI_PER_PAGE_DEFAULT') ? UI_PER_PAGE_DEFAULT : 10));
+        $offset  = ($page - 1) * $perPage;
 
-        [$rows, $total] = $this->model->getProgramsPage($q, $limit, $offset);
+        [$rows, $total] = $this->model->getProgramsPage($q, $perPage, $offset);
 
         $pager = [
             'total'   => $total,
-            'pg'      => $pageNum,
-            'perpage' => $limit,
+            'pg'      => $page,                         // ← global partial expects 'pg'
+            'perpage' => $perPage,                      // ← and 'perpage'
             'baseUrl' => BASE_PATH . '/dashboard?page=programs',
-            'query'   => $rawQ,                     // Show/search label preserves user input
+            'query'   => $rawQ,                         // keep original casing in UI
             'from'    => ($total === 0) ? 0 : ($offset + 1),
-            'to'      => min($offset + $limit, $total),
+            'to'      => min($offset + $perPage, $total),
         ];
 
         $userId    = (string)$_SESSION['user_id'];

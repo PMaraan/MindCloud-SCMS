@@ -37,23 +37,23 @@ final class CurriculaController
         $q = strtolower(trim((string)$qRaw));
 
         // Standardize to global pager keys:
-        $pg      = max(1, (int)($_GET['pg'] ?? 1));
-        $perpage = 10;
-        $offset  = ($pg - 1) * $perpage;
+        $page    = max(1, (int)($_GET['pg'] ?? 1));
+        $perPage = max(1, (int)(defined('UI_PER_PAGE_DEFAULT') ? UI_PER_PAGE_DEFAULT : 10));
+        $offset  = ($page - 1) * $perPage;
 
         $model = new CurriculaModel($this->db);
         $total = $model->count($q);
-        $rows  = $model->getPage($q, $perpage, $offset);
+        $rows  = $model->getPage($q, $perPage, $offset);
 
         // Compute from/to once here so the partial can just render
         $from = $total > 0 ? ($offset + 1) : 0;
-        $to   = $total > 0 ? min($offset + $perpage, $total) : 0;
+        $to   = $total > 0 ? min($offset + $perPage, $total) : 0;
 
         // Build pager exactly for the global Pagination.php
         $pager = [
             'total'   => $total,
-            'pg'      => $pg,
-            'perpage' => $perpage,
+            'pg'      => $page,
+            'perpage' => $perPage,
             'baseUrl' => BASE_PATH . '/dashboard?page=curricula',
             'query'   => $qRaw,
             'from'    => $from,

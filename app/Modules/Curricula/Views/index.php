@@ -6,6 +6,7 @@
 /** @var bool   $canDelete */
 /** @var array  $pager */
 /** @var string $csrf */
+$globalPagination = dirname(__DIR__, 3) . '/Views/partials/Pagination.php';
 ?>
 <div class="container-fluid">
   <div class="d-flex justify-content-between align-items-center mb-3">
@@ -13,7 +14,7 @@
 
     <form class="d-flex" method="GET" action="<?= BASE_PATH ?>/dashboard">
       <input type="hidden" name="page" value="curricula">
-      <input class="form-control me-2" type="search" name="q" placeholder="Search code/title..."
+      <input class="form-control me-2" type="search" name="q" placeholder="Search..."
              value="<?= htmlspecialchars($pager['query'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
       <button class="btn btn-outline-primary" type="submit">Search</button>
     </form>
@@ -27,7 +28,7 @@
 
   <?php
     // Pagination (top)
-    require dirname(__DIR__, 3) . '/Views/partials/Pagination.php';
+    include $globalPagination;
   ?>
 
   <?php
@@ -37,7 +38,7 @@
 
   <?php
     // Pagination (bottom)
-    require dirname(__DIR__, 3) . '/Views/partials/Pagination.php';
+    include $globalPagination;
   ?>
 </div>
 

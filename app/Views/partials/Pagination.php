@@ -1,12 +1,18 @@
 <?php
 // /app/Views/partials/Pagination.php
-// Expects $pager with keys:
-//   required: 'total', 'pg', 'perpage', 'baseUrl'
-//   optional: 'query' (string), 'extra' (assoc array), 'from', 'to'
+/**
+ * Global Pagination component.
+ *
+ * Expects $pager with keys:
+ *   required: 'total', 'pg', 'perpage', 'baseUrl'
+ *   optional: 'query' (string), 'extra' (assoc array), 'from', 'to'
+ *
+ * @var array{total:int,pg:int,perpage:int,baseUrl:string,query?:string,extra?:array,from?:int,to?:int} $pager
+ */
 
 $total   = (int)($pager['total']   ?? 0);
 $pg      = max(1, (int)($pager['pg']      ?? 1));
-$perpage = max(1, (int)($pager['perpage'] ?? 10));
+$perpage = max(1, (int)($pager['perpage'] ?? (defined('UI_PER_PAGE_DEFAULT') ? UI_PER_PAGE_DEFAULT : 10)));
 $pages   = (int)ceil($total / $perpage);
 
 $base  = (string)($pager['baseUrl'] ?? '');

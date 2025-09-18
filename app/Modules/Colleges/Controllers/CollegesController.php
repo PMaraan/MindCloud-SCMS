@@ -40,7 +40,7 @@ final class CollegesController
         $rawQ   = isset($_GET['q']) ? trim((string)$_GET['q']) : null;
         $search = ($rawQ !== null && $rawQ !== '') ? mb_strtolower($rawQ) : null;
         $page    = max(1, (int)($_GET['pg'] ?? 1));
-        $perPage = 10;
+        $perPage = max(1, (int)(defined('UI_PER_PAGE_DEFAULT') ? UI_PER_PAGE_DEFAULT : 10));
         $offset  = ($page - 1) * $perPage;
 
         $model  = new CollegesModel($this->db);

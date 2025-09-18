@@ -28,14 +28,14 @@ $globalPagination = dirname(__DIR__, 3) . '/Views/partials/Pagination.php';
 
     <?php
         // Pagination (top)
-        require $globalPagination;
+        include $globalPagination;
     ?>
 
     <?php require __DIR__ . '/partials/Table.php'; ?>
 
     <?php
         // Pagination (bottom)
-        require $globalPagination;
+        include $globalPagination;
     ?>
 
 <?php if (!empty($canCreate)) require __DIR__ . '/partials/CreateModal.php'; ?>

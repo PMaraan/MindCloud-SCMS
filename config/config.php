@@ -37,6 +37,7 @@ define('DB_PASS', getenv('DB_PASS') ?: 'root');
 //define('BASE_PATH', getenv('BASE_PATH') ?: '/MindCloud-SCMS');
 define('DB_DRIVER', getenv('DB_DRIVER') ?: 'pgsql'); // default to pgsql if not set
 define('APP_ENV', getenv('APP_ENV') ?: 'dev');
+define('UI_PER_PAGE_DEFAULT', (int)(getenv('UI_PER_PAGE_DEFAULT') ?: 10));
 
 // Normalize BASE_PATH
 $envBase = getenv('BASE_PATH') ?: '/MindCloud-SCMS';
