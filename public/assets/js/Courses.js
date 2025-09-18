@@ -1,111 +1,35 @@
-console.log("✅ Colleges.js LOADED");
+// JavaScript to handle Edit and Delete modals for courses 
+document.addEventListener('DOMContentLoaded', function () {
+  const editModal = document.getElementById('EditModal');
+  if (editModal) {
+    editModal.addEventListener('show.bs.modal', function (ev) {
+      const btn = ev.relatedTarget; if (!btn) return;
+      const row = btn.closest('tr'); if (!row) return;
 
-// add event listener for modals
-function initializeModals() {
+      editModal.querySelector('#edit-id').value = row.dataset.courseId || '';
+      editModal.querySelector('#edit-course_code').value = row.dataset.courseCode || '';
+      editModal.querySelector('#edit-course_name').value = row.dataset.courseName || '';
+      const collegeSel = editModal.querySelector('#edit-college_id');
+      if (collegeSel) collegeSel.value = row.dataset.collegeId || '';
 
-  console.log("✅ Initializing modal. Setting up modal action listener.");
-
-  document.addEventListener('click', function (e) {
-    console.log("Clicked element: ",e.target);
-    
-    const button = e.target.closest('[data-action]');
-    if (!button) return;
-
-    const action = button.getAttribute('data-action');
-
-    let modal;
-    if (button.getAttribute('data-bs-toggle') === "modal"){
-      const modalSelector = button.getAttribute('data-bs-target');
-      modal = document.querySelector(modalSelector);
-    }
-    
-    switch (action) {
-      case 'edit':
-        console.log("button: ",button,"\nmodal: ",modal);
-        populateEditModal(button, modal);
-        break;
-      case 'delete':
-        populateDeleteModal(button, modal);
-        break;
-      case 'saveAccountChangesToDb':
-        // call api and send modal values using post
-        break;
-      default:
-        console.warn(`Unhandled action type: ${action}`);
-    }
-  });
-}
-
-// initialize the modal
-initializeModals();
-
-
-
-// Helper function to autofill in the edit modal
-function populateEditModal(button, modal) {
-  modal.querySelector('#editCollegeId').value = button.getAttribute('data-college-id') || '';
-  modal.querySelector('#editCollegeShortName').value = button.getAttribute('data-college-short-name') || '';
-  modal.querySelector('#editCollegeName').value = button.getAttribute('data-college-name') || '';
-  modal.querySelector('#editDeanName').value = button.getAttribute('data-dean') || '';
-}
-
-
-// Example: for delete modals
-function populateDeleteModal(button, modal) {
-  modal.querySelector('#deleteIdNumber').value = button.getAttribute('data-id-no') || '';
-  modal.querySelector('#deleteUserName').textContent =
-    `${button.getAttribute('data-fname')} ${button.getAttribute('data-lname')}`;
-}
-
-
-
-
-
-// Search filter function
-document.getElementById("search").addEventListener("input", function (e) {
-  const value = e.target.value.toLowerCase();
-  const rows = document.querySelectorAll("#table-body tr");
-
-  rows.forEach(row => {
-    const id = row.children[0].textContent.toLowerCase();
-    const email = row.children[1].textContent.toLowerCase();
-    const firstName = row.children[2].textContent.toLowerCase();
-    const lastName = row.children[4].textContent.toLowerCase();
-
-    const matches =
-      id.includes(value) ||
-      email.includes(value) ||
-      firstName.includes(value) ||
-      lastName.includes(value);
-
-    row.style.display = matches ? "" : "none";
-  });
-});
-
-//let editMode = false;
-
-document.addEventListener("DOMContentLoaded", () => {
-  bindEditButton();
-  
-});
-
-//populate the fields in EditUserModal
-document.addEventListener("DOMContentLoaded", () => {
-  const editButtons = document.querySelectorAll(".edit-btn");
-
-  editButtons.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      document.getElementById("editIdNumber").value = btn.dataset.id_no;      
-      document.getElementById("editFirstName").value = btn.dataset.fname;
-      document.getElementById("editMiddleInitial").value = btn.dataset.mname;
-      document.getElementById("editLastName").value = btn.dataset.lname;
-      document.getElementById("editEmail").value = btn.dataset.email;
-      document.getElementById("editCollege").value = btn.dataset.college;
-      document.getElementById("editRole").value = btn.dataset.role;
-      
+      // Preselect curricula
+      const ids = (row.dataset.curriculaIds || '').split(',').map(s => s.trim()).filter(Boolean);
+      const curSel = editModal.querySelector('#edit-curriculum_ids');
+      if (curSel) {
+        for (const opt of curSel.options) opt.selected = ids.includes(opt.value);
+      }
     });
-  });
+  }
+
+  const delModal = document.getElementById('DeleteModal');
+  if (delModal) {
+    delModal.addEventListener('show.bs.modal', function (ev) {
+      const btn = ev.relatedTarget; if (!btn) return;
+      const row = btn.closest('tr'); if (!row) return;
+
+      delModal.querySelector('#delete-id').value = row.dataset.courseId || '';
+      const label = delModal.querySelector('#delete-course-label');
+      if (label) label.textContent = (row.dataset.courseCode || '') + ' — ' + (row.dataset.courseName || '');
+    });
+  }
 });
-
-
-console.log("Roles JS file is loading");

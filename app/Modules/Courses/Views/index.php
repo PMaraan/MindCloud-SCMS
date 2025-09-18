@@ -94,7 +94,7 @@ $globalPagination = dirname(__DIR__, 3) . '/Views/partials/Pagination.php';
 ?>
 
 <?php
-$jsPath = '/public/assets/js/programs.js';
+$jsPath = '/public/assets/js/Courses.js';
 $ver = @filemtime($_SERVER['DOCUMENT_ROOT'] . $jsPath) ?: '1';
 ?>
 <script defer src="<?= BASE_PATH . $jsPath ?>?v=<?= urlencode((string)$ver) ?>"></script>
