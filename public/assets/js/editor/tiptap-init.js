@@ -121,36 +121,151 @@ const UploadBox = Node.create({
   },
 });
 
+// Collect consecutive tables that come *after the current text block*,
+// skipping empty paragraphs between them.
+function collectConsecutiveTables(ed) {
+  const out = { items: [], totalHeight: 0 };
+  try {
+    const { state, view } = ed;
+
+    // 1) Find the end position of the current text block (paragraph/heading/list item)
+    const $from = state.selection.$from;
+    let depth = $from.depth;
+    while (depth > 0 && !$from.node(depth).type.isTextblock) depth--;
+    const afterBlockPos = $from.end(depth);   // position *after* current block
+
+    // 2) Walk forward from there, skipping empty paras, gathering tables
+    let $pos = state.doc.resolve(afterBlockPos);
+    let nodeAfter = $pos.nodeAfter;
+
+    const isEmptyTextblock = n =>
+      n && n.type.isTextblock && (n.textContent || '').trim() === '';
+
+    while (isEmptyTextblock(nodeAfter)) {
+      $pos = state.doc.resolve($pos.pos + nodeAfter.nodeSize);
+      nodeAfter = $pos.nodeAfter;
+    }
+
+    while (nodeAfter && nodeAfter.type && nodeAfter.type.name === 'table') {
+      const pos = $pos.pos;
+      const dom = view.nodeDOM(pos);
+      const h = dom?.getBoundingClientRect?.().height || 240;
+      out.items.push({ pos, node: nodeAfter, dom: dom || null, height: h });
+      out.totalHeight += h;
+
+      // advance past this table, again skipping empty paras
+      $pos = state.doc.resolve($pos.pos + nodeAfter.nodeSize);
+      nodeAfter = $pos.nodeAfter;
+      while (isEmptyTextblock(nodeAfter)) {
+        $pos = state.doc.resolve($pos.pos + nodeAfter.nodeSize);
+        nodeAfter = $pos.nodeAfter;
+      }
+    }
+  } catch {}
+  return out;
+}
+
+
+
 // --- AutoPageBreak: intercept Enter inside ProseMirror and add a page if needed ---
+// --- AutoPageBreak: intercept Enter; if next block is a table and it would
+// overflow the footer, create a new page and move that table to the new page.
 const AutoPageBreak = Extension.create({
   name: 'autoPageBreak',
+
   addKeyboardShortcuts() {
     return {
       Enter: () => {
-        const ed = this.editor;
-        const host = ed.options.element;
+        const ed    = this.editor;
+        const host  = ed.options.element;
         const pageEl = host.closest('.page');
         if (!pageEl) return false;
 
+        // --- helpers ----
+        const footerTop = (() => {
+          const footer = pageEl.querySelector('.page-footer');
+          return (footer?.getBoundingClientRect()?.top) ?? host.getBoundingClientRect().bottom;
+        })();
+
         const caret = ed.view.coordsAtPos(ed.state.selection.head);
-        const footer = pageEl.querySelector('.page-footer');
-        const footerTop = footer?.getBoundingClientRect().top ?? host.getBoundingClientRect().bottom;
+        const GAP_ABOVE_FOOTER = 16;     // keep a little breathing room
+        const ONE_LINE_HEIGHT  = 24;     // plain Enter (no table) needs at least this much
 
-        const GAP = 16;   // space you want to keep above the footer
-        const LINE = 24;  // approx line-height that a new line needs
-        const remaining = Math.max(0, footerTop - GAP - caret.bottom);
+        // What comes after the *current block*?
+        const tables = collectConsecutiveTables(ed);
 
-        if (remaining < LINE) {
-          const newPage = addPageAfter(pageEl);               // you already have this helper
-          const ed2 = window.__mc?.MCEditors?.get?.(newPage.id);
-          ed2?.chain().focus().insertContent('<p></p>').setTextSelection(2).run();
-          return true; // handled (prevents overflow on current page)
+        // If there are no tables right after this block, it's a normal Enter.
+        // (Still ensure we don't type into the footer.)
+        if (tables.items.length === 0) {
+          const remaining = Math.max(0, footerTop - GAP_ABOVE_FOOTER - caret.bottom);
+          if (remaining < ONE_LINE_HEIGHT) {
+            const newPage = addPageAfter(pageEl);
+            const ed2 = window.__mc?.MCEditors?.get?.(newPage.id);
+            ed2?.chain().focus().insertContent('<p></p>').setTextSelection(2).run();
+            return true;
+          }
+          return false;
         }
-        return false;   // let Enter behave normally
+
+        // There *are* tables right after this block. Project total height.
+        // There *are* tables right after this block. Project total height.
+        // There *are* tables right after this block. Project total height.
+        const projectedBottom = caret.bottom + tables.totalHeight + 8;
+        const bottomLimit     = footerTop - GAP_ABOVE_FOOTER;
+
+        if (projectedBottom <= bottomLimit) {
+          // They fit on this page → let Enter behave normally.
+          return false;
+        }
+
+        // --- Overflow path (move ALL those tables to next page, keep caret here) ---
+        const oldSelTo = ed.state.selection.to;
+
+        // 1) Leave a paragraph here (so you keep typing on this page)
+        ed.chain().focus().insertContent('<p></p>').run();
+
+        // IMPORTANT: inserting the paragraph shifts document positions.
+        // Re-collect the tables NOW so we have correct, current positions.
+        const tablesAfterInsert = collectConsecutiveTables(ed);
+
+        // If for any reason we don't see tables now, just stop handling.
+        if (tablesAfterInsert.items.length === 0) {
+          // Put caret back in the new paragraph and bail out.
+          ed.chain().focus().setTextSelection(Math.min(oldSelTo + 1, ed.state.doc.content.size)).run();
+          return true;
+        }
+
+        // 2) Delete tables from this page (reverse order to keep positions valid)
+        for (let i = tablesAfterInsert.items.length - 1; i >= 0; i--) {
+          const { pos, node } = tablesAfterInsert.items[i];
+          ed.chain().focus().deleteRange({ from: pos, to: pos + node.nodeSize }).run();
+        }
+
+        // 3) Add next page and insert all tables at the top
+        const newPage = addPageAfter(pageEl);
+        const ed2 = window.__mc?.MCEditors?.get?.(newPage.id);
+        if (ed2) {
+          ed2.chain().focus().setTextSelection(1).run();
+          for (let i = 0; i < tablesAfterInsert.items.length; i++) {
+            const json = tablesAfterInsert.items[i].node.toJSON();
+            try { ed2.chain().insertContent(json).run(); }
+            catch { ed2.chain().insertTable({ rows: 2, cols: 4, withHeaderRow: false }).run(); }
+            if (i !== tablesAfterInsert.items.length - 1) ed2.chain().insertContent('<p></p>').run();
+          }
+        }
+
+        // 4) Put the caret BACK on this page (and re-assert after a tick)
+        ed.chain().focus().setTextSelection(Math.min(oldSelTo + 1, ed.state.doc.content.size)).run();
+        setTimeout(() => {
+          try { ed.chain().focus().setTextSelection(Math.min(oldSelTo + 1, ed.state.doc.content.size)).run(); } catch {}
+        }, 0);
+
+        return true;
       },
     };
   },
 });
+
 
 
 // --------------------------------------
