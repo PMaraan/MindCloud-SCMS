@@ -1,7 +1,7 @@
 <?php
     // /Router/router.php
 
-    use App\Controllers\DashboardController;
+    use App\Controllers\AppShellController;
     use App\Modules\Auth\Controllers\AuthController;
     use App\Interfaces\StorageInterface;
     use App\Modules\Notifications\Controllers\NotificationsController;
@@ -48,7 +48,7 @@
 
     $privateRoutes = [
         'GET' => [
-            '/dashboard' => [DashboardController::class, 'render'],
+            '/dashboard' => [AppShellController::class, 'render'],
             '/profile'   => [ProfileController::class, 'render'],
             '/notifications/latest' => [NotificationsController::class, 'latestJson'],
             '/notifications/unread-count' => [NotificationsController::class, 'unreadCountJson'],
@@ -56,7 +56,7 @@
             // add more GET private routes here
         ],
         'POST' => [
-            '/dashboard' => [DashboardController::class, 'render'],
+            '/dashboard' => [AppShellController::class, 'render'],
             '/notifications/mark-read' => [NotificationsController::class, 'markReadJson'],
             '/api/settings/save' => [SettingsController::class, 'savePreference'],
             // add POST private routes here
@@ -94,8 +94,8 @@
             [$controller, $action] = $privateRoutes[$method][$path];
             $instance = new $controller($db);
 
-            // Only DashboardController expects a $page argument
-            if ($controller === DashboardController::class) {
+            // Only AppShellController expects a $page argument
+            if ($controller === AppShellController::class) {
                 $page = $_GET['page'] ?? 'dashboard';
                 $instance->$action($page);
             } else {
