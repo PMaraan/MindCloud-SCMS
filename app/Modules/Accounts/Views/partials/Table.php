@@ -10,9 +10,7 @@
     <thead class="table-light">
       <tr>
         <th>ID No</th>
-        <th>First Name</th>
-        <th>Middle Name</th>
-        <th>Last Name</th>
+        <th>Full Name</th>
         <th>Email</th>
         <th>Role</th>
         <th>College</th>
@@ -32,9 +30,11 @@
           data-college-id="<?= htmlspecialchars((string)($row['college_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
         >
           <td><?= htmlspecialchars((string)$row['id_no']) ?></td>
-          <td><?= htmlspecialchars((string)$row['fname']) ?></td>
-          <td><?= htmlspecialchars((string)($row['mname'] ?: '-unassigned-')) ?></td>
-          <td><?= htmlspecialchars((string)$row['lname']) ?></td>
+          <td>
+            <?= htmlspecialchars((string)$row['lname']) ?>,
+            <?= htmlspecialchars((string)$row['fname']) ?>
+            <?= htmlspecialchars((string)($row['mname'] ? $row['mname'][0] . '.' : '')) ?>
+          </td>
           <td><?= htmlspecialchars((string)$row['email']) ?></td>
           <td><?= htmlspecialchars((string)($row['role_name'])) ?></td>
           <td><?= htmlspecialchars((string)($row['college_short_name'] ?: '-unassigned-')) ?></td>
