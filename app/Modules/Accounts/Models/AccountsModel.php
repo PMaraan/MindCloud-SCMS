@@ -38,7 +38,7 @@ final class AccountsModel {
 
     /**
      * Create a user with role & (optional) college. Returns bool.
-     * Expects keys: id_no, fname, mname|null, lname, email, password(hash), role_id, college_id|null
+     * Expects keys: id_no, fname, mname|null, lname, email, password(hash), role_id, department_id|null
      */
     public function createUser(array $data): bool {
         try {
@@ -60,13 +60,13 @@ final class AccountsModel {
 
             // user_roles
             $stmt2 = $this->pdo->prepare("
-                INSERT INTO user_roles (id_no, role_id, college_id)
-                VALUES (:id_no, :role_id, :college_id)
+                INSERT INTO user_roles (id_no, role_id, department_id)
+                VALUES (:id_no, :role_id, :department_id)
             ");
             $stmt2->execute([
                 ':id_no'      => $data['id_no'],
                 ':role_id'    => $data['role_id'],
-                ':college_id' => $data['college_id'],
+                ':department_id' => $data['department_id'],
             ]);
 
             $this->pdo->commit();
@@ -82,10 +82,10 @@ final class AccountsModel {
     }
 
     /**
-     * Return a list of colleges (college_id, short_name, college_name).
+     * Return a list of colleges (department_id, short_name, college_name).
      */
     public function getAllColleges(): array {
-        $stmt = $this->pdo->query('SELECT college_id, short_name, college_name FROM colleges ORDER BY short_name ASC');
+        $stmt = $this->pdo->query('SELECT department_id, short_name, college_name FROM colleges ORDER BY short_name ASC');
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
@@ -127,7 +127,7 @@ final class AccountsModel {
             FROM users u
         LEFT JOIN user_roles ur ON u.id_no = ur.id_no
         LEFT JOIN roles r       ON ur.role_id = r.role_id
-        LEFT JOIN colleges c    ON ur.college_id = c.college_id
+        LEFT JOIN departments d ON ur.department_id = d.department_id
             $where
         ORDER BY u.lname ASC, u.fname ASC
             LIMIT :limit OFFSET :offset
@@ -165,7 +165,7 @@ final class AccountsModel {
             FROM users u
             JOIN user_roles ur ON u.id_no = ur.id_no
             JOIN roles r ON ur.role_id = r.role_id
-            LEFT JOIN colleges c ON ur.college_id = c.college_id
+            LEFT JOIN departments d ON ur.department_id = d.department_id
             WHERE u.id_no = :id_no
             LIMIT 1
         ");
@@ -213,7 +213,7 @@ final class AccountsModel {
             FROM users u
             LEFT JOIN user_roles ur ON u.id_no = ur.id_no
             LEFT JOIN roles r       ON ur.role_id = r.role_id
-            LEFT JOIN colleges c    ON ur.college_id = c.college_id
+            LEFT JOIN departments d ON ur.department_id = d.department_id
             $where
         ");
         foreach ($params as $k => $v) $stmtCount->bindValue($k, $v);
@@ -230,13 +230,13 @@ final class AccountsModel {
                 u.lname,
                 u.email,
                 ur.role_id,
-                ur.college_id,
+                ur.department_id,
                 COALESCE(r.role_name, '')  AS role_name,
                 COALESCE(c.short_name, '') AS college_short_name
             FROM users u
             LEFT JOIN user_roles ur ON u.id_no = ur.id_no
             LEFT JOIN roles r       ON ur.role_id = r.role_id
-            LEFT JOIN colleges c    ON ur.college_id = c.college_id
+            LEFT JOIN departments d ON ur.department_id = d.department_id
             $where
             ORDER BY u.lname ASC, u.fname ASC
             $pageClause
@@ -277,7 +277,7 @@ final class AccountsModel {
     }
 
     public function updateUserWithRoleCollege(array $data): bool {
-        // expects: id_no, fname, mname|null, lname, email, role_id(int), college_id(int|null)
+        // expects: id_no, fname, mname|null, lname, email, role_id(int), department_id(int|null)
         try {
             $this->pdo->beginTransaction();
 
@@ -303,13 +303,13 @@ final class AccountsModel {
             $del->execute([':id_no' => $data['id_no']]);
 
             $ins = $this->pdo->prepare("
-                INSERT INTO user_roles (id_no, role_id, college_id)
-                VALUES (:id_no, :role_id, :college_id)
+                INSERT INTO user_roles (id_no, role_id, department_id)
+                VALUES (:id_no, :role_id, :department_id)
             ");
             $ins->execute([
                 ':id_no'      => $data['id_no'],
                 ':role_id'    => (int)$data['role_id'],
-                ':college_id' => $data['college_id'] === null ? null : (int)$data['college_id'],
+                ':department_id' => $data['department_id'] === null ? null : (int)$data['department_id'],
             ]);
 
             $this->pdo->commit();

@@ -33,9 +33,9 @@ final class CoursesModel
         $countSql = "
             SELECT COUNT(DISTINCT c.course_id)
                 FROM public.courses c
-                LEFT JOIN public.curriculum_courses cc ON cc.course_id = c.course_id
-                LEFT JOIN public.curricula cur ON cur.curriculum_id = cc.curriculum_id
-                LEFT JOIN public.colleges col ON col.college_id = c.college_id
+                LEFT JOIN curriculum_courses cc ON cc.course_id = c.course_id
+                LEFT JOIN curricula cur ON cur.curriculum_id = cc.curriculum_id
+                LEFT JOIN dpartments d ON d.department_id = c.college_id
             $where
         ";
         $stmt = $pdo->prepare($countSql);
@@ -48,11 +48,11 @@ final class CoursesModel
                 c.course_code,
                 c.course_name,
                 c.college_id,
-                COALESCE(col.short_name, '—') AS college_short,
+                COALESCE(d.short_name, '—') AS department_short,
                 STRING_AGG(DISTINCT cur.curriculum_code, ', ' ORDER BY cur.curriculum_code) AS curricula,
                 STRING_AGG(DISTINCT cur.curriculum_id::text, ',' ORDER BY cur.curriculum_id::text) AS curricula_ids
-            FROM public.courses c
-            LEFT JOIN public.colleges col ON col.college_id = c.college_id
+            FROM courses c
+            LEFT JOIN departments d ON d.department_id = c.college_id
             LEFT JOIN public.curriculum_courses cc ON cc.course_id = c.course_id
             LEFT JOIN public.curricula cur ON cur.curriculum_id = cc.curriculum_id
             $where
@@ -85,17 +85,17 @@ final class CoursesModel
     {
         $pdo = $this->db->getConnection();
         $sql = "
-            INSERT INTO public.courses (course_code, course_name, college_id)
+            INSERT INTO courses (course_code, course_name, college_id)
             VALUES (:code, :name, :college_id)
             RETURNING course_id
         ";
         $stmt = $pdo->prepare($sql);
         $stmt->bindValue(':code', $data['course_code']);
         $stmt->bindValue(':name', $data['course_name']);
-        if ($data['college_id'] === null) {
+        if ($data['department_id'] === null) {
             $stmt->bindValue(':college_id', null, \PDO::PARAM_NULL);
         } else {
-            $stmt->bindValue(':college_id', (int)$data['college_id'], \PDO::PARAM_INT);
+            $stmt->bindValue(':college_id', (int)$data['department_id'], \PDO::PARAM_INT);
         }
         $stmt->execute();
         return (int)$stmt->fetchColumn();
@@ -114,10 +114,10 @@ final class CoursesModel
         $stmt = $pdo->prepare($sql);
         $stmt->bindValue(':code', $data['course_code']);
         $stmt->bindValue(':name', $data['course_name']);
-        if ($data['college_id'] === null) {
+        if ($data['department_id'] === null) {
             $stmt->bindValue(':college_id', null, \PDO::PARAM_NULL);
         } else {
-            $stmt->bindValue(':college_id', (int)$data['college_id'], \PDO::PARAM_INT);
+            $stmt->bindValue(':college_id', (int)$data['department_id'], \PDO::PARAM_INT);
         }
         $stmt->bindValue(':id', $id, \PDO::PARAM_INT);
         $stmt->execute();

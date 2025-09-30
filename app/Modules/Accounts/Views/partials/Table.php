@@ -27,7 +27,7 @@
           data-lname="<?= htmlspecialchars((string)($row['lname'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
           data-email="<?= htmlspecialchars((string)($row['email'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
           data-role-id="<?= htmlspecialchars((string)($row['role_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
-          data-college-id="<?= htmlspecialchars((string)($row['college_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+          data-college-id="<?= htmlspecialchars((string)($row['department_id'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
         >
           <td><?= htmlspecialchars((string)$row['id_no']) ?></td>
           <td>

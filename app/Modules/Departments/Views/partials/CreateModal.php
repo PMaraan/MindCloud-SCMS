@@ -1,31 +1,29 @@
 <?php
-/** File: /app/Modules/Colleges/Views/partials/EditModal.php
+/** File: /app/Modules/Departments/Views/partials/CreateModal.php
  * 
- * Colleges — Edit Modal
- *
- * Purpose:
- *   Edit an existing College entry.
+ * Departments — Create Modal
+ * 
+ *  Purpose:
+ *   Create new Department entry; CSRF inside .modal-body.
  *
  * Expects (from controller):
  *   - $deans : array<int, array{id_no:string,fname?:string,mname?:string,lname?:string}>
  *
- * JS populates:
- *   - [name="id"] (hidden)
- *   - [name="short_name"], [name="college_name"], [name="dean_id_no"]
- *
  * CSRF:
- *   - Uses \App\Helpers\CsrfHelper::inputField() which emits name="csrf_token".
+ *   - Uses \App\Helpers\CsrfHelper::inputField() which emits name="csrf_token"
+ *     and value from $_SESSION['csrf_token'].
  *
  * Notes:
- *   - All form fields (including hidden id & CSRF) are standardized to appear inside the modal body.
+ *   - All form fields (including CSRF) are standardized to appear inside the modal body.
+ *   - Keep autocomplete="off" to avoid stale values in modals.
  */
 ?>
-<div class="modal fade" id="editCollegesModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="createDepartmentsModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-md modal-dialog-scrollable">
     <div class="modal-content">
-      <form method="POST" action="<?= BASE_PATH ?>/dashboard?page=colleges&action=edit" autocomplete="off">
+      <form method="POST" action="<?= BASE_PATH ?>/dashboard?page=departments&action=create" autocomplete="off">
         <div class="modal-header">
-          <h5 class="modal-title">Edit College</h5>
+          <h5 class="modal-title">Create Department</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
 
@@ -33,17 +31,14 @@
           <!-- CSRF Protection (standardized location: inside modal-body) -->
           <?= \App\Helpers\CsrfHelper::inputField() ?>
 
-          <!-- Hidden primary key (standardized location: inside modal-body) -->
-          <input type="hidden" name="id">
-
           <div class="col-12">
             <label class="form-label">Short Name <span class="text-danger">*</span></label>
-            <input class="form-control" name="short_name" maxlength="10" required>
+            <input class="form-control" name="short_name" maxlength="10" required placeholder="e.g., CCS">
           </div>
 
           <div class="col-12">
-            <label class="form-label">College Name <span class="text-danger">*</span></label>
-            <input class="form-control" name="college_name" maxlength="100" required>
+            <label class="form-label">Department Name <span class="text-danger">*</span></label>
+            <input class="form-control" name="department_name" maxlength="100" required>
           </div>
 
           <div class="col-12">
@@ -62,7 +57,7 @@
         </div>
 
         <div class="modal-footer">
-          <button class="btn btn-primary" type="submit">Save changes</button>
+          <button class="btn btn-primary" type="submit">Create</button>
           <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
         </div>
       </form>

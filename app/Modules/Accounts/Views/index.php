@@ -11,7 +11,7 @@
  * - bool   $canEdit    Gate for rendering Edit modal
  * - bool   $canDelete  Gate for rendering Delete modal
  * - array  $roles      For Create/Edit modals (role_id, role_name)
- * - array  $colleges   For Create/Edit modals (college_id, short_name/college_name)
+ * - array  $colleges   For Create/Edit modals (department_id, short_name/college_name)
  * - string $csrf       CSRF token to embed in forms
  *
  * @var array  $users

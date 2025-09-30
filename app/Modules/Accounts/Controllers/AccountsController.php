@@ -144,7 +144,7 @@ final class AccountsController{
         $email      = trim((string)($_POST['email']   ?? ''));
         $passwd     = (string)($_POST['password']     ?? $defaultPassword);
         $role_id    = (string)($_POST['role_id']      ?? '');
-        $college_id = (string)($_POST['college_id']   ?? '');
+        $department_id = (string)($_POST['department_id']   ?? '');
 
         $errors = [];
         if ($id_no === '')                                   $errors[] = 'ID No is required.';
@@ -171,7 +171,7 @@ final class AccountsController{
             'email'      => $email,
             'password'   => $hash,
             'role_id'    => (int)$role_id,
-            'college_id' => ($college_id === '') ? null : (int)$college_id,
+            'department_id' => ($department_id === '') ? null : (int)$department_id,
         ]);
 
         if ($ok) {
@@ -223,7 +223,7 @@ final class AccountsController{
             'lname'      => trim((string)($_POST['lname'] ?? '')),
             'email'      => trim((string)($_POST['email'] ?? '')),
             'role_id'    => (string)($_POST['role_id'] ?? ''),
-            'college_id' => (string)($_POST['college_id'] ?? ''),
+            'department_id' => (string)($_POST['department_id'] ?? ''),
         ];
 
         $errs = [];
@@ -241,7 +241,7 @@ final class AccountsController{
 
         // Normalize nullable
         if ($data['mname'] === '')      $data['mname'] = null;
-        if ($data['college_id'] === '') $data['college_id'] = null;
+        if ($data['department_id'] === '') $data['department_id'] = null;
 
         $ok = $this->model->updateUserWithRoleCollege($data);
 

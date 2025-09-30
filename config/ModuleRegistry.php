@@ -3,7 +3,7 @@
 
 use App\Config\Permissions;
 use App\Modules\Accounts\Controllers\AccountsController;
-use App\Modules\Colleges\Controllers\CollegesController;
+use App\Modules\Departments\Controllers\DepartmentsController;
 use App\Modules\Courses\Controllers\CoursesController;
 use App\Modules\Programs\Controllers\ProgramsController;
 use App\Modules\Curricula\Controllers\CurriculaController;
@@ -29,14 +29,14 @@ return [
             'delete' => Permissions::ACCOUNTS_DELETE,
         ],
     ],
-    'colleges' => [
-        'label'      => 'Colleges',
-        'permission' => Permissions::COLLEGES_VIEW,
-        'controller' => CollegesController::class,
+    'departments' => [
+        'label'      => 'Departments/Colleges',
+        'permission' => Permissions::DEPARTMENTS_VIEW,
+        'controller' => DepartmentsController::class,
         'actions'    => [
-            'create' => Permissions::COLLEGES_CREATE,
-            'edit'   => Permissions::COLLEGES_EDIT,
-            'delete' => Permissions::COLLEGES_DELETE,
+            'create' => Permissions::DEPARTMENTS_CREATE,
+            'edit'   => Permissions::DEPARTMENTS_EDIT,
+            'delete' => Permissions::DEPARTMENTS_DELETE,
         ],
     ],
     'programs' => [
