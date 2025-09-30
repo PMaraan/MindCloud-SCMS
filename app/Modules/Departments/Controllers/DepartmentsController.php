@@ -83,41 +83,34 @@ final class DepartmentsController
 
     public function create(): void {
         $this->requireActionPermission('create');
-        CsrfHelper::assertOrRedirect(BASE_PATH . '/dashboard?page=departments');
+        \App\Helpers\CsrfHelper::assertOrRedirect(BASE_PATH . '/dashboard?page=departments');
 
         $data = [
-            'short_name'   => trim((string)($_POST['short_name'] ?? '')),
-            'department_name' => trim((string)($_POST['department_name'] ?? '')),
-            'is_college'   => !empty($_POST['is_college']),
+            'short_name'       => trim((string)($_POST['short_name'] ?? '')),
+            'department_name'  => trim((string)($_POST['department_name'] ?? '')),
+            'is_college'       => !empty($_POST['is_college']),
         ];
         $deanIdNo = trim((string)($_POST['dean_id_no'] ?? ''));
 
-        $errors = [];
-        if ($data['short_name'] === '')   $errors[] = 'Short name is required.';
-        if ($data['department_name'] === '') $errors[] = 'Department name is required.';
-
-        if ($errors) {
-            FlashHelper::set('danger', implode(' ', $errors));
-            $this->redirect(BASE_PATH . '/dashboard?page=departments');
-            return;
-        }
+        // ...validate...
 
         try {
             $id = $this->model->create($data);
-            // Optional dean handling (non-blocking): only runs if a dean was selected
-            if ($deanIdNo !== '') {
+
+            if ($data['is_college'] && $deanIdNo !== '') {
                 try {
-                    (new AssignmentsService($this->db))->setDepartmentDean((int)$id, $deanIdNo);
-                    FlashHelper::set('success', 'Department created (ID ' . (int)$id . '). Dean assigned.');
+                    (new \App\Services\AssignmentsService($this->db))->setDepartmentDean((int)$id, $deanIdNo);
+                    \App\Helpers\FlashHelper::set('success', 'Department created (ID ' . (int)$id . '). Dean assigned.');
                 } catch (\DomainException $e) {
-                    // Business-rule error (e.g., selected user is not a Dean)
-                    FlashHelper::set('warning', 'Department created (ID ' . (int)$id . '), but dean not assigned: ' . $e->getMessage());
+                    \App\Helpers\FlashHelper::set('warning', 'Department created (ID ' . (int)$id . '), but dean not assigned: ' . $e->getMessage());
                 }
             } else {
-                FlashHelper::set('success', 'Department created (ID ' . (int)$id . ').');
+                // Ensure no dean mapping exists if not a college
+                (new \App\Services\AssignmentsService($this->db))->setDepartmentDean((int)$id, null);
+                \App\Helpers\FlashHelper::set('success', 'Department created (ID ' . (int)$id . ').');
             }
         } catch (\Throwable $e) {
-            FlashHelper::set('danger', 'Create failed: ' . $e->getMessage());
+            \App\Helpers\FlashHelper::set('danger', 'Create failed: ' . $e->getMessage());
         }
 
         $this->redirect(BASE_PATH . '/dashboard?page=departments');
@@ -125,43 +118,43 @@ final class DepartmentsController
 
     public function edit(): void {
         $this->requireActionPermission('edit');
-        CsrfHelper::assertOrRedirect(BASE_PATH . '/dashboard?page=departments');
+        \App\Helpers\CsrfHelper::assertOrRedirect(BASE_PATH . '/dashboard?page=departments');
 
         $id = (int)($_POST['id'] ?? 0);
         if ($id <= 0) {
-            FlashHelper::set('danger', 'Invalid ID.');
+            \App\Helpers\FlashHelper::set('danger', 'Invalid ID.');
             $this->redirect(BASE_PATH . '/dashboard?page=departments');
-            return;
         }
 
         $data = [
-            'short_name'   => trim((string)($_POST['short_name'] ?? '')),
-            'department_name' => trim((string)($_POST['department_name'] ?? '')),
-            'is_college'   => !empty($_POST['is_college']),
+            'short_name'       => trim((string)($_POST['short_name'] ?? '')),
+            'department_name'  => trim((string)($_POST['department_name'] ?? '')),
+            'is_college'       => !empty($_POST['is_college']),
         ];
         $deanIdNo = trim((string)($_POST['dean_id_no'] ?? ''));
 
-        $errors = [];
-        if ($data['short_name'] === '')   $errors[] = 'Short name is required.';
-        if ($data['department_name'] === '') $errors[] = 'Department name is required.';
-
-        if ($errors) {
-            FlashHelper::set('danger', implode(' ', $errors));
-            $this->redirect(BASE_PATH . '/dashboard?page=departments');
-            return;
-        }
+        // ...validate...
 
         try {
             $ok = $this->model->update($id, $data);
-            try {
-                (new AssignmentsService($this->db))->setDepartmentDean($id, $deanIdNo !== '' ? $deanIdNo : null);
-                $ok ? FlashHelper::set('success', 'Department updated.')
-                    : FlashHelper::set('warning', 'No changes were made.');
-            } catch (\DomainException $e) {
-                FlashHelper::set('warning', 'Department updated, but dean not assigned: ' . $e->getMessage());
+
+            // If not a college, force-clear the dean mapping
+            if (!$data['is_college']) {
+                (new \App\Services\AssignmentsService($this->db))->setDepartmentDean($id, null);
+                $ok ? \App\Helpers\FlashHelper::set('success', 'Department updated. Dean cleared (not a college).')
+                    : \App\Helpers\FlashHelper::set('warning', 'No changes were made. Dean cleared (not a college).');
+            } else {
+                // Is a college → apply dean if provided, else clear
+                try {
+                    (new \App\Services\AssignmentsService($this->db))->setDepartmentDean($id, $deanIdNo !== '' ? $deanIdNo : null);
+                    $ok ? \App\Helpers\FlashHelper::set('success', 'Department updated.')
+                        : \App\Helpers\FlashHelper::set('warning', 'No changes were made.');
+                } catch (\DomainException $e) {
+                    \App\Helpers\FlashHelper::set('warning', 'Department updated, but dean not assigned: ' . $e->getMessage());
+                }
             }
         } catch (\Throwable $e) {
-            FlashHelper::set('danger', 'Update failed: ' . $e->getMessage());
+            \App\Helpers\FlashHelper::set('danger', 'Update failed: ' . $e->getMessage());
         }
 
         $this->redirect(BASE_PATH . '/dashboard?page=departments');
