@@ -10,6 +10,7 @@ use App\Helpers\FlashHelper;
 use App\Modules\Colleges\Models\CollegesModel;
 use App\Models\UserModel;
 use App\Services\AssignmentsService;
+use App\Helpers\CsrfHelper;
 
 final class CollegesController
 {
@@ -81,7 +82,7 @@ final class CollegesController
 
     public function create(): void {
         $this->requireActionPermission('create');
-        $this->assertCsrf();
+        CsrfHelper::assertOrRedirect(BASE_PATH . '/dashboard?page=colleges');
 
         $data = [
             'short_name'   => trim((string)($_POST['short_name'] ?? '')),
@@ -122,7 +123,7 @@ final class CollegesController
 
     public function edit(): void {
         $this->requireActionPermission('edit');
-        $this->assertCsrf();
+        CsrfHelper::assertOrRedirect(BASE_PATH . '/dashboard?page=colleges');
 
         $id = (int)($_POST['id'] ?? 0);
         if ($id <= 0) {
@@ -165,7 +166,7 @@ final class CollegesController
 
     public function delete(): void {
         $this->requireActionPermission('delete');
-        $this->assertCsrf();
+        CsrfHelper::assertOrRedirect(BASE_PATH . '/dashboard?page=colleges');
 
         $id = (int)($_POST['id'] ?? 0);
         if ($id <= 0) {
@@ -195,21 +196,6 @@ final class CollegesController
             (new RBAC($this->db))->require((string)$_SESSION['user_id'], $perm);
         }
     }
-
-    private function assertCsrf(): void
-    {
-        $token = (string)($_POST['csrf'] ?? '');
-        $sess  = (string)($_SESSION['csrf_token'] ?? '');
-        if ($token === '' || $sess === '' || !hash_equals($sess, $token)) {
-            \App\Helpers\FlashHelper::set('danger', 'Invalid CSRF token.');
-            $this->redirect(BASE_PATH . '/dashboard?page=colleges');
-            exit;
-        }
-
-        // Rotate after a successful POST
-        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-    }
-
 
     private function redirect(string $url): void {
         header('Location: ' . $url);

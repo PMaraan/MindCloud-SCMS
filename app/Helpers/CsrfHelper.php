@@ -41,7 +41,7 @@ final class CsrfHelper
      * Render a hidden input field for CSRF.
      * Default name is 'csrf' to match your controllers; accepts override.
      */
-    public static function inputField(string $name = 'csrf'): string
+    public static function inputField(string $name = 'csrf_token'): string
     {
         $val = htmlspecialchars(self::token(), ENT_QUOTES, 'UTF-8');
         $nm  = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
@@ -56,8 +56,8 @@ final class CsrfHelper
      */
     public static function assertOrRedirect(string $redirectUrl): void
     {
-        // Read POST token, supporting both 'csrf' and temporary 'csrf_token'
-        $token = (string)($_POST['csrf'] ?? ($_POST['csrf_token'] ?? ''));
+        // Read POST token, supporting both 'csrf_token' and 'csrf'
+        $token = (string)($_POST['csrf_token'] ?? ($_POST['csrf'] ?? ''));
         $sess  = (string)($_SESSION['csrf_token'] ?? '');
 
         $ok = ($token !== '' && $sess !== '' && hash_equals($sess, $token));

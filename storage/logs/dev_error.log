@@ -3137,3 +3137,23 @@ LINE 1: SELECT id_no FROM users WHERE user_id = $1
 [29-Sep-2025 06:19:51 Europe/Berlin] accounts.page rows=10 total=18 limit=10 offset=0
 [29-Sep-2025 06:19:51 Europe/Berlin] accounts.index total=18 rows=10
 [29-Sep-2025 06:19:51 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[30-Sep-2025 04:23:12 Europe/Berlin] PHP Fatal error:  Uncaught Error: Class "CsrfHelper" not found in C:\xampp\htdocs\MindCloud-SCMS\app\bootstrap.php:42
+Stack trace:
+#0 C:\xampp\htdocs\MindCloud-SCMS\public\index.php(7): require_once()
+#1 {main}
+  thrown in C:\xampp\htdocs\MindCloud-SCMS\app\bootstrap.php on line 42
+[30-Sep-2025 05:08:03 Europe/Berlin] PHP Fatal error:  Uncaught Error: Class "CsrfHelper" not found in C:\xampp\htdocs\MindCloud-SCMS\app\bootstrap.php:42
+Stack trace:
+#0 C:\xampp\htdocs\MindCloud-SCMS\public\index.php(7): require_once()
+#1 {main}
+  thrown in C:\xampp\htdocs\MindCloud-SCMS\app\bootstrap.php on line 42
+[30-Sep-2025 05:08:36 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Sep-2025 05:08:36 Europe/Berlin] Probe users count = 18
+[30-Sep-2025 05:08:36 Europe/Berlin] accounts.page rows=10 total=18 limit=10 offset=0
+[30-Sep-2025 05:08:36 Europe/Berlin] accounts.index total=18 rows=10
+[30-Sep-2025 05:08:36 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}
+[30-Sep-2025 05:12:12 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Sep-2025 05:12:12 Europe/Berlin] Probe users count = 18
+[30-Sep-2025 05:12:12 Europe/Berlin] accounts.page rows=10 total=18 limit=10 offset=0
+[30-Sep-2025 05:12:12 Europe/Berlin] accounts.index total=18 rows=10
+[30-Sep-2025 05:12:12 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"college_id":null,"role_name":"Admin","college_short_name":""}

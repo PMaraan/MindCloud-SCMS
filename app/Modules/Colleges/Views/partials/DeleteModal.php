@@ -1,32 +1,38 @@
 <?php
-// app/Modules/Colleges/Views/partials/DeleteModal.php
-/**
- * Colleges - Delete Modal
+/** File: /app/Modules/Colleges/Views/partials/DeleteModal.php
+ * 
+ * Colleges — Delete Modal
  *
- * Expects the opener button to provide:
- *   data-id            (college_id)
- *   data-short_name    (college short name)
- *   data-college_name  (college full name)
+ * Purpose:
+ *   Delete an existing College entry.
  *
- * JS fills:
- *   [name="id"]                       (hidden)
- *   #delete-college-id-display.js-del-id
- *   #delete-college-short.js-del-short
- *   #delete-college-name.js-del-name
+ * Expects the opener button to provide (via data-*):
+ *   - data-id            (college_id)
+ *   - data-short_name    (college short name)
+ *   - data-college_name  (college full name)
  *
- * CSRF value comes from $csrf (if set) or $_SESSION['csrf_token'].
+ * JS populates:
+ *   - [name="id"] (hidden)
+ *   - #delete-college-id-display.js-del-id
+ *   - #delete-college-short.js-del-short
+ *   - #delete-college-name.js-del-name
+ *
+ * CSRF:
+ *   - Uses \App\Helpers\CsrfHelper::inputField() which emits name="csrf_token".
  */
 ?>
 <div class="modal fade" id="deleteCollegesModal" tabindex="-1" aria-hidden="true" aria-labelledby="deleteCollegeLabel">
   <div class="modal-dialog">
-    <form method="post" action="<?= BASE_PATH ?>/dashboard?page=colleges&action=delete" class="modal-content">
+    <form method="POST" action="<?= BASE_PATH ?>/dashboard?page=colleges&action=delete" class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="deleteCollegeLabel">Delete College</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
 
       <div class="modal-body">
-        <input type="hidden" name="csrf" value="<?= htmlspecialchars($csrf ?? ($_SESSION['csrf_token'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+        <!-- CSRF Protection (standardized location: inside modal-body) -->
+        <?= \App\Helpers\CsrfHelper::inputField() ?>
+
         <input type="hidden" name="id" id="delete-college-id" value="">
 
         <p class="mb-0">
