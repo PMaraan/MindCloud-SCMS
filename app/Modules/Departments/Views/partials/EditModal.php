@@ -58,7 +58,7 @@
             </div>
           </div>
 
-          <div class="col-12">
+          <div class="col-12" id="edit-dean-group">
             <label class="form-label">Dean (optional)</label>
             <select class="form-select" name="dean_id_no">
               <option value="">— None —</option>
