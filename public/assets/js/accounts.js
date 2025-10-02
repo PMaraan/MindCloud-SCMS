@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const lname     = row.dataset.lname || '';
       const email     = row.dataset.email || '';
       const roleId    = row.dataset.roleId || '';
-      const collegeId = row.dataset.collegeId || '';
+      const departmentId = row.dataset.departmentId || '';
 
       const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
 
@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const roleSel = document.getElementById('edit-role');
       const collegeSel = document.getElementById('edit-college');
       if (roleSel) roleSel.value = roleId;
-      if (collegeSel) collegeSel.value = collegeId;
+      if (collegeSel) collegeSel.value = departmentId;
     });
   }
 

@@ -4,7 +4,7 @@
  * Accounts module – index view.
  *
  * Expects (from controller):
- * - array  $users      Rows to render in the table (each row has id_no, names, email, role, college, etc.)
+ * - array  $users      Rows to render in the table (each row has id_no, names, email, role, department, etc.)
  * - array  $pager      Global paginator contract:
  *                      ['total','pg','perpage','baseUrl','query'?, 'extra'?, 'from'?, 'to'?]
  * - bool   $canCreate  Gate for rendering Create modal trigger

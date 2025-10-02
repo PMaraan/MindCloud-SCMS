@@ -37,7 +37,7 @@
               </button>
             <?php endif; ?>
             <?php if (!empty($canDelete)): ?>
-              <button class="btn btn-sm btn-danger"
+              <button class="btn btn-sm btn-outline-danger"
                       data-bs-toggle="modal"
                       data-bs-target="#deleteProgramModal">
                 <i class="bi bi-trash"></i> Delete

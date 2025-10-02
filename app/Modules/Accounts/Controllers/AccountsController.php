@@ -1,6 +1,7 @@
 <?php
 // /app/Modules/Accounts/Controllers/AccountsController.php
 declare(strict_types=1);
+
 namespace App\Modules\Accounts\Controllers;
 
 use App\Interfaces\StorageInterface;
@@ -9,26 +10,31 @@ use App\Helpers\FlashHelper;
 use App\Helpers\PasswordHelper;
 use App\Security\RBAC;
 use App\Helpers\NotifyHelper;
+use App\Services\AssignmentsService;
 
 /**
  * AccountsController
  *
  * Handles Accounts module list/create/edit/delete.
- * - Uses global pagination component contract.
- * - Gates actions via ModuleRegistry-configured permission keys.
- * - No caching (always queries DB) to reflect permission/record changes immediately.
+ * - Departments-first schema (colleges are departments with is_college = TRUE)
+ * - Uses the global pagination component contract ($pager['total','pg','perpage','baseUrl',...])
+ * - No caching: always queries DB for fresh state (ISO 25010 - reliability/ maintainability)
+ * - After save: sync dean <-> college via AssignmentsService
  */
-
-final class AccountsController{
-    private const PER_PAGE = 10;
-
+final class AccountsController
+{
     private StorageInterface $db;
     private AccountsModel $model;
+    private AssignmentsService $assignments;
+
+    /** Cached per-request Dean role id (no persistence across requests). */
+    private ?int $deanRoleId = null;
 
     public function __construct(StorageInterface $db)
     {
         $this->db = $db;
         $this->model = new AccountsModel($db);
+        $this->assignments = new AssignmentsService($db);
 
         if (defined('APP_ENV') && APP_ENV === 'dev') {
             error_log('AccountsController using model: ' . get_class($this->model));
@@ -39,11 +45,26 @@ final class AccountsController{
     }
 
     /**
+     * Resolve the numeric role_id for the 'dean' role (case-insensitive).
+     * Recomputed each request; stored only on this controller instance.
+     */
+    private function deanRoleId(): ?int
+    {
+        if ($this->deanRoleId !== null) {
+            return $this->deanRoleId;
+        }
+        $rid = $this->model->findRoleIdByName('dean'); // expects LOWER(name) match in the model
+        $this->deanRoleId = $rid;
+        return $rid;
+    }
+
+    /**
      * Render the Accounts list.
      *
      * @return string HTML for the module region
      */
-    public function index(): string {
+    public function index(): string
+    {
         // RBAC: view list
         (new RBAC($this->db))->require((string)$_SESSION['user_id'], 'AccountViewing');
 
@@ -51,9 +72,9 @@ final class AccountsController{
         $rawQ   = isset($_GET['q']) ? trim((string)$_GET['q']) : null;
         $search = ($rawQ !== null && $rawQ !== '') ? mb_strtolower($rawQ) : null;
 
-        $page   = max(1, (int)($_GET['pg'] ?? 1));
+        $page    = max(1, (int)($_GET['pg'] ?? 1));
         $perPage = max(1, (int)(defined('UI_PER_PAGE_DEFAULT') ? UI_PER_PAGE_DEFAULT : 10));
-        $offset = ($page - 1) * $perPage;
+        $offset  = ($page - 1) * $perPage;
 
         $result = $this->model->getUsersPage($search, $perPage, $offset);
         $users  = $result['rows'];
@@ -71,7 +92,7 @@ final class AccountsController{
         ];
 
         // Action gating from ModuleRegistry
-        $registry = require dirname(__DIR__, 4) . '/config/ModuleRegistry.php'; // project root/config/ModuleRegistry.php
+        $registry = require dirname(__DIR__, 4) . '/config/ModuleRegistry.php';
         $actions  = $registry['accounts']['actions'] ?? [];
 
         $rbac = new RBAC($this->db);
@@ -82,8 +103,9 @@ final class AccountsController{
         $canDelete = !empty($actions['delete']) && $rbac->has($uid, $actions['delete']);
 
         // Dropdown data
-        $roles    = $this->model->getAllRoles();
-        $colleges = $this->model->getAllColleges();
+        $roles        = $this->model->getAllRoles();
+        $colleges     = $this->model->getDepartments(true);   // is_college = TRUE
+        $departments  = $this->model->getDepartments(false);  // is_college = FALSE
 
         // CSRF
         if (empty($_SESSION['csrf_token'])) {
@@ -107,7 +129,8 @@ final class AccountsController{
         /** @var bool   $canEdit */
         /** @var bool   $canDelete */
         /** @var array  $roles */
-        /** @var array  $colleges */
+        /** @var array  $colleges      is_college = TRUE */
+        /** @var array  $departments   is_college = FALSE */
         /** @var string $csrf */
         require __DIR__ . '/../Views/index.php';
         return (string)ob_get_clean();
@@ -137,14 +160,14 @@ final class AccountsController{
         $defaultPassword = 'password';
 
         // Collect & validate
-        $id_no      = trim((string)($_POST['id_no']   ?? ''));
-        $fname      = trim((string)($_POST['fname']   ?? ''));
-        $mname      = trim((string)($_POST['mname']   ?? ''));
-        $lname      = trim((string)($_POST['lname']   ?? ''));
-        $email      = trim((string)($_POST['email']   ?? ''));
-        $passwd     = (string)($_POST['password']     ?? $defaultPassword);
-        $role_id    = (string)($_POST['role_id']      ?? '');
-        $department_id = (string)($_POST['department_id']   ?? '');
+        $id_no         = trim((string)($_POST['id_no']   ?? ''));
+        $fname         = trim((string)($_POST['fname']   ?? ''));
+        $mname         = trim((string)($_POST['mname']   ?? ''));
+        $lname         = trim((string)($_POST['lname']   ?? ''));
+        $email         = trim((string)($_POST['email']   ?? ''));
+        $passwd        = (string)($_POST['password']     ?? $defaultPassword);
+        $role_id       = (string)($_POST['role_id']      ?? '');
+        $department_id = (string)($_POST['department_id'] ?? ''); // optional
 
         $errors = [];
         if ($id_no === '')                                   $errors[] = 'ID No is required.';
@@ -164,17 +187,28 @@ final class AccountsController{
         $hash = PasswordHelper::hash($passwd);
 
         $ok = $this->model->createUser([
-            'id_no'      => $id_no,
-            'fname'      => $fname,
-            'mname'      => ($mname === '') ? null : $mname,
-            'lname'      => $lname,
-            'email'      => $email,
-            'password'   => $hash,
-            'role_id'    => (int)$role_id,
+            'id_no'         => $id_no,
+            'fname'         => $fname,
+            'mname'         => ($mname === '') ? null : $mname,
+            'lname'         => $lname,
+            'email'         => $email,
+            'password'      => $hash,
+            'role_id'       => (int)$role_id,
             'department_id' => ($department_id === '') ? null : (int)$department_id,
         ]);
 
         if ($ok) {
+            // If created as Dean and a college was selected, propagate to Departments module.
+            $deanRid = $this->deanRoleId();
+            if ($deanRid !== null && (int)$role_id === $deanRid && $department_id !== '') {
+                try {
+                    $this->assignments->setDepartmentDean((int)$department_id, $id_no);
+                } catch (\Throwable $e) {
+                    // Don’t fail the whole request; just flash a warning.
+                    FlashHelper::set('warning', 'User created, but dean assignment could not be updated: ' . $e->getMessage());
+                }
+            }
+
             FlashHelper::set('success', 'User created successfully.');
 
             $currentAdminIdNo = (string)($_SESSION['user_id'] ?? '');
@@ -217,13 +251,13 @@ final class AccountsController{
 
         // Collect & validate
         $data = [
-            'id_no'      => trim((string)($_POST['id_no'] ?? '')),
-            'fname'      => trim((string)($_POST['fname'] ?? '')),
-            'mname'      => trim((string)($_POST['mname'] ?? '')),
-            'lname'      => trim((string)($_POST['lname'] ?? '')),
-            'email'      => trim((string)($_POST['email'] ?? '')),
-            'role_id'    => (string)($_POST['role_id'] ?? ''),
-            'department_id' => (string)($_POST['department_id'] ?? ''),
+            'id_no'         => trim((string)($_POST['id_no'] ?? '')),
+            'fname'         => trim((string)($_POST['fname'] ?? '')),
+            'mname'         => trim((string)($_POST['mname'] ?? '')),
+            'lname'         => trim((string)($_POST['lname'] ?? '')),
+            'email'         => trim((string)($_POST['email'] ?? '')),
+            'role_id'       => (string)($_POST['role_id'] ?? ''),
+            'department_id' => (string)($_POST['department_id'] ?? ''), // optional
         ];
 
         $errs = [];
@@ -240,12 +274,22 @@ final class AccountsController{
         }
 
         // Normalize nullable
-        if ($data['mname'] === '')      $data['mname'] = null;
-        if ($data['department_id'] === '') $data['department_id'] = null;
+        if ($data['mname'] === '')             $data['mname'] = null;
+        if ($data['department_id'] === '')     $data['department_id'] = null;
 
-        $ok = $this->model->updateUserWithRoleCollege($data);
+        $ok = $this->model->updateUserWithRoleDepartment($data);
 
         if ($ok) {
+            // If edited as Dean and a college was selected, propagate to Departments module.
+            $deanRid = $this->deanRoleId();
+            if ($deanRid !== null && (int)$data['role_id'] === $deanRid && $data['department_id'] !== null) {
+                try {
+                    $this->assignments->setDepartmentDean((int)$data['department_id'], (string)$data['id_no']);
+                } catch (\Throwable $e) {
+                    FlashHelper::set('warning', 'User updated, but dean assignment could not be updated: ' . $e->getMessage());
+                }
+            }
+
             FlashHelper::set('success', 'User updated successfully.');
 
             $currentAdminIdNo = (string)($_SESSION['user_id'] ?? '');
