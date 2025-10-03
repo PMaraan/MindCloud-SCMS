@@ -676,14 +676,18 @@ function wireDropTargets() {
           return;
         }
         if (type === 'signature') {
-          if (isSelectionInsideTable(ed)) {
-            forceCaretOutsideTable(ed, ev);
+          if (ed) {
+            // if caret is inside a normal table, move out first
+            if (isSelectionInsideTable(ed)) {
+              forceCaretOutsideTable(ed, ev);
+            }
+            const html = signatureTableHTML(); // 4×4, fixed
+            ed.chain().focus().insertContent(html).run();
+            // keep caret after the table on the same page
+            ed.chain().focus().insertContent('<p></p>').run();
+            setOverlaysDragEnabled(false);
+            return;
           }
-          const html = signatureTableHTML();
-          ed.chain().focus().insertContent(html).run();
-          ed.chain().focus().insertContent('<p></p>').run(); // caret after table
-          setOverlaysDragEnabled(false);
-          return;
         }
       }
 
@@ -1125,17 +1129,10 @@ function currentCellElement(ed) {
 }
 function isSignatureTablePM(ed) {
   try {
-    const { $from } = ed.state.selection;
-    for (let d = $from.depth; d >= 0; d--) {
-      const n = $from.node(d);
-      if (n?.type?.name === 'table') {
-        const cls = String(n.attrs?.class || '');
-        const sig = n.attrs?.['data-sig'];
-        return /\bsig-table\b/.test(cls) || sig === '1';
-      }
-    }
-  } catch {}
-  return false;
+    const cell = currentCellElement(ed);
+    const tbl  = cell?.closest('table');
+    return !!(tbl && tbl.classList.contains('sig-table'));
+  } catch { return false; }
 }
 function positionTablebarForEditor(ed) {
   const bar = ensureTTTablebar();

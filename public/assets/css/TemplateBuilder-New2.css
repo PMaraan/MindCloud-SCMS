@@ -38,6 +38,9 @@
   --color-muted-2: #64748b;
   --color-stroke: #d1d5db;
   --color-stroke-2: #cbd5e1;
+
+  --print-line-w: 0.6pt; 
+  --print-line: var(--print-line-w) solid #000; 
 }
 
 /* =========================================================
@@ -442,6 +445,31 @@ body {
   gap: 8px;
 }
 
+/* Signature table gridlines (override) */
+.tiptap table.sig-table,
+.tiptap .ProseMirror table.sig-table,
+.tiptap .ProseMirror table[data-sig="1"]{
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse;
+}
+
+.tiptap table.sig-table td,
+.tiptap .ProseMirror table.sig-table td,
+.tiptap .ProseMirror table[data-sig="1"] td{
+  border: 1px solid var(--color-stroke-2);
+  padding: 10px 12px;
+  vertical-align: top;
+}
+
+/* extra room for upload row */
+.tiptap table.sig-table tr:first-child td,
+.tiptap .ProseMirror table.sig-table tr:first-child td,
+.tiptap .ProseMirror table[data-sig="1"] tr:first-child td{
+  padding: 12px;
+}
+
+
 /* Placeholders inside signature cells */
 .tiptap table.sig-table td[data-ph]{ position: relative; }
 .tiptap table.sig-table td[data-ph] > p[data-ph]:empty::before{
@@ -514,6 +542,44 @@ body {
   display: inline-block; width: 100%;
   padding: 4px 6px; border: 1px solid var(--color-stroke-2);
   border-radius: 6px; line-height: 1.2;
+}
+
+/* --- Signature date input (screen vs print) --- */
+.tiptap .mc-date-box {
+  display: flex;
+  align-items: center;
+}
+.tiptap .sig-date-input {
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid var(--color-stroke-2);
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.2;
+  background: #fff;
+  color: #111827;
+}
+
+/* --- Signature date: on screen show input, on print show plain text --- */
+@media print {
+  /* hide the actual input */
+  .sig-table .sig-date-input,
+  .mc-date-box > input.sig-date-input { display: none !important; }
+
+  /* show the chosen value pulled from data-value */
+  .mc-date-box::after {
+    content: attr(data-value);
+    font: inherit;
+    color: #111827;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 4px 6px;
+    min-height: 28px;
+    display: inline-block;
+    width: 100%;
+    line-height: 1.2;
+    box-sizing: border-box;
+  }
 }
 
 /* =========================================================
@@ -665,3 +731,84 @@ body {
 }
 .mc-grip-x:hover::before,
 .mc-grip-y:hover::before{ opacity: 1; }
+
+/* === PRINT: single source of truth, no missing borders === */
+@page { margin: 12mm; }
+
+@media print {
+  /* Hide app chrome */
+  #mc-topbar, #mc-sidebar, .gutter, .mc-actions { display: none !important; }
+
+  /* Only print the page canvas */
+  body * { visibility: hidden !important; }
+  #mc-work, #mc-work * { visibility: visible !important; }
+
+  /* Layout for print */
+  #mc-shell { display: block !important; }
+  #mc-work  { overflow: visible !important; padding: 0 !important; margin: 0 auto !important; width: auto !important; background: #fff !important; }
+  .page {
+    box-shadow: none !important;
+    border: 0 !important;
+    break-after: page;
+    break-inside: avoid;
+    -webkit-region-break-inside: avoid;
+  }
+
+  /* Paper sizes in real units */
+  .page.size-A4     { width: 210mm !important; min-height: 297mm !important; }
+  .page.size-Letter { width: 216mm !important; min-height: 279mm !important; }
+  .page.size-Legal  { width: 216mm !important; min-height: 356mm !important; }
+
+  /* --- TABLES: robust, lossless borders --- */
+
+  /* Stop P↔TABLE margin collapse by using wrapper padding (not table margins) */
+  .tiptap .tableWrapper { padding-block: 8px !important; }
+  .ProseMirror table { margin-block: 0 !important; }
+
+  /* Draw the full outer frame and all interior lines */
+  .ProseMirror table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    border: var(--print-line) !important;      /* outer edge */
+  }
+  .ProseMirror th,
+  .ProseMirror td {
+    border: var(--print-line) !important;      /* interior grid */
+  }
+  /* Ensure every interior separator exists */
+  .ProseMirror table tr + tr > * { border-top: var(--print-line) !important; }
+  .ProseMirror table tr > * + * { border-left: var(--print-line) !important; }
+
+  /* Signature tables get the same treatment */
+  .ProseMirror table.sig-table { border: var(--print-line) !important; }
+  .ProseMirror table.sig-table th,
+  .ProseMirror table.sig-table td { border: var(--print-line) !important; }
+
+  /* No outlines → prevents double-thick left/right edges */
+  .ProseMirror table,
+  .ProseMirror table.sig-table {
+    outline: none !important;
+    outline-offset: 0 !important;
+  }
+
+  /* Upload boxes: solid borders in print */
+  .mc-upload-box { border: var(--print-line) !important; background: none !important; }
+
+  /* Date input: show chosen value as plain text box */
+  .sig-date-input, .mc-date-box > input { display: none !important; }
+  .mc-date-box::after {
+    content: attr(data-value);
+    display: inline-block;
+    width: 100%;
+    border: var(--print-line) !important;
+    padding: 4px 6px;
+    min-height: 1.8em;
+    line-height: 1.2;
+    box-sizing: border-box;
+    color: #000;
+    font: inherit;
+  }
+
+  /* Color fidelity */
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
