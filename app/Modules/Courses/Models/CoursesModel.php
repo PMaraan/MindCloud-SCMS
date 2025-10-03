@@ -35,7 +35,7 @@ final class CoursesModel
                 FROM public.courses c
                 LEFT JOIN curriculum_courses cc ON cc.course_id = c.course_id
                 LEFT JOIN curricula cur ON cur.curriculum_id = cc.curriculum_id
-                LEFT JOIN dpartments d ON d.department_id = c.college_id
+                LEFT JOIN departments d ON d.department_id = c.college_id
             $where
         ";
         $stmt = $pdo->prepare($countSql);
@@ -56,7 +56,7 @@ final class CoursesModel
             LEFT JOIN public.curriculum_courses cc ON cc.course_id = c.course_id
             LEFT JOIN public.curricula cur ON cur.curriculum_id = cc.curriculum_id
             $where
-            GROUP BY c.course_id, c.course_code, c.course_name, c.college_id, col.short_name
+            GROUP BY c.course_id, c.course_code, c.course_name, c.college_id, d.short_name
             ORDER BY LOWER(c.course_code), LOWER(c.course_name)
             LIMIT {$limit} OFFSET {$offset}
         ";

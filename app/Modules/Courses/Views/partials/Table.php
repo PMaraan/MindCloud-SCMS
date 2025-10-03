@@ -38,7 +38,7 @@
             $courseCode     = $r['course_code']    ?? '';
             $courseName     = $r['course_name']    ?? '';
             $collegeId      = $r['college_id']     ?? '';
-            $collegeShort   = $r['college_short']  ?? '—';
+            $collegeShort   = $r['department_short']  ?? '—';
             $curriculaLabel = ($r['curricula']     ?? '') !== '' ? $r['curricula'] : '—';
             $curriculaIds   = $r['curricula_ids']  ?? ''; // e.g., "3,5,9"
           ?>
