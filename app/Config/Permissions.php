@@ -18,6 +18,11 @@ final class Permissions
     public const COLLEGES_EDIT   = 'CollegeModification';
     public const COLLEGES_DELETE = 'CollegeDeletion';
 
+    public const DEPARTMENTS_VIEW   = 'DepartmentViewing';
+    public const DEPARTMENTS_CREATE = 'DepartmentCreation';
+    public const DEPARTMENTS_EDIT   = 'DepartmentModification';
+    public const DEPARTMENTS_DELETE = 'DepartmentDeletion';
+
     public const PROGRAMS_VIEW   = 'ProgramViewing';
     public const PROGRAMS_CREATE = 'ProgramCreation';
     public const PROGRAMS_EDIT   = 'ProgramModification';

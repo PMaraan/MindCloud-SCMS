@@ -4,14 +4,14 @@
  * Accounts module – index view.
  *
  * Expects (from controller):
- * - array  $users      Rows to render in the table (each row has id_no, names, email, role, college, etc.)
+ * - array  $users      Rows to render in the table (each row has id_no, names, email, role, department, etc.)
  * - array  $pager      Global paginator contract:
  *                      ['total','pg','perpage','baseUrl','query'?, 'extra'?, 'from'?, 'to'?]
  * - bool   $canCreate  Gate for rendering Create modal trigger
  * - bool   $canEdit    Gate for rendering Edit modal
  * - bool   $canDelete  Gate for rendering Delete modal
  * - array  $roles      For Create/Edit modals (role_id, role_name)
- * - array  $colleges   For Create/Edit modals (college_id, short_name/college_name)
+ * - array  $colleges   For Create/Edit modals (department_id, short_name/college_name)
  * - string $csrf       CSRF token to embed in forms
  *
  * @var array  $users

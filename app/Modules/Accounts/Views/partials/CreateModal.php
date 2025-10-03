@@ -51,10 +51,10 @@
 
         <div class="mb-3">
           <label class="form-label">College (optional)</label>
-          <select name="college_id" class="form-select">
+          <select name="department_id" class="form-select">
             <option value="">— None —</option>
             <?php foreach ($colleges as $c): ?>
-              <option value="<?= (int)$c['college_id'] ?>">
+              <option value="<?= (int)$c['department_id'] ?>">
                 <?= htmlspecialchars((string)($c['short_name'] ?: $c['college_name']), ENT_QUOTES, 'UTF-8') ?>
               </option>
             <?php endforeach; ?>

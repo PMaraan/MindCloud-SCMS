@@ -154,7 +154,7 @@ final class CoursesController
         $data = [
             'course_code' => trim((string)($_POST['course_code'] ?? '')),
             'course_name' => trim((string)($_POST['course_name'] ?? '')),
-            'college_id'  => ($_POST['college_id'] ?? '') === '' ? null : (int)$_POST['college_id'],
+            'department_id'  => ($_POST['department_id'] ?? '') === '' ? null : (int)$_POST['department_id'],
         ];
         // Multiple selections allowed; may be absent
         $curriculumIds = isset($_POST['curriculum_ids']) && is_array($_POST['curriculum_ids'])
@@ -174,7 +174,7 @@ final class CoursesController
             $newId = $this->model->create([
                 'course_code' => $data['course_code'],
                 'course_name' => $data['course_name'],
-                'college_id'  => $data['college_id'],
+                'department_id'  => $data['department_id'],
                 // curriculum_id removed (M:N now)
             ]);
             // link selections
@@ -209,7 +209,7 @@ final class CoursesController
         $data = [
             'course_code' => trim((string)($_POST['course_code'] ?? '')),
             'course_name' => trim((string)($_POST['course_name'] ?? '')),
-            'college_id'  => ($_POST['college_id'] ?? '') === '' ? null : (int)$_POST['college_id'],
+            'department_id'  => ($_POST['department_id'] ?? '') === '' ? null : (int)$_POST['department_id'],
         ];
         $curriculumIds = isset($_POST['curriculum_ids']) && is_array($_POST['curriculum_ids'])
             ? array_filter($_POST['curriculum_ids'], fn($v) => (int)$v > 0)

@@ -11,6 +11,25 @@ CREATE TABLE IF NOT EXISTS colleges (
        PRIMARY KEY (college_id)
 );
 
+-----------DEPARTMENTS-------------
+CREATE TABLE IF NOT EXISTS public.departments (
+  department_id   integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  short_name      varchar(20)  NOT NULL,
+  department_name varchar(100) NOT NULL,
+  is_college      boolean NOT NULL DEFAULT FALSE
+);
+
+-- Name & short_name uniqueness (case-insensitive)
+CREATE UNIQUE INDEX IF NOT EXISTS uq_departments_short_lower
+  ON public.departments (lower(short_name));
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_departments_name_lower
+  ON public.departments (lower(department_name));
+
+-- If you frequently filter colleges vs departments
+CREATE INDEX IF NOT EXISTS idx_departments_is_college
+  ON public.departments (is_college);
+
 -----------USERS-------------
 DROP TABLE IF EXISTS users CASCADE;
 CREATE TABLE IF NOT EXISTS users

@@ -59,31 +59,6 @@ final class UserModel {
             return false;
         }
 
-        
-        /*
-        // Get role & college in one query to reduce calls
-        $stmtUserDetails = $this->pdo->prepare("
-            SELECT 
-                r.role_id, 
-                r.role_name, 
-                c.short_name AS college_short, 
-                c.college_name
-            FROM user_roles ur
-            JOIN roles r ON ur.role_id = r.role_id
-            LEFT JOIN colleges c ON ur.college_id = c.college_id
-            WHERE ur.id_no = ?
-            LIMIT 1
-        ");
-        $stmtUserDetails->execute([$user['id_no']]);
-        $userDetails = $stmtUserDetails->fetch(\PDO::FETCH_ASSOC);
-
-        return array_merge($user, [
-            'role_id'       => $userDetails['role_id'] ?? null,
-            'role_name'     => $userDetails['role_name'] ?? null,
-            'college_short' => $userDetails['college_short'] ?? null,
-            'college_name'  => $userDetails['college_name'] ?? null
-        ]);
-        */
         return $user;
         
     }
@@ -107,8 +82,11 @@ final class UserModel {
     /**
      * Get full user profile (joins role & college).
      */
-    public function getUserProfile(int|string $userId): ?array {
-        $stmt = $this->pdo->prepare("
+    public function getUserProfile(int|string $userId): ?array
+    {
+        // A single row with the user's basic info + one role row + optional department
+        // If you want "all roles", you can group_agg later; this mirrors your original LIMIT 1 approach.
+        $sql = "
             SELECT 
                 u.id_no,
                 u.fname,
@@ -116,18 +94,21 @@ final class UserModel {
                 u.lname,
                 r.role_id,
                 r.role_name,
-                c.short_name AS college_short_name,
-                c.college_name
+                d.short_name       AS department_short_name,
+                d.department_name  AS department_name,
+                d.is_college       AS department_is_college
             FROM users u
-            JOIN user_roles ur ON u.id_no = ur.id_no
-            JOIN roles r ON ur.role_id = r.role_id
-            LEFT JOIN colleges c ON ur.college_id = c.college_id
-            WHERE u.id_no = ?
+            JOIN user_roles ur   ON ur.id_no = u.id_no
+            JOIN roles r         ON r.role_id = ur.role_id
+            LEFT JOIN departments d ON d.department_id = ur.department_id
+            WHERE u.id_no = :id_no
             LIMIT 1
-        ");
-        $stmt->execute([$userId]);
-        $result = $stmt->fetch(\PDO::FETCH_ASSOC);
-        return $result ?: null;
+        ";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([':id_no' => $userId]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        return $row ?: null;
     }
 
     /** List users who have the 'Dean' role (for dropdowns). */

@@ -1,5 +1,15 @@
 <?php
-// /app/Controllers/DashboardController.php
+// /app/Controllers/AppShellController.php
+/**
+ * AppShellController
+ *
+ * Formerly "DashboardController". Hosts the main application shell:
+ * - Topbar
+ * - Sidebar (role-aware via ModuleRegistry)
+ * - Main content slot (modules inject HTML into this area)
+ *
+ * This rename avoids confusion with the future "Dashboard" analytics module.
+ */
 declare(strict_types=1);
 
 namespace App\Controllers;
@@ -9,7 +19,7 @@ use App\Models\UserModel;
 use App\Helpers\FlashHelper;
 use App\Security\RBAC;
 
-final class DashboardController
+final class AppShellController
 {
     private StorageInterface $db;
     private UserModel $userModel;
@@ -33,7 +43,7 @@ final class DashboardController
     }
     
     /**
-     * Render the dashboard layout (app shell) and dynamic module content.
+     * Render the app shell layout and dynamic module content.
      * The active module is resolved via ?page=... and config/ModuleRegistry.php.
      */
     public function render(string $requestedPage = 'dashboard'): void {
@@ -150,11 +160,11 @@ final class DashboardController
         extract($viewData, EXTR_SKIP);
 
         // 7. Render the layout
-        require dirname(__DIR__) . '/Views/layouts/DashboardLayout.php';
+        require dirname(__DIR__) . '/Views/layouts/AppShellLayout.php';
     }
 
     /**
-     * Default landing content for the dashboard shell when no module is selected.
+     * Default landing content for the app shell when no module is selected.
      * Keep it minimal – you can swap this for a small include later if needed.
      */
     private function renderLandingContent(string $username, string $displayRole): string

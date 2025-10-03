@@ -39,9 +39,8 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // Generate ONCE per session (do NOT regenerate in views/layouts)
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
+use App\Helpers\CsrfHelper;
+CsrfHelper::boot();
 
 // 3b. Request ID for correlation
 if (empty($_SERVER['REQUEST_ID'])) {
