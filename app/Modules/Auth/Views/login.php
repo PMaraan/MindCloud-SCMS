@@ -1,9 +1,4 @@
 <?php
-// Make sure CSRF token exists (router/controller sets it, but safe to re-check)
-if (empty($_SESSION['csrf_token_login'])) {
-  $_SESSION['csrf_token_login'] = bin2hex(random_bytes(32));
-}
-
 // Optional: show flash message
 $flash = \App\Helpers\FlashHelper::get();
 ?>
@@ -14,6 +9,7 @@ $flash = \App\Helpers\FlashHelper::get();
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>LPU-SCMS | Login</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
   <link rel="stylesheet" href="<?= BASE_PATH ?>/public/assets/css/login-styles.css">
 </head>
 <body>
@@ -43,7 +39,7 @@ $flash = \App\Helpers\FlashHelper::get();
 
             <form method="POST" action="<?= BASE_PATH ?>/login" autocomplete="off">
               <!-- Anti-CSRF -->
-              <input type="hidden" name="csrf" value="<?= htmlspecialchars($_SESSION['csrf_token_login'] ?? '', ENT_QUOTES) ?>">
+              <?= \App\Helpers\CsrfHelper::inputField('csrf_token') ?>
 
               <!-- Email Input -->
               <div class="mb-3">
@@ -63,17 +59,27 @@ $flash = \App\Helpers\FlashHelper::get();
               <!-- Password Input -->
               <div class="mb-3">
                 <label for="password-input" class="form-label">Password</label>
-                <input 
-                  type="password" 
-                  name="password"
-                  class="form-control password-input" 
-                  id="password-input"
-                  value="password"
-                  required>
+                <div class="input-group">
+                  <input
+                    type="password"
+                    name="password"
+                    class="form-control password-input"
+                    id="password-input"
+                    value="password"
+                    required
+                    autocomplete="current-password">
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary js-toggle-password"
+                    aria-label="Show password"
+                    data-target="#password-input">
+                    <i class="bi bi-eye" aria-hidden="true"></i>
+                  </button>
+                </div>
                 <div class="invalid-feedback">
                   Password is required.
                 </div>
-                <div class="text-start">
+                <div class="text-start mt-1">
                   <a href="#" class="forgot-password">Forgot Password?</a>
                 </div>
               </div>

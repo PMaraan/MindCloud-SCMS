@@ -10,8 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Trim and validate input values
     const email = emailInput.value.trim();
     const password = passwordInput.value;
-    //const emailPattern = /^[a-zA-Z0-9._%+-]+@your_domain\.edu\.ph$/; //dangerous code as this exposes your company's domain, remove
-    //const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/; //delete for production
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     // Reset previous error states
     emailInput.classList.remove("is-invalid");
@@ -40,3 +39,35 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
+
+// --- Password visibility toggle (eye icon)
+(function () {
+  function togglePassword(btn) {
+    const sel = btn.getAttribute('data-target');
+    if (!sel) return;
+    const input = document.querySelector(sel);
+    if (!input) return;
+
+    const icon = btn.querySelector('i');
+    const isPassword = input.getAttribute('type') === 'password';
+    input.setAttribute('type', isPassword ? 'text' : 'password');
+
+    // Update icon + aria-label
+    if (icon) {
+      icon.classList.toggle('bi-eye', !isPassword);
+      icon.classList.toggle('bi-eye-slash', isPassword);
+    }
+    btn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+
+    // Keep focus on the input for usability
+    input.focus({ preventScroll: true });
+  }
+
+  document.addEventListener('click', function (ev) {
+    const btn = ev.target.closest('.js-toggle-password');
+    if (!btn) return;
+    ev.preventDefault();
+    togglePassword(btn);
+  });
+})();

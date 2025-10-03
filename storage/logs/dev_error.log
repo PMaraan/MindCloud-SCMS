@@ -3514,3 +3514,15 @@ LINE 6:                 LEFT JOIN dpartments d ON d.department_id = ...
 [02-Oct-2025 18:54:37 Europe/Berlin] accounts.page rows=10 total=19 limit=10 offset=0
 [02-Oct-2025 18:54:37 Europe/Berlin] accounts.index total=19 rows=10
 [02-Oct-2025 18:54:37 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"department_id":null,"role_name":"Admin","department_short_name":"","college_short_name":""}
+[02-Oct-2025 18:56:31 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[02-Oct-2025 18:56:31 Europe/Berlin] accounts.page rows=10 total=19 limit=10 offset=0
+[02-Oct-2025 18:56:31 Europe/Berlin] accounts.index total=19 rows=10
+[02-Oct-2025 18:56:31 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"department_id":null,"role_name":"Admin","department_short_name":"","college_short_name":""}
+[02-Oct-2025 18:56:40 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[02-Oct-2025 18:56:40 Europe/Berlin] accounts.page rows=10 total=19 limit=10 offset=0
+[02-Oct-2025 18:56:40 Europe/Berlin] accounts.index total=19 rows=10
+[02-Oct-2025 18:56:40 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"department_id":null,"role_name":"Admin","department_short_name":"","college_short_name":""}
+[03-Oct-2025 04:34:43 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[03-Oct-2025 04:34:43 Europe/Berlin] accounts.page rows=10 total=19 limit=10 offset=0
+[03-Oct-2025 04:34:43 Europe/Berlin] accounts.index total=19 rows=10
+[03-Oct-2025 04:34:43 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"department_id":null,"role_name":"Admin","department_short_name":"","college_short_name":""}

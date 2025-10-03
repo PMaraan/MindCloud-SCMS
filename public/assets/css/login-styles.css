@@ -128,3 +128,62 @@
     transform: translateY(0);
   }
 }
+
+/* Login: make the password eye button match the input background */
+.input-group .js-toggle-password {
+  /* match Bootstrap input default */
+  background-color: #fff !important;
+  border-color: #ced4da;
+  border-left: 0;            /* seamless junction with the input */
+}
+
+.input-group .js-toggle-password:hover,
+.input-group .js-toggle-password:active,
+.input-group .js-toggle-password:focus {
+  background-color: #fff !important;
+}
+
+.input-group .form-control:focus + .js-toggle-password {
+  /* mirror the input's focused border color */
+  border-color: #86b7fe;
+  z-index: 3; /* stay above siblings when input is focused */
+}
+
+/* Slightly soften the icon color to align with placeholders/text-muted */
+.input-group .js-toggle-password i {
+  color: #6c757d;
+}
+
+/* Make the password eye button plain white like the input */
+.js-toggle-password.btn-outline-secondary {
+  /* Override Bootstrap's outline button variables ONLY for this button */
+  --bs-btn-bg: #fff;
+  --bs-btn-hover-bg: #fff;
+  --bs-btn-active-bg: #fff;
+  --bs-btn-disabled-bg: #fff;
+
+  --bs-btn-border-color: #ced4da;
+  --bs-btn-hover-border-color: #86b7fe;
+  --bs-btn-active-border-color: #86b7fe;
+
+  background-color: #fff !important; /* ensure immediate paint */
+  border-left: 0;                     /* seamless join with the input */
+}
+
+/* Keep it white on focus/hover/active (safeguard for older Bootstrap builds) */
+.js-toggle-password.btn-outline-secondary:hover,
+.js-toggle-password.btn-outline-secondary:focus,
+.js-toggle-password.btn-outline-secondary:active {
+  background-color: #fff !important;
+}
+
+/* Icon tint */
+.input-group .js-toggle-password i {
+  color: #6c757d;
+}
+
+/* When the input is focused, keep borders aligned */
+.input-group .form-control:focus + .js-toggle-password {
+  border-color: #86b7fe;
+  z-index: 3;
+}

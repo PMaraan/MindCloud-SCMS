@@ -7,6 +7,7 @@ namespace App\Modules\Auth\Controllers;
 use App\Interfaces\StorageInterface;
 use App\Models\UserModel;
 use App\Helpers\FlashHelper;
+use App\Helpers\CsrfHelper;
 
 final class AuthController
 {
@@ -27,16 +28,7 @@ final class AuthController
         $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
         if ($method === 'POST') {
-            // CSRF check
-            $token    = (string)($_POST['csrf'] ?? '');
-            $expected = (string)($_SESSION['csrf_token_login'] ?? '');
-
-            if ($token === '' || $expected === '' || !hash_equals($expected, $token)) {
-                \App\Helpers\FlashHelper::set('danger', 'Your session expired. Please try again.');
-                header('Location: ' . BASE_PATH . '/login');
-                exit;
-            }
-            unset($_SESSION['csrf_token_login']); // one-time token
+            CsrfHelper::assertOrRedirect(BASE_PATH . '/login');
 
             $usernameOrEmail = trim((string)($_POST['email'] ?? '')); // Change this if you are also using username
             $password        = (string)($_POST['password'] ?? '');
@@ -63,8 +55,6 @@ final class AuthController
             }
         }
 
-        // GET ensure CSRF token exists and show login view
-        $_SESSION['csrf_token_login'] = bin2hex(random_bytes(32));
         // Legacy: require dirname(__DIR__, 3) . '/Views/login.php';
         require __DIR__ . '/../Views/login.php';
     }
