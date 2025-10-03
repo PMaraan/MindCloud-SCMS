@@ -629,25 +629,29 @@ function wireDropTargets() {
       if (ed) {
       if (type === 'table') {
         if (isSelectionInsideTable(ed)) {
-          forceCaretOutsideTable(ed, ev); // uses drop pointer to choose above/below
+          forceCaretOutsideTable(ed, ev);
         }
 
-        // 1) add a hidden ZWSP paragraph ABOVE the table
-        ed.chain().focus().insertContent('<p>\u200B</p>').run();
+        // ↓ If not enough space on this page, create next page and switch editor
+        const edForInsert = (window.__mc?.ensureRoomForTable?.(240)) || ed;
 
-        const paraPos = Math.max(1, ed.state.selection.from - 1);
+        // 1) add a hidden ZWSP paragraph ABOVE the table
+        edForInsert.chain().focus().insertContent('<p>\u200B</p>').run();
+        const paraPos = Math.max(1, edForInsert.state.selection.from - 1);
 
         // 2) insert the table
-        ed.chain().focus()
+        edForInsert.chain().focus()
           .insertTable({ rows: 3, cols: 4, withHeaderRow: false })
           .run();
 
         // 3) ensure caret sits in the line ABOVE the table
-        putCaretAboveJustInsertedTable(ed, paraPos);
+        putCaretAboveJustInsertedTable(edForInsert, paraPos);
 
         setOverlaysDragEnabled(false);
         return;
       }
+
+
         // Simple sidebar items mapped to flowing HTML in TipTap
         if (type === 'label') {
           ed.chain().focus().insertContent('<p><strong>Label text</strong></p>').run();
@@ -886,28 +890,26 @@ function wireDropTargets() {
           ed.chain().focus().setHorizontalRule().run();
           break;
         case 'insertTable': {
-          const ed = getEd(); if (!ed) return;
+          let ed = getEd(); if (!ed) return;
 
-          // Never allow nested tables: if inside a table, move out first
           if (isSelectionInsideTable(ed)) {
             forceCaretOutsideTable(ed, 'auto');
           }
 
-          // 1) add a hidden ZWSP paragraph ABOVE the table
-          ed.chain().focus().insertContent('<p>\u200B</p>').run();
+          // ↓ Ensure space; may switch to a new page/editor
+          ed = (window.__mc?.ensureRoomForTable?.(240)) || ed;
 
-          // selection is at end of that paragraph; step back 1 to be inside it
+          ed.chain().focus().insertContent('<p>\u200B</p>').run();
           const paraPosTop = Math.max(1, ed.state.selection.from - 1);
 
-          // 2) insert the table
           ed.chain().focus()
             .insertTable({ rows: 3, cols: 4, withHeaderRow: false })
             .run();
 
-          // 3) on next tick, put caret back in the paragraph ABOVE the table
           putCaretAboveJustInsertedTable(ed, paraPosTop);
           break;
         }
+
 
 
         case 'insertUploadBox':

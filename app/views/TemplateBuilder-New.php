@@ -1072,65 +1072,91 @@ function updatePageNumbers() {
   });
 }
 
-// ==== Google Docs–style: Backspace on an empty page removes the page ====
-(function setupDeleteEmptyPageHotkey(){
-  // A page can be deleted only if its editor is empty and it has no overlay blocks
+// ==== Backspace at page start ====
+// - If the page is empty: delete page (your old behavior)
+// - Otherwise: move caret to end of previous page and, if there’s room,
+//   pull content up from the current page. If the current page becomes empty, remove it.
+(function setupBackspaceAtPageStart(){
   const isEditorEmpty = (ed) => !hasAnyRealContent(ed);
   const canDeletePage = (pageEl) => {
     const ov = pageEl?.querySelector('.mc-block-overlay');
-    return !(ov && ov.querySelector('.mc-block')); // don't nuke a page that has free-positioned blocks
+    return !(ov && ov.querySelector('.mc-block'));
   };
 
   document.addEventListener('keydown', (ev) => {
     if (ev.key !== 'Backspace' || ev.defaultPrevented) return;
 
-    // Only act when the event came from a TipTap editor
+    // Only consider keydowns that originate inside a TipTap editor
     const pm = ev.target?.closest?.('.ProseMirror');
     if (!pm) return;
 
-    const ed = window.__mc?.getActiveEditor?.();
-    if (!ed) return;
+    const ed  = window.__mc?.getActiveEditor?.();
+    const sel = ed?.state?.selection;
+    if (!ed || !sel?.empty) return;
 
-    const sel = ed.state?.selection;
-    // Must be at the very start of the doc and the editor must be empty
-    if (!sel?.empty || sel.from !== 1 || !isEditorEmpty(ed)) return;
+    // We only act when the caret is truly at the very start of the page editor
+    if (sel.from !== 1) return;
 
-    const pageEl  = getPageOfEditor(ed);
-    const prevEl  = getPrevPageEl(pageEl);
-    if (!pageEl || !prevEl || !canDeletePage(pageEl)) return;
+    const curPage = getPageOfEditor(ed);
+    if (!curPage) return;
 
-    // We handle it: prevent the default and do the Google Docs behavior
+    const prevPage = getPrevPageEl(curPage);
+    if (!prevPage) return; // nothing to jump to → let default happen
+    const prevEd = getEditorOfPage(prevPage);
+    if (!prevEd) return;
+
+    // We'll handle it.
     ev.preventDefault();
     ev.stopPropagation();
 
-    // Tear-down must run after TipTap finishes its own handlers
-    setTimeout(() => {
-      try { ed.destroy(); } catch {}
+    // Case A: current page is empty → delete it (old behavior)
+    if (isEditorEmpty(ed) && canDeletePage(curPage)) {
+      // destroy editor + remove page after PM handlers settle
+      setTimeout(() => {
+        try { ed.destroy(); } catch {}
+        try {
+          // drop from registry
+          for (const [k, v] of MCEditors.map.entries()) {
+            if (v === ed) { MCEditors.map.delete(k); break; }
+          }
+          curPage.remove();
+        } catch {}
+        updatePageNumbers();
 
-      // Remove from the MCEditors registry
+        // focus previous page end
+        try { prevEd.chain().focus('end', { scrollIntoView: true }).run(); } catch {}
+        window.__mc?.rewireDropTargets?.();
+      }, 0);
+      return;
+    }
+
+    // Case B: page has content → jump caret to end of previous page and try to pull text up
+    try { prevEd.chain().focus('end', { scrollIntoView: true }).run(); } catch {}
+
+    // Try to pull the first block(s) from current page up if there’s room on prev
+    setTimeout(async () => {
       try {
-        for (const [k, v] of MCEditors.map.entries()) {
-          if (v === ed) { MCEditors.map.delete(k); break; }
-        }
+        await flowBackward(prevEd);  // pulls from next page if there’s room
+        await flowForward(prevEd);   // re-push if the pull caused overflow
       } catch {}
 
-      // Remove page from DOM and renumber
-      try { pageEl.remove(); } catch {}
-      updatePageNumbers();
-
-      // Put the caret at the end of the previous page
-      const prevEd = getEditorOfPage(prevEl) || MCEditors.first();
-      try {
-        prevEd?.chain().focus('end', { scrollIntoView: true }).run();
-      } catch {
-        try { prevEd?.commands?.focus?.('end'); } catch {}
+      // If that emptied the current page, remove it (like Google Docs)
+      const curEdAfter = getEditorOfPage(curPage);
+      if (curEdAfter && isEditorEmpty(curEdAfter) && canDeletePage(curPage)) {
+        try { curEdAfter.destroy(); } catch {}
+        try {
+          for (const [k, v] of MCEditors.map.entries()) {
+            if (v === curEdAfter) { MCEditors.map.delete(k); break; }
+          }
+          curPage.remove();
+        } catch {}
+        updatePageNumbers();
+        window.__mc?.rewireDropTargets?.();
       }
-
-      // Keep drag/drop targets healthy
-      window.__mc?.rewireDropTargets?.();
     }, 0);
-  }, true); // capture so we beat ProseMirror's own Backspace handling
+  }, true); // capture so we preempt PM’s default Backspace handling
 })();
+
 
 
 /* Buttons */
