@@ -1,0 +1,17 @@
+/* Path: /public/assets/css/editor.css */
+#editor {
+  background:#fff;
+  line-height:1.5;
+}
+#editor .ProseMirror {
+  outline: none;
+  min-height: 360px;
+}
+#editor table {
+  width: 100%;
+  border-collapse: collapse;
+}
+#editor th, #editor td {
+  border: 1px solid #dee2e6;
+  padding: .5rem;
+}

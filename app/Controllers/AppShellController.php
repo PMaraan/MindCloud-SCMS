@@ -118,7 +118,18 @@ final class AppShellController
 
                 // Action dispatch (query param ?action=)
                 $action  = strtolower((string)($_GET['action'] ?? 'index'));
-                $allowed = ['index', 'create', 'edit', 'delete'];
+                $allowed = ['index', 'create', 'edit', 'delete', 'savemeta', 'snapshot'];
+
+                // Map lowercased action -> real controller method
+                $actionMap = [
+                    'index'    => 'index',
+                    'create'   => 'create',
+                    'edit'     => 'edit',
+                    'delete'   => 'delete',
+                    'savemeta' => 'saveMeta',
+                    'snapshot' => 'snapshot',
+                ];
+                $method = $actionMap[$action] ?? 'index';
 
                 if (!in_array($action, $allowed, true)) {
                     $action = 'index';
@@ -129,7 +140,7 @@ final class AppShellController
                     $contentHtml = $controller->index();
                 } else {
                     // Mutating actions should handle redirect/flash themselves
-                    $controller->{$action}();
+                    $controller->{$method}();
                     return; // prevent rendering layout after redirect
                 }
             } else {

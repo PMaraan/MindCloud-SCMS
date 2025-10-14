@@ -43,6 +43,10 @@ $basePath = rtrim(BASE_PATH, '/'); // BASE_PATH is from config.php
   <link rel="stylesheet" href="<?= $basePath ?>/public/assets/css/HeaderComponent.css">
   <link rel="stylesheet" href="<?= $basePath ?>/public/assets/css/SidebarComponent.css">
 
+  <!-- Editor essentials -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="<?= BASE_PATH ?>/public/assets/css/rteditor/collab-editor.css">
+
   <!-- Legacy Bootstrap & Icons   
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>

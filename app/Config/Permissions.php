@@ -43,5 +43,8 @@ final class Permissions
     public const TEMPLATEBUILDER_EDIT   = 'SyllabusTemplateModification';
     public const TEMPLATEBUILDER_DELETE = 'SyllabusTemplateDeletion';
 
+    public const EDITOR_VIEW   = 'EDITOR_VIEW';
+    public const EDITOR_CREATE = 'EDITOR_CREATE';
+    public const EDITOR_EDIT   = 'EDITOR_EDIT';
     // Add more modules here...
 }

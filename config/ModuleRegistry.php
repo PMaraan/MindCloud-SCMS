@@ -8,6 +8,8 @@ use App\Modules\Courses\Controllers\CoursesController;
 use App\Modules\Programs\Controllers\ProgramsController;
 use App\Modules\Curricula\Controllers\CurriculaController;
 use App\Modules\TemplateBuilder\Controllers\TemplateBuilderController;
+use App\Modules\RTEditor\Controllers\RTEditorController;
+use App\Modules\Notifications\Controllers\NotificationsController;
 // use App\Controllers\RolesController; // might be deprecated. remove for production ...
 // use App\Controllers\TemplatesController;
 // use App\Controllers\SyllabusController;
@@ -79,10 +81,16 @@ return [
             'delete' => Permissions::TEMPLATEBUILDER_DELETE,
         ],
     ],
+    'rteditor' => [
+        'label'      => 'RT Editor',
+        'permission' => \App\Config\Permissions::EDITOR_VIEW,
+        'controller' => RTEditorController::class,
+        'actions'    => ['index', 'create', 'saveMeta', 'snapshot'],
+    ],
     'notifications' => [
         'label'      => 'Notifications',
         'permission' => null, // no special permission; uses session user
-        'controller' => \App\Modules\Notifications\Controllers\NotificationsController::class,
+        'controller' => NotificationsController::class,
         'actions'    => [],
     ],
     
