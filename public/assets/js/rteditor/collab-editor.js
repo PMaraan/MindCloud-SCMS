@@ -1,12 +1,46 @@
 // Path: /public/assets/js/rteditor/collab-editor.js
-// Minimal TipTap init (no Yjs). Uses ESM CDN for TipTap.
+// TipTap init (no Yjs), using a single import origin via import map.
 
-import { Editor } from "https://cdn.skypack.dev/@tiptap/core@2";
-import StarterKit  from "https://cdn.skypack.dev/@tiptap/starter-kit@2";
+import { Editor, Extension } from "@tiptap/core";
+import StarterKit from "@tiptap/starter-kit";
+
+/**
+ * Enter behavior implemented INSIDE TipTap (same PM instance).
+ */
+const EnterShortcuts = Extension.create({
+  name: "enterShortcuts",
+  addKeyboardShortcuts() {
+    return {
+      "Shift-Enter": () =>
+        this.editor.commands.setHardBreak() ||
+        this.editor.commands.insertContent("<br>"),
+
+      Enter: () => {
+        // Normal split
+        if (this.editor.commands.splitBlock()) return true;
+
+        // Fallback: insert empty paragraph after the current block
+        try {
+          const { state } = this.editor;
+          const $from = state.selection.$from;
+          const insertPos = $from.end($from.depth);
+          return this.editor
+            .chain()
+            .focus()
+            .insertContentAt(insertPos, { type: "paragraph" }, { updateSelection: true })
+            .run() ||
+            this.editor.commands.insertContent("<p></p>");
+        } catch {
+          return this.editor.commands.insertContent("<p></p>");
+        }
+      },
+    };
+  },
+});
 
 /**
  * Initialize a basic TipTap editor.
- * @param {{selector: string, editable?: boolean, initialHTML?: string}} opts 
+ * @param {{selector: string, editable?: boolean, initialHTML?: string}} opts
  */
 export default function initBasicEditor(opts) {
   const { selector, editable = true, initialHTML = "<p>Start typing…</p>" } = opts || {};
@@ -18,23 +52,21 @@ export default function initBasicEditor(opts) {
     editable,
     extensions: [
       StarterKit.configure({ history: true }),
+      EnterShortcuts,
     ],
     content: initialHTML,
   });
 
-  // Focus end defensively
-  try { editor.commands.focus('end'); } catch (_) {}
+  try { editor.commands.focus("end"); } catch {}
 
   // Diagnostics
-  const pm = mount.querySelector('.ProseMirror');
+  const pm = mount.querySelector(".ProseMirror");
   if (pm) {
     const cs = getComputedStyle(pm);
-    console.log('[RTEditor] ProseMirror ready:',
-      'contenteditable=', pm.getAttribute('contenteditable'),
-      'pointerEvents=', cs.pointerEvents
+    console.log("[RTEditor] ProseMirror ready:",
+      "contenteditable=", pm.getAttribute("contenteditable"),
+      "pointerEvents=", cs.pointerEvents
     );
-  } else {
-    console.warn('[RTEditor] ProseMirror element not found under', selector);
   }
 
   return editor;
@@ -42,8 +74,6 @@ export default function initBasicEditor(opts) {
 
 /**
  * Wire a minimal toolbar using [data-cmd] buttons existing in the DOM.
- * @param {Editor} editor 
- * @param {Document|HTMLElement} root
  */
 export function bindBasicToolbar(editor, root = document) {
   const map = {
@@ -53,10 +83,10 @@ export function bindBasicToolbar(editor, root = document) {
     redo: () => editor.chain().focus().redo().run(),
   };
 
-  root.querySelectorAll('[data-cmd]').forEach(btn => {
-    const cmd = btn.getAttribute('data-cmd');
+  root.querySelectorAll("[data-cmd]").forEach(btn => {
+    const cmd = btn.getAttribute("data-cmd");
     if (!map[cmd]) return;
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener("click", (e) => {
       e.preventDefault();
       map[cmd]();
     });
