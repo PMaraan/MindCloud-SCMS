@@ -1,104 +1,99 @@
 <?php
 /**
- * RT Editor – TipTap + Yjs (using syllabus_templates)
+ * RT Editor – Clean Build (no TipTap, no Yjs)
  * Path: /app/Modules/RTEditor/Views/index.php
- * Expects: $title, $canCreate, $canEdit, and $room (string or int)
+ *
+ * Expects: $pageTitle (string), $canEdit (bool)
+ * This is a simple, controlled environment to prove we can type.
  */
-use App\Helpers\CsrfHelper;
-
 $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
-$templateId = isset($room) && is_numeric($room) ? (int)$room : 0;
 ?>
-<div class="container-fluid py-3">
+<div class="container py-3">
   <div class="d-flex align-items-center justify-content-between mb-3">
-    <div class="d-flex gap-2 align-items-center">
-      <h5 class="mb-0">RT Editor</h5>
-      <span class="badge text-bg-secondary">
-        <?= $templateId > 0 ? ('Template ID: ' . (int)$templateId) : 'New (unsaved)' ?>
-      </span>
-    </div>
-    <div class="d-flex gap-2">
-      <button id="btnCreateDoc" class="btn btn-sm btn-primary" <?= $canCreate ? '' : 'disabled' ?>>Create New</button>
-      <a class="btn btn-sm btn-outline-secondary" href="<?= BASE_PATH ?>/dashboard?page=rteditor">Open</a>
-    </div>
+    <h5 class="mb-0"><?= htmlspecialchars($pageTitle) ?></h5>
+    <span class="badge <?= $canEdit ? 'text-bg-success' : 'text-bg-warning' ?>">
+      <?= $canEdit ? 'Editable' : 'Read-only' ?>
+    </span>
   </div>
 
   <div class="card shadow-sm">
     <div class="card-header bg-white">
-      <?php require __DIR__ . '/partials/Toolbar.php'; ?>
+      <strong>Typing Test Area</strong>
     </div>
     <div class="card-body">
-      <form class="row g-2 align-items-center mb-2" id="metaForm" autocomplete="off">
-        <?= CsrfHelper::inputField(); ?>
-        <input type="hidden" id="templateId" name="template_id" value="<?= (int)$templateId ?>">
-        <div class="col-auto">
-          <label for="docTitle" class="form-label visually-hidden">Title</label>
-          <input type="text" class="form-control form-control-sm" id="docTitle" name="title"
-                 placeholder="Template title" value="<?= htmlspecialchars($title ?? 'Untitled Template') ?>" <?= $canEdit ? '' : 'disabled' ?>>
-        </div>
-        <div class="col-auto">
-          <button id="btnSaveTitle" type="button" class="btn btn-sm btn-outline-secondary" <?= $canEdit ? '' : 'disabled' ?>>Save Title</button>
-        </div>
-        <div class="col-auto ms-auto">
-          <button id="btnSnapshot" type="button" class="btn btn-sm btn-outline-primary" <?= $canEdit ? '' : 'disabled' ?>>Save Snapshot</button>
-        </div>
-      </form>
+      <!-- Plain contenteditable area with zero external dependencies -->
+      <!-- TipTap mount (no contenteditable attribute—TipTap will manage it) -->
+      <link rel="stylesheet" href="<?= BASE_PATH ?>/public/assets/css/rteditor/collab-editor.css">
 
-      <div id="editor" class="border rounded p-3" style="min-height:420px;"></div>
-      <small class="text-muted d-block mt-2" id="connInfo">Status: initializing…</small>
+      <!-- Toolbar -->
+      <div class="d-flex gap-2 mb-2">
+        <div class="btn-group btn-group-sm" role="group" aria-label="Text">
+          <button type="button" class="btn btn-outline-secondary" data-cmd="toggleBold"><i class="bi bi-type-bold"></i></button>
+          <button type="button" class="btn btn-outline-secondary" data-cmd="toggleItalic"><i class="bi bi-type-italic"></i></button>
+        </div>
+        <div class="btn-group btn-group-sm ms-auto" role="group" aria-label="UndoRedo">
+          <button type="button" class="btn btn-outline-secondary" data-cmd="undo"><i class="bi bi-arrow-90deg-left"></i></button>
+          <button type="button" class="btn btn-outline-secondary" data-cmd="redo"><i class="bi bi-arrow-90deg-right"></i></button>
+        </div>
+      </div>
+
+      <link rel="stylesheet" href="<?= BASE_PATH ?>/public/assets/css/rteditor/collab-editor.css">
+
+      <div id="editor" class="border rounded p-3" style="min-height: 360px; background: #fff;"></div>
+
+      <div class="mt-3 small text-muted">
+        <div>Diagnostics:</div>
+        <pre id="diag" class="p-2 border bg-light rounded" style="white-space:pre-wrap;"></pre>
+      </div>
+
     </div>
   </div>
 </div>
 
 <script type="module">
-  import initCollabEditor from "<?= $ASSET_BASE ?>/public/assets/js/rteditor/collab-editor.js";
+  import initBasicEditor, { bindBasicToolbar } from "<?= BASE_PATH ?>/public/assets/js/rteditor/collab-editor.js";
 
-  // Set your y-websocket endpoint here
-  const WS_URL = (window.EDITOR_WS_URL ?? "wss://localhost:1234");
+  const canEdit = true; // keep forced ON for this phase
 
-  // Room: prefer numeric template_id; if none, use a temp string (local-only until create)
-  const TID  = Number(document.getElementById('templateId').value || 0);
-  const ROOM = TID > 0 ? String(TID) : (window.crypto?.randomUUID?.() ?? 'tmp-' + Math.random().toString(36).slice(2));
-
-  initCollabEditor({
-    editorSelector: '#editor',
-    room: ROOM,
-    wsUrl: WS_URL,
-    canEdit: <?= $canEdit ? 'true' : 'false' ?>,
-    onStatus: (txt) => { document.getElementById('connInfo').textContent = 'Status: ' + txt; },
+  // Initialize TipTap
+  const editor = initBasicEditor({
+    selector: '#editor',
+    editable: canEdit,
+    initialHTML: '<p>TipTap ready — start typing…</p>'
   });
 
-  // Meta actions
-  const btnCreate = document.getElementById('btnCreateDoc');
-  const btnSave   = document.getElementById('btnSaveTitle');
-  const btnSnap   = document.getElementById('btnSnapshot');
+  // Wire the tiny toolbar
+  bindBasicToolbar(editor, document);
 
-  btnCreate?.addEventListener('click', async () => {
-    const title = document.getElementById('docTitle').value.trim() || 'Untitled Template';
-    const body  = new FormData();
-    body.set('title', title);
-    body.set('csrf', document.querySelector('input[name="csrf"]').value);
+  // Diagnostics
+  (function() {
+    const ed = document.querySelector('#editor .ProseMirror');
+    const out = document.getElementById('diag');
+    const log = (m) => { out.textContent += (m + '\n'); };
 
-    const res = await fetch('<?= BASE_PATH ?>/dashboard?page=rteditor&action=create', { method:'POST', body });
-    const json = await res.json();
-    if (json.ok) {
-      document.getElementById('templateId').value = json.template_id;
-      alert('Template created. Reloading…');
-      window.location.href = '<?= BASE_PATH ?>/dashboard?page=rteditor&template_id=' + encodeURIComponent(json.template_id);
-    } else {
-      alert('Create failed.');
+    function report() {
+      if (!ed) { log('[Warn] .ProseMirror not found'); return; }
+      const cs = getComputedStyle(ed);
+      log('[Report] TipTap contenteditable=' + ed.getAttribute('contenteditable'));
+      log('[Report] pointer-events=' + cs.pointerEvents + ', user-select=' + cs.userSelect + ', display=' + cs.display + ', visibility=' + cs.visibility);
     }
-  });
 
-  btnSave?.addEventListener('click', async () => {
-    const body = new FormData(document.getElementById('metaForm'));
-    const res  = await fetch('<?= BASE_PATH ?>/dashboard?page=rteditor&action=saveMeta', { method:'POST', body });
-    const json = await res.json();
-    alert(json.ok ? 'Title saved.' : 'Save failed.');
-  });
-
-  btnSnap?.addEventListener('click', async () => {
-    const ev = new CustomEvent('rteditor:snapshot', { detail: null });
-    window.dispatchEvent(ev);
-  });
+    if (ed) {
+      ed.addEventListener('keydown', () => log('[Event] keydown detected (TipTap)'));
+      report();
+    } else {
+      log('[Warn] ProseMirror not ready at init');
+      setTimeout(() => {
+        const ed2 = document.querySelector('#editor .ProseMirror');
+        if (ed2) {
+          ed2.addEventListener('keydown', () => log('[Event] keydown detected (TipTap)'));
+          const cs = getComputedStyle(ed2);
+          log('[Report] TipTap contenteditable=' + ed2.getAttribute('contenteditable'));
+          log('[Report] pointer-events=' + cs.pointerEvents + ', user-select=' + cs.userSelect + ', display=' + cs.display + ', visibility=' + cs.visibility);
+        } else {
+          log('[Error] ProseMirror still not found after delay.');
+        }
+      }, 100);
+    }
+  })();
 </script>

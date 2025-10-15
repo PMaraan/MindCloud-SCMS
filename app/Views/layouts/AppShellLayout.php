@@ -38,6 +38,7 @@ $basePath = rtrim(BASE_PATH, '/'); // BASE_PATH is from config.php
   <!-- Bootstrap & Icons -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
   
   <!-- Component CSS -->
   <link rel="stylesheet" href="<?= $basePath ?>/public/assets/css/HeaderComponent.css">
