@@ -25,14 +25,48 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
       <!-- TipTap mount (no contenteditable attribute—TipTap will manage it) -->
 
       <!-- Toolbar -->
-      <div class="d-flex gap-2 mb-2">
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+        <!-- Text styles -->
         <div class="btn-group btn-group-sm" role="group" aria-label="Text">
-          <button type="button" class="btn btn-outline-secondary" data-cmd="toggleBold"><i class="bi bi-type-bold"></i></button>
-          <button type="button" class="btn btn-outline-secondary" data-cmd="toggleItalic"><i class="bi bi-type-italic"></i></button>
+          <button type="button" class="btn btn-outline-secondary" data-cmd="toggleBold" title="Bold"><i class="bi bi-type-bold"></i></button>
+          <button type="button" class="btn btn-outline-secondary" data-cmd="toggleItalic" title="Italic"><i class="bi bi-type-italic"></i></button>
+          <button type="button" class="btn btn-outline-secondary" data-cmd="toggleUnderline" title="Underline"><i class="bi bi-type-underline"></i></button>
+          <button type="button" class="btn btn-outline-secondary" data-cmd="toggleStrike" title="Strikethrough"><i class="bi bi-type-strikethrough"></i></button>
+          <button type="button" class="btn btn-outline-secondary" data-cmd="toggleSubscript" title="Subscript">x<sub>2</sub></button>
+          <button type="button" class="btn btn-outline-secondary" data-cmd="toggleSuperscript" title="Superscript">x<sup>2</sup></button>
         </div>
+
+        <!-- Lists -->
+        <div class="btn-group btn-group-sm ms-2" role="group" aria-label="Lists">
+          <button type="button" class="btn btn-outline-secondary" data-cmd="bulletList" title="Bulleted list"><i class="bi bi-list-ul"></i></button>
+          <button type="button" class="btn btn-outline-secondary" data-cmd="orderedList" title="Numbered list"><i class="bi bi-list-ol"></i></button>
+        </div>
+
+        <!-- Alignment -->
+        <div class="btn-group btn-group-sm ms-2" role="group" aria-label="Align">
+          <button type="button" class="btn btn-outline-secondary" data-cmd="alignLeft" title="Align left"><i class="bi bi-text-left"></i></button>
+          <button type="button" class="btn btn-outline-secondary" data-cmd="alignCenter" title="Center"><i class="bi bi-text-center"></i></button>
+          <button type="button" class="btn btn-outline-secondary" data-cmd="alignRight" title="Align right"><i class="bi bi-text-right"></i></button>
+          <button type="button" class="btn btn-outline-secondary" data-cmd="alignJustify" title="Justify"><i class="bi bi-justify"></i></button>
+        </div>
+
+        <!-- Colors -->
+        <div class="d-flex align-items-center ms-2 gap-1">
+          <label class="small text-muted">Text</label>
+          <input type="color" data-cmd-input="setColor" class="form-control form-control-color p-0" value="#000000" title="Text color">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-cmd="unsetColor" title="Clear text color"><i class="bi bi-x-circle"></i></button>
+        </div>
+
+        <div class="d-flex align-items-center ms-2 gap-1">
+          <label class="small text-muted">Highlight</label>
+          <input type="color" data-cmd-input="setHighlight" class="form-control form-control-color p-0" value="#fff59d" title="Highlight color">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-cmd="unsetHighlight" title="Clear highlight"><i class="bi bi-x-circle"></i></button>
+        </div>
+
+        <!-- Undo/Redo -->
         <div class="btn-group btn-group-sm ms-auto" role="group" aria-label="UndoRedo">
-          <button type="button" class="btn btn-outline-secondary" data-cmd="undo"><i class="bi bi-arrow-90deg-left"></i></button>
-          <button type="button" class="btn btn-outline-secondary" data-cmd="redo"><i class="bi bi-arrow-90deg-right"></i></button>
+          <button type="button" class="btn btn-outline-secondary" data-cmd="undo" title="Undo"><i class="bi bi-arrow-90deg-left"></i></button>
+          <button type="button" class="btn btn-outline-secondary" data-cmd="redo" title="Redo"><i class="bi bi-arrow-90deg-right"></i></button>
         </div>
       </div>
 
@@ -54,7 +88,16 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
   "imports": {
     "@tiptap/core": "https://esm.sh/@tiptap/core@2.6.6",
     "@tiptap/starter-kit": "https://esm.sh/@tiptap/starter-kit@2.6.6",
-    "@tiptap/pm": "https://esm.sh/@tiptap/pm@2.6.6"
+    "@tiptap/pm": "https://esm.sh/@tiptap/pm@2.6.6",
+
+    "@tiptap/extension-underline": "https://esm.sh/@tiptap/extension-underline@2.6.6",
+    "@tiptap/extension-strike": "https://esm.sh/@tiptap/extension-strike@2.6.6",
+    "@tiptap/extension-subscript": "https://esm.sh/@tiptap/extension-subscript@2.6.6",
+    "@tiptap/extension-superscript": "https://esm.sh/@tiptap/extension-superscript@2.6.6",
+    "@tiptap/extension-text-style": "https://esm.sh/@tiptap/extension-text-style@2.6.6",
+    "@tiptap/extension-color": "https://esm.sh/@tiptap/extension-color@2.6.6",
+    "@tiptap/extension-highlight": "https://esm.sh/@tiptap/extension-highlight@2.6.6",
+    "@tiptap/extension-text-align": "https://esm.sh/@tiptap/extension-text-align@2.6.6"
   }
 }
 </script>

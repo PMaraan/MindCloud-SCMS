@@ -34,3 +34,5 @@
 /* Defensive: ensure editor remains interactive */
 #editor, #editor * { pointer-events: auto; user-select: text; }
 #editor .ProseMirror[contenteditable="false"] { background: #f8f9fa; }
+
+#editor mark { padding: 0 .15em; border-radius: .15rem; }
