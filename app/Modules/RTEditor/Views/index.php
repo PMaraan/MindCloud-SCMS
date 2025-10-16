@@ -42,6 +42,16 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
           <button type="button" class="btn btn-outline-secondary" data-cmd="orderedList" title="Numbered list"><i class="bi bi-list-ol"></i></button>
         </div>
 
+        <!-- Indent / Outdent -->
+        <div class="btn-group btn-group-sm ms-2" role="group" aria-label="Indent">
+          <button type="button" class="btn btn-outline-secondary" data-cmd="indentList" title="Increase indent (Tab)">
+            <i class="bi bi-text-indent-right"></i>
+          </button>
+          <button type="button" class="btn btn-outline-secondary" data-cmd="outdentList" title="Decrease indent (Shift+Tab)">
+            <i class="bi bi-text-indent-left"></i>
+          </button>
+        </div>
+
         <!-- Alignment -->
         <div class="btn-group btn-group-sm ms-2" role="group" aria-label="Align">
           <button type="button" class="btn btn-outline-secondary" data-cmd="alignLeft" title="Align left"><i class="bi bi-text-left"></i></button>

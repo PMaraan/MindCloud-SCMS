@@ -53,6 +53,32 @@ const EnterShortcuts = Extension.create({
   },
 });
 
+const ListShortcuts = Extension.create({
+  name: 'listShortcuts',
+  addKeyboardShortcuts() {
+    return {
+      Tab: () => {
+        const ed = this.editor;
+        // Indent list item if possible
+        if (ed.can().sinkListItem?.('listItem')) {
+          return ed.commands.sinkListItem('listItem');
+        }
+        // Not a list: insert a few spaces (Word inserts a tab, we simulate)
+        return ed.commands.insertContent('    '); // 4 spaces
+      },
+      'Shift-Tab': () => {
+        const ed = this.editor;
+        // Outdent list item if possible
+        if (ed.can().liftListItem?.('listItem')) {
+          return ed.commands.liftListItem('listItem');
+        }
+        // Not in a list: ignore (let browser move focus if any)
+        return false;
+      },
+    };
+  },
+});
+
 /** Build editor with common word-like extensions */
 export default function initBasicEditor(opts) {
   const { selector, editable = true, initialHTML = "<p>Start typing…</p>" } = opts || {};
@@ -69,7 +95,7 @@ export default function initBasicEditor(opts) {
         // we keep lists, blockquote, code, etc., from StarterKit
       }),
       EnterShortcuts,
-
+      ListShortcuts,
       // text styles
       Underline,
       Strike,
@@ -114,6 +140,9 @@ export function bindBasicToolbar(editor, root = document) {
 
     bulletList: () => editor.chain().focus().toggleBulletList().run(),
     orderedList: () => editor.chain().focus().toggleOrderedList().run(),
+
+    indentList: () => editor.chain().focus().sinkListItem('listItem').run(),
+    outdentList: () => editor.chain().focus().liftListItem('listItem').run(),
 
     alignLeft: () => editor.chain().focus().setTextAlign('left').run(),
     alignCenter: () => editor.chain().focus().setTextAlign('center').run(),
