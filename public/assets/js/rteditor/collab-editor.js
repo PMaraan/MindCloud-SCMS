@@ -10,6 +10,7 @@ import TextStyle from "@tiptap/extension-text-style";
 import Color from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
 import TextAlign from "@tiptap/extension-text-align";
+import FontFamily from "@tiptap/extension-font-family";
 
 /** Enter behavior stays inside TipTap to avoid multi-PM issues */
 const EnterShortcuts = Extension.create({
@@ -79,6 +80,38 @@ const ListShortcuts = Extension.create({
   },
 });
 
+// Allow font-size via TextStyle (e.g., setFontSize('12pt') / unsetFontSize())
+const FontSize = Extension.create({
+  name: 'fontSize',
+  addGlobalAttributes() {
+    return [
+      {
+        types: ['textStyle'],
+        attributes: {
+          fontSize: {
+            default: null,
+            parseHTML: element => element.style.fontSize || null,
+            renderHTML: attributes => {
+              if (!attributes.fontSize) return {};
+              return { style: `font-size: ${attributes.fontSize}` };
+            },
+          },
+        },
+      },
+    ];
+  },
+  addCommands() {
+    return {
+      setFontSize:
+        size => ({ chain }) =>
+          chain().setMark('textStyle', { fontSize: size }).run(),
+      unsetFontSize:
+        () => ({ chain }) =>
+          chain().setMark('textStyle', { fontSize: null }).removeEmptyTextStyle().run(),
+    };
+  },
+});
+
 /** Build editor with common word-like extensions */
 export default function initBasicEditor(opts) {
   const { selector, editable = true, initialHTML = "<p>Start typing…</p>" } = opts || {};
@@ -110,6 +143,9 @@ export default function initBasicEditor(opts) {
         types: ['heading', 'paragraph'],
         alignments: ['left', 'center', 'right', 'justify']
       }),
+
+      FontFamily,
+      FontSize
     ],
   });
 
@@ -189,6 +225,12 @@ export function bindBasicToolbar(editor, root = document) {
     // history
     undo: () => editor.chain().focus().undo().run(),
     redo: () => editor.chain().focus().redo().run(),
+
+    setFontFamily: (family) => editor.chain().focus().setFontFamily(family).run(),
+    unsetFontFamily: () => editor.chain().focus().setFontFamily(null).run(),
+
+    setFontSize: (size) => editor.chain().focus().setFontSize(size).run(),
+    unsetFontSize: () => editor.chain().focus().unsetFontSize().run(),
   };
 
   // Buttons with data-cmd

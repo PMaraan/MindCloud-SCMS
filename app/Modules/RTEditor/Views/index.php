@@ -26,6 +26,57 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
 
       <!-- Toolbar -->
       <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+
+        <!-- Font Family -->
+        <div class="d-flex align-items-center ms-2 gap-1">
+          <label class="small text-muted">Font</label>
+          <select class="form-select form-select-sm" style="width:auto" data-cmd-input="setFontFamily">
+            <!-- common web-safe fonts + a few nice fallbacks -->
+            <option value="Times New Roman, Times, serif">Times New Roman</option>
+            <option value="Georgia, serif">Georgia</option>
+            <option value="Garamond, serif">Garamond</option>
+
+            <option value="Arial, Helvetica, sans-serif" selected>Arial</option>
+            <option value="Helvetica, Arial, sans-serif">Helvetica</option>
+            <option value="Tahoma, Verdana, Segoe, sans-serif">Tahoma</option>
+            <option value="Verdana, Tahoma, sans-serif">Verdana</option>
+            <option value="Segoe UI, Roboto, Helvetica, Arial, sans-serif">Segoe UI</option>
+
+            <option value="Courier New, Courier, monospace">Courier New</option>
+            <option value="Consolas, Monaco, monospace">Consolas</option>
+          </select>
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-cmd="unsetFontFamily" title="Clear font family">
+            <i class="bi bi-x-circle"></i>
+          </button>
+        </div>
+
+        <!-- Font Size -->
+        <div class="d-flex align-items-center ms-2 gap-1">
+          <label class="small text-muted">Size</label>
+          <select class="form-select form-select-sm" style="width:auto" data-cmd-input="setFontSize">
+            <!-- Word-like presets (points) -->
+            <option value="8pt">8</option>
+            <option value="9pt">9</option>
+            <option value="10pt">10</option>
+            <option value="11pt" selected>11</option>
+            <option value="12pt">12</option>
+            <option value="14pt">14</option>
+            <option value="16pt">16</option>
+            <option value="18pt">18</option>
+            <option value="20pt">20</option>
+            <option value="22pt">22</option>
+            <option value="24pt">24</option>
+            <option value="28pt">28</option>
+            <option value="32pt">32</option>
+            <option value="36pt">36</option>
+            <option value="48pt">48</option>
+            <option value="72pt">72</option>
+          </select>
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-cmd="unsetFontSize" title="Clear font size">
+            <i class="bi bi-x-circle"></i>
+          </button>
+        </div>
+
         <!-- Text styles -->
         <div class="btn-group btn-group-sm" role="group" aria-label="Text">
           <button type="button" class="btn btn-outline-secondary" data-cmd="toggleBold" title="Bold"><i class="bi bi-type-bold"></i></button>
@@ -111,7 +162,9 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
     "@tiptap/extension-text-style": "https://esm.sh/@tiptap/extension-text-style@2.6.6",
     "@tiptap/extension-color": "https://esm.sh/@tiptap/extension-color@2.6.6",
     "@tiptap/extension-highlight": "https://esm.sh/@tiptap/extension-highlight@2.6.6",
-    "@tiptap/extension-text-align": "https://esm.sh/@tiptap/extension-text-align@2.6.6"
+    "@tiptap/extension-text-align": "https://esm.sh/@tiptap/extension-text-align@2.6.6",
+
+    "@tiptap/extension-font-family": "https://esm.sh/@tiptap/extension-font-family@2.6.6"
   }
 }
 </script>
