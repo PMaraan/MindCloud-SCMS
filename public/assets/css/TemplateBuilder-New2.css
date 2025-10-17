@@ -293,6 +293,7 @@ body {
 /* Header */
 .page-header{
   position: relative;
+  z-index: 2;
   border-bottom: 1px solid var(--page-border);
   padding: 16px 20px 12px 20px;
   display: flex;
@@ -301,9 +302,21 @@ body {
 }
 .header-center{ max-width: 80%; margin: 0 auto; text-align: center; }
 .page-header .title[contenteditable],
-.page-header .subtitle[contenteditable]{ cursor: text; outline: none; -webkit-user-modify: read-write-plaintext-only; }
+.page-header .subtitle[contenteditable]{ cursor: text; outline: none; }
 .page-header .title{ margin: 0 0 4px; font-weight: 700; font-size: 1.35rem; }
 .page-header .subtitle{ margin: 0; font-size: .95rem; color: var(--color-muted); }
+.page-header .subtitle[contenteditable="true"]:empty::before{
+  content: "Enter Subtitle";
+  color: #9ca3af;
+}
+.page-header .subtitle[contenteditable="true"]:empty{
+  min-height: 1.2em;   /* makes it easier to click into */
+}
+/* Defaults that new/unformatted text will inherit */
+.page .ProseMirror {
+  font-family: var(--doc-font, "Times New Roman");  /* fallback same as your UI default */
+  font-size:   var(--doc-size, 16px);
+}
 
 /* Logo uploader (left) */
 .logo-upload{
@@ -312,6 +325,7 @@ body {
   width: 72px; height: 72px;
   display: grid; place-items: center;
   cursor: pointer;
+  overflow: hidden;                 /* <— ensure anything beyond the square is clipped */
 }
 .logo-upload .logo-fallback{
   width: 100%; height: 100%;
@@ -320,12 +334,15 @@ body {
 }
 .logo-upload img{
   width: 100%; height: 100%;
-  object-fit: cover;
+  object-fit: cover;                /* <— crops to the square */
   border-radius: 4px;
   display: none; background: transparent;
 }
-.logo-upload.has-image .logo-fallback{ display: none; }
-.logo-upload.has-image img{ display: block; }
+
+/* SHOW when data-has-image="1" (matches your JS) */
+.logo-upload[data-has-image="1"] .logo-fallback{ display: none; }
+.logo-upload[data-has-image="1"] img{ display: block; }
+
 
 /* Footer (editable left text only) */
 .page-footer{
@@ -487,6 +504,32 @@ body {
     color: #9ca3af; pointer-events: none;
   }
 }
+
+/* TipTap / ProseMirror column resize handles (SCREEN) */
+.ProseMirror .column-resize-handle{
+  position: absolute;
+  right: -3px;        /* small overhang so it's easy to grab */
+  top: 0;
+  bottom: 0;
+  width: 8px;         /* bigger hit area */
+  cursor: col-resize;
+  background: transparent;
+  z-index: 5;
+}
+
+/* Editor shows col-resize cursor while dragging */
+.ProseMirror.resize-cursor { cursor: col-resize; cursor: ew-resize; }
+
+/* The handle is absolutely positioned inside the cell — make cells positioned */
+.ProseMirror td,
+.ProseMirror th { position: relative; }
+
+/* Keep signature tables fixed-size (no resizers) */
+.ProseMirror table.sig-table .column-resize-handle { display: none !important; }
+
+/* The table wrapper is the scroll container; allow absolute children */
+.tiptap .tableWrapper { position: relative; }
+
 
 /* Upload box look (table version + node view) */
 .tiptap .sig-img{
@@ -682,6 +725,8 @@ body {
 }
 
 /* remove outer box for these three */
+
+.mc-block-overlay { z-index: 1; pointer-events: none; }
 .mc-block.mc-textfield,
 .mc-block.mc-label,
 .mc-block.mc-paragraph{

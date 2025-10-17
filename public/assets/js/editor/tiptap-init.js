@@ -61,6 +61,42 @@ const LineHeight = Extension.create({
   },
 });
 
+// Let us set inline font-size via TextStyle
+const FontSize = Extension.create({
+  name: 'fontSize',
+  addGlobalAttributes() {
+    return [
+      {
+        // attach the attribute to the textStyle mark
+        types: ['textStyle'],
+        attributes: {
+          fontSize: {
+            default: null,
+            parseHTML: el => el.style.fontSize || null,
+            renderHTML: attrs =>
+              attrs.fontSize ? { style: `font-size:${attrs.fontSize}` } : {},
+          },
+        },
+      },
+    ];
+  },
+  addCommands() {
+    return {
+      setFontSize:
+        size =>
+        ({ chain }) =>
+          chain()
+            .setMark('textStyle', { fontSize: (typeof size === 'number' ? `${size}px` : size) })
+            .run(),
+      unsetFontSize:
+        () =>
+        ({ chain }) =>
+          chain().setMark('textStyle', { fontSize: null }).removeEmptyTextStyle().run(),
+    };
+  },
+});
+
+
 // Very small "UploadBox" node so the toolbar’s insertUploadBox works.
 // (It’s a simple node-view with a hidden <input type="file">.)
 const UploadBox = Node.create({
@@ -490,11 +526,67 @@ function pageTemplate(pageNum) {
   return sec;
 }
 
+
+function layoutHeaderOffset(pageEl) {
+  const h = pageEl.querySelector('.page-header')?.offsetHeight || 120;
+  const f = pageEl.querySelector('.page-footer')?.offsetHeight || 0;
+  pageEl.style.setProperty('--header-h', `${h}px`);
+  pageEl.style.setProperty('--footer-h', `${f}px`);
+}
+
+function wireLogoUpload(pageEl) {
+  const lab = pageEl.querySelector('.logo-upload');
+  if (!lab || lab._mcLogoWired) return;
+  lab._mcLogoWired = true;
+
+  const input    = lab.querySelector('input[type="file"]');
+  const img      = lab.querySelector('img');
+  const fallback = lab.querySelector('.logo-fallback');
+
+  const apply = (src) => {
+    if (src) {
+      img.src = src;
+      img.style.display = 'block';
+      if (fallback) fallback.style.display = 'none';
+      lab.dataset.hasImage = '1';
+    } else {
+      img.removeAttribute('src');
+      img.style.display = 'none';
+      if (fallback) fallback.style.display = '';
+      lab.dataset.hasImage = '0';
+    }
+    // header height can change when a logo appears
+    layoutHeaderOffset(pageEl);
+  };
+
+  // If markup were pre-filled with an <img src>, reflect it
+  if (img && img.getAttribute('src')) apply(img.getAttribute('src'));
+  else apply('');
+
+  // Click on label already opens file picker, add keyboard support
+  lab.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      input?.click();
+    }
+  });
+
+  input?.addEventListener('change', () => {
+    const f = input.files && input.files[0];
+    if (!f) { apply(''); return; }
+    const r = new FileReader();
+    r.onload = () => apply(r.result);
+    r.readAsDataURL(f);
+  });
+}
+
+
 function initEditorForPage(pageEl) {
   const host = pageEl.querySelector('.tiptap');
   const pageKey = pageEl.id || pageEl.dataset.page || Math.random().toString(36).slice(2);
 
   const editor = new Editor({
+    
     element: host,
     content: '<p></p>',
     extensions: [
@@ -503,12 +595,12 @@ function initEditorForPage(pageEl) {
       Link.configure({ openOnClick: false }),
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       Placeholder.configure({ placeholder: 'Start typing…' }),
-      TextStyle, Color, FontFamily,
+      TextStyle, Color, FontFamily, FontSize,
       Superscript, Subscript,
       TaskList, TaskItem,
 
       // ⬇️ use the attr-preserving table + cells
-      TableWithAttrs.configure({ resizable: false }),
+      TableWithAttrs.configure({ resizable: true }),
       TableRow,
       TableHeader,
       TableCellWithAttrs,
@@ -526,6 +618,40 @@ function initEditorForPage(pageEl) {
       AutoPageBreak,   // keep your Enter-handler extension
     ],
   });
+
+    // === Defaults: make the chosen font face/size the default for new typing ===
+  const pmRoot = pageEl.querySelector('.ProseMirror');
+
+  const setDefaultFace = (family) => {
+    if (!pmRoot) return;
+    // use a CSS var so unstyled text inherits it
+    pmRoot.style.setProperty('--doc-font', family || '');
+  };
+  const setDefaultSize = (size) => {
+    if (!pmRoot) return;
+    const s = (typeof size === 'number') ? `${size}px` : (size || '');
+    pmRoot.style.setProperty('--doc-size', s);
+  };
+
+  // When the selection carries a textStyle with family/size, treat it as the new default.
+  // (This fires when you change dropdowns or click inside formatted text.)
+  editor.on('update', () => {
+    const ts = editor.getAttributes('textStyle') || {};
+    if (ts.fontFamily) setDefaultFace(ts.fontFamily);
+    if (ts.fontSize)   setDefaultSize(ts.fontSize);
+  });
+
+  // Expose helpers so your toolbar can explicitly set both mark + default:
+  window.__mc = window.__mc || {};
+  window.__mc.applyFontFamily = (family) => {
+    editor.chain().focus().setMark('textStyle', { fontFamily: family }).run();
+    setDefaultFace(family);
+  };
+  window.__mc.applyFontSize = (size) => {
+    editor.chain().focus().setFontSize(size).run();
+    setDefaultSize(size);
+  };
+
 
   // ⬇️ Prevent paste of a <table> when selection is already inside a table
   editor.view.dom.addEventListener('paste', (e) => {
@@ -593,30 +719,44 @@ function addPageAfter(existingPageEl) {
   const pageNum = nextPageNumber();
   const sec = pageTemplate(pageNum);
   existingPageEl.after(sec);
+
+  // 1) initialize TipTap on the new page
   const ed = initEditorForPage(sec);
+
+  // 2) wire header editables (Title/Subtitle/Footer-left)
+  window.__mc?.wireHeaderEditables?.();
+
+  // 3) set the editor top based on actual header height
+  layoutHeaderOffset(sec);
+  wireLogoUpload(sec);
+
   return sec;
 }
+
 
 // ===================== FLOW ENGINE =====================
 function pageOfEditor(ed){ return ed?.options?.element?.closest?.('.page') || null; }
 function nextPageEl(el){ const n = el?.nextElementSibling; return (n && n.classList.contains('page')) ? n : null; }
 function prevPageEl(el){ const p = el?.previousElementSibling; return (p && p.classList.contains('page')) ? p : null; }
 
+// measureEditor() now returns null when it can't measure
 function measureEditor(ed){
   const pageEl = pageOfEditor(ed);
   const box    = pageEl?.querySelector('[data-editor]');
   const prose  = box?.querySelector('.ProseMirror') || box;
-  const footer = pageEl?.querySelector('.page-footer');
-  if (!box || !prose) return { limit: 0, used: 0 };
+  if (!box || !prose) return null;
 
   const boxTop     = box.getBoundingClientRect().top;
-  const bottomEdge = footer ? footer.getBoundingClientRect().top
-                            : box.getBoundingClientRect().bottom;
+  const bottomEdge = pageEl?.querySelector('.page-footer')
+    ? pageEl.querySelector('.page-footer').getBoundingClientRect().top
+    : box.getBoundingClientRect().bottom;
 
   const limit = Math.max(0, bottomEdge - boxTop);
   const used  = prose.scrollHeight;
   return { limit, used };
 }
+
+
 
 const MIN_GUARD = 24;
 function getFlowGuardPx(ed){
@@ -917,10 +1057,13 @@ function caretToParagraphAboveLastTable(ed) {
 }
 
 
+// flowForward: no re-declarations
 async function flowForward(ed){
   let guard = 20;
   while (guard-- > 0){
-    const { limit, used } = measureEditor(ed);
+    const meas = measureEditor(ed);
+    if (!meas || meas.limit <= 0) break;
+    const { limit, used } = meas;
     const G = getFlowGuardPx(ed);
     if (used <= limit - G) break;
 
@@ -933,29 +1076,28 @@ async function flowForward(ed){
     while (lastRealIdx >= 0 && isEmptyTopLevelParagraph(ed.state.doc.child(lastRealIdx))) lastRealIdx--;
     const carryCaret = selTopIdx >= lastRealIdx && lastRealIdx >= 0;
 
-    // mutate CURRENT page → keep caret
     const node = popLastRealBlock(ed, true);
     if (!node) break;
 
-    // mutate NEXT page → don't touch its caret
     prependBlock(nextEd, node, false);
 
     if (carryCaret) {
       requestAnimationFrame(() => {
-        try {
-        // place caret in the paragraph *above* the table (if present)
-        caretToTopParagraph(nextEd);
-        } catch {}
+        try { caretToTopParagraph(nextEd); } catch {}
       });
     }
     ed = nextEd;
   }
 }
 
+
+// flowBackward: declare `let meas` once and reuse it later
 async function flowBackward(ed){
   let guard = 20;
   while (guard-- > 0){
-    const { limit, used } = measureEditor(ed);
+    let meas = measureEditor(ed);
+    if (!meas || meas.limit <= 0) break;
+    const { limit, used } = meas;
     const G = getFlowGuardPx(ed);
     if (used >= limit - G) break;
 
@@ -968,28 +1110,21 @@ async function flowBackward(ed){
 
     const carryBack = (topIndexOfSelection(nEd) === 0);
 
-    // mutate NEXT page, but NEVER drag content that would break a page-start table
     const firstNode  = nEd.state.doc.firstChild;
     const secondNode = firstNode ? nEd.state.doc.child(1) : null;
 
-    // Case A: table is already first on the next page → don't pull anything back
-    if (firstNode && firstNode.type && firstNode.type.name === 'table') {
-      break;
-    }
-
-    // Case B: guard paragraph followed by a table → keep the guard with the table
-    if (isGuardParagraphNode(firstNode) && secondNode && secondNode.type?.name === 'table') {
-      break;
-    }
+    if (firstNode?.type?.name === 'table') break;
+    if (isGuardParagraphNode(firstNode) && secondNode?.type?.name === 'table') break;
 
     const node = shiftFirstBlock(nEd, false);
     if (!node) break;
 
-    // mutate CURRENT page where user is typing → keep caret
     appendBlock(ed, node, true);
 
-    const m = measureEditor(ed);
-    if (m.used > m.limit - getFlowGuardPx(ed)){
+    // ⬇️ reuse the same variable, don't redeclare
+    meas = measureEditor(ed);
+    if (!meas || meas.limit <= 0) break;
+    if (meas.used > meas.limit - getFlowGuardPx(ed)){
       popLastBlock(ed, true);
       prependBlock(nEd, node, false);
       break;
@@ -1002,6 +1137,7 @@ async function flowBackward(ed){
     }
   }
 }
+
 
 async function rebalanceAround(ed){
   if (!ed) return;
@@ -1051,16 +1187,31 @@ function ensureRoomForTable(editor, pageEl, approxHeightPx = 220) {
   return editor;
 }
 
-// expose to TemplateBuilder-New.js
+// expose to TemplateBuilder-New.js — now supports targeting a specific editor
 window.__mc = window.__mc || {};
-window.__mc.ensureRoomForTable = (approxHeightPx = 220) => {
-  const ed = window.__mc?.getActiveEditor?.();
+window.__mc.ensureRoomForTable = (approxHeightPx = 220, hintEditor = null) => {
+  const ed = hintEditor || window.__mc?.getActiveEditor?.();
   if (!ed) return null;
+
+  // focus so caret coords are valid for measurement
+  try { ed.chain().focus().run(); } catch {}
+
+  // If the doc is effectively empty, never create a new page — just use this one.
+  try {
+    const j = ed.getJSON();
+    const c = j.content || [];
+    const empty =
+      !c.length ||
+      (c.length === 1 &&
+       c[0].type === 'paragraph' &&
+       (!c[0].content || c[0].content.length === 0));
+    if (empty) return ed;
+  } catch {}
+
   const pageEl = ed?.options?.element?.closest('.page');
   if (!pageEl) return ed;
   return ensureRoomForTable(ed, pageEl, approxHeightPx);
 };
-
 
 // --------------------------------------
 // 4) Controls: Paper size + Add Page
@@ -1094,17 +1245,73 @@ function wireControls() {
   });
 }
 
+// === Toolbar: font family + size ===
+// Expects controls with ids: #ctl-font-family and #ctl-font-size
+function wireToolbarFontControls() {
+  const selFamily = document.getElementById('ctl-font-family');
+  const selSize   = document.getElementById('ctl-font-size');
+
+  const normalizeSize = (v) => {
+    if (v == null) return '';
+    const s = String(v).trim();
+    if (/^\d+$/.test(s)) return `${s}px`;  // "16" -> "16px"
+    return s; // allow "14px", "1rem", etc.
+  };
+
+  if (selFamily) {
+    selFamily.addEventListener('change', () => {
+      const fam = selFamily.value || '';
+      const ed = window.__mc?.getActiveEditor?.();
+      if (!ed) return;
+      // apply to selection AND set default for future typing
+      window.__mc.applyFontFamily(fam);
+    });
+  }
+
+  if (selSize) {
+    selSize.addEventListener('change', () => {
+      const size = normalizeSize(selSize.value);
+      const ed = window.__mc?.getActiveEditor?.();
+      if (!ed) return;
+      // apply to selection AND set default for future typing
+      window.__mc.applyFontSize(size);
+    });
+  }
+
+  // Optional: push current toolbar values as initial defaults
+  const pushInitial = () => {
+    const ed = window.__mc?.getActiveEditor?.();
+    if (!ed) return;
+    if (selFamily && selFamily.value) window.__mc.applyFontFamily(selFamily.value);
+    if (selSize && selSize.value)     window.__mc.applyFontSize(normalizeSize(selSize.value));
+  };
+  setTimeout(pushInitial, 0);
+}
+
 // --------------------------------------
 // 5) Boot
 // --------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
-  // Initialize the first (server-rendered) page
   const firstPage = document.querySelector('#mc-work .page');
-  if (firstPage) initEditorForPage(firstPage);
+  if (firstPage) {
+    initEditorForPage(firstPage);
+    // set header height CSS var so the editor sits below it
+    layoutHeaderOffset(firstPage);
+    wireLogoUpload(firstPage);
+
+  }
+  window.__mc?.wireHeaderEditables?.();
 
   wireControls();
   applyPaperSize((document.getElementById('ctl-paper')?.value) || 'A4');
+  wireToolbarFontControls();
+
+  // keep offsets correct on resize (headers can wrap on small widths)
+  window.addEventListener('resize', () => {
+    document.querySelectorAll('.page').forEach(layoutHeaderOffset);
+  });
 });
+
 
 // ==== Backspace on an empty page removes that page ====
 (function setupDeleteEmptyPageHotkey(){

@@ -16,6 +16,9 @@ const PAGE_PADDING_TOP = 10;
 let currentBlockBody = null; // which overlay block body is focused
 let pickingColor = false;    // guards focus while native color dialog is open
 
+let isSidebarDrag = false;   // track if we’re currently dragging from the sidebar
+
+
 // Selection store for contentEditable overlay blocks
 const selectionStore = new WeakMap();
 
@@ -36,6 +39,12 @@ const waitForEditor = () =>
       }
     }, 20);
   });
+
+
+// expose for tiptap-init.js to call after each page init
+window.__mc = window.__mc || {};
+window.__mc.wireHeaderEditables = wireHeaderEditables;
+
 
 function saveSelection(body) {
   const sel = window.getSelection();
@@ -85,6 +94,17 @@ function wrapSelectionWithSpan(styleText) {
   });
 }
 
+// Quote bare family names that contain spaces; leave fallback lists/quoted names as-is.
+function toCssFontFamily(v) {
+  if (!v) return v;
+  const s = String(v).trim();
+  // If already a list (has a comma) or already quoted, pass through.
+  if (s.includes(',') || /^(['"]).*\1$/.test(s)) return s;
+  // If it has spaces (e.g., Times New Roman), quote it; else pass through.
+  return /\s/.test(s) ? `"${s}"` : s;
+}
+
+
 // ----------------------------------------------
 // Overlay host (keeps TipTap editable underneath)
 // ----------------------------------------------
@@ -95,15 +115,30 @@ function ensureOverlay(pageEl) {
     overlay.className = 'mc-block-overlay';
     Object.assign(overlay.style, {
       position: 'absolute',
-      inset: '0',
-      pointerEvents: 'none', // don’t block clicks by default
+      left: '0',
+      right: '0',
+      bottom: 'var(--footer-h, 0px)',
+      // top will be set below
+      pointerEvents: 'none',
       paddingTop: `${PAGE_PADDING_TOP}px`,
     });
     if (getComputedStyle(pageEl).position === 'static') pageEl.style.position = 'relative';
     pageEl.appendChild(overlay);
   }
+
+  // set once now, and keep it synced on header size changes
+  const header = pageEl.querySelector('.page-header');
+  const setTop = () => { overlay.style.top = `${header?.offsetHeight ?? 0}px`; };
+  setTop();
+
+  // keep it updated (headers can wrap/change on resize)
+  if (!overlay._ro && header) {
+    overlay._ro = new ResizeObserver(setTop);
+    overlay._ro.observe(header);
+  }
   return overlay;
 }
+
 function setOverlaysDragEnabled(enabled) {
   document.querySelectorAll('.mc-block-overlay').forEach((ov) => {
     ov.style.pointerEvents = enabled ? 'auto' : 'none';
@@ -190,6 +225,24 @@ function registerBlockBody(bodyEl) {
     });
   });
 }
+
+function wireHeaderEditables() {
+  document.querySelectorAll('.page-header [contenteditable="true"]').forEach((el) => {
+    if (el._mcWired) return;
+    el._mcWired = true;
+
+    el.addEventListener('focusin', () => { currentBlockBody = el; setTimeout(() => saveSelection(el), 0); });
+    el.addEventListener('mousedown', () => { currentBlockBody = el; });
+    el.addEventListener('mouseup',   () => saveSelection(el));
+    el.addEventListener('keyup',     () => saveSelection(el));
+    el.addEventListener('focusout', () => {
+      if (window.__mc?._toolbarInteracting) return; // <— keep it!
+      if (currentBlockBody === el) currentBlockBody = null;
+      selectionStore.delete(el);
+    });
+  });
+}
+
 
 function makeTextField() {
   const el = document.createElement('div');
@@ -602,10 +655,13 @@ function wireDropTargets() {
     if (overlay.dataset.dropWired === '1') return; // already wired
     overlay.dataset.dropWired = '1';
 
-    // Allow drag-over so custom data types are exposed on drop
     ['dragenter', 'dragover'].forEach((evt) => {
-      overlay.addEventListener(evt, (ev) => ev.preventDefault());
+      overlay.addEventListener(evt, (ev) => {
+        ev.preventDefault();
+        if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'copy';
+      });
     });
+
 
     overlay.addEventListener('drop', (ev) => {
       ev.preventDefault();
@@ -637,7 +693,7 @@ function wireDropTargets() {
           }
 
           // NEW: ensure room on this page; might switch editor to a new page
-          const edForInsert = (window.__mc?.ensureRoomForTable?.(240)) || ed;
+          const edForInsert = (window.__mc?.ensureRoomForTable?.(240, ed)) || ed;
 
           edForInsert.chain().focus().insertContent('<p>\u200B</p>').run();
           const paraPos = Math.max(1, edForInsert.state.selection.from - 1);
@@ -711,11 +767,15 @@ function wireSidebarDrag() {
     if (!btn.hasAttribute('draggable')) btn.setAttribute('draggable', 'true');
     btn.addEventListener('dragstart', (e) => {
       const type = btn.dataset.type || '';
+      isSidebarDrag = true; // <-- NEW
       e.dataTransfer.effectAllowed = 'copy';
       e.dataTransfer.setData('application/x-mc', JSON.stringify({ type }));
+      e.dataTransfer.setData('text/plain', type); // <-- helps some browsers
       setOverlaysDragEnabled(true);
     });
+
     btn.addEventListener('dragend', () => {
+      isSidebarDrag = false; // <-- NEW
       setOverlaysDragEnabled(false);
     });
   });
@@ -737,26 +797,70 @@ function execOnBlockOrEditor(editor, fnForEditor, fallback /* string or function
 // ----------------------------------------------
 // Topbar wiring (editor + overlay formatting)
 // ----------------------------------------------
+
+function isHeaderBlock(el) {
+  // Any contenteditable inside the .page-header qualifies
+  return !!el && !!el.closest?.('.page-header');
+}
+function setHeaderFontFamily(el, family) {
+  if (!el) return;
+  const ff = toCssFontFamily(family);
+  if (ff) el.style.setProperty('font-family', ff, 'important');
+  else el.style.removeProperty('font-family');
+}
+function setHeaderFontSize(el, size) {
+  if (!el) return;
+  if (size) el.style.setProperty('font-size', size, 'important');
+  else el.style.removeProperty('font-size');
+}
+
 function wireTopbar() {
-  function getEd() {
-    const el = document.activeElement;
-    if (el) {
-      const page = el.closest('.page');
-      if (page) {
-        for (const ed of (window.__mc?.MCEditors?.all?.() || [])) {
-          if (page.contains(ed.options.element)) return ed;
-        }
-      }
-    }
-    return window.__mc?.getActiveEditor?.() || null;
-  }
-
-  const tiptapEl = document.querySelector('.tiptap');
-  tiptapEl?.addEventListener('focusin', () => { currentBlockBody = null; });
-
+  // Grab toolbar FIRST so we can safely attach listeners
   const toolbar = document.getElementById('tt-toolbar');
   if (!toolbar) return;
 
+  // Flag while the toolbar is being interacted with (prevents header blur)
+  const setToolbarInteracting = (v) => {
+    window.__mc = window.__mc || {};
+    window.__mc._toolbarInteracting = !!v;
+  };
+  toolbar.addEventListener('pointerdown', () => setToolbarInteracting(true), true);
+  const clearSoon = () => setTimeout(() => setToolbarInteracting(false), 0);
+  ['pointerup', 'pointerleave', 'pointercancel', 'mouseup'].forEach((evt) =>
+    toolbar.addEventListener(evt, clearSoon, true)
+  );
+
+  // Resolve which target we operate on: a header contentEditable block or TipTap editor
+  function getEd() {
+    const ae = document.activeElement;
+
+    // If focus is in a non-TipTap contenteditable (Title / Subtitle / Footer), act on that.
+    if (ae && ae.isContentEditable && !ae.closest('.ProseMirror')) {
+      currentBlockBody = ae;
+      restoreSelection(ae);
+      return null; // toolbar acts on currentBlockBody
+    }
+
+    // Active TipTap editor (when the body has focus)
+    const ed = window.__mc?.getActiveEditor?.();
+    if (ed) return ed;
+
+    // ⬇️ NEW: if nothing is focused yet, default to the Syllabus Title
+    const defaultHeader = document.querySelector('.page-header .title[contenteditable="true"]');
+    if (defaultHeader) {
+      currentBlockBody = defaultHeader; // no selection needed; block-level style will apply
+      return null;
+    }
+
+    return null;
+  }
+
+
+  // When TipTap gains focus, clear any overlay/header selection
+  const tiptapEl = document.querySelector('.tiptap');
+  tiptapEl?.addEventListener('focusin', () => { currentBlockBody = null; });
+
+  // Keep caret where it is when clicking color items
   const keepFocus = (e) => {
     const el = e.target.closest(
       '.dropdown-item[data-action="setColor"], .dropdown-item[data-action="pickColor"]'
@@ -768,11 +872,10 @@ function wireTopbar() {
   toolbar.addEventListener('pointerdown', keepFocus);
   toolbar.addEventListener('mousedown', keepFocus);
 
+  // Prevent toolbar clicks from stealing focus except for native controls
   toolbar.addEventListener('mousedown', (e) => {
-    // allow native interaction for selects, dropdown toggles, and color inputs
     const isInteractive = e.target.closest('select, .dropdown-toggle, .dropdown-menu, input[type="color"]');
     if (isInteractive) return;
-    // otherwise keep caret in the block/editor
     e.preventDefault();
     if (currentBlockBody) restoreSelection(currentBlockBody);
   });
@@ -805,6 +908,7 @@ function wireTopbar() {
       ed.chain().focus().setLineHeight(lh).run();
       return;
     }
+
     if (action === 'unsetLineHeight') {
       if (!ed) return;
       ed.chain().focus().unsetLineHeight().run();
@@ -813,7 +917,6 @@ function wireTopbar() {
 
     switch (action) {
       case 'toggleBold':
-        if (!ed) return;
         execOnBlockOrEditor(ed, (eed) => eed.chain().focus().toggleBold().run(), 'bold');
         break;
       case 'toggleItalic':
@@ -890,11 +993,10 @@ function wireTopbar() {
         break;
 
       case 'insertTable': {
-        let cur = getEd(); 
+        let cur = getEd();
         if (!cur) return;
 
-        // NEW: ensure we have room; may switch to the next page's editor
-        const maybeEd = window.__mc?.ensureRoomForTable?.(240);
+        const maybeEd = window.__mc?.ensureRoomForTable?.(240, cur);
         if (maybeEd) cur = maybeEd;
 
         if (isSelectionInsideTable(cur)) forceCaretOutsideTable(cur, 'auto');
@@ -907,7 +1009,6 @@ function wireTopbar() {
         break;
       }
 
-
       case 'insertUploadBox': {
         if (!ed) return;
         ed.chain().focus().insertUploadBox().run();
@@ -919,7 +1020,9 @@ function wireTopbar() {
         if (!url) return;
         execOnBlockOrEditor(
           ed,
-          (eed) => (eed.chain().focus().setImage?.({ src: url }).run() || eed.chain().focus().insertContent(`<img src="${url}" alt="">`).run()),
+          (eed) =>
+            (eed.chain().focus().setImage?.({ src: url }).run() ||
+             eed.chain().focus().insertContent(`<img src="${url}" alt="">`).run()),
           () => { document.execCommand('insertImage', false, url); }
         );
         break;
@@ -955,6 +1058,7 @@ function wireTopbar() {
     }
   });
 
+  // Hidden color input sync
   const hiddenColor = document.getElementById('ctl-color-hidden');
   hiddenColor?.addEventListener('input', () => {
     const value = hiddenColor.value;
@@ -971,33 +1075,66 @@ function wireTopbar() {
   });
   hiddenColor?.addEventListener('change', () => { setTimeout(() => { pickingColor = false; }, 0); });
 
+  // Font family / size controls
   const selFont = document.getElementById('ctl-font');
   const selSize = document.getElementById('ctl-size');
 
   function applyFontFamily(value) {
+    const ff = toCssFontFamily(value);
+
     if (currentBlockBody) {
-      if (value) wrapSelectionWithSpan(`font-family:${value}`);
-      else wrapSelectionWithSpan('font-family:inherit');
-    } else {
-      const ed = getEd(); if (!ed) return;
-      const c = ed.chain().focus();
-      value ? c.setFontFamily?.(value).run() : c.unsetFontFamily?.().run();
+      // If you're in a header block and there's no selection, set block-level style
+      const sel = window.getSelection?.();
+      const collapsed = !sel || sel.rangeCount === 0 || sel.getRangeAt(0).collapsed;
+      if (isHeaderBlock(currentBlockBody) && collapsed) {
+        setHeaderFontFamily(currentBlockBody, ff || null);
+        return;
+      }
+      // Otherwise, wrap the selection
+      if (ff) wrapSelectionWithSpan(`font-family:${ff}`);
+      else    wrapSelectionWithSpan('font-family:inherit');
+      return;
     }
+
+    // TipTap editor
+    const ed = getEd(); if (!ed) return;
+    const c = ed.chain().focus();
+    ff ? c.setFontFamily?.(ff).run() : c.unsetFontFamily?.().run();
   }
+
+  function normalizeFontSize(value) {
+    if (!value) return null;
+    const s = String(value).trim();
+    // "14" → "14px"; pass through "1.2rem", "120%", etc.
+    if (/^\d+(\.\d+)?$/.test(s)) return `${s}px`;
+    return s;
+  }
+
   function applyFontSize(value) {
+    const v = normalizeFontSize(value);
     if (currentBlockBody) {
-      if (value) wrapSelectionWithSpan(`font-size:${value}`);
-      else wrapSelectionWithSpan('font-size:inherit');
-    } else {
-      const ed = getEd(); if (!ed) return;
-      const c = ed.chain().focus();
-      value ? c.setMark('textStyle', { fontSize: value }).run()
-            : c.setMark('textStyle', { fontSize: null }).run();
+      const sel = window.getSelection?.();
+      const collapsed = !sel || sel.rangeCount === 0 || sel.getRangeAt(0).collapsed;
+      if (isHeaderBlock(currentBlockBody) && collapsed) {
+        setHeaderFontSize(currentBlockBody, v || null);
+        return;
+      }
+      if (v) wrapSelectionWithSpan(`font-size:${v}`);
+      else   wrapSelectionWithSpan('font-size:inherit');
+      return;
     }
+    const ed = getEd(); if (!ed) return;
+    // If caret is inside a cell with no selection, select the cell content first
+    maybeSelectCurrentCellContent(ed);
+    const c = ed.chain().focus();
+    if (v) c.setMark('textStyle', { fontSize: v }).run();
+    else   (c.unsetMark?.('textStyle')?.run() || c.setMark('textStyle', { fontSize: null }).run());
   }
+
   selFont?.addEventListener('change', () => applyFontFamily(selFont.value));
   selSize?.addEventListener('change', () => applyFontSize(selSize.value));
 }
+
 
 // ----------------------------------------------
 // TipTap table helpers & floating table toolbar
@@ -1070,6 +1207,27 @@ function putCaretAboveJustInsertedTable(ed, paraPos) {
     } catch {}
   });
 }
+
+function maybeSelectCurrentCellContent(ed) {
+  try {
+    const { selection } = ed.state;
+    if (!selection || !selection.empty) return false;
+
+    const $from = selection.$from;
+    for (let d = $from.depth; d >= 0; d--) {
+      const node = $from.node(d);
+      const name = node?.type?.name;
+      if (name === 'tableCell' || name === 'tableHeader') {
+        const cellStart = $from.before(d) + 1;                 // start of cell content
+        const cellEnd   = $from.before(d) + node.nodeSize - 1; // end of cell content
+        ed.chain().setTextSelection({ from: cellStart, to: cellEnd }).run();
+        return true;
+      }
+    }
+  } catch {}
+  return false;
+}
+
 
 function ensureTTTablebar() {
   let bar = document.body.querySelector('.tt-tablebar');
@@ -1358,6 +1516,7 @@ function waitEditorForPageSync(pageEl) {
  * Used by your existing calls: window.__mc.ensureRoomForTable(240)
  */
 window.__mc = window.__mc || {};
+window.__mc.wireHeaderEditables = wireHeaderEditables;
 window.__mc.ensureRoomForTable = function ensureRoomForTable(minHeightPx = 200) {
   const cur = window.__mc?.getActiveEditor?.();
   if (!cur) return null;
@@ -1383,6 +1542,27 @@ window.__mc.ensureRoomForTable = function ensureRoomForTable(minHeightPx = 200) 
   return cur; // fallback: insert on current page if we couldn’t resolve the next editor
 };
 
+function installOverlaySafetyResets() {
+  // overlays should be inert by default
+  setOverlaysDragEnabled(false);
+
+  // Turn overlays off when the drag truly ends.
+  const hardOff = () => { isSidebarDrag = false; setOverlaysDragEnabled(false); };
+  window.addEventListener('drop',       hardOff, true);
+  window.addEventListener('dragend',    hardOff, true);
+  window.addEventListener('dragcancel', hardOff, true);
+
+  // “Soft” off on general pointer end—unless a sidebar drag is active.
+  const softOff = () => { if (!isSidebarDrag) setOverlaysDragEnabled(false); };
+  window.addEventListener('mouseup',    softOff, true);
+  window.addEventListener('mouseleave', softOff, true);
+
+  // IMPORTANT: do NOT listen to 'dragleave' globally — it fires when leaving
+  // the sidebar and would disable overlays before the cursor reaches the page.
+}
+
+
+
 // ----------------------------------------------
 // Boot: wire everything
 // ----------------------------------------------
@@ -1391,6 +1571,7 @@ waitForEditor().then(() => {
   wireDropTargets();
   wireTopbar();
   wireTipTapTableUI();
+  installOverlaySafetyResets();
 
   document.addEventListener('mc:rewire', () => {
     wireTipTapTableUI();
@@ -1402,6 +1583,10 @@ waitForEditor().then(() => {
 document.addEventListener('DOMContentLoaded', () => {
   wireSidebarDrag();
   wireDropTargets();
+  wireHeaderEditables();
+  installOverlaySafetyResets();
+
+  currentBlockBody ||= document.querySelector('.page-header .title[contenteditable="true"]');
 });
 
 // Rewire hook so new pages become drop targets

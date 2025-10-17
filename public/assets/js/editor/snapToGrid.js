@@ -1,4 +1,5 @@
 /**
+ * public/assets/js/editor/snaptoGrid.js
  * Snap a numeric value to a fixed grid.
  * Pure utility: no DOM access, no side effects.
  * @param {number} value

@@ -1,4 +1,5 @@
 /**
+ * public/assets/js/editor/SignatureTableHTML.js
  * 4×4 signature table (TipTap/PM compatible).
  * - Row 0: upload boxes (rendered by the UploadBox node via <div.mc-upload-box>)
  * - Row 1: Name
