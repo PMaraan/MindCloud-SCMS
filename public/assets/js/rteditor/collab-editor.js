@@ -130,7 +130,21 @@ export default function initBasicEditor(opts) {
 
 /** Tiny command bus for the toolbar */
 export function bindBasicToolbar(editor, root = document) {
+  // --- remember "current" colors (defaults)
+  let currentTextColor = '#000000';
+  let currentHighlightColor = '#fff59d';
+
+  const highlightInput = root.querySelector('[data-cmd-input="setHighlight"]');
+  if (highlightInput && highlightInput.value) {
+    currentHighlightColor = highlightInput.value;
+  }
+  const textColorInput = root.querySelector('[data-cmd-input="setColor"]');
+  if (textColorInput && textColorInput.value) {
+    currentTextColor = textColorInput.value;
+  }
+
   const map = {
+    // text styles
     toggleBold: () => editor.chain().focus().toggleBold().run(),
     toggleItalic: () => editor.chain().focus().toggleItalic().run(),
     toggleUnderline: () => editor.chain().focus().toggleUnderline().run(),
@@ -138,47 +152,69 @@ export function bindBasicToolbar(editor, root = document) {
     toggleSubscript: () => editor.chain().focus().toggleSubscript().run(),
     toggleSuperscript: () => editor.chain().focus().toggleSuperscript().run(),
 
+    // lists
     bulletList: () => editor.chain().focus().toggleBulletList().run(),
     orderedList: () => editor.chain().focus().toggleOrderedList().run(),
-
     indentList: () => editor.chain().focus().sinkListItem('listItem').run(),
     outdentList: () => editor.chain().focus().liftListItem('listItem').run(),
 
+    // alignment
     alignLeft: () => editor.chain().focus().setTextAlign('left').run(),
     alignCenter: () => editor.chain().focus().setTextAlign('center').run(),
     alignRight: () => editor.chain().focus().setTextAlign('right').run(),
     alignJustify: () => editor.chain().focus().setTextAlign('justify').run(),
 
-    setColor: (hex) => editor.chain().focus().setColor(hex).run(),
+    // colors
+    setColor: (hex) => {
+      currentTextColor = hex || currentTextColor;
+      return editor.chain().focus().setColor(currentTextColor).run();
+    },
     unsetColor: () => editor.chain().focus().unsetColor().run(),
 
-    setHighlight: (color) => editor.chain().focus().setHighlight({ color }).run(),
+    // highlight: one-click apply using "currentHighlightColor"
+    applyHighlight: () => {
+      const color = currentHighlightColor || '#fff59d';
+      // If the exact same highlight is already active, toggle it off (quality-of-life)
+      if (editor.isActive('highlight', { color })) {
+        return editor.chain().focus().unsetHighlight().run();
+      }
+      return editor.chain().focus().setHighlight({ color }).run();
+    },
+    setHighlight: (color) => {
+      currentHighlightColor = color || currentHighlightColor;
+      return editor.chain().focus().setHighlight({ color: currentHighlightColor }).run();
+    },
     unsetHighlight: () => editor.chain().focus().unsetHighlight().run(),
 
+    // history
     undo: () => editor.chain().focus().undo().run(),
     redo: () => editor.chain().focus().redo().run(),
   };
 
   // Buttons with data-cmd
-  root.querySelectorAll("[data-cmd]").forEach(btn => {
-    const cmd = btn.getAttribute("data-cmd");
+  root.querySelectorAll('[data-cmd]').forEach(btn => {
+    const cmd = btn.getAttribute('data-cmd');
     if (!map[cmd]) return;
-    btn.addEventListener("click", (e) => {
+    btn.addEventListener('click', (e) => {
       e.preventDefault();
       map[cmd]();
     });
   });
 
-  // Inputs: color pickers for font color & highlight
-  root.querySelectorAll("[data-cmd-input]").forEach(inp => {
-    const cmd = inp.getAttribute("data-cmd-input");
+  // Inputs: keep state in sync (text color & highlight color)
+  root.querySelectorAll('[data-cmd-input]').forEach(inp => {
+    const cmd = inp.getAttribute('data-cmd-input');
     if (!map[cmd]) return;
-    inp.addEventListener("input", (e) => {
+    inp.addEventListener('input', (e) => {
       const val = e.target.value;
-      if (val) map[cmd](val);
+      if (!val) return;
+      // update current color memory
+      if (cmd === 'setHighlight') currentHighlightColor = val;
+      if (cmd === 'setColor') currentTextColor = val;
+      map[cmd](val);
     });
     // optional double-click to clear
-    inp.addEventListener("dblclick", () => {
+    inp.addEventListener('dblclick', () => {
       const clearCmd = (cmd === 'setColor') ? 'unsetColor' : (cmd === 'setHighlight' ? 'unsetHighlight' : null);
       if (clearCmd && map[clearCmd]) map[clearCmd]();
     });

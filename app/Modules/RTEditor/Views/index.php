@@ -69,6 +69,10 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
 
         <div class="d-flex align-items-center ms-2 gap-1">
           <label class="small text-muted">Highlight</label>
+          <!-- NEW: one-click apply using current color -->
+          <button type="button" class="btn btn-warning btn-sm" data-cmd="applyHighlight" title="Highlight selection">
+            <i class="bi bi-highlighter"></i>
+          </button>
           <input type="color" data-cmd-input="setHighlight" class="form-control form-control-color p-0" value="#fff59d" title="Highlight color">
           <button type="button" class="btn btn-outline-secondary btn-sm" data-cmd="unsetHighlight" title="Clear highlight"><i class="bi bi-x-circle"></i></button>
         </div>
