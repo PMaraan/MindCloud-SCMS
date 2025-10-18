@@ -22,6 +22,35 @@ import TableCell from "https://esm.sh/@tiptap/extension-table-cell@2.6.6";
 import { Plugin } from "https://esm.sh/prosemirror-state@1.4.3";
 
 
+// === Measure default TipTap table height once (cached) ===
+(function installTableHeightProbe(){
+  const CACHE = {};
+  function probe(rows = 4, cols = 4, withHeader = true) {
+    const key = `${rows}x${cols}|${withHeader ? 'h' : 'b'}`;
+    if (CACHE[key]) return CACHE[key];
+
+    const tmp = document.createElement('div');
+    tmp.style.cssText = 'position:absolute;left:-99999px;top:-99999px;visibility:hidden;';
+    tmp.innerHTML = (() => {
+      const head = withHeader ? `<tr>${'<th>H</th>'.repeat(cols)}</tr>` : '';
+      const body = Array.from({ length: rows - (withHeader ? 1 : 0) }, () =>
+        `<tr>${'<td>Cell</td>'.repeat(cols)}</tr>`
+      ).join('');
+      return `<table><thead>${head}</thead><tbody>${body}</tbody></table>`;
+    })();
+
+    document.body.appendChild(tmp);
+    const h = tmp.querySelector('table')?.getBoundingClientRect?.().height || 240;
+    tmp.remove();
+    return CACHE[key] = Math.ceil(h);
+  }
+
+  window.__mc = window.__mc || {};
+  window.__mc.getDefaultTableHeightPx = (rows = 4, cols = 4, withHeader = true) =>
+    probe(rows, cols, withHeader);
+})();
+
+
 // ----------------------------
 // 1) Small extras used by UI
 // ----------------------------
@@ -653,16 +682,36 @@ function initEditorForPage(pageEl) {
   };
 
 
-  // ⬇️ Prevent paste of a <table> when selection is already inside a table
+  // ⬇️ Prevent nested-table paste and route table pastes through ensureRoomForTable
   editor.view.dom.addEventListener('paste', (e) => {
     try {
       const html = e.clipboardData?.getData('text/html') || '';
       if (!html) return;
-      if (/<table[\s>]/i.test(html) && isSelectionInsideTableForInit(editor)) {
+
+      const hasTable = /<table[\s>]/i.test(html);
+      const H = (window.__mc.getDefaultTableHeightPx?.(4, 4, true)) || 240;
+
+
+      // If selection is inside a table, first force caret out, then continue
+      if (hasTable && isSelectionInsideTableForInit(editor)) {
         e.preventDefault();
+        // move caret **after** the current table so we never nest
         forceCaretOutsideTableForInit(editor, 'after');
-        editor.chain().focus().insertContent(html).run();
-        editor.chain().focus().insertContent('<p></p>').run();
+        // choose the page to receive the table (may spawn a new one)
+        const tgt = window.__mc.ensureRoomForTable(H, editor) || editor;
+        tgt.chain().focus().insertContent(html).run();
+        tgt.chain().focus().insertContent('<p></p>').run(); // spacer after table
+        return;
+      }
+
+      // If we are NOT inside a table but the paste contains a table,
+      // still route through ensureRoomForTable so it won’t clip the footer.
+      if (hasTable) {
+        e.preventDefault();
+        const tgt = window.__mc.ensureRoomForTable(H, editor) || editor;
+        tgt.chain().focus().insertContent(html).run();
+        tgt.chain().focus().insertContent('<p></p>').run(); // spacer
+        return;
       }
     } catch {}
   }, true);
@@ -1309,6 +1358,25 @@ document.addEventListener('DOMContentLoaded', () => {
   // keep offsets correct on resize (headers can wrap on small widths)
   window.addEventListener('resize', () => {
     document.querySelectorAll('.page').forEach(layoutHeaderOffset);
+  });
+  // === Toolbar: Insert table should respect page space ===
+  document.addEventListener('click', (ev) => {
+    const btn = ev.target.closest?.('[data-action="insertTable"]');
+    if (!btn) return;
+
+    ev.preventDefault();
+
+    const active = window.__mc?.getActiveEditor?.();
+    if (!active) return;
+
+    // Pick a target editor that has enough room (or auto-create next page)
+    const H = (window.__mc.getDefaultTableHeightPx?.(4, 4, true)) || 240;
+    const target = window.__mc.ensureRoomForTable(H, active) || active;
+
+
+    // Insert a default table and a spacer paragraph after it
+    target.chain().focus().insertTable({ rows: 3, cols: 4, withHeaderRow: true }).run();
+    target.chain().focus().insertContent('<p></p>').run();
   });
 });
 

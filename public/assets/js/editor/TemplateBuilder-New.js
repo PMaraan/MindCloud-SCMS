@@ -665,6 +665,7 @@ function wireDropTargets() {
 
     overlay.addEventListener('drop', (ev) => {
       ev.preventDefault();
+      ev.stopPropagation(); // <— add this line so nothing else also handles the drop
 
       const raw = ev.dataTransfer?.getData('application/x-mc');
       if (!raw) return;
@@ -687,24 +688,23 @@ function wireDropTargets() {
       // (A) Flow-into-editor types — insert into TipTap
       if (ed) {
         if (type === 'table') {
-          // If we're inside a table, move caret out first so we know our vertical coords
-          if (isSelectionInsideTable(ed)) {
-            forceCaretOutsideTable(ed, ev); // choose above/below by pointer
-          }
+           if (isSelectionInsideTable(ed)) {
+              forceCaretOutsideTable(ed, ev); // choose above/below by pointer
+            }
 
-          // NEW: ensure room on this page; might switch editor to a new page
-          const edForInsert = (window.__mc?.ensureRoomForTable?.(240, ed)) || ed;
+            const H = (window.__mc.getDefaultTableHeightPx?.(4, 4, true)) || 240;
+            const edForInsert = (window.__mc?.ensureRoomForTable?.(H, ed)) || ed;
 
-          edForInsert.chain().focus().insertContent('<p>\u200B</p>').run();
-          const paraPos = Math.max(1, edForInsert.state.selection.from - 1);
+            edForInsert.chain().focus().insertContent('<p>\u200B</p>').run();
+            const paraPos = Math.max(1, edForInsert.state.selection.from - 1);
 
-          edForInsert.chain().focus()
-            .insertTable({ rows: 3, cols: 4, withHeaderRow: false })
-            .run();
+            edForInsert.chain().focus()
+              .insertTable({ rows: 4, cols: 4, withHeaderRow: true })
+              .run();
 
-          putCaretAboveJustInsertedTable(edForInsert, paraPos);
-          setOverlaysDragEnabled(false);
-          return;
+            putCaretAboveJustInsertedTable(edForInsert, paraPos);
+            setOverlaysDragEnabled(false);
+            return;
         }
 
         if (type === 'label') {
@@ -996,15 +996,15 @@ function wireTopbar() {
         let cur = getEd();
         if (!cur) return;
 
-        const maybeEd = window.__mc?.ensureRoomForTable?.(240, cur);
-        if (maybeEd) cur = maybeEd;
+        const H = (window.__mc.getDefaultTableHeightPx?.(4, 4, true)) || 240;
+        cur = window.__mc?.ensureRoomForTable?.(H, cur) || cur;
 
         if (isSelectionInsideTable(cur)) forceCaretOutsideTable(cur, 'auto');
 
         cur.chain().focus().insertContent('<p>\u200B</p>').run();
         const paraPosTop = Math.max(1, cur.state.selection.from - 1);
 
-        cur.chain().focus().insertTable({ rows: 3, cols: 4, withHeaderRow: false }).run();
+        cur.chain().focus().insertTable({ rows: 4, cols: 4, withHeaderRow: true }).run();
         putCaretAboveJustInsertedTable(cur, paraPosTop);
         break;
       }
@@ -1442,106 +1442,6 @@ function wireTipTapTableUI() {
   });
 }
 
-
-// ===== Auto page-break for tables (drop/toolbar) =====
-const FOOTER_SAFETY = 16; // keep a little gap above footer
-
-function pageOfEditor(ed) {
-  try { return ed?.options?.element?.closest('.page') || null; } catch { return null; }
-}
-function caretClientY(ed) {
-  try { const r = ed.view.coordsAtPos(ed.state.selection.from); return (r.top + r.bottom) / 2; }
-  catch { return null; }
-}
-function remainingRoomPx(ed) {
-  try {
-    const tip = ed?.options?.element; if (!tip) return 0;
-    const tipRect = tip.getBoundingClientRect();
-    const y = caretClientY(ed) ?? tipRect.top;
-    return Math.max(0, tipRect.bottom - FOOTER_SAFETY - y);
-  } catch { return 0; }
-}
-
-// Clone a page shell after `afterPageEl`, clear its editor, rewire overlays
-function createBlankPageAfter(afterPageEl) {
-  const page = afterPageEl.cloneNode(true);
-
-  // assign new id / page number
-  const pages = Array.from(document.querySelectorAll('.page'));
-  const nextIndex = pages.length + 1;
-  page.id = `page-${nextIndex}`;
-  page.dataset.page = String(nextIndex);
-
-  // clear editor contents in the clone
-  const tip = page.querySelector('.tiptap');
-  if (tip) tip.innerHTML = '';
-
-  // update footer page number text
-  const pn = page.querySelector('.page-footer .page-num');
-  if (pn) pn.textContent = String(nextIndex);
-
-  // remove any carried overlay so we recreate a fresh one
-  page.querySelectorAll('.mc-block-overlay').forEach(n => n.remove());
-
-  afterPageEl.insertAdjacentElement('afterend', page);
-
-  // make the new page a drop target
-  if (window.__mc?.rewireDropTargets) window.__mc.rewireDropTargets();
-  return page;
-}
-
-function editorForPage(pageEl) {
-  try {
-    const all = window.__mc?.MCEditors?.all?.() || [];
-    for (const ed of all) {
-      const host = ed?.options?.element;
-      if (host && pageEl.contains(host)) return ed;
-    }
-  } catch {}
-  return null;
-}
-
-// Try a few spins to grab the new editor (TipTap usually inits immediately)
-function waitEditorForPageSync(pageEl) {
-  for (let i = 0; i < 30; i++) {
-    const ed = editorForPage(pageEl);
-    if (ed) return ed;
-  }
-  return null;
-}
-
-/**
- * Ensure there’s enough vertical space to fit a table of ~minHeightPx.
- * If not, create a new page and return its editor (focused at pos 1).
- * Used by your existing calls: window.__mc.ensureRoomForTable(240)
- */
-window.__mc = window.__mc || {};
-window.__mc.wireHeaderEditables = wireHeaderEditables;
-window.__mc.ensureRoomForTable = function ensureRoomForTable(minHeightPx = 200) {
-  const cur = window.__mc?.getActiveEditor?.();
-  if (!cur) return null;
-
-  if (remainingRoomPx(cur) >= minHeightPx) return cur; // enough room → keep using current editor
-
-  // Not enough room → make a new page and switch the insertion target there
-  const curPage = pageOfEditor(cur);
-  if (!curPage) return cur;
-
-  const newPage = createBlankPageAfter(curPage);
-  let newEd = waitEditorForPageSync(newPage);
-
-  // If your TipTap bootstrap exposes a creator, use it as a fallback
-  if (!newEd && window.__mc?.createEditorForPage) {
-    try { newEd = window.__mc.createEditorForPage(newPage); } catch {}
-  }
-
-  if (newEd) {
-    try { newEd.chain().focus().setTextSelection(1).run(); } catch {}
-    return newEd;
-  }
-  return cur; // fallback: insert on current page if we couldn’t resolve the next editor
-};
-
 function installOverlaySafetyResets() {
   // overlays should be inert by default
   setOverlaysDragEnabled(false);
@@ -1598,3 +1498,7 @@ window.__mc.rewireDropTargets = () => {
   wireDropTargets();
   document.dispatchEvent(new Event('mc:rewire'));
 };
+
+
+
+
