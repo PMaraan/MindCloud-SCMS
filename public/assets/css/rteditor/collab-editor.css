@@ -37,6 +37,22 @@
 
 #editor mark { padding: 0 .15em; border-radius: .15rem; }
 
+/* sensible defaults */
+#editor .ProseMirror p,
+#editor .ProseMirror h1,
+#editor .ProseMirror h2,
+#editor .ProseMirror h3,
+#editor .ProseMirror blockquote {
+  line-height: 1.15;
+  margin-top: 0;
+  margin-bottom: .75rem; /* visual breathing room; user setting overrides inline */
+}
+
+/* lists: paragraphs inside list items should not add extra bottom margin by default */
+#editor .ProseMirror li > p {
+  margin: 0; /* user-set spacing will override with inline style */
+}
+
 /* Optional: make font-family options preview their font */
 select[data-cmd-input="setFontFamily"] option[value*="Times New Roman"] { font-family: "Times New Roman", Times, serif; }
 select[data-cmd-input="setFontFamily"] option[value*="Georgia"]        { font-family: Georgia, serif; }

@@ -112,6 +112,82 @@ const FontSize = Extension.create({
   },
 });
 
+// Spacing (line-height + paragraph spacing) for block nodes.
+// - lineHeight on paragraph, heading, blockquote, listItem
+// - marginTop/marginBottom on paragraph, heading, blockquote (not listItem)
+const SpacingExtension = Extension.create({
+  name: 'spacing',
+
+  addGlobalAttributes() {
+    const lineHeightAttr = {
+      default: null,
+      parseHTML: el => el.style.lineHeight || null,
+      renderHTML: attrs => attrs.lineHeight ? { style: `line-height: ${attrs.lineHeight}` } : {},
+    };
+    const marginTopAttr = {
+      default: null,
+      parseHTML: el => el.style.marginTop || null,
+      renderHTML: attrs => attrs.marginTop ? { style: `margin-top: ${attrs.marginTop}` } : {},
+    };
+    const marginBottomAttr = {
+      default: null,
+      parseHTML: el => el.style.marginBottom || null,
+      renderHTML: attrs => attrs.marginBottom ? { style: `margin-bottom: ${attrs.marginBottom}` } : {},
+    };
+
+    return [
+      // Apply line-height widely (incl. listItem so nested paragraphs inherit)
+      { types: ['paragraph', 'heading', 'blockquote', 'listItem'], attributes: { lineHeight: lineHeightAttr } },
+      // Apply margins to real block content (paragraph/heading/blockquote)
+      { types: ['paragraph', 'heading', 'blockquote'], attributes: { marginTop: marginTopAttr, marginBottom: marginBottomAttr } },
+    ];
+  },
+
+  addCommands() {
+    // helper: patch attributes for blocks across the current selection
+    const patchBlocks = (editor, typeNames, patch) => {
+      const { state } = editor;
+      const { tr, selection } = state;
+      const from = selection.from, to = selection.to;
+      const types = new Set(typeNames);
+      state.doc.nodesBetween(from, to, (node, pos) => {
+        if (!node || !node.type) return;
+        if (!types.has(node.type.name)) return;
+        const newAttrs = { ...node.attrs, ...patch };
+        // remove nulls so we "unset" attributes
+        Object.keys(newAttrs).forEach(k => { if (newAttrs[k] === null) delete newAttrs[k]; });
+        tr.setNodeMarkup(pos, node.type, newAttrs, node.marks);
+      });
+      if (tr.docChanged) editor.view.dispatch(tr);
+      return tr.docChanged;
+    };
+
+    return {
+      setLineHeight:
+        value => ({ editor }) => {
+          const v = typeof value === 'number' ? String(value) : String(value);
+          // Accepts '1', '1.15', '1.5', '2' (unitless) or CSS like '150%', '1.5em'
+          return patchBlocks(editor, ['paragraph', 'heading', 'blockquote', 'listItem'], { lineHeight: v });
+        },
+      unsetLineHeight:
+        () => ({ editor }) =>
+          patchBlocks(editor, ['paragraph', 'heading', 'blockquote', 'listItem'], { lineHeight: null }),
+
+      // Paragraph spacing expects values like '0pt', '6pt', '12pt', or CSS units '8px'
+      setParagraphSpacingBefore:
+        value => ({ editor }) =>
+          patchBlocks(editor, ['paragraph', 'heading', 'blockquote'], { marginTop: String(value) }),
+      setParagraphSpacingAfter:
+        value => ({ editor }) =>
+          patchBlocks(editor, ['paragraph', 'heading', 'blockquote'], { marginBottom: String(value) }),
+
+      unsetParagraphSpacing:
+        () => ({ editor }) =>
+          patchBlocks(editor, ['paragraph', 'heading', 'blockquote'], { marginTop: null, marginBottom: null }),
+    };
+  },
+});
+
 /** Build editor with common word-like extensions */
 export default function initBasicEditor(opts) {
   const { selector, editable = true, initialHTML = "<p>Start typing…</p>" } = opts || {};
@@ -145,7 +221,9 @@ export default function initBasicEditor(opts) {
       }),
 
       FontFamily,
-      FontSize
+      FontSize,
+
+      SpacingExtension,
     ],
   });
 
@@ -231,6 +309,15 @@ export function bindBasicToolbar(editor, root = document) {
 
     setFontSize: (size) => editor.chain().focus().setFontSize(size).run(),
     unsetFontSize: () => editor.chain().focus().unsetFontSize().run(),
+
+    // line spacing presets (unitless like Word UI)
+    setLineSpacing: (lh) => editor.chain().focus().setLineHeight(lh).run(),
+    unsetLineSpacing: () => editor.chain().focus().unsetLineHeight().run(),
+
+    // paragraph spacing (use points to match Word presets)
+    setParaBefore: (pt) => editor.chain().focus().setParagraphSpacingBefore(pt).run(),
+    setParaAfter:  (pt) => editor.chain().focus().setParagraphSpacingAfter(pt).run(),
+    unsetParaSpacing: () => editor.chain().focus().unsetParagraphSpacing().run(),
   };
 
   // Buttons with data-cmd

@@ -77,6 +77,45 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
           </button>
         </div>
 
+        <!-- Line Spacing -->
+        <div class="d-flex align-items-center ms-2 gap-1">
+          <label class="small text-muted">Line</label>
+          <select class="form-select form-select-sm" style="width:auto" data-cmd-input="setLineSpacing">
+            <!-- Word-like presets (unitless) -->
+            <option value="1">1.0</option>
+            <option value="1.15" selected>1.15</option>
+            <option value="1.5">1.5</option>
+            <option value="2">2.0</option>
+          </select>
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-cmd="unsetLineSpacing" title="Clear line spacing">
+            <i class="bi bi-x-circle"></i>
+          </button>
+        </div>
+
+        <!-- Paragraph Spacing -->
+        <div class="d-flex align-items-center ms-2 gap-1">
+          <label class="small text-muted">Before</label>
+          <select class="form-select form-select-sm" style="width:auto" data-cmd-input="setParaBefore">
+            <!-- points, like Word -->
+            <option value="0pt" selected>0</option>
+            <option value="6pt">6</option>
+            <option value="12pt">12</option>
+            <option value="18pt">18</option>
+            <option value="24pt">24</option>
+          </select>
+          <label class="small text-muted ms-2">After</label>
+          <select class="form-select form-select-sm" style="width:auto" data-cmd-input="setParaAfter">
+            <option value="0pt" selected>0</option>
+            <option value="6pt">6</option>
+            <option value="12pt">12</option>
+            <option value="18pt">18</option>
+            <option value="24pt">24</option>
+          </select>
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-cmd="unsetParaSpacing" title="Clear paragraph spacing">
+            <i class="bi bi-x-circle"></i>
+          </button>
+        </div>
+
         <!-- Text styles -->
         <div class="btn-group btn-group-sm" role="group" aria-label="Text">
           <button type="button" class="btn btn-outline-secondary" data-cmd="toggleBold" title="Bold"><i class="bi bi-type-bold"></i></button>
