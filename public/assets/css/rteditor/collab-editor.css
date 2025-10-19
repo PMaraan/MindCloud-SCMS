@@ -85,6 +85,27 @@
   pointer-events: none;
 }
 
+/* Signature field block */
+#editor .rt-signature-field {
+  display: block;
+  border: 1px dashed #c9c9c9;
+  border-radius: .25rem;
+  padding: .5rem .75rem;
+  margin: .5rem 0;
+  background: #fcfcfc;
+}
+
+#editor .rt-signature-line {
+  border-bottom: 2px solid #333;
+  height: 1.75rem;
+  margin-bottom: .25rem;
+}
+
+#editor .rt-signature-meta {
+  font-size: .85rem;
+  color: #6c757d;
+}
+
 /* Optional: make font-family options preview their font */
 select[data-cmd-input="setFontFamily"] option[value*="Times New Roman"] { font-family: "Times New Roman", Times, serif; }
 select[data-cmd-input="setFontFamily"] option[value*="Georgia"]        { font-family: Georgia, serif; }

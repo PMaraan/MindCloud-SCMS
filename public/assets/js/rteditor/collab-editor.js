@@ -1,5 +1,5 @@
 // /public/assets/js/rteditor/collab-editor.js
-import { Editor, Extension } from "@tiptap/core";
+import { Editor, Extension, Node } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 
 import Underline from "@tiptap/extension-underline";
@@ -192,6 +192,70 @@ const SpacingExtension = Extension.create({
   },
 });
 
+// --- Signature field as a real TipTap Node (block, atom) ---
+const SignatureField = Node.create({
+  name: 'signatureField',
+  group: 'block',
+  atom: true,
+  selectable: true,
+  draggable: true,
+
+  addAttributes() {
+    return {
+      label: { default: 'Signature' },
+      role: { default: '' },          // e.g., "Instructor", "Dean"
+      required: { default: true },
+    };
+  },
+
+  parseHTML() {
+    return [{ tag: 'div[data-signature-field]' }];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    const { label, role, required } = HTMLAttributes;
+    const attrs = {
+      'data-signature-field': '1',
+      'data-role': role || '',
+      'data-required': String(!!required),
+      class: 'rt-signature-field',
+    };
+    return [
+      'div',
+      attrs,
+      ['div', { class: 'rt-signature-line' }],
+      ['div', { class: 'rt-signature-meta' },
+        `${label}${role ? ` — ${role}` : ''}${required ? ' (required)' : ''}`
+      ],
+    ];
+  },
+
+  addCommands() {
+    return {
+      insertSignatureField:
+        (cfg = {}) =>
+          ({ commands }) =>
+            commands.insertContent({ type: this.name, attrs: cfg }),
+
+      updateSignatureField:
+        (cfg = {}) =>
+          ({ state, dispatch }) => {
+            const { tr, selection } = state;
+            let updated = false;
+            state.doc.nodesBetween(selection.from, selection.to, (node, pos) => {
+              if (node.type.name === this.name) {
+                const newAttrs = { ...node.attrs, ...cfg };
+                tr.setNodeMarkup(pos, node.type, newAttrs, node.marks);
+                updated = true;
+              }
+            });
+            if (updated && dispatch) dispatch(tr);
+            return updated;
+          },
+    };
+  },
+});
+
 /** Build editor with common word-like extensions */
 export default function initBasicEditor(opts) {
   const { selector, editable = true, initialHTML = "<p>Start typing…</p>" } = opts || {};
@@ -237,6 +301,8 @@ export default function initBasicEditor(opts) {
       TableRow,
       TableHeader,
       TableCell,
+
+      SignatureField,
     ],
   });
 
@@ -344,6 +410,13 @@ export function bindBasicToolbar(editor, root = document) {
     mergeCells:      () => editor.chain().focus().mergeCells().run(),
     splitCell:       () => editor.chain().focus().splitCell().run(),
     deleteTable:     () => editor.chain().focus().deleteTable().run(),
+
+    insertSignature: () => editor.chain().focus().insertSignatureField({ label: 'Signature', role: '', required: true }).run(),
+    sigSetRole: (role) => editor.chain().focus().updateSignatureField({ role }).run(),
+    sigToggleRequired: () => {
+      const current = editor.getAttributes('signatureField')?.required;
+      return editor.chain().focus().updateSignatureField({ required: !current }).run();
+    },
   };
 
   // Buttons with data-cmd

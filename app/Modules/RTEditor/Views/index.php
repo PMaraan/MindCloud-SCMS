@@ -212,6 +212,26 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
             <i class="bi bi-trash"></i>
           </button>
         </div>
+
+        <!-- Signature field -->
+        <div class="btn-group btn-group-sm ms-2" role="group" aria-label="Signature">
+          <button type="button" class="btn btn-outline-secondary" data-cmd="insertSignature" title="Insert signature field">
+            <i class="bi bi-pen"></i>
+          </button>
+
+          <!-- optional: role quick-set -->
+          <select class="form-select form-select-sm" style="width:auto" data-cmd-input="sigSetRole" title="Signer role">
+            <option value="">(role)</option>
+            <option value="Instructor">Instructor</option>
+            <option value="Program Chair">Program Chair</option>
+            <option value="Dean">Dean</option>
+            <option value="VPAA">VPAA</option>
+          </select>
+
+          <button type="button" class="btn btn-outline-secondary" data-cmd="sigToggleRequired" title="Toggle required">
+            <i class="bi bi-check2-square"></i>
+          </button>
+        </div>
       </div>
 
       <link rel="stylesheet" href="<?= BASE_PATH ?>/public/assets/css/rteditor/collab-editor.css">
