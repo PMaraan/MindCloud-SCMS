@@ -11,6 +11,10 @@ import Color from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
 import TextAlign from "@tiptap/extension-text-align";
 import FontFamily from "@tiptap/extension-font-family";
+import Table from "@tiptap/extension-table";
+import TableRow from "@tiptap/extension-table-row";
+import TableCell from "@tiptap/extension-table-cell";
+import TableHeader from "@tiptap/extension-table-header";
 
 /** Enter behavior stays inside TipTap to avoid multi-PM issues */
 const EnterShortcuts = Extension.create({
@@ -224,6 +228,15 @@ export default function initBasicEditor(opts) {
       FontSize,
 
       SpacingExtension,
+
+      Table.configure({
+        resizable: true,    // column resizing UX
+        lastColumnResizable: true,
+        allowTableNodeSelection: true,
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
     ],
   });
 
@@ -318,6 +331,19 @@ export function bindBasicToolbar(editor, root = document) {
     setParaBefore: (pt) => editor.chain().focus().setParagraphSpacingBefore(pt).run(),
     setParaAfter:  (pt) => editor.chain().focus().setParagraphSpacingAfter(pt).run(),
     unsetParaSpacing: () => editor.chain().focus().unsetParagraphSpacing().run(),
+
+    // Tables
+    insertTable: () => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(),
+    addRowBefore: () => editor.chain().focus().addRowBefore().run(),
+    addRowAfter:  () => editor.chain().focus().addRowAfter().run(),
+    deleteRow:    () => editor.chain().focus().deleteRow().run(),
+    addColumnBefore: () => editor.chain().focus().addColumnBefore().run(),
+    addColumnAfter:  () => editor.chain().focus().addColumnAfter().run(),
+    deleteColumn:    () => editor.chain().focus().deleteColumn().run(),
+    toggleHeaderRow: () => editor.chain().focus().toggleHeaderRow().run(),
+    mergeCells:      () => editor.chain().focus().mergeCells().run(),
+    splitCell:       () => editor.chain().focus().splitCell().run(),
+    deleteTable:     () => editor.chain().focus().deleteTable().run(),
   };
 
   // Buttons with data-cmd

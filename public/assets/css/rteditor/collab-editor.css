@@ -53,6 +53,38 @@
   margin: 0; /* user-set spacing will override with inline style */
 }
 
+/* tables styling */
+#editor .ProseMirror table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+#editor .ProseMirror th,
+#editor .ProseMirror td {
+  border: 1px solid #dee2e6;
+  padding: .5rem;
+  vertical-align: top;
+  background: #fff;
+}
+
+#editor .ProseMirror th {
+  background: #f8f9fa;
+  font-weight: 600;
+  text-align: left;
+}
+
+/* show column resize handle nicer */
+#editor .ProseMirror .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: rgba(0,0,0,.15);
+  pointer-events: none;
+}
+
 /* Optional: make font-family options preview their font */
 select[data-cmd-input="setFontFamily"] option[value*="Times New Roman"] { font-family: "Times New Roman", Times, serif; }
 select[data-cmd-input="setFontFamily"] option[value*="Georgia"]        { font-family: Georgia, serif; }

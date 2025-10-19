@@ -172,6 +172,46 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
           <button type="button" class="btn btn-outline-secondary" data-cmd="undo" title="Undo"><i class="bi bi-arrow-90deg-left"></i></button>
           <button type="button" class="btn btn-outline-secondary" data-cmd="redo" title="Redo"><i class="bi bi-arrow-90deg-right"></i></button>
         </div>
+
+        <!-- Tables -->
+        <div class="btn-group btn-group-sm ms-2" role="group" aria-label="Table">
+          <button type="button" class="btn btn-outline-secondary" data-cmd="insertTable" title="Insert 3×3 table">
+            <i class="bi bi-table"></i>
+          </button>
+
+          <button type="button" class="btn btn-outline-secondary" data-cmd="addRowBefore" title="Row before">
+            <i class="bi bi-border-top"></i>
+          </button>
+          <button type="button" class="btn btn-outline-secondary" data-cmd="addRowAfter" title="Row after">
+            <i class="bi bi-border-bottom"></i>
+          </button>
+          <button type="button" class="btn btn-outline-secondary" data-cmd="deleteRow" title="Delete row">
+            <i class="bi bi-border-width"></i>
+          </button>
+
+          <button type="button" class="btn btn-outline-secondary" data-cmd="addColumnBefore" title="Col before">
+            <i class="bi bi-border-start"></i>
+          </button>
+          <button type="button" class="btn btn-outline-secondary" data-cmd="addColumnAfter" title="Col after">
+            <i class="bi bi-border-end"></i>
+          </button>
+          <button type="button" class="btn btn-outline-secondary" data-cmd="deleteColumn" title="Delete column">
+            <i class="bi bi-border-style"></i>
+          </button>
+
+          <button type="button" class="btn btn-outline-secondary" data-cmd="toggleHeaderRow" title="Toggle header row">
+            <i class="bi bi-layout-three-columns"></i>
+          </button>
+          <button type="button" class="btn btn-outline-secondary" data-cmd="mergeCells" title="Merge cells">
+            <i class="bi bi-layout-wtf"></i>
+          </button>
+          <button type="button" class="btn btn-outline-secondary" data-cmd="splitCell" title="Split cell">
+            <i class="bi bi-grid-1x2"></i>
+          </button>
+          <button type="button" class="btn btn-outline-danger" data-cmd="deleteTable" title="Delete table">
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
       </div>
 
       <link rel="stylesheet" href="<?= BASE_PATH ?>/public/assets/css/rteditor/collab-editor.css">
@@ -202,8 +242,12 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
     "@tiptap/extension-color": "https://esm.sh/@tiptap/extension-color@2.6.6",
     "@tiptap/extension-highlight": "https://esm.sh/@tiptap/extension-highlight@2.6.6",
     "@tiptap/extension-text-align": "https://esm.sh/@tiptap/extension-text-align@2.6.6",
+    "@tiptap/extension-font-family": "https://esm.sh/@tiptap/extension-font-family@2.6.6",
 
-    "@tiptap/extension-font-family": "https://esm.sh/@tiptap/extension-font-family@2.6.6"
+    "@tiptap/extension-table": "https://esm.sh/@tiptap/extension-table@2.6.6",
+    "@tiptap/extension-table-row": "https://esm.sh/@tiptap/extension-table-row@2.6.6",
+    "@tiptap/extension-table-cell": "https://esm.sh/@tiptap/extension-table-cell@2.6.6",
+    "@tiptap/extension-table-header": "https://esm.sh/@tiptap/extension-table-header@2.6.6"
   }
 }
 </script>
