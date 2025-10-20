@@ -117,3 +117,53 @@ select[data-cmd-input="setFontFamily"] option[value*="Verdana"]        { font-fa
 select[data-cmd-input="setFontFamily"] option[value*="Segoe UI"]       { font-family: Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
 select[data-cmd-input="setFontFamily"] option[value*="Courier New"]    { font-family: "Courier New", Courier, monospace; }
 select[data-cmd-input="setFontFamily"] option[value*="Consolas"]       { font-family: Consolas, Monaco, monospace; }
+
+/* ===== Paged Layout ===== */
+#pageRoot {
+  display: flex;
+  justify-content: center;
+  padding: 1rem;
+  background: #f2f3f5;
+}
+
+/* One visual page */
+.rt-page {
+  position: relative;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(0,0,0,.1);
+  border: 1px solid #e5e7eb;
+  overflow: hidden;  /* visual clipping; for multipage later we’ll paginate */
+}
+
+/* Header / Footer areas (simple contenteditable for now) */
+.rt-header, .rt-footer {
+  padding: .5rem .75rem;
+  font-size: .9rem;
+  color: #495057;
+  min-height: 32px;
+  border-bottom: 1px dashed #e5e7eb;
+}
+.rt-footer { border-top: 1px dashed #e5e7eb; border-bottom: 0; }
+
+/* Page content area gets margins as padding via inline style from JS */
+.rt-page-content {
+  height: 100%;
+  overflow: auto; /* allow scroll if content exceeds page height for now */
+  background: transparent;
+}
+
+/* Make editor fill the content area nicely */
+#editor {
+  min-height: 600px;
+}
+
+/* Print: remove shadows, center, and let @page control size/margins */
+@media print {
+  #pageRoot { padding: 0; background: #fff; }
+  .rt-page {
+    box-shadow: none;
+    border: 0;
+    margin: 0 auto;
+    page-break-after: always;
+  }
+}

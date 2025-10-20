@@ -27,6 +27,39 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
       <!-- Toolbar -->
       <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
 
+        <!-- Page Layout -->
+        <div class="d-flex align-items-center ms-2 gap-2">
+          <div class="d-flex align-items-center gap-1">
+            <label class="small text-muted">Size</label>
+            <select class="form-select form-select-sm" style="width:auto" data-page-size>
+              <option value="A4" selected>A4</option>
+              <option value="Letter">Letter</option>
+              <option value="Legal">Legal</option>
+              <option value="A5">A5</option>
+            </select>
+          </div>
+
+          <div class="d-flex align-items-center gap-1">
+            <label class="small text-muted">Orientation</label>
+            <select class="form-select form-select-sm" style="width:auto" data-page-orientation>
+              <option value="portrait" selected>Portrait</option>
+              <option value="landscape">Landscape</option>
+            </select>
+          </div>
+
+          <div class="d-flex align-items-center gap-1">
+            <label class="small text-muted">Margins</label>
+            <input type="text" class="form-control form-control-sm" style="width:70px" data-page-margin-top value="25mm" placeholder="top">
+            <input type="text" class="form-control form-control-sm" style="width:70px" data-page-margin-right value="25mm" placeholder="right">
+            <input type="text" class="form-control form-control-sm" style="width:70px" data-page-margin-bottom value="25mm" placeholder="bottom">
+            <input type="text" class="form-control form-control-sm" style="width:70px" data-page-margin-left value="25mm" placeholder="left">
+          </div>
+
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-apply-layout>
+            Apply
+          </button>
+        </div>
+
         <!-- Font Family -->
         <div class="d-flex align-items-center ms-2 gap-1">
           <label class="small text-muted">Font</label>
@@ -236,7 +269,17 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
 
       <link rel="stylesheet" href="<?= BASE_PATH ?>/public/assets/css/rteditor/collab-editor.css">
 
-      <div id="editor" class="border rounded p-3" style="min-height: 360px; background: #fff;"></div>
+      <div id="pageRoot">
+        <div id="rtPage" class="rt-page">
+          <div id="rtHeader" class="rt-header" contenteditable="true">Header…</div>
+
+          <div id="rtPageContent" class="rt-page-content">
+            <div id="editor" class="border-0" style="min-height: 700px;"></div>
+          </div>
+
+          <div id="rtFooter" class="rt-footer" contenteditable="true">Footer…</div>
+        </div>
+      </div>
 
       <div class="mt-3 small text-muted">
         <div>Diagnostics:</div>
@@ -274,15 +317,21 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
 
 <script type="module">
   import initBasicEditor, { bindBasicToolbar } from "<?= BASE_PATH ?>/public/assets/js/rteditor/collab-editor.js";
+  import { bindPageLayoutControls } from "<?= BASE_PATH ?>/public/assets/js/rteditor/page-layout.js";
 
+  // TipTap editor init
   const editor = initBasicEditor({
     selector: '#editor',
     editable: true,
     initialHTML: '<p>TipTap ready — start typing…</p>'
   });
   window.__RT_editor = editor;
-
   bindBasicToolbar(editor, document);
+
+  // Page layout (independent)
+  const pageEl = document.getElementById('rtPage');
+  const contentEl = document.getElementById('rtPageContent');
+  bindPageLayoutControls(document, pageEl, contentEl);
 
   // Diagnostics
   (function() {
