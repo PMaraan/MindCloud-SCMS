@@ -136,12 +136,15 @@ select[data-cmd-input="setFontFamily"] option[value*="Consolas"]       { font-fa
   overflow-y: visible;  /* vertical scroll on window so sticky works */
 }
 
-/* Make the toolbar row sticky (wrap toolbar in .rt-toolbar-sticky) */
+/* If you have a fixed topbar height, set this once. Otherwise leave 0. */
+:root { --rt-sticky-top: 0; }
+
+/* This is the element in the partial */
 .rt-toolbar-sticky {
   position: sticky;
-  top: var(--rt-sticky-top, 0);  /* if you have a fixed app topbar, set 56px here */
+  top: var(--rt-sticky-top);
   z-index: 10;
-  background: #fff;              /* avoid translucency while stuck */
+  background: #fff;
   border-bottom: 1px solid #e9ecef;
 }
 

@@ -137,7 +137,7 @@ export function bindBasicToolbar(editor, root = document) {
     toggleHeaderRow: () => editor.chain().focus().toggleHeaderRow().run(),
     mergeCells:      () => editor.chain().focus().mergeCells().run(),
     splitCell:       () => editor.chain().focus().splitCell().run(),
-    deleteTable:     => editor.chain().focus().deleteTable().run(),
+    deleteTable:     () => editor.chain().focus().deleteTable().run(),
 
     insertSignature: () => editor.chain().focus().insertSignatureField({ label: 'Signature', role: '', required: true }).run(),
     sigSetRole: (role) => editor.chain().focus().updateSignatureField({ role }).run(),
