@@ -10,6 +10,14 @@
   padding: 0; /* outer #editor already has padding (Bootstrap card-body) */
 }
 
+/* Make the card header stick at the top while the page scrolls */
+.card > .card-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;          /* above the page canvas */
+  border-bottom: 1px solid #e9ecef;
+}
+
 /* Paragraph spacing */
 #editor .ProseMirror p { margin: 0 0 .75rem; }
 
@@ -119,12 +127,22 @@ select[data-cmd-input="setFontFamily"] option[value*="Courier New"]    { font-fa
 select[data-cmd-input="setFontFamily"] option[value*="Consolas"]       { font-family: Consolas, Monaco, monospace; }
 
 /* ===== Paged Layout ===== */
-/* Page band can scroll if page is larger than viewport */
+/* Page band should only scroll horizontally; vertical scroll goes to the window */
 #pageRoot {
   display: block;           /* not flex: we’ll center differently */
   padding: 1rem;
   background: #f2f3f5;
-  overflow: auto;           /* <— enable scrollbars if needed */
+  overflow-x: auto;     /* keep horizontal scroll for wide pages */
+  overflow-y: visible;  /* vertical scroll on window so sticky works */
+}
+
+/* Make the toolbar row sticky (wrap toolbar in .rt-toolbar-sticky) */
+.rt-toolbar-sticky {
+  position: sticky;
+  top: var(--rt-sticky-top, 0);  /* if you have a fixed app topbar, set 56px here */
+  z-index: 10;
+  background: #fff;              /* avoid translucency while stuck */
+  border-bottom: 1px solid #e9ecef;
 }
 
 /* Center the page and allow it to overflow horizontally inside pageRoot */
@@ -175,5 +193,35 @@ select[data-cmd-input="setFontFamily"] option[value*="Consolas"]       { font-fa
     border: 0;
     margin: 0 auto;
     page-break-after: always;
+  }
+}
+
+/* Visible page-break marker on screen */
+.rt-page-break {
+  border: 0;
+  border-top: 2px dashed #c7c7c7;
+  margin: 1rem 0;
+  height: 0;
+  position: relative;
+}
+.rt-page-break::after {
+  content: "Page Break";
+  position: absolute;
+  top: -0.8rem;
+  left: 0;
+  font-size: .75rem;
+  color: #6c757d;
+  background: #fff;
+  padding: 0 .4rem;
+}
+
+/* Print: force an actual page break */
+@media print {
+  .rt-page-break {
+    break-after: page;        /* modern */
+    page-break-after: always; /* legacy */
+    border: 0;
+    height: 0;
+    margin: 0;
   }
 }
