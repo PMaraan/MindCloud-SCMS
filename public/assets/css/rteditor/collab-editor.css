@@ -119,7 +119,7 @@ select[data-cmd-input="setFontFamily"] option[value*="Courier New"]    { font-fa
 select[data-cmd-input="setFontFamily"] option[value*="Consolas"]       { font-family: Consolas, Monaco, monospace; }
 
 /* ===== Paged Layout ===== */
-/* Page root should allow scrolling when page is wider/taller */
+/* Page band can scroll if page is larger than viewport */
 #pageRoot {
   display: block;           /* not flex: we’ll center differently */
   padding: 1rem;
@@ -138,9 +138,10 @@ select[data-cmd-input="setFontFamily"] option[value*="Consolas"]       { font-fa
   background: #fff;
   box-shadow: 0 6px 24px rgba(0,0,0,.12), 0 2px 6px rgba(0,0,0,.08);
   border: 1px solid #e5e7eb;
-  display: flex;            /* <— flex column */
-  flex-direction: column;   /* <— header, content, footer stack */
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;                /* content clipped at page edge (for now) */
+  margin: 0 auto;                  /* center page */
 }
 
 /* Header / Footer stay auto height; footer’s border shows */
@@ -153,11 +154,11 @@ select[data-cmd-input="setFontFamily"] option[value*="Consolas"]       { font-fa
 .rt-header { border-bottom: 1px dashed #e5e7eb; }
 .rt-footer { border-top: 1px dashed #e5e7eb; }
 
-/* Content area flexes to fill the remaining height; scrolls if needed */
+/* Content area flexes to fill the remaining height; The content area should NOT scroll by itself */
 .rt-page-content {
   flex: 1 1 auto;           /* <— fill remaining space */
   min-height: 0;            /* <— enable child scroll */
-  overflow: auto;           /* <— internal scroll if content too tall */
+  overflow: visible;           /* <— key: no inner scroll, page moves as a whole */
   background: transparent;
 }
 
