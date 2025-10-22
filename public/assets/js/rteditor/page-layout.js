@@ -1,6 +1,17 @@
 // /public/assets/js/rteditor/page-layout.js
 // Pure, framework-free page layout utilities for the “Word view”
 
+// Remember the last applied page config so others (preview) can read it
+let __lastPageCfg = {
+  size: { wmm: 210, hmm: 297 }, // A4 default
+  orientation: 'portrait',
+  margins: { top: '25mm', right: '25mm', bottom: '25mm', left: '25mm' },
+};
+
+export function getCurrentPageConfig() {
+  return __lastPageCfg;
+}
+
 export const PAGE_PRESETS = {
   A4:     { wmm: 210, hmm: 297 },
   Letter: { wmm: 216, hmm: 279 },
@@ -9,7 +20,7 @@ export const PAGE_PRESETS = {
 };
 
 // helpers
-const mmToPx = (mm) => (mm / 25.4) * 96;      // CSS px at 96dpi
+const mmToPx  = (mm) => (mm / 25.4) * 96; // 96dpi
 const mmToCSS = (mm) => `${mm}mm`;
 
 function ensureStyleTag() {
@@ -51,6 +62,16 @@ export function applyPageLayout(pageEl, contentEl, opts) {
   size: ${mmToCSS(wmm)} ${mmToCSS(hmm)};
   margin: ${m.top} ${m.right} ${m.bottom} ${m.left};
 }`;
+
+  // <-- UPDATE the shared config here (where preset & opts exist)
+  __lastPageCfg = {
+    size: preset,
+    orientation: opts.orientation,
+    margins: { ...opts.margins },
+  };
+
+  // Fire a custom event so the preview can refresh instantly
+  document.dispatchEvent(new CustomEvent('rt:page-layout-updated', { detail: __lastPageCfg }));
 }
 
 // tiny debounce so typing in margin fields won’t thrash

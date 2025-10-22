@@ -54,6 +54,9 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
     </div>
   </div>
 
+  <!-- Manual Pagination Preview (read-only) -->
+  <div id="pagePreviewRoot"></div>
+
   <!-- Diagnostics BELOW the page -->
   <div class="mt-3 small text-muted">
     <div>Diagnostics:</div>
@@ -88,7 +91,8 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
 
 <script type="module">
   import initBasicEditor, { bindBasicToolbar } from "<?= BASE_PATH ?>/public/assets/js/rteditor/collab-editor.js";
-  import { bindPageLayoutControls } from "<?= BASE_PATH ?>/public/assets/js/rteditor/page-layout.js";
+  import { bindPageLayoutControls, getCurrentPageConfig } from "<?= BASE_PATH ?>/public/assets/js/rteditor/page-layout.js";
+  import { bindManualPagination } from "<?= BASE_PATH ?>/public/assets/js/rteditor/manual-pagination.js";
 
   // TipTap editor init
   const editor = initBasicEditor({
@@ -103,9 +107,25 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
   console.log('insertPageBreak exists?', !!editor?.commands?.insertPageBreak);
 
   // Page layout (independent)
-  const pageEl = document.getElementById('rtPage');
-  const contentEl = document.getElementById('rtPageContent');
+  const pageEl     = document.getElementById('rtPage');
+  const contentEl  = document.getElementById('rtPageContent');
+  const headerEl   = document.getElementById('rtHeader');
+  const footerEl   = document.getElementById('rtFooter');
   bindPageLayoutControls(document, pageEl, contentEl);
+
+  // Manual Pagination (Preview) — REPLACE your existing bindManualPagination(...) call with this:
+  const previewRoot = document.getElementById('pagePreviewRoot');
+  const { refresh: refreshPreview } = bindManualPagination(editor, {
+    pagePreviewRoot: previewRoot,
+    headerEl,
+    footerEl,
+    getPageConfig: () => getCurrentPageConfig(),
+  });
+
+  // Refresh preview whenever layout changes (size/orientation/margins)
+  document.addEventListener('rt:page-layout-updated', () => {
+    refreshPreview();
+  });
 
   // Diagnostics
   (function() {
