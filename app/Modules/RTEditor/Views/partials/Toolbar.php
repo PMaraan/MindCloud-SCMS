@@ -188,5 +188,12 @@
       </button>
     </div>
 
+    <!-- Auto Pagination -->
+    <div class="btn-group btn-group-sm ms-2" role="group" aria-label="Auto Pagination">
+      <button type="button" class="btn btn-outline-secondary" data-cmd="autoPaginate" title="Suggest & insert page breaks">
+        <i class="bi bi-magic"></i>
+      </button>
+    </div>
+
   </div>
 </div>

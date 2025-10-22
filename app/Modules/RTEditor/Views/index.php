@@ -93,6 +93,7 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
   import initBasicEditor, { bindBasicToolbar } from "<?= BASE_PATH ?>/public/assets/js/rteditor/collab-editor.js";
   import { bindPageLayoutControls, getCurrentPageConfig } from "<?= BASE_PATH ?>/public/assets/js/rteditor/page-layout.js";
   import { bindManualPagination } from "<?= BASE_PATH ?>/public/assets/js/rteditor/manual-pagination.js";
+  import { runOnce as autoPaginate } from "<?= BASE_PATH ?>/public/assets/js/rteditor/auto-pagination.js";
 
   // TipTap editor init
   const editor = initBasicEditor({
@@ -102,6 +103,29 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
   });
   window.__RT_editor = editor;
   bindBasicToolbar(editor, document);
+
+  // Add the autoPaginate button wiring
+  (() => {
+    const btn = document.querySelector('[data-cmd="autoPaginate"]');
+    if (!btn) return;
+
+    const pageEl    = document.getElementById('rtPage');
+    const contentEl = document.getElementById('rtPageContent');
+    const headerEl  = document.getElementById('rtHeader');
+    const footerEl  = document.getElementById('rtFooter');
+
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      autoPaginate(editor, {
+        pageEl,
+        contentEl,
+        headerEl,
+        footerEl,
+        getPageConfig: () => getCurrentPageConfig(),
+        clearExisting: true,  // remove previous breaks before suggesting
+      });
+    });
+  })();
 
   // SANITY HOOK:
   console.log('insertPageBreak exists?', !!editor?.commands?.insertPageBreak);
