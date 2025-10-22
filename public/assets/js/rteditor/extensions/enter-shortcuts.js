@@ -11,9 +11,15 @@ const EnterShortcuts = Extension.create({
         this.editor.commands.insertContent("<br>"),
       Enter: () => {
         const ed = this.editor;
-        if (ed.can().splitListItem?.('listItem')) return ed.commands.splitListItem('listItem');
-        if (ed.can().liftListItem?.('listItem'))  return ed.commands.liftListItem('listItem');
+
+        if (ed.can().splitListItem?.('listItem')) {
+          return ed.commands.splitListItem('listItem');
+        }
+        if (ed.can().liftListItem?.('listItem')) {
+          return ed.commands.liftListItem('listItem');
+        }
         if (ed.commands.splitBlock()) return true;
+
         try {
           const { state } = ed;
           const $from = state.selection.$from;

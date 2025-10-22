@@ -1,4 +1,6 @@
-// /public/assets/js/rteditor/extensions/auto-pagebreak.js
+// /public/assets/js/rteditor/extensions/auto-page-break.js
+// MVP: placeholder for future auto-pagination logic.
+// Exporting a disabled extension keeps imports clean.
 import { Extension } from "@tiptap/core";
 
 /**
@@ -8,8 +10,8 @@ import { Extension } from "@tiptap/core";
  *   - #rtPageContent element (the content box inside your page)
  *   - A "pageBreak" node registered in the schema
  */
-export default Extension.create({
-  name: "autoPageBreak",
+const AutoPageBreak = Extension.create({
+  name: 'autoPageBreak',
 
   addOptions() {
     return {
@@ -79,3 +81,5 @@ export default Extension.create({
     dispatch(tr.scrollIntoView());
   },
 });
+
+export default AutoPageBreak;

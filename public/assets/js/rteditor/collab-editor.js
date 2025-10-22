@@ -18,13 +18,15 @@ import TableCell    from "@tiptap/extension-table-cell";
 import TableHeader  from "@tiptap/extension-table-header";
 
 // Local nodes & extensions
-import PageBreak        from "./nodes/page-break.js";
-import SignatureField   from "./nodes/signature-field.js";
+
 import EnterShortcuts   from "./extensions/enter-shortcuts.js";
 import ListShortcuts    from "./extensions/list-shortcuts.js";
 import FontSize         from "./extensions/font-size.js";
 import SpacingExtension from "./extensions/spacing.js";
-import AutoPageBreak    from "./extensions/auto-pagebreak.js";
+//import AutoPageBreak    from "./extensions/auto-page-break.js";
+
+import PageBreak        from "./nodes/page-break.js";
+import SignatureField   from "./nodes/signature-field.js";
 
 /** Build editor with common word-like extensions */
 export default function initBasicEditor(opts) {
@@ -37,35 +39,42 @@ export default function initBasicEditor(opts) {
     editable,
     content: initialHTML,
     extensions: [
-      StarterKit.configure({ history: true }),
-
-      // behavior
+      StarterKit.configure({ 
+        history: true,
+        strike: false,
+      }),
       EnterShortcuts,
       ListShortcuts,
 
-      // marks & styles
-      TextStyle,
-      Color,
-      Highlight,
       Underline,
       Strike,
       Subscript,
       Superscript,
+      TextStyle,
+      Color,
+      Highlight,
+
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+        alignments: ['left', 'center', 'right', 'justify']
+      }),
+
       FontFamily,
       FontSize,
-      TextAlign.configure({ types: ['heading','paragraph'], alignments: ['left','center','right','justify'] }),
       SpacingExtension,
 
-      // table
-      Table.configure({ resizable: true, lastColumnResizable: true, allowTableNodeSelection: true }),
-      TableRow, TableHeader, TableCell,
+      Table.configure({
+        resizable: true,
+        lastColumnResizable: true,
+        allowTableNodeSelection: true,
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
 
-      // custom nodes
       SignatureField,
       PageBreak,
-
-      // auto break when overflowing the first page
-      AutoPageBreak,
+      // AutoPageBreak,
     ],
   });
 
@@ -74,7 +83,6 @@ export default function initBasicEditor(opts) {
   return editor;
 }
 
-/** Tiny command bus for the toolbar */
 export function bindBasicToolbar(editor, root = document) {
   let currentTextColor = '#000000';
   let currentHighlightColor = '#fff59d';
@@ -107,7 +115,9 @@ export function bindBasicToolbar(editor, root = document) {
 
     applyHighlight: () => {
       const color = currentHighlightColor || '#fff59d';
-      if (editor.isActive('highlight', { color })) return editor.chain().focus().unsetHighlight().run();
+      if (editor.isActive('highlight', { color })) {
+        return editor.chain().focus().unsetHighlight().run();
+      }
       return editor.chain().focus().setHighlight({ color }).run();
     },
     setHighlight: (color) => { currentHighlightColor = color || currentHighlightColor; return editor.chain().focus().setHighlight({ color: currentHighlightColor }).run(); },
@@ -118,6 +128,7 @@ export function bindBasicToolbar(editor, root = document) {
 
     setFontFamily: (family) => editor.chain().focus().setFontFamily(family).run(),
     unsetFontFamily: () => editor.chain().focus().setFontFamily(null).run(),
+
     setFontSize: (size) => editor.chain().focus().setFontSize(size).run(),
     unsetFontSize: () => editor.chain().focus().unsetFontSize().run(),
 
@@ -149,12 +160,14 @@ export function bindBasicToolbar(editor, root = document) {
     insertPageBreak: () => editor.chain().focus().insertPageBreak().run(),
   };
 
+  // buttons
   root.querySelectorAll('[data-cmd]').forEach(btn => {
     const cmd = btn.getAttribute('data-cmd');
     if (!map[cmd]) return;
     btn.addEventListener('click', e => { e.preventDefault(); map[cmd](); });
   });
 
+  // inputs
   root.querySelectorAll('[data-cmd-input]').forEach(inp => {
     const cmd = inp.getAttribute('data-cmd-input');
     if (!map[cmd]) return;
@@ -164,6 +177,10 @@ export function bindBasicToolbar(editor, root = document) {
       if (cmd === 'setHighlight') currentHighlightColor = val;
       if (cmd === 'setColor') currentTextColor = val;
       map[cmd](val);
+    });
+    inp.addEventListener('dblclick', () => {
+      const clearCmd = (cmd === 'setColor') ? 'unsetColor' : (cmd === 'setHighlight' ? 'unsetHighlight' : null);
+      if (clearCmd && map[clearCmd]) map[clearCmd]();
     });
   });
 }

@@ -3,8 +3,8 @@
 import { Node } from "@tiptap/core";
 
 const PageBreak = Node.create({
-  name: 'pageBreak',
-  group: 'block',
+  name: "pageBreak",
+  group: "block",
   atom: true,
   selectable: true,
   draggable: false,

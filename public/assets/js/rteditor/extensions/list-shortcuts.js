@@ -8,12 +8,16 @@ const ListShortcuts = Extension.create({
     return {
       Tab: () => {
         const ed = this.editor;
-        if (ed.can().sinkListItem?.('listItem')) return ed.commands.sinkListItem('listItem');
+        if (ed.can().sinkListItem?.('listItem')) {
+          return ed.commands.sinkListItem('listItem');
+        }
         return ed.commands.insertContent('    ');
       },
       'Shift-Tab': () => {
         const ed = this.editor;
-        if (ed.can().liftListItem?.('listItem')) return ed.commands.liftListItem('listItem');
+        if (ed.can().liftListItem?.('listItem')) {
+          return ed.commands.liftListItem('listItem');
+        }
         return false;
       },
     };

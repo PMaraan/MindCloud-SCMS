@@ -11,7 +11,7 @@ const FontSize = Extension.create({
         fontSize: {
           default: null,
           parseHTML: el => el.style.fontSize || null,
-          renderHTML: attrs => attrs.fontSize ? { style: `font-size:${attrs.fontSize}` } : {},
+          renderHTML: attrs => attrs.fontSize ? { style: `font-size: ${attrs.fontSize}` } : {},
         },
       },
     }];

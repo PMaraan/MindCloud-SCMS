@@ -30,7 +30,8 @@ const SignatureField = Node.create({
       class: 'rt-signature-field',
     };
     return [
-      'div', attrs,
+      'div',
+      attrs,
       ['div', { class: 'rt-signature-line' }],
       ['div', { class: 'rt-signature-meta' },
         `${label}${role ? ` — ${role}` : ''}${required ? ' (required)' : ''}`
@@ -40,23 +41,20 @@ const SignatureField = Node.create({
 
   addCommands() {
     return {
-      insertSignatureField:
-        (cfg = {}) => ({ commands }) =>
-          commands.insertContent({ type: this.name, attrs: cfg }),
-      updateSignatureField:
-        (cfg = {}) => ({ state, dispatch }) => {
-          const { tr, selection } = state;
-          let updated = false;
-          state.doc.nodesBetween(selection.from, selection.to, (node, pos) => {
-            if (node.type.name === this.name) {
-              const next = { ...node.attrs, ...cfg };
-              tr.setNodeMarkup(pos, node.type, next, node.marks);
-              updated = true;
-            }
-          });
-          if (updated && dispatch) dispatch(tr);
-          return updated;
-        },
+      insertSignatureField: (cfg = {}) => ({ commands }) =>
+        commands.insertContent({ type: this.name, attrs: cfg }),
+      updateSignatureField: (cfg = {}) => ({ state, dispatch }) => {
+        const { tr, selection } = state;
+        let changed = false;
+        state.doc.nodesBetween(selection.from, selection.to, (node, pos) => {
+          if (node.type.name === this.name) {
+            tr.setNodeMarkup(pos, node.type, { ...node.attrs, ...cfg }, node.marks);
+            changed = true;
+          }
+        });
+        if (changed && dispatch) dispatch(tr);
+        return changed;
+      },
     };
   },
 });

@@ -2,57 +2,69 @@
 // Spacing Extension for TipTap Editor
 import { Extension } from "@tiptap/core";
 
-const Spacing = Extension.create({
+function patchBlocks(state, dispatch, typeNames, patch) {
+  const { tr, selection } = state;
+  const { from, to } = selection;
+  const names = new Set(typeNames);
+
+  state.doc.nodesBetween(from, to, (node, pos) => {
+    if (!node?.type || !names.has(node.type.name)) return;
+    const next = { ...node.attrs, ...patch };
+    Object.keys(next).forEach(k => { if (next[k] === null) delete next[k]; });
+    tr.setNodeMarkup(pos, node.type, next, node.marks);
+  });
+
+  if (tr.docChanged && dispatch) dispatch(tr);
+  return tr.docChanged;
+}
+
+export default Extension.create({
   name: 'spacing',
+
   addGlobalAttributes() {
-    const lineHeight = {
+    const lineHeightAttr = {
       default: null,
       parseHTML: el => el.style.lineHeight || null,
-      renderHTML: a => a.lineHeight ? { style: `line-height:${a.lineHeight}` } : {},
+      renderHTML: attrs => attrs.lineHeight ? { style: `line-height: ${attrs.lineHeight}` } : {},
     };
-    const mTop = {
+    const marginTopAttr = {
       default: null,
       parseHTML: el => el.style.marginTop || null,
-      renderHTML: a => a.marginTop ? { style: `margin-top:${a.marginTop}` } : {},
+      renderHTML: attrs => attrs.marginTop ? { style: `margin-top: ${attrs.marginTop}` } : {},
     };
-    const mBottom = {
+    const marginBottomAttr = {
       default: null,
       parseHTML: el => el.style.marginBottom || null,
-      renderHTML: a => a.marginBottom ? { style: `margin-bottom:${a.marginBottom}` } : {},
+      renderHTML: attrs => attrs.marginBottom ? { style: `margin-bottom: ${attrs.marginBottom}` } : {},
     };
+
     return [
-      { types: ['paragraph','heading','blockquote','listItem'], attributes: { lineHeight } },
-      { types: ['paragraph','heading','blockquote'], attributes: { marginTop: mTop, marginBottom: mBottom } },
+      { types: ['paragraph', 'heading', 'blockquote', 'listItem'], attributes: { lineHeight: lineHeightAttr } },
+      { types: ['paragraph', 'heading', 'blockquote'], attributes: { marginTop: marginTopAttr, marginBottom: marginBottomAttr } },
     ];
   },
+
   addCommands() {
-    const patchBlocks = (editor, typeNames, patch) => {
-      const { state } = editor;
-      const { tr, selection } = state;
-      const from = selection.from, to = selection.to;
-      const allowed = new Set(typeNames);
-      state.doc.nodesBetween(from, to, (node, pos) => {
-        if (!node?.type || !allowed.has(node.type.name)) return;
-        const next = { ...node.attrs, ...patch };
-        Object.keys(next).forEach(k => { if (next[k] === null) delete next[k]; });
-        tr.setNodeMarkup(pos, node.type, next, node.marks);
-      });
-      if (tr.docChanged) editor.view.dispatch(tr);
-      return tr.docChanged;
-    };
     return {
-      setLineHeight: v => ({ editor }) =>
-        patchBlocks(editor, ['paragraph','heading','blockquote','listItem'], { lineHeight: String(v) }),
-      unsetLineHeight: () => ({ editor }) =>
-        patchBlocks(editor, ['paragraph','heading','blockquote','listItem'], { lineHeight: null }),
-      setParagraphSpacingBefore: v => ({ editor }) =>
-        patchBlocks(editor, ['paragraph','heading','blockquote'], { marginTop: String(v) }),
-      setParagraphSpacingAfter: v => ({ editor }) =>
-        patchBlocks(editor, ['paragraph','heading','blockquote'], { marginBottom: String(v) }),
-      unsetParagraphSpacing: () => ({ editor }) =>
-        patchBlocks(editor, ['paragraph','heading','blockquote'], { marginTop: null, marginBottom: null }),
+      setLineHeight:
+        value => ({ state, dispatch }) =>
+          patchBlocks(state, dispatch, ['paragraph', 'heading', 'blockquote', 'listItem'], { lineHeight: String(value) }),
+
+      unsetLineHeight:
+        () => ({ state, dispatch }) =>
+          patchBlocks(state, dispatch, ['paragraph', 'heading', 'blockquote', 'listItem'], { lineHeight: null }),
+
+      setParagraphSpacingBefore:
+        value => ({ state, dispatch }) =>
+          patchBlocks(state, dispatch, ['paragraph', 'heading', 'blockquote'], { marginTop: String(value) }),
+
+      setParagraphSpacingAfter:
+        value => ({ state, dispatch }) =>
+          patchBlocks(state, dispatch, ['paragraph', 'heading', 'blockquote'], { marginBottom: String(value) }),
+
+      unsetParagraphSpacing:
+        () => ({ state, dispatch }) =>
+          patchBlocks(state, dispatch, ['paragraph', 'heading', 'blockquote'], { marginTop: null, marginBottom: null }),
     };
   },
 });
-
-export default Spacing;
