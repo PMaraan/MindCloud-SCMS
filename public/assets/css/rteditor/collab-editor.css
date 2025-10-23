@@ -157,6 +157,7 @@ select[data-cmd-input="setFontFamily"] option[value*="Consolas"]       { font-fa
 .rt-page {
   position: relative;
   background: #fff;
+  box-sizing: content-box;
   box-shadow: 0 6px 24px rgba(0,0,0,.12), 0 2px 6px rgba(0,0,0,.08);
   border: 1px solid #e5e7eb;
   display: flex;
@@ -179,8 +180,10 @@ select[data-cmd-input="setFontFamily"] option[value*="Consolas"]       { font-fa
 .rt-page-content {
   flex: 1 1 auto;           /* <— fill remaining space */
   min-height: 0;            /* <— enable child scroll */
-  overflow: visible;           /* <— key: no inner scroll, page moves as a whole */
+  /*overflow: visible;           /* <— key: no inner scroll, page moves as a whole */
+  overflow: hidden;          /* temporary while we dial in pagination */
   background: transparent;
+  box-sizing: border-box; /* padding counts inside the content height */
 }
 
 /* Make editor fill the content area nicely */

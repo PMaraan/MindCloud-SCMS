@@ -48,7 +48,7 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
     <div id="rtPage" class="rt-page">
       <div id="rtHeader" class="rt-header" contenteditable="true">Header…</div>
       <div id="rtPageContent" class="rt-page-content">
-        <div id="editor" class="border-0" style="min-height: 700px;"></div>
+        <div id="editor" class="border-0"></div>
       </div>
       <div id="rtFooter" class="rt-footer" contenteditable="true">Footer…</div>
     </div>
@@ -95,6 +95,17 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
   import { bindManualPagination } from "<?= BASE_PATH ?>/public/assets/js/rteditor/manual-pagination.js";
   import { runOnce as autoPaginate } from "<?= BASE_PATH ?>/public/assets/js/rteditor/auto-pagination.js";
 
+  window.__RT_debugAutoPaginate = () => autoPaginate(editor, {
+    pageEl: document.getElementById('rtPage'),
+    contentEl: document.getElementById('rtPageContent'),
+    headerEl: document.getElementById('rtHeader'),
+    footerEl: document.getElementById('rtFooter'),
+    getPageConfig: () => getCurrentPageConfig(),
+    clearExisting: true,
+    safety: 6,
+    debug: true,
+  });
+
   // TipTap editor init
   const editor = initBasicEditor({
     selector: '#editor',
@@ -116,13 +127,24 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
 
     btn.addEventListener('click', (e) => {
       e.preventDefault();
+
+      // ④ PRE-SANITY LOG — add this right here:
+      const cs = getComputedStyle(contentEl);
+      console.log(
+        '[pre-autoPaginate] clientHeight=', contentEl.clientHeight,
+        'paddingTop=', cs.paddingTop, 'paddingBottom=', cs.paddingBottom,
+        'usable=', contentEl.clientHeight - (parseFloat(cs.paddingTop)||0) - (parseFloat(cs.paddingBottom)||0)
+      );
+
       autoPaginate(editor, {
         pageEl,
         contentEl,
         headerEl,
         footerEl,
         getPageConfig: () => getCurrentPageConfig(),
-        clearExisting: true,  // remove previous breaks before suggesting
+        clearExisting: true,
+        safety: 6,
+        debug: true,
       });
     });
   })();
