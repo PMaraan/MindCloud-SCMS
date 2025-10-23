@@ -290,12 +290,18 @@ body {
 .page.size-Letter{ width: var(--Letter-w); height: var(--Letter-h); }
 .page.size-Legal{ width: var(--Legal-w); height: var(--Legal-h); }
 
+/* Landscape swap (SCREEN) — make width/height swap when .landscape is set */
+.page.landscape.size-A4     { width: var(--A4-h);     height: var(--A4-w); }
+.page.landscape.size-Letter { width: var(--Letter-h); height: var(--Letter-w); }
+.page.landscape.size-Legal  { width: var(--Legal-h);  height: var(--Legal-w); }
+
+
 /* Header */
 .page-header{
   position: relative;
   z-index: 2;
   border-bottom: 1px solid var(--page-border);
-  padding: 16px 20px 12px 20px;
+  padding: 18px 20px 12px 20px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -363,13 +369,23 @@ body {
 /* =========================================================
    5) Editor Region (TipTap host within page)
    ========================================================= */
-.page .tiptap{
+.page .tiptap {
   position: absolute;
   left: 0; right: 0;
-  top: var(--content-top, 40px);
-  bottom: var(--content-bottom, 20px);
-  padding: 24px 28px 72px; /* bottom pad unified */
-  overflow: hidden;        /* no inner scrollbars */
+  top: var(--header-h);
+  bottom: var(--footer-h);
+  overflow: hidden; /* ProseMirror handles scrollHeight; our flow engine rebalances */
+  padding: 0 32px;
+}
+
+/* Optional: header/footer minor tweaks if you want a bit more air in landscape */
+.page.landscape .page-header { padding-right: 24px; }
+.page.landscape .page-footer { padding-right: 24px; }
+
+/* === Print: we’ll inject @page size via #mc-print-css (see JS) === */
+@media print {
+  /* Ensure each page starts on a fresh sheet */
+  .page { page-break-after: always; }
 }
 
 .tiptap:focus{
@@ -378,7 +394,6 @@ body {
   box-shadow: none !important;
 }
 
-.tiptap p{ margin: 0 0 .75rem; }
 .tiptap h1{ font-size: 1.5rem;   margin: 1rem 0 .5rem; }
 .tiptap h2{ font-size: 1.25rem;  margin: 1rem 0 .5rem; }
 .tiptap h3{ font-size: 1.125rem; margin: 1rem 0 .5rem; }
@@ -429,12 +444,6 @@ body {
   background: #f8fafc;
 }
 
-/* Space around any table */
-.tiptap .ProseMirror table{ margin-block: 12px; }
-
-/* Make empty paragraphs show as a visible gap
-   (so inserted <p></p> after tables is clear) */
-.tiptap .ProseMirror p:empty{ min-height: 1em; }
 
 /* --- Signature tables (flagged as .sig-table or data-sig="1") --- */
 .tiptap table.sig-table,
@@ -803,6 +812,11 @@ body {
   .page.size-A4     { width: 210mm !important; min-height: 297mm !important; }
   .page.size-Letter { width: 216mm !important; min-height: 279mm !important; }
   .page.size-Legal  { width: 216mm !important; min-height: 356mm !important; }
+
+  /* === Landscape variants (NEW) === */
+  .page.landscape.size-A4     { width: 297mm; height: 210mm; }
+  .page.landscape.size-Letter { width: 11in;  height: 8.5in; }
+  .page.landscape.size-Legal  { width: 14in;  height: 8.5in; }
 
   /* --- TABLES: robust, lossless borders --- */
 

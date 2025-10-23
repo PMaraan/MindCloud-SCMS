@@ -71,6 +71,12 @@ $ASSET_BASE   = $paths['assetBase'];
           <option value="Letter">Letter</option>
           <option value="Legal">Legal</option>
         </select>
+        <label class="top-label ms-3 me-1">Orientation:</label>
+        <select id="ctl-orient" class="form-select form-select-sm top-select" aria-label="Orientation">
+          <option value="portrait" selected>Portrait</option>
+          <option value="landscape">Landscape</option>
+        </select>
+
         <button id="ctl-addpage" class="btn btn-sm btn-outline-light">
           <i class="bi bi-file-earmark-plus"></i> Add Page
         </button>

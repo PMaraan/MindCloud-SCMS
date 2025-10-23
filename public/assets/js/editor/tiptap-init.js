@@ -529,8 +529,14 @@ function nextPageNumber() {
 }
 
 function pageTemplate(pageNum) {
+  // read current UI selections
+  const size   = (document.getElementById('ctl-paper')?.value)  || 'A4';
+  const orient = (document.getElementById('ctl-orient')?.value) || 'portrait';
+
   const sec = document.createElement('section');
-  sec.className = 'page size-A4';
+  // apply size and landscape class for new pages
+  sec.className = `page size-${size} ${orient === 'landscape' ? 'landscape' : ''}`.trim();
+
   sec.id = `page-${pageNum}`;
   sec.dataset.page = String(pageNum);
   sec.tabIndex = 0;
@@ -1272,27 +1278,85 @@ function applyPaperSize(size) {
   });
 }
 
+function applyOrientation(orientation /* 'portrait' | 'landscape' */) {
+  const isLandscape = orientation === 'landscape';
+  document.querySelectorAll('.page').forEach(p => {
+    p.classList.toggle('landscape', isLandscape);
+  });
+  updatePrintPageSize(
+    (document.getElementById('ctl-paper')?.value) || 'A4',
+    orientation
+  );
+}
+
+function relayoutAll() {
+  // recompute header/footer offsets for every page
+  document.querySelectorAll('.page').forEach(layoutHeaderOffset);
+  // rebalance the flow engine so content fits the new page box
+  const all = (window.__mc?.MCEditors?.all?.() || []);
+  all.forEach(ed => { try { rebalanceAround(ed); } catch {} });
+}
+
+
+// Inject/replace a <style> with @page size for print
+function updatePrintPageSize(size /* A4|Letter|Legal */, orientation /* portrait|landscape */) {
+  const id = 'mc-print-css';
+  let tag = document.getElementById(id);
+  if (!tag) {
+    tag = document.createElement('style');
+    tag.id = id;
+    document.head.appendChild(tag);
+  }
+  // Map our UI values to CSS @page size tokens
+  const map = {
+    A4: 'A4',
+    Letter: 'Letter',
+    Legal: 'Legal',
+  };
+  const token = map[size] || 'A4';
+  tag.textContent = `@media print { @page { size: ${token} ${orientation}; margin: 0 } }`;
+}
+
+
 function wireControls() {
   const selPaper = document.getElementById('ctl-paper');
+  const selOrient = document.getElementById('ctl-orient');
   const btnAdd = document.getElementById('ctl-addpage');
 
   if (selPaper) {
-    selPaper.addEventListener('change', () => applyPaperSize(selPaper.value || 'A4'));
-  }
-  if (btnAdd) {
-    btnAdd.addEventListener('click', () => {
-      const last = document.querySelector('#mc-work .page:last-of-type');
-      if (last) addPageAfter(last);
+    selPaper.addEventListener('change', () => {
+      const size = selPaper.value || 'A4';
+      applyPaperSize(size);
+      // keep print size in sync with current orientation
+      const orient = selOrient?.value || 'portrait';
+      updatePrintPageSize(size, orient);
+      relayoutAll(); // <-- add this line
     });
   }
 
-  // Sidebar collapse toggle (optional: if you want it)
+  if (selOrient) {
+    selOrient.addEventListener('change', () => {
+      applyOrientation(selOrient.value || 'portrait');
+      relayoutAll(); // <-- add this line
+    });
+  }
+
+  if (btnAdd) {
+    btnAdd.addEventListener('click', () => {
+      const last = document.querySelector('#mc-work .page:last-of-type');
+      if (last) {
+        addPageAfter(last);
+        relayoutAll();   // ensure the flow engine rebalances for the new page
+      }
+    });
+  }
+
+
   const sbToggle = document.getElementById('sb-toggle');
   const shell = document.getElementById('mc-shell');
-  sbToggle?.addEventListener('click', () => {
-    shell?.classList.toggle('sb-collapsed');
-  });
+  sbToggle?.addEventListener('click', () => shell?.classList.toggle('sb-collapsed'));
 }
+
 
 // === Toolbar: font family + size ===
 // Expects controls with ids: #ctl-font-family and #ctl-font-size
@@ -1353,6 +1417,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   wireControls();
   applyPaperSize((document.getElementById('ctl-paper')?.value) || 'A4');
+  const initialOrient = (document.getElementById('ctl-orient')?.value) || 'portrait';
+  applyOrientation(initialOrient);
+  updatePrintPageSize(
+    (document.getElementById('ctl-paper')?.value) || 'A4',
+    initialOrient
+  );
   wireToolbarFontControls();
 
   // keep offsets correct on resize (headers can wrap on small widths)
