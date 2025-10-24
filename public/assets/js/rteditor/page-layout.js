@@ -23,6 +23,17 @@ export const PAGE_PRESETS = {
 const mmToPx  = (mm) => (mm / 25.4) * 96; // 96dpi
 const mmToCSS = (mm) => `${mm}mm`;
 
+// convert CSS lengths (mm/px/in/cm/number) → px
+function cssLenToPx(val) {
+  if (val == null) return 0;
+  const s = String(val).trim();
+  if (s.endsWith('mm')) return (parseFloat(s) || 0) / 25.4 * 96;
+  if (s.endsWith('cm')) return (parseFloat(s) || 0) * 10 / 25.4 * 96;
+  if (s.endsWith('in')) return (parseFloat(s) || 0) * 96;
+  if (s.endsWith('px')) return (parseFloat(s) || 0);
+  return parseFloat(s) || 0; // bare number treated as px
+}
+
 function ensureStyleTag() {
   let tag = document.getElementById('rt-page-style');
   if (!tag) {
@@ -50,10 +61,21 @@ export function applyPageLayout(pageEl, contentEl, opts) {
 
   // Content padding from margins (accepts mm/pt/in/px)
   const m = opts.margins;
-  contentEl.style.paddingTop    = m.top;
-  contentEl.style.paddingRight  = m.right;
-  contentEl.style.paddingBottom = m.bottom;
-  contentEl.style.paddingLeft   = m.left;
+
+  // NEW: subtract header/footer visual height from the content paddings
+  const headerEl = document.getElementById('rtHeader');
+  const footerEl = document.getElementById('rtFooter');
+  const headerH  = headerEl ? headerEl.getBoundingClientRect().height : 0;
+  const footerH  = footerEl ? footerEl.getBoundingClientRect().height : 0;
+
+  // Compute effective paddings in px, then write px so we’re precise
+  const padTopPx    = Math.max(cssLenToPx(m.top)    - headerH,  0);
+  const padBottomPx = Math.max(cssLenToPx(m.bottom) - footerH,  0);
+
+  contentEl.style.paddingTop    = `${padTopPx}px`;
+  contentEl.style.paddingRight  = m.right;   // unchanged
+  contentEl.style.paddingBottom = `${padBottomPx}px`;
+  contentEl.style.paddingLeft   = m.left;    // unchanged
 
   // Real print @page
   const styleTag = ensureStyleTag();
