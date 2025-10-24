@@ -153,7 +153,9 @@ select[data-cmd-input="setFontFamily"] option[value*="Consolas"]       { font-fa
 }
 
 /* If you have a fixed topbar height, set this once. Otherwise leave 0. */
-:root { --rt-sticky-top: 0; }
+:root {
+  --rt-sticky-top: 0;
+}
 
 /* This is the element in the partial */
 .rt-toolbar-sticky {
@@ -222,10 +224,19 @@ select[data-cmd-input="setFontFamily"] option[value*="Consolas"]       { font-fa
 .rt-page-break {
   border: 0;
   border-top: 2px dashed #c7c7c7;
-  margin: 1rem 0;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
   height: 0;
   position: relative;
 }
+
+/* paragraph right before a page break */
+.rt-page-break + p,
+p + .rt-page-break {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
 .rt-page-break::after {
   content: "Page Break";
   position: absolute;
@@ -300,3 +311,8 @@ select[data-cmd-input="setFontFamily"] option[value*="Consolas"]       { font-fa
   border-radius: 6px;
   border: 1px solid #e9ecef;
 }
+
+/* neutralize spacing around visible page-break marker */
+#editor .ProseMirror p + .rt-page-break { margin-top: 0; }
+#editor .ProseMirror .rt-page-break + p { margin-top: 0; }
+#editor .ProseMirror .rt-page-break { margin-top: 0; margin-bottom: 0; }

@@ -36,6 +36,9 @@ function cssLenToPx(val) {
   if (s.endsWith('cm')) return (parseFloat(s) || 0) * 10 / 25.4 * 96;
   return parseFloat(s) || 0;
 }
+function isEmptyParagraph(node) {
+  return node && node.type && node.type.name === 'paragraph' && node.content.size === 0;
+}
 
 // ---------- usable height calculators ----------
 /**
@@ -88,7 +91,7 @@ function posBeforeDomBlock(editor, el) {
   const view = editor?.view;
   if (!view || !el) return null;
 
-  // Map DOM → a position at the *start* of this DOM node
+  // Map DOM -> a position at the *start* of this DOM node
   let pos = null;
   try { pos = view.posAtDOM(el, 0); } catch { return null; }
   if (typeof pos !== 'number') return null;
@@ -157,20 +160,49 @@ function insertBreaksAt(editor, positions) {
 }
 
 function removeAllPageBreaks(editor) {
-  const { state } = editor;
-  const breaks = [];
-  state.doc.nodesBetween(0, state.doc.content.size, (node, pos) => {
-    if (node.type.name === 'pageBreak') breaks.push({ pos, nodeSize: node.nodeSize });
+  const { state, view } = editor;
+  const toDelete = [];
+
+  state.doc.nodesBetween(0, state.doc.content.size, (node, pos, parent, index) => {
+    if (node.type.name !== 'pageBreak') return;
+
+    // plan to delete the break itself
+    let from = pos;
+    let to   = pos + node.nodeSize;
+
+    // also delete a single empty paragraph *immediately before* the break
+    const $pos = state.doc.resolve(pos);
+    const parentNode = $pos.parent;
+    const idx = $pos.index();
+
+    const before = parentNode.child(idx - 1);
+    if (isEmptyParagraph(before)) {
+      // compute the document positions for that paragraph
+      let cursor = $pos.start() + 0;
+      for (let i = 0; i < idx - 1; i++) cursor += parentNode.child(i).nodeSize;
+      const paraFrom = cursor;
+      const paraTo   = cursor + before.nodeSize;
+      from = Math.min(from, paraFrom);
+    }
+
+    // also delete a single empty paragraph *immediately after* the break
+    const after = parentNode.child(idx + 1);
+    if (isEmptyParagraph(after)) {
+      let cursor = $pos.start() + 0;
+      for (let i = 0; i <= idx + 1; i++) cursor += parentNode.child(i).nodeSize;
+      const paraTo = cursor;
+      to = Math.max(to, paraTo);
+    }
+
+    toDelete.push({ from, to });
   });
-  if (!breaks.length) return;
+
+  if (!toDelete.length) return;
 
   const tr = state.tr;
-  // Delete from end to start
-  for (let i = breaks.length - 1; i >= 0; i--) {
-    const b = breaks[i];
-    tr.delete(b.pos, b.pos + b.nodeSize);
-  }
-  editor.view.dispatch(tr);
+  // delete from end to start
+  toDelete.sort((a, b) => b.from - a.from).forEach(({ from, to }) => tr.delete(from, to));
+  view.dispatch(tr);
 }
 
 // ---------- main entry (DROP-IN) ----------
@@ -185,7 +217,7 @@ export function runOnce(editor, {
   footerEl,
   getPageConfig,          // <- we’ll use this now
   clearExisting = true,
-  safety = 6,
+  safety = 0,       // px to subtract from usable height for safety margin; was 6
 } = {}) {
   if (!editor || !pageEl || !contentEl) return;
 

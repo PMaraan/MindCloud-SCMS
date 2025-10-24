@@ -9,7 +9,48 @@ function splitByPageBreak(html) {
   return parts;
 }
 
-function mmToPx(mm) { return (mm / 25.4) * 96; }
+// TOP: helpers
+const mmToPx = (mm) => (parseFloat(mm) || 0) / 25.4 * 96;
+const cssLenToPx = (v) => {
+  if (!v) return 0;
+  const s = String(v).trim();
+  if (s.endsWith('mm')) return (parseFloat(s) || 0) / 25.4 * 96;
+  if (s.endsWith('cm')) return (parseFloat(s) || 0) * 10 / 25.4 * 96;
+  if (s.endsWith('in')) return (parseFloat(s) || 0) * 96;
+  if (s.endsWith('px')) return (parseFloat(s) || 0);
+  return parseFloat(s) || 0;
+};
+
+// NEW: apply page metrics (size + header/footer thickness + content padding)
+function applyPreviewPageMetrics(pageEl, cfg) {
+  const isLandscape = cfg.orientation === 'landscape';
+  const wmm = isLandscape ? (cfg.size.hmm || cfg.size.h) : (cfg.size.wmm || cfg.size.w);
+  const hmm = isLandscape ? (cfg.size.wmm || cfg.size.w) : (cfg.size.hmm || cfg.size.h);
+
+  pageEl.style.width  = `${mmToPx(wmm)}px`;
+  pageEl.style.height = `${mmToPx(hmm)}px`;
+
+  const headerEl = pageEl.querySelector('.rt-header');
+  const footerEl = pageEl.querySelector('.rt-footer');
+  const contentEl = pageEl.querySelector('.rt-page-content');
+
+  if (headerEl) {
+    headerEl.style.height    = cfg.margins.top;
+    headerEl.style.minHeight = cfg.margins.top;
+  }
+  if (footerEl) {
+    footerEl.style.height    = cfg.margins.bottom;
+    footerEl.style.minHeight = cfg.margins.bottom;
+  }
+
+  if (contentEl) {
+    // top/bottom zero (header/footer own that space), left/right = margins
+    contentEl.style.paddingTop    = '0';
+    contentEl.style.paddingBottom = '0';
+    contentEl.style.paddingLeft   = cfg.margins.left;
+    contentEl.style.paddingRight  = cfg.margins.right;
+  }
+}
 
 export function renderManualPages({
   html,
@@ -45,11 +86,11 @@ export function renderManualPages({
 
     const cont = document.createElement('div');
     cont.className = 'rt-page-content';
-    // Apply margins as padding to content area
-    cont.style.paddingTop    = margins.top;
-    cont.style.paddingRight  = margins.right;
-    cont.style.paddingBottom = margins.bottom;
+    // Preview: header/footer use top/bottom; content only gets left/right
+    cont.style.paddingTop    = '0';
+    cont.style.paddingBottom = '0';
     cont.style.paddingLeft   = margins.left;
+    cont.style.paddingRight  = margins.right;
 
     const body = document.createElement('div');
     body.className = 'rt-preview-body';
@@ -62,13 +103,17 @@ export function renderManualPages({
     foot.innerHTML = footerHTML;
 
     page.append(head, cont, foot);
-    pageRoot.append(page);
+
+    // Make preview page match size + header/footer thickness from margins
+    applyPreviewPageMetrics(page, { size, orientation, margins });
 
     // Visual label (optional)
     const tag = document.createElement('div');
     tag.className = 'rt-page-tag';
     tag.textContent = `Page ${idx + 1}`;
     page.appendChild(tag);
+
+    pageRoot.append(page);
   });
 }
 
@@ -99,6 +144,9 @@ export function bindManualPagination(editor, {
       margins: cfg.margins || { top: '25mm', right: '25mm', bottom: '25mm', left: '25mm' },
     });
   };
+
+  // Re-render preview whenever page layout changes
+  document.addEventListener('rt:page-layout-updated', doRender);
 
   // Initial render
   doRender();

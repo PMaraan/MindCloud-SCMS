@@ -5,7 +5,7 @@
 let __lastPageCfg = {
   size: { wmm: 210, hmm: 297 }, // A4 default
   orientation: 'portrait',
-  margins: { top: '25mm', right: '25mm', bottom: '25mm', left: '25mm' },
+  margins: { top: '25.4mm', right: '25.4mm', bottom: '25.4mm', left: '25.4mm' },
 };
 
 export function getCurrentPageConfig() {
@@ -50,34 +50,39 @@ function ensureStyleTag() {
 export function applyPageLayout(pageEl, contentEl, opts) {
   if (!pageEl || !contentEl) return;
 
+  // page preset (A4/Letter/Legal…)
   const preset = PAGE_PRESETS[opts.size] || PAGE_PRESETS.A4;
   const isLandscape = opts.orientation === 'landscape';
   const wmm = isLandscape ? preset.hmm : preset.wmm;
   const hmm = isLandscape ? preset.wmm : preset.hmm;
 
-  // On-screen size
+  // 1) Size the page box (px from mm)
   pageEl.style.width  = `${mmToPx(wmm)}px`;
   pageEl.style.height = `${mmToPx(hmm)}px`;
 
-  // Content padding from margins (accepts mm/pt/in/px)
+  // 2) Header/Footer thickness = margins (top/bottom)
   const m = opts.margins;
+  const headerEl = pageEl.querySelector('.rt-header');
+  const footerEl = pageEl.querySelector('.rt-footer');
 
-  // NEW: subtract header/footer visual height from the content paddings
-  const headerEl = document.getElementById('rtHeader');
-  const footerEl = document.getElementById('rtFooter');
-  const headerH  = headerEl ? headerEl.getBoundingClientRect().height : 0;
-  const footerH  = footerEl ? footerEl.getBoundingClientRect().height : 0;
+  if (headerEl) {
+    headerEl.style.minHeight = m.top;      // e.g. "25.4mm"
+    headerEl.style.height    = m.top;      // fix visual thickness
+  }
+  if (footerEl) {
+    footerEl.style.minHeight = m.bottom;
+    footerEl.style.height    = m.bottom;
+  }
 
-  // Compute effective paddings in px, then write px so we’re precise
-  const padTopPx    = Math.max(cssLenToPx(m.top)    - headerH,  0);
-  const padBottomPx = Math.max(cssLenToPx(m.bottom) - footerH,  0);
+  // 3) Content padding: we let header/footer *own* the top/bottom margin area.
+  // So top/bottom padding must be 0 to avoid double-subtraction.
+  contentEl.style.paddingTop    = '0';
+  contentEl.style.paddingBottom = '0';
+  // Keep left/right as margins on the content box so text is inset from page edge.
+  contentEl.style.paddingLeft   = m.left;
+  contentEl.style.paddingRight  = m.right;
 
-  contentEl.style.paddingTop    = `${padTopPx}px`;
-  contentEl.style.paddingRight  = m.right;   // unchanged
-  contentEl.style.paddingBottom = `${padBottomPx}px`;
-  contentEl.style.paddingLeft   = m.left;    // unchanged
-
-  // Real print @page
+  // 4) Real print @page still uses full margins (so print matches Word)
   const styleTag = ensureStyleTag();
   styleTag.textContent =
 `@page {
@@ -85,15 +90,8 @@ export function applyPageLayout(pageEl, contentEl, opts) {
   margin: ${m.top} ${m.right} ${m.bottom} ${m.left};
 }`;
 
-  // <-- UPDATE the shared config here (where preset & opts exist)
-  __lastPageCfg = {
-    size: preset,
-    orientation: opts.orientation,
-    margins: { ...opts.margins },
-  };
-
-  // Fire a custom event so the preview can refresh instantly
-  document.dispatchEvent(new CustomEvent('rt:page-layout-updated', { detail: __lastPageCfg }));
+  // Emit the update event (your preview/auto-paginate listens to this)
+  document.dispatchEvent(new CustomEvent('rt:page-layout-updated'));
 }
 
 // tiny debounce so typing in margin fields won’t thrash

@@ -143,7 +143,7 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
         footerEl,
         getPageConfig: () => getCurrentPageConfig(),
         clearExisting: true,
-        safety: 6,
+        safety: 0,                 // ← ensure no cushion at call site too
         debug: true,
       });
     });
