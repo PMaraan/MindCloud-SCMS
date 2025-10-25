@@ -50,8 +50,14 @@ function ensureStyleTag() {
 export function applyPageLayout(pageEl, contentEl, opts) {
   if (!pageEl || !contentEl) return;
 
-  // page preset (A4/Letter/Legal…)
-  const preset = PAGE_PRESETS[opts.size] || PAGE_PRESETS.A4;
+  // normalize size key (handles "legal" / "letter" / "a4")
+  const sizeKeyRaw = (opts?.size ?? 'A4');
+  const sizeKey = String(sizeKeyRaw).trim();
+  const preset =
+    PAGE_PRESETS[sizeKey] ||
+    PAGE_PRESETS[sizeKey.toUpperCase()] ||
+    PAGE_PRESETS.A4;
+
   const isLandscape = opts.orientation === 'landscape';
   const wmm = isLandscape ? preset.hmm : preset.wmm;
   const hmm = isLandscape ? preset.wmm : preset.hmm;
@@ -85,13 +91,21 @@ export function applyPageLayout(pageEl, contentEl, opts) {
   // 4) Real print @page still uses full margins (so print matches Word)
   const styleTag = ensureStyleTag();
   styleTag.textContent =
-`@page {
-  size: ${mmToCSS(wmm)} ${mmToCSS(hmm)};
-  margin: ${m.top} ${m.right} ${m.bottom} ${m.left};
-}`;
+  `@page {
+    size: ${mmToCSS(wmm)} ${mmToCSS(hmm)};
+    margin: ${m.top} ${m.right} ${m.bottom} ${m.left};
+  }`;
 
-  // Emit the update event (your preview/auto-paginate listens to this)
-  document.dispatchEvent(new CustomEvent('rt:page-layout-updated'));
+  // ---- keep the live config in sync and broadcast ----
+  __lastPageCfg = {
+    size: { wmm, hmm },
+    orientation: opts.orientation,
+    margins: { ...opts.margins },
+  };
+
+  document.dispatchEvent(new CustomEvent('rt:page-layout-updated', {
+    detail: { cfg: __lastPageCfg }
+  }));
 }
 
 // tiny debounce so typing in margin fields won’t thrash
@@ -119,16 +133,26 @@ export function bindPageLayoutControls(root, pageEl, contentEl) {
   const mBottom   = root.querySelector('[data-page-margin-bottom]');
   const mLeft     = root.querySelector('[data-page-margin-left]');
 
-  const getCfg = () => ({
-    size:        (sizeSel?.value || 'A4'),
-    orientation: (orientSel?.value || 'portrait'),
-    margins: {
-      top:    (mTop?.value || '25mm'),
-      right:  (mRight?.value || '25mm'),
-      bottom: (mBottom?.value || '25mm'),
-      left:   (mLeft?.value || '25mm'),
-    },
-  });
+  const getCfg = () => {
+    const sizeVal = sizeSel?.value || 'A4';
+    const key = String(sizeVal).trim();
+    const size =
+      PAGE_PRESETS[key] ? key :
+      PAGE_PRESETS[key.toUpperCase()] ? key.toUpperCase() :
+      'A4';
+
+    return {
+      size,
+      orientation: orientSel?.value || 'portrait',
+      margins: {
+        // match your 1" default (25.4mm) consistently
+        top:    mTop?.value    || '25.4mm',
+        right:  mRight?.value  || '25.4mm',
+        bottom: mBottom?.value || '25.4mm',
+        left:   mLeft?.value   || '25.4mm',
+      },
+    };
+  };
 
   const apply = debounce(() => applyPageLayout(pageEl, contentEl, getCfg()), 50);
 

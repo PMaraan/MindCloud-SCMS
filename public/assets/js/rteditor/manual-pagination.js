@@ -114,6 +114,8 @@ export function renderManualPages({
     page.appendChild(tag);
 
     pageRoot.append(page);
+
+    applyPreviewPageMetrics(page, { size, orientation, margins });
   });
 }
 
@@ -150,6 +152,8 @@ export function bindManualPagination(editor, {
 
   // Initial render
   doRender();
+
+  document.addEventListener('rt:page-layout-updated', doRender);
 
   // Re-render on every transaction that changes the doc
   editor.on('update', doRender);

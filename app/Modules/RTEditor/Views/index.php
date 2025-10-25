@@ -136,6 +136,9 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
         'usable=', contentEl.clientHeight - (parseFloat(cs.paddingTop)||0) - (parseFloat(cs.paddingBottom)||0)
       );
 
+      const cfg = getCurrentPageConfig();
+      console.log('[wand] getCurrentPageConfig()', cfg);
+
       autoPaginate(editor, {
         pageEl,
         contentEl,
