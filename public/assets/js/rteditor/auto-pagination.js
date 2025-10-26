@@ -47,19 +47,25 @@ function median(nums) {
 }
 
 /** Estimate a good per-page slack in px so we snap to the previous block */
-function computeSlackPx(blocks, startIdx, endIdx, contentEl) {
+// Make Legal snap earlier: bias ≈ 1.25× a block or 1.1× line-height.
+// Cap to avoid jumping too far on very tall pages.
+function computeSlackPx(blocks, startIdx, endIdx, contentEl, usableH) {
   const steps = [];
   for (let i = Math.max(0, startIdx); i <= Math.min(endIdx, blocks.length - 1); i++) {
     const b = blocks[i];
     steps.push(Math.max(0, (b.h || 0)));
   }
-  const medStep = median(steps);                // ~ one paragraph height (line + spacing)
+  const medStep = median(steps) || 0; // ~ one paragraph height
   const probe = contentEl.querySelector('.ProseMirror p') || contentEl.querySelector('.ProseMirror');
-  const lh = probe ? parseFloat(getComputedStyle(probe).lineHeight) || 0 : 0;
+  const lh = probe ? (parseFloat(getComputedStyle(probe).lineHeight) || 0) : 0;
 
-  // Heuristic: prefer ~0.8 of a block, but never below ~0.9 of a line.
-  const slack = Math.max(lh * 0.9, medStep * 0.8, 14); // floor guard
-  return Math.round(slack);
+  // Stronger bias than before so tiny overflows (1–2px) snap one more block up.
+  const base = Math.max(lh * 1.10, medStep * 1.25, 18);
+
+  // Gentle upper cap: don't exceed ~2 blocks or ~10–12% of the page window
+  const cap  = Math.max(medStep * 2.0, lh * 2.0, (usableH || 0) * 0.12 || 0);
+
+  return Math.round(Math.min(base, cap));
 }
 
 // ---------- tiny utils ----------
@@ -336,7 +342,7 @@ export function runOnce(editor, {
       const overflowDelta = Math.round(overflowBot - limitY);
 
       // Dynamic slack for this page
-      const slackPx = computeSlackPx(blocks, start, i, contentEl);
+      const slackPx = computeSlackPx(blocks, start, i, contentEl, usableH);
 
       // Snap back to the last block that stays within (limitY - slackPx)
       let j = i - 1;
