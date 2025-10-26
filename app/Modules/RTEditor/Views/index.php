@@ -128,7 +128,7 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
     btn.addEventListener('click', (e) => {
       e.preventDefault();
 
-      // ④ PRE-SANITY LOG — add this right here:
+      // PRE-SANITY LOG — add this right here:
       const cs = getComputedStyle(contentEl);
       console.log(
         '[pre-autoPaginate] clientHeight=', contentEl.clientHeight,
@@ -137,6 +137,7 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
       );
 
       const cfg = getCurrentPageConfig();
+      const isUS = (cfg && (cfg.size?.wmm === 215.9)); // Letter/Legal share width 215.9mm
       console.log('[wand] getCurrentPageConfig()', cfg);
 
       autoPaginate(editor, {
@@ -144,9 +145,9 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
         contentEl,
         headerEl,
         footerEl,
-        getPageConfig: () => getCurrentPageConfig(),
+        getPageConfig: () => cfg,
         clearExisting: true,
-        safety: 0,                 // ← ensure no cushion at call site too
+        safety: isUS ? 0 : 0, // keep 0; Legal is sensitive to rounding
         debug: true,
       });
     });

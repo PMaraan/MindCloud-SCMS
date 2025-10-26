@@ -13,10 +13,10 @@ export function getCurrentPageConfig() {
 }
 
 export const PAGE_PRESETS = {
-  A4:     { wmm: 210, hmm: 297 },
-  Letter: { wmm: 216, hmm: 279 },
-  Legal:  { wmm: 216, hmm: 356 },
-  A5:     { wmm: 148, hmm: 210 },
+  A4:     { wmm: 210,   hmm: 297   },
+  Letter: { wmm: 215.9, hmm: 279.4 },
+  Legal:  { wmm: 215.9, hmm: 355.6 },
+  A5:     { wmm: 148,   hmm: 210   },
 };
 
 // helpers

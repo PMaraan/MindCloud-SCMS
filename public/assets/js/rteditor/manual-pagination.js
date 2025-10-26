@@ -59,7 +59,7 @@ export function renderManualPages({
   footerHTML = 'Footer…',
   size = { wmm: 210, hmm: 297 }, // A4 default
   orientation = 'portrait',
-  margins = { top: '25mm', right: '25mm', bottom: '25mm', left: '25mm' },
+  margins = { top: '25.4mm', right: '25.4mm', bottom: '25.4mm', left: '25.4mm' },
 }) {
   if (!pageRoot) return;
 
@@ -77,8 +77,6 @@ export function renderManualPages({
   segments.forEach((seg, idx) => {
     const page = document.createElement('div');
     page.className = 'rt-page';
-    page.style.width  = `${mmToPx(wmm)}px`;
-    page.style.minHeight = `${mmToPx(hmm)}px`;
 
     const head = document.createElement('div');
     head.className = 'rt-header';
@@ -102,20 +100,19 @@ export function renderManualPages({
     foot.className = 'rt-footer';
     foot.innerHTML = footerHTML;
 
+    // build head/cont/body/foot, append, add tag (your existing code)
     page.append(head, cont, foot);
+    pageRoot.append(page);
 
-    // Make preview page match size + header/footer thickness from margins
-    applyPreviewPageMetrics(page, { size, orientation, margins });
-
-    // Visual label (optional)
     const tag = document.createElement('div');
     tag.className = 'rt-page-tag';
     tag.textContent = `Page ${idx + 1}`;
     page.appendChild(tag);
 
-    pageRoot.append(page);
-
-    applyPreviewPageMetrics(page, { size, orientation, margins });
+    // ✅ NEW: apply the same metrics logic the live page uses
+    applyPreviewPageMetrics(page, {
+      size, orientation, margins
+    });
   });
 }
 
@@ -143,24 +140,23 @@ export function bindManualPagination(editor, {
       footerHTML,
       size: cfg.size || { wmm: 210, hmm: 297 }, // A4
       orientation: cfg.orientation || 'portrait',
-      margins: cfg.margins || { top: '25mm', right: '25mm', bottom: '25mm', left: '25mm' },
+      margins: cfg.margins || { top: '25.4mm', right: '25.4mm', bottom: '25.4mm', left: '25.4mm' },
     });
   };
 
-  // Re-render preview whenever page layout changes
-  document.addEventListener('rt:page-layout-updated', doRender);
-
-  // Initial render
+  // initial + on editor changes
   doRender();
-
-  document.addEventListener('rt:page-layout-updated', doRender);
-
-  // Re-render on every transaction that changes the doc
   editor.on('update', doRender);
-
-  // If your header/footer are editable, re-render on blur/input too
   if (headerEl) headerEl.addEventListener('input', doRender);
   if (footerEl) footerEl.addEventListener('input', doRender);
 
-  return { refresh: doRender };
+  // ✅ NEW: re-render when page layout (size/orientation/margins) changes
+  const onLayout = () => doRender();
+  document.addEventListener('rt:page-layout-updated', onLayout);
+
+  return {
+    refresh: doRender,
+    // optional cleanup if you ever need it:
+    destroy() { document.removeEventListener('rt:page-layout-updated', onLayout); }
+  };
 }
