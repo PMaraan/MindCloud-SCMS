@@ -146,10 +146,10 @@ export function bindPageLayoutControls(root, pageEl, contentEl) {
       orientation: orientSel?.value || 'portrait',
       margins: {
         // match your 1" default (25.4mm) consistently
-        top:    mTop?.value    || '25.4mm',
-        right:  mRight?.value  || '25.4mm',
-        bottom: mBottom?.value || '25.4mm',
-        left:   mLeft?.value   || '25.4mm',
+        top:    (mTop?.value || '25.4mm'),
+        right:  (mRight?.value || '25.4mm'),
+        bottom: (mBottom?.value || '25.4mm'),
+        left:   (mLeft?.value || '25.4mm'),
       },
     };
   };

@@ -30,10 +30,10 @@
 
       <div class="d-flex align-items-center gap-1">
         <label class="small text-muted">Margins</label>
-        <input type="text" class="form-control form-control-sm" style="width:70px" data-page-margin-top value="25mm" placeholder="top">
-        <input type="text" class="form-control form-control-sm" style="width:70px" data-page-margin-right value="25mm" placeholder="right">
-        <input type="text" class="form-control form-control-sm" style="width:70px" data-page-margin-bottom value="25mm" placeholder="bottom">
-        <input type="text" class="form-control form-control-sm" style="width:70px" data-page-margin-left value="25mm" placeholder="left">
+        <input type="text" class="form-control form-control-sm" style="width:70px" data-page-margin-top value="25.4mm" placeholder="top">
+        <input type="text" class="form-control form-control-sm" style="width:70px" data-page-margin-right value="25.4mm" placeholder="right">
+        <input type="text" class="form-control form-control-sm" style="width:70px" data-page-margin-bottom value="25.4mm" placeholder="bottom">
+        <input type="text" class="form-control form-control-sm" style="width:70px" data-page-margin-left value="25.4mm" placeholder="left">
       </div>
     </div>
 
@@ -77,8 +77,8 @@
       <label class="small text-muted">Line</label>
       <select class="form-select form-select-sm" style="width:auto" data-cmd-input="setLineSpacing">
         <option value="1">1.0</option>
-        <option value="1.15" selected>1.15</option>
-        <option value="1.5">1.5</option>
+        <option value="1.15">1.15</option>
+        <option value="1.5" selected>1.5</option>
         <option value="2">2.0</option>
       </select>
       <button type="button" class="btn btn-outline-secondary btn-sm" data-cmd="unsetLineSpacing" title="Clear line spacing">
@@ -94,7 +94,11 @@
       </select>
       <label class="small text-muted ms-2">After</label>
       <select class="form-select form-select-sm" style="width:auto" data-cmd-input="setParaAfter">
-        <option value="0pt" selected>0</option><option value="6pt">6</option><option value="12pt">12</option><option value="18pt">18</option><option value="24pt">24</option>
+        <option value="0pt">0</option>
+        <option value="6pt" selected>6</option>
+        <option value="12pt">12</option>
+        <option value="18pt">18</option>
+        <option value="24pt">24</option>
       </select>
       <button type="button" class="btn btn-outline-secondary btn-sm" data-cmd="unsetParaSpacing" title="Clear paragraph spacing">
         <i class="bi bi-x-circle"></i>

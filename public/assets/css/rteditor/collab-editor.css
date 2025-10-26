@@ -330,9 +330,21 @@ p + .rt-page-break {
   line-height: 1.5;
 }
 
+/* Headings — keep zero top margin + small space after */
+#editor .ProseMirror h1,
+#editor .ProseMirror h2,
+#editor .ProseMirror h3,
+.rt-preview-body h1,
+.rt-preview-body h2,
+.rt-preview-body h3 {
+  margin-top: 0;
+  margin-bottom: 8px;
+}
+
 /* First paragraph at top of a page should not gain extra space */
 #editor .ProseMirror > :first-child,
 .rt-preview-body > :first-child {
+  font: inherit; /* pulls font-size/line-height/family from page container */
   margin-top: 0 !important;
 }
 
