@@ -3,15 +3,40 @@
 // Safe to drop in. No other files need edits for this to work.
 
 function beginMeasure(pageEl, contentEl) {
-  const targets = [];
-  if (pageEl)    targets.push(pageEl);
-  if (contentEl) targets.push(contentEl);
+  const prev = [];
+  if (pageEl)    { prev.push([pageEl,    pageEl.style.overflow]);    pageEl.style.overflow    = 'visible'; }
+  if (contentEl) { prev.push([contentEl, contentEl.style.overflow]); contentEl.style.overflow = 'visible'; }
+  return () => { for (const [el, v] of prev) el.style.overflow = v; };
+}
 
-  const prev = targets.map(t => t.style.overflow);
-  targets.forEach(t => { t.style.overflow = 'visible'; });
-  return () => {
-    targets.forEach((t, i) => { t.style.overflow = prev[i]; });
-  };
+function pmRoot(contentEl) {
+  return contentEl?.querySelector('.ProseMirror') || null;
+}
+
+/** Return an array of top-level block DOM nodes under .ProseMirror */
+function topLevelBlocks(contentEl) {
+  const pm = pmRoot(contentEl);
+  return pm ? Array.from(pm.children) : [];
+}
+
+/** Effective top/bottom including vertical margins (no collapsing guesswork) */
+function effectiveTop(el) {
+  const r = el.getBoundingClientRect();
+  const { mt } = getMargins(el);
+  return r.top - mt;
+}
+function effectiveBottom(el) {
+  const r = el.getBoundingClientRect();
+  const { mb } = getMargins(el);
+  return r.bottom + mb;
+}
+
+/** Find a PM position at the *start* of this DOM node (safe insertion spot) */
+function posAtBlockStart(editor, el) {
+  try {
+    const pos = editor.view.posAtDOM(el, 0);
+    return (typeof pos === 'number') ? pos : null;
+  } catch { return null; }
 }
 
 // ---------- tiny utils ----------
@@ -90,23 +115,14 @@ function debugSnapshot({ pageEl, headerEl, footerEl, contentEl, blocks }) {
 function posBeforeDomBlock(editor, el) {
   const view = editor?.view;
   if (!view || !el) return null;
-
-  // Map DOM -> a position at the *start* of this DOM node
-  let pos = null;
-  try { pos = view.posAtDOM(el, 0); } catch { return null; }
-  if (typeof pos !== 'number') return null;
-
-  // Resolve and get a position *before* the block node
-  const { state } = view;
-  const $pos = state.doc.resolve(pos);
-
-  // Walk up until we find a node that actually corresponds to this DOM element boundary
-  // Then take the position before that node.
-  for (let d = $pos.depth; d >= 0; d--) {
-    const before = $pos.before(d + 1); // pos before the node at depth d+1
-    if (Number.isFinite(before) && before >= 0) return before;
+  try {
+    // For top-level blocks in the ProseMirror DOM, this already returns the
+    // position *at the start of the node*. That’s the safest insertion spot.
+    const pos = view.posAtDOM(el, 0);
+    return (typeof pos === 'number') ? pos : null;
+  } catch {
+    return null;
   }
-  return pos;
 }
 
 // ---------- block collection (DOM-measured heights + PM positions) ----------
@@ -205,6 +221,12 @@ function removeAllPageBreaks(editor) {
   view.dispatch(tr);
 }
 
+// Enable detailed block trace by running in console:
+//   window.__RT_dumpBlocks = true;  // then click the wand
+if (typeof window.__RT_dumpBlocks === 'undefined') {
+  window.__RT_dumpBlocks = true;
+}
+
 // ---------- main entry (DROP-IN) ----------
 /**
  * Insert pageBreak nodes so that each "page" consumes up to usableH
@@ -217,7 +239,7 @@ export function runOnce(editor, {
   footerEl,
   getPageConfig,          // <- we’ll use this now
   clearExisting = true,
-  safety = 0,       // px to subtract from usable height for safety margin; was 6
+  safety = 14,            // ↑ default safety raised for slight early bias
 } = {}) {
   if (!editor || !pageEl || !contentEl) return;
 
@@ -248,7 +270,16 @@ export function runOnce(editor, {
   const usableH_dom = contentEl.clientHeight - pt2 - pb2;
 
   // take the safer, smaller budget and subtract a tiny safety cushion
-  const usableH = Math.max(0, Math.min(usableH_cfg || Infinity, usableH_dom || Infinity) - safety);
+  // take the safer, smaller budget and subtract a tiny safety cushion
+  let usableH = Math.max(0, Math.min(usableH_cfg ?? Infinity, usableH_dom ?? Infinity) - safety);
+
+  // EXTRA: shave ~0.6 line to counter rounding/overspill on tall pages (e.g., Legal)
+  const probe = contentEl.querySelector('.ProseMirror p') || contentEl.querySelector('.ProseMirror');
+  if (probe) {
+    const lh = parseFloat(getComputedStyle(probe).lineHeight) || 0;
+    const dynamicBias = Math.round(lh * 0.6); // ~60% of a line; adjust 0.5–0.7 if needed
+    usableH = Math.max(0, usableH - dynamicBias);
+  }
 
   // unconditional sanity log so you SEE it
   console.log('[auto-pagination] usableH(cfg/dom)=', {
@@ -257,31 +288,120 @@ export function runOnce(editor, {
     chosen:     Math.round(usableH),
     safety
   });
+  // NEW: explicitly log page window
+  console.log('[auto-pagination] pageWindow', { usableH: Math.round(usableH) });
+
+  // 0) If requested, clear breaks FIRST so positions we compute are correct
+  if (clearExisting) removeAllPageBreaks(editor);
 
   // temporarily unclip while we measure block heights
   const endMeasure = beginMeasure(pageEl, contentEl);
   try {
-    const blocks = collectBlockHeights(editor, contentEl);
-    debugSnapshot({ pageEl, headerEl, footerEl, contentEl, blocks });
+    const blocks = topLevelBlocks(contentEl);
 
-    // greedy pack
-    const breakPositions = [];
-    let acc = 0;
-    for (const b of blocks) {
-      if (acc + b.h > usableH) {
-        if (!breakPositions.length || breakPositions[breakPositions.length - 1] !== b.pos) {
-          breakPositions.push(b.pos);
+    if (!blocks.length) {
+      console.log('[auto-pagination] no blocks to paginate.');
+      return;
+    }
+
+    // ---------- choose cut index (limit + bottom-slack snap) ----------
+    const firstTop = effectiveTop(blocks[0]);
+    const limitY   = firstTop + usableH;
+
+    if (window.__RT_dumpBlocks) {
+      console.log('[auto-pagination] TRACE firstTop/limitY', {
+        firstTop: Math.round(firstTop),
+        limitY:   Math.round(limitY),
+      });
+      blocks.slice(0, 80).forEach((el, i) => {
+        const r = el.getBoundingClientRect();
+        const m = getMargins(el);
+        const effTop = Math.round(r.top - m.mt);
+        const effBtm = Math.round(r.bottom + m.mb);
+        const sample = (el.textContent || '').replace(/\s+/g,' ').trim().slice(0, 20);
+        console.log(`[blk ${i}] effTop=${effTop} effBtm=${effBtm} sample="${sample}"`);
+      });
+    }
+
+    const isEmptyBlockEl = (el) => {
+      if (!el) return true;
+      const txt = (el.textContent || '').replace(/\s+/g, '').trim();
+      if (txt.length) return false;
+      if (el.querySelector && el.querySelector('img,table,hr,ul,ol,pre,code,blockquote')) return false;
+      return true;
+    };
+
+    // 1) first overflowing block by effective bottom
+    let i = -1;
+    for (let k = 0; k < blocks.length; k++) {
+      if (effectiveBottom(blocks[k]) > limitY) { i = k; break; }
+    }
+    if (i === -1) {
+      console.log('[auto-pagination] no overflow (no cut needed).');
+      console.log('[auto-pagination] inserted breaks:', 0);
+      return;
+    }
+
+    // 2) compute line metrics and thresholds
+    const probe  = contentEl.querySelector('.ProseMirror p') || contentEl.querySelector('.ProseMirror');
+    const lineH  = parseFloat(getComputedStyle(probe).lineHeight) || 0;
+    // how much overflow we consider “small” (we’ll try to snap back)
+    const snapPx = Math.max(10, Math.round(lineH * 1.0));
+    // how much slack we want to leave at the bottom (so Word-like look)
+    const slackPx = Math.max(8, Math.round(lineH * 1.0));
+
+    const overflowDelta = effectiveBottom(blocks[i]) - limitY;
+
+    // Start from the first overflow candidate
+    let cutIndex = i;
+
+    // 3) If the overflow is small, try to snap back to the last block
+    //    that still leaves *at least* slackPx of space at the bottom.
+    if (overflowDelta <= snapPx) {
+      let j = i - 1;
+      while (j >= 0) {
+        const prevBottom = effectiveBottom(blocks[j]);
+        if (prevBottom <= (limitY - slackPx)) {
+          // We found a block that ends high enough to respect the bottom slack.
+          cutIndex = j; // cut BEFORE the block (so that next starts new page)
+          break;
         }
-        acc = b.h;
-      } else {
-        acc += b.h;
+        j--;
+      }
+      // If we didn't find any with slack, fall back to cutting before the first overflow
+      if (j < 0) {
+        cutIndex = i; // default
       }
     }
 
-    if (clearExisting) removeAllPageBreaks(editor);
-    insertBreaksAt(editor, breakPositions);
+    // 4) Never cut on a purely empty spacer; move back to the previous non-empty
+    while (cutIndex > 0 && isEmptyBlockEl(blocks[cutIndex])) {
+      cutIndex--;
+    }
 
-    console.log('[auto-pagination] inserted breaks:', breakPositions.length);
+    // 5) Map to document position and insert the break
+    const cutPos = posAtBlockStart(editor, blocks[cutIndex]);
+    if (cutPos != null) {
+      insertBreaksAt(editor, [cutPos]);
+
+      const b   = blocks[cutIndex];
+      const txt = (b.textContent || '').trim().slice(0, 40);
+      const r   = b.getBoundingClientRect();
+      const m   = getMargins(b);
+      console.log('[auto-pagination] CUT @ index', cutIndex, {
+        pos: cutPos,
+        sample: txt,
+        effBottom: Math.round(r.bottom + m.mb),
+        limitY: Math.round(limitY),
+        overflowDelta: Math.round(overflowDelta),
+        snapPx: Math.round(snapPx),
+        slackPx: Math.round(slackPx),
+      });
+      console.log('[auto-pagination] inserted breaks:', 1);
+    } else {
+      console.log('[auto-pagination] could not find posAtBlockStart for cut index', cutIndex);
+      console.log('[auto-pagination] inserted breaks:', 0);
+    }
   } finally {
     endMeasure();
   }

@@ -145,9 +145,8 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
         contentEl,
         headerEl,
         footerEl,
-        getPageConfig: () => cfg,
+        getPageConfig: () => getCurrentPageConfig(),
         clearExisting: true,
-        safety: isUS ? 0 : 0, // keep 0; Legal is sensitive to rounding
         debug: true,
       });
     });
