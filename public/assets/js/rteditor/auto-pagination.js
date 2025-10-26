@@ -39,6 +39,29 @@ function posAtBlockStart(editor, el) {
   } catch { return null; }
 }
 
+function median(nums) {
+  if (!nums.length) return 0;
+  const a = nums.slice().sort((x, y) => x - y);
+  const mid = Math.floor(a.length / 2);
+  return a.length % 2 ? a[mid] : (a[mid - 1] + a[mid]) / 2;
+}
+
+/** Estimate a good per-page slack in px so we snap to the previous block */
+function computeSlackPx(blocks, startIdx, endIdx, contentEl) {
+  const steps = [];
+  for (let i = Math.max(0, startIdx); i <= Math.min(endIdx, blocks.length - 1); i++) {
+    const b = blocks[i];
+    steps.push(Math.max(0, (b.h || 0)));
+  }
+  const medStep = median(steps);                // ~ one paragraph height (line + spacing)
+  const probe = contentEl.querySelector('.ProseMirror p') || contentEl.querySelector('.ProseMirror');
+  const lh = probe ? parseFloat(getComputedStyle(probe).lineHeight) || 0 : 0;
+
+  // Heuristic: prefer ~0.8 of a block, but never below ~0.9 of a line.
+  const slack = Math.max(lh * 0.9, medStep * 0.8, 14); // floor guard
+  return Math.round(slack);
+}
+
 // ---------- tiny utils ----------
 function num(v) { return parseFloat(v) || 0; }
 function getMargins(el) {
@@ -237,171 +260,127 @@ export function runOnce(editor, {
   contentEl,
   headerEl,
   footerEl,
-  getPageConfig,          // <- we’ll use this now
+  getPageConfig,
   clearExisting = true,
-  safety = 14,            // ↑ default safety raised for slight early bias
+  safety = 14,
 } = {}) {
   if (!editor || !pageEl || !contentEl) return;
 
-  // --- compute usable height from CONFIG (source of truth) ---
-  const cfg = (typeof getPageConfig === 'function') ? getPageConfig() : null;
+  // --- compute usable height from CONFIG + DOM (take the smaller) ---
   let usableH_cfg = 0;
   try {
+    const cfg = (typeof getPageConfig === 'function') ? getPageConfig() : null;
     if (cfg && cfg.size) {
       const isLandscape = cfg.orientation === 'landscape';
       const pageH_mm = isLandscape ? (cfg.size.wmm || cfg.size.w) : (cfg.size.hmm || cfg.size.h);
-      const pageH_px = mmToPx(pageH_mm);
+      const pageH_px = (parseFloat(pageH_mm) || 0) / 25.4 * 96;
       const headerH  = headerEl ? headerEl.getBoundingClientRect().height : 0;
       const footerH  = footerEl ? footerEl.getBoundingClientRect().height : 0;
-
-      // padding on the content box is set from the margin controls (e.g., "25mm")
       const cs = getComputedStyle(contentEl);
-      const pt = cssLenToPx(cs.paddingTop);
-      const pb = cssLenToPx(cs.paddingBottom);
-
+      const pt = parseFloat(cs.paddingTop)    || 0;
+      const pb = parseFloat(cs.paddingBottom) || 0;
       usableH_cfg = pageH_px - headerH - footerH - pt - pb;
     }
-  } catch { /* ignore; fallback below */ }
+  } catch {}
 
-  // --- compute usable height from the DOM box (clientHeight minus padding) ---
   const cs2 = getComputedStyle(contentEl);
   const pt2 = parseFloat(cs2.paddingTop) || 0;
   const pb2 = parseFloat(cs2.paddingBottom) || 0;
   const usableH_dom = contentEl.clientHeight - pt2 - pb2;
 
-  // take the safer, smaller budget and subtract a tiny safety cushion
-  // take the safer, smaller budget and subtract a tiny safety cushion
-  let usableH = Math.max(0, Math.min(usableH_cfg ?? Infinity, usableH_dom ?? Infinity) - safety);
+  let usableH = Math.max(0, Math.min(usableH_cfg || Infinity, usableH_dom || Infinity) - safety);
 
-  // EXTRA: shave ~0.6 line to counter rounding/overspill on tall pages (e.g., Legal)
-  const probe = contentEl.querySelector('.ProseMirror p') || contentEl.querySelector('.ProseMirror');
-  if (probe) {
-    const lh = parseFloat(getComputedStyle(probe).lineHeight) || 0;
-    const dynamicBias = Math.round(lh * 0.6); // ~60% of a line; adjust 0.5–0.7 if needed
-    usableH = Math.max(0, usableH - dynamicBias);
-  }
-
-  // unconditional sanity log so you SEE it
   console.log('[auto-pagination] usableH(cfg/dom)=', {
     fromConfig: Math.round(usableH_cfg),
     fromDom:    Math.round(usableH_dom),
     chosen:     Math.round(usableH),
     safety
   });
-  // NEW: explicitly log page window
-  console.log('[auto-pagination] pageWindow', { usableH: Math.round(usableH) });
 
-  // 0) If requested, clear breaks FIRST so positions we compute are correct
   if (clearExisting) removeAllPageBreaks(editor);
 
-  // temporarily unclip while we measure block heights
   const endMeasure = beginMeasure(pageEl, contentEl);
   try {
-    const blocks = topLevelBlocks(contentEl);
+    const blocks = collectBlockHeights(editor, contentEl);
+    if (!blocks.length) return;
 
-    if (!blocks.length) {
-      console.log('[auto-pagination] no blocks to paginate.');
-      return;
-    }
+    // Multi-page loop: keep cutting until the rest fits.
+    const breakPositions = [];
+    let start = 0;
+    let cutGuard = 0;
 
-    // ---------- choose cut index (limit + bottom-slack snap) ----------
-    const firstTop = effectiveTop(blocks[0]);
-    const limitY   = firstTop + usableH;
+    while (start < blocks.length && cutGuard < 200) {
+      cutGuard++;
 
-    if (window.__RT_dumpBlocks) {
-      console.log('[auto-pagination] TRACE firstTop/limitY', {
-        firstTop: Math.round(firstTop),
-        limitY:   Math.round(limitY),
-      });
-      blocks.slice(0, 80).forEach((el, i) => {
-        const r = el.getBoundingClientRect();
-        const m = getMargins(el);
-        const effTop = Math.round(r.top - m.mt);
-        const effBtm = Math.round(r.bottom + m.mb);
-        const sample = (el.textContent || '').replace(/\s+/g,' ').trim().slice(0, 20);
-        console.log(`[blk ${i}] effTop=${effTop} effBtm=${effBtm} sample="${sample}"`);
-      });
-    }
+      // Window bounds for this page
+      const firstTop = effectiveTop(blocks[start].el);
+      const limitY   = firstTop + usableH;
+      console.log('[auto-pagination] TRACE firstTop/limitY', { firstTop: Math.round(firstTop), limitY: Math.round(limitY) });
 
-    const isEmptyBlockEl = (el) => {
-      if (!el) return true;
-      const txt = (el.textContent || '').replace(/\s+/g, '').trim();
-      if (txt.length) return false;
-      if (el.querySelector && el.querySelector('img,table,hr,ul,ol,pre,code,blockquote')) return false;
-      return true;
-    };
-
-    // 1) first overflowing block by effective bottom
-    let i = -1;
-    for (let k = 0; k < blocks.length; k++) {
-      if (effectiveBottom(blocks[k]) > limitY) { i = k; break; }
-    }
-    if (i === -1) {
-      console.log('[auto-pagination] no overflow (no cut needed).');
-      console.log('[auto-pagination] inserted breaks:', 0);
-      return;
-    }
-
-    // 2) compute line metrics and thresholds
-    const probe  = contentEl.querySelector('.ProseMirror p') || contentEl.querySelector('.ProseMirror');
-    const lineH  = parseFloat(getComputedStyle(probe).lineHeight) || 0;
-    // how much overflow we consider “small” (we’ll try to snap back)
-    const snapPx = Math.max(10, Math.round(lineH * 1.0));
-    // how much slack we want to leave at the bottom (so Word-like look)
-    const slackPx = Math.max(8, Math.round(lineH * 1.0));
-
-    const overflowDelta = effectiveBottom(blocks[i]) - limitY;
-
-    // Start from the first overflow candidate
-    let cutIndex = i;
-
-    // 3) If the overflow is small, try to snap back to the last block
-    //    that still leaves *at least* slackPx of space at the bottom.
-    if (overflowDelta <= snapPx) {
-      let j = i - 1;
-      while (j >= 0) {
-        const prevBottom = effectiveBottom(blocks[j]);
-        if (prevBottom <= (limitY - slackPx)) {
-          // We found a block that ends high enough to respect the bottom slack.
-          cutIndex = j; // cut BEFORE the block (so that next starts new page)
-          break;
+      // Find first overflow index i
+      let i = -1;
+      for (let k = start; k < blocks.length; k++) {
+        const b = blocks[k];
+        const top = effectiveTop(b.el);
+        const bot = effectiveBottom(b.el);
+        if (window.__RT_dumpBlocks) {
+          console.log(`[blk ${k}] effTop=${Math.round(top)} effBtm=${Math.round(bot)} sample="${(b.el.textContent||'').trim().slice(0,1)}"`);
         }
-        j--;
+        if (bot > limitY) { i = k; break; }
       }
-      // If we didn't find any with slack, fall back to cutting before the first overflow
-      if (j < 0) {
-        cutIndex = i; // default
+
+      // If nothing overflows, we’re done.
+      if (i === -1) break;
+
+      const overflowBot = effectiveBottom(blocks[i].el);
+      const overflowDelta = Math.round(overflowBot - limitY);
+
+      // Dynamic slack for this page
+      const slackPx = computeSlackPx(blocks, start, i, contentEl);
+
+      // Snap back to the last block that stays within (limitY - slackPx)
+      let j = i - 1;
+      const target = limitY - slackPx;
+      while (j >= start && effectiveBottom(blocks[j].el) > target) j--;
+
+      // If we couldn’t find a safe “snap” and overflow is huge, cut at i
+      let cutIndex;
+      if (j < start && overflowDelta > slackPx) {
+        cutIndex = i; // fall back: first overflowing block
+      } else {
+        // Normal case: cut BEFORE j (so page 2 starts at blocks[j])
+        cutIndex = Math.max(start + 1, j); // ensure progress
       }
-    }
 
-    // 4) Never cut on a purely empty spacer; move back to the previous non-empty
-    while (cutIndex > 0 && isEmptyBlockEl(blocks[cutIndex])) {
-      cutIndex--;
-    }
-
-    // 5) Map to document position and insert the break
-    const cutPos = posAtBlockStart(editor, blocks[cutIndex]);
-    if (cutPos != null) {
-      insertBreaksAt(editor, [cutPos]);
-
-      const b   = blocks[cutIndex];
-      const txt = (b.textContent || '').trim().slice(0, 40);
-      const r   = b.getBoundingClientRect();
-      const m   = getMargins(b);
-      console.log('[auto-pagination] CUT @ index', cutIndex, {
+      const cutPos = posAtBlockStart(editor, blocks[cutIndex].el);
+      console.log('[auto-pagination] CUT', {
+        index: cutIndex,
         pos: cutPos,
-        sample: txt,
-        effBottom: Math.round(r.bottom + m.mb),
+        sample: (blocks[cutIndex].el.textContent || '').trim().slice(0,1),
+        effBottom: Math.round(effectiveBottom(blocks[cutIndex].el)),
         limitY: Math.round(limitY),
-        overflowDelta: Math.round(overflowDelta),
-        snapPx: Math.round(snapPx),
-        slackPx: Math.round(slackPx),
+        overflowDelta,
+        slackPx
       });
-      console.log('[auto-pagination] inserted breaks:', 1);
-    } else {
-      console.log('[auto-pagination] could not find posAtBlockStart for cut index', cutIndex);
-      console.log('[auto-pagination] inserted breaks:', 0);
+
+      if (typeof cutPos === 'number') {
+        breakPositions.push(cutPos);
+      } else {
+        // If we fail to map, bail to avoid infinite loop.
+        break;
+      }
+
+      // Next page starts at the cut block
+      start = cutIndex;
+
+      // Safety: if the very next block would produce a zero-height window due to odd layout, bump start.
+      if (start < blocks.length - 1 && effectiveBottom(blocks[start].el) - effectiveTop(blocks[start].el) > usableH) {
+        start++;
+      }
     }
+
+    insertBreaksAt(editor, breakPositions);
+    console.log('[auto-pagination] inserted breaks:', breakPositions.length);
   } finally {
     endMeasure();
   }
