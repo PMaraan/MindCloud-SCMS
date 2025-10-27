@@ -317,17 +317,17 @@ p + .rt-page-break {
 #editor .ProseMirror .rt-page-break + p { margin-top: 0; }
 #editor .ProseMirror .rt-page-break { margin-top: 0; margin-bottom: 0; }
 
-/* TEST DEFAULTS to match Word: Arial 11pt, 1.5 line spacing, 6pt after (≈8px) */
+/* Final defaults (Word-like “Normal”): Arial 11pt, 1.15 line, 0 after */
 #editor .ProseMirror {
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 11pt; /* ~14.6667px */
+  font-size: 11pt;
 }
 
 #editor .ProseMirror p,
 .rt-preview-body p {
   margin-top: 0;
-  margin-bottom: 8px;   /* 6pt ≈ 8px */
-  line-height: 1.5;
+  margin-bottom: 8px;  /* 6pt ≈ 8px */
+  line-height: 1.15; /* Line = 1.15 */
 }
 
 /* Headings — keep zero top margin + small space after */

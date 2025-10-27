@@ -77,8 +77,8 @@
       <label class="small text-muted">Line</label>
       <select class="form-select form-select-sm" style="width:auto" data-cmd-input="setLineSpacing">
         <option value="1">1.0</option>
-        <option value="1.15">1.15</option>
-        <option value="1.5" selected>1.5</option>
+        <option value="1.15" selected>1.15</option>
+        <option value="1.5">1.5</option>
         <option value="2">2.0</option>
       </select>
       <button type="button" class="btn btn-outline-secondary btn-sm" data-cmd="unsetLineSpacing" title="Clear line spacing">

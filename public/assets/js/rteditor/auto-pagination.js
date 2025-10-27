@@ -60,7 +60,8 @@ function computeSlackPx(blocks, startIdx, endIdx, contentEl, usableH) {
   const lh = probe ? (parseFloat(getComputedStyle(probe).lineHeight) || 0) : 0;
 
   // Stronger bias than before so tiny overflows (1–2px) snap one more block up.
-  const base = Math.max(lh * 1.10, medStep * 1.25, 18);
+  // Increase 1.25 to 1.30 for slightly earlier snaps; decrease if you cut a block too soon in exotic layouts.
+  const base = Math.max(lh * 1.10, medStep * 1.25, 18); // 1.25 is the important bias
 
   // Gentle upper cap: don't exceed ~2 blocks or ~10–12% of the page window
   const cap  = Math.max(medStep * 2.0, lh * 2.0, (usableH || 0) * 0.12 || 0);
@@ -251,9 +252,8 @@ function removeAllPageBreaks(editor) {
 }
 
 // Enable detailed block trace by running in console:
-//   window.__RT_dumpBlocks = true;  // then click the wand
 if (typeof window.__RT_dumpBlocks === 'undefined') {
-  window.__RT_dumpBlocks = true;
+  window.__RT_dumpBlocks = false; // set to true in console when needed in debugging
 }
 
 // ---------- main entry (DROP-IN) ----------
