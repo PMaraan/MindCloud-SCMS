@@ -161,6 +161,16 @@
       <button type="button" class="btn btn-outline-secondary" data-cmd="redo" title="Redo"><i class="bi bi-arrow-90deg-right"></i></button>
     </div>
 
+    <!-- Save -->
+    <div class="btn-group btn-group-sm ms-2" role="group" aria-label="Save">
+      <button type="button"
+              class="btn btn-primary"
+              data-cmd="saveDoc"
+              title="Save (Ctrl+S)">
+        <i class="bi bi-save"></i>
+      </button>
+    </div>
+
     <!-- Tables -->
     <div class="btn-group btn-group-sm ms-2" role="group" aria-label="Table">
       <button type="button" class="btn btn-outline-secondary" data-cmd="insertTable" title="Insert 3×3 table"><i class="bi bi-table"></i></button>
