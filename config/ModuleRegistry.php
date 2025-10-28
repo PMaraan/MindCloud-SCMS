@@ -7,7 +7,7 @@ use App\Modules\Departments\Controllers\DepartmentsController;
 use App\Modules\Courses\Controllers\CoursesController;
 use App\Modules\Programs\Controllers\ProgramsController;
 use App\Modules\Curricula\Controllers\CurriculaController;
-use App\Modules\TemplateBuilder\Controllers\TemplateBuilderController;
+use App\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController;
 use App\Modules\RTEditor\Controllers\RTEditorController;
 use App\Modules\Notifications\Controllers\NotificationsController;
 // use App\Controllers\RolesController; // might be deprecated. remove for production ...
@@ -71,15 +71,15 @@ return [
             'delete' => Permissions::COURSES_DELETE,
         ],
     ],
-    'templatebuilder' => [
-        'label'      => 'Template Builder',
-        'controller' => TemplateBuilderController::class,
-        'permission' => Permissions::TEMPLATEBUILDER_VIEW,
+    'syllabus-templates' => [
+        'label'      => 'Syllabus Templates',
+        'controller' => SyllabusTemplatesController::class,
+        'permission' => \App\Config\Permissions::SYLLABUSTEMPLATES_VIEW, // alias to old string        
         'actions'    => [
-            'create' => Permissions::TEMPLATEBUILDER_CREATE,
-            'edit'   => Permissions::TEMPLATEBUILDER_EDIT,
-            'delete' => Permissions::TEMPLATEBUILDER_DELETE,
-        ],
+            'create' => \App\Config\Permissions::SYLLABUSTEMPLATES_CREATE// alias to old string
+            // 'edit'   => Permissions::TEMPLATES_EDIT,
+            // 'delete' => Permissions::TEMPLATES_DELETE,
+        ], 
     ],
     'rteditor' => [
         'label'      => 'RT Editor',

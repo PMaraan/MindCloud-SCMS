@@ -42,6 +42,9 @@ final class Permissions
     public const TEMPLATEBUILDER_CREATE = 'SyllabusTemplateCreation';
     public const TEMPLATEBUILDER_EDIT   = 'SyllabusTemplateModification';
     public const TEMPLATEBUILDER_DELETE = 'SyllabusTemplateDeletion';
+    // Aliases for the renamed module (keep DB strings; ISO 25010: backward compatibility)
+    public const SYLLABUSTEMPLATES_VIEW   = self::TEMPLATEBUILDER_VIEW;
+    public const SYLLABUSTEMPLATES_CREATE = self::TEMPLATEBUILDER_CREATE;
 
     public const EDITOR_VIEW   = 'EDITOR_VIEW';
     public const EDITOR_CREATE = 'EDITOR_CREATE';

@@ -1,6 +1,11 @@
 <?php
+/**
+ * /app/Modules/SyllabusTemplates/Views/partials/FoldersList.php
+ * Renders clickable college “folders” for Syllabus Templates.
+ */
 // expects: $colleges (array), $esc (callable)
 $base = defined('BASE_PATH') ? BASE_PATH : '';
+$pageKey = isset($PAGE_KEY) ? $PAGE_KEY : 'syllabus-templates';
 ?>
 <div class="card">
   <div class="card-body p-0">
@@ -9,8 +14,7 @@ $base = defined('BASE_PATH') ? BASE_PATH : '';
     <?php else: ?>
       <div class="list-group list-group-flush">
         <?php foreach ($colleges as $c):
-          $href  = $base . '/dashboard?page=templatebuilder&college=' . (int)($c['college_id'] ?? 0);
-          $short = $esc($c['short_name'] ?? '');
+          $href  = $base . '/dashboard?page=' . $pageKey . '&college=' . (int)($c['college_id'] ?? 0);          $short = $esc($c['short_name'] ?? '');
           $name  = $esc($c['college_name'] ?? '');
         ?>
           <a href="<?= $href ?>" class="list-group-item list-group-item-action d-flex align-items-center">

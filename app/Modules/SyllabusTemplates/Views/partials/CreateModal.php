@@ -1,5 +1,9 @@
 <?php
-// /app/Modules/TemplateBuilder/Views/partials/CreateModal.php
+/**
+ * /app/Modules/SyllabusTemplates/Views/partials/CreateModal.php
+ * “New Template” modal (scope: system/college/program).
+ */
+// /app/Modules/SyllabusTemplates/Views/partials/CreateModal.php
 if (!function_exists('renderCreateModal')) {
   function renderCreateModal(
     string $ASSET_BASE,
@@ -10,11 +14,13 @@ if (!function_exists('renderCreateModal')) {
     array $programsOfCollege,
     callable $esc
   ): void {
+    // Page key comes from parent view; fall back to default if not set
+    $pageKey = $GLOBALS['PAGE_KEY'] ?? 'syllabus-templates';
     $base = (defined('BASE_PATH') ? BASE_PATH : '');
     ?>
 <div class="modal fade" id="tbCreateModal" tabindex="-1" aria-hidden="true" aria-labelledby="tbCreateLabel">
   <div class="modal-dialog">
-    <form method="post" action="<?= $esc($base) ?>/dashboard?page=templatebuilder&action=create" class="modal-content">
+    <form method="post" action="<?= $esc($base) ?>/dashboard?page=<?= $esc($pageKey) ?>&action=create" class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="tbCreateLabel">New Template</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>

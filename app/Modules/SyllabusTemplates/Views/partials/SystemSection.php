@@ -1,5 +1,5 @@
 <?php
-// /app/Modules/TemplateBuilder/Views/partials/SystemSection.php
+// /app/Modules/SyllabusTemplates/Views/partials/SystemSection.php
 if (!function_exists('renderSystemSection')) {
   function renderSystemSection(array $data, callable $esc): void {
     $global   = $data['global']   ?? [];

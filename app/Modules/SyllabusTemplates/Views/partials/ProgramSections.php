@@ -1,7 +1,9 @@
 <?php
-// /app/Modules/TemplateBuilder/Views/partials/ProgramSections.php
-// expects: $programSections (array), $esc (callable)
-
+/**
+ * /app/Modules/SyllabusTemplates/Views/partials/ProgramSections.php
+ * Accordion of per-program template grids for a college.
+ * Expects: $programSections (array), $esc (callable).
+ */
 if (empty($programSections)) {
   echo '<div class="text-muted">No program templates.</div>';
   return;

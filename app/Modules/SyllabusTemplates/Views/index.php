@@ -1,5 +1,5 @@
 <?php
-// /app/Modules/TemplateBuilder/Views/index.php
+// /app/Modules/SyllabusTemplates/Views/index.php
 /** vars:
  * $mode: 'system-folders' | 'college' | 'program'
  * $ASSET_BASE, $esc, $user, $role
@@ -8,6 +8,7 @@
  * when $mode==='program': $college, $general, $program, $program_templates, $canCreateProgram
  */
 $base = defined('BASE_PATH') ? BASE_PATH : '';
+$PAGE_KEY = 'syllabus-templates';
 ?>
 <link rel="stylesheet" href="<?= $ASSET_BASE ?>/assets/css/TemplateBuilder-Scaffold.css">
 <script defer src="<?= $ASSET_BASE ?>/assets/js/TemplateBuilder-Scaffold.js"></script>
@@ -17,7 +18,7 @@ $base = defined('BASE_PATH') ? BASE_PATH : '';
   <!-- PAGE HEADER -->
   <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
-      <h2 class="mb-0">Template Builder</h2>
+      <h2 class="mb-0">Syllabus Templates</h2>
       <div class="text-muted small">
         <?= $esc(
           $mode === 'system-folders' ? 'Select a college folder to view templates.'
@@ -29,7 +30,7 @@ $base = defined('BASE_PATH') ? BASE_PATH : '';
 
     <div class="d-flex gap-2">
       <?php if (!empty($showBackToFolders)): ?>
-        <a class="btn btn-outline-secondary" href="<?= $esc($base.'/dashboard?page=templatebuilder') ?>">
+        <a class="btn btn-outline-secondary" href="<?= $esc($base.'/dashboard?page='.$PAGE_KEY) ?>">
           <i class="bi bi-arrow-left"></i> All Colleges
         </a>
       <?php endif; ?>

@@ -1,22 +1,24 @@
 <?php
-// /app/Modules/TemplateBuilder/Controllers/TemplateBuilderController.php
+// /app/Modules/SyllabusTemplates/Controllers/SyllabusTemplatesController.php
 declare(strict_types=1);
 
-namespace App\Modules\TemplateBuilder\Controllers;
+namespace App\Modules\SyllabusTemplates\Controllers;
 
 use App\Interfaces\StorageInterface;
 use App\Security\RBAC;
 use App\Config\Permissions;
 use App\Models\UserModel;
-use App\Modules\TemplateBuilder\Models\TemplateBuilderModel;
+use App\Modules\SyllabusTemplates\Models\SyllabusTemplatesModel;
 use PDO;
 use Throwable;
 
-final class TemplateBuilderController
+final class SyllabusTemplatesController
 {
     private StorageInterface $db;
     private UserModel $userModel;
-    private TemplateBuilderModel $model;
+    private SyllabusTemplatesModel $model;
+
+    // Keep same role groupings
     private array $SYSTEM_ROLES  = ['VPAA','Admin','Librarian','QA','Registrar'];
     private array $DEAN_ROLES    = ['Dean','College Dean'];
     private array $CHAIR_ROLES   = ['Program Chair','Department Chair','Coordinator'];
@@ -26,16 +28,23 @@ final class TemplateBuilderController
         $this->db = $db;
         if (session_status() !== \PHP_SESSION_ACTIVE) session_start();
         $this->userModel = new UserModel($db);
-        $this->model     = new TemplateBuilderModel($db);
-        if (!isset($_SESSION['tb_cache'])) $_SESSION['tb_cache'] = [];
+        $this->model     = new SyllabusTemplatesModel($db);
+
+        // Use new cache bucket, but gracefully carry over the old one if it exists
+        if (!isset($_SESSION['st_cache'])) {
+            $_SESSION['st_cache'] = isset($_SESSION['tb_cache']) && is_array($_SESSION['tb_cache'])
+                ? $_SESSION['tb_cache']
+                : [];
+        }
     }
 
     public function index(): string
     {
-        (new RBAC($this->db))->require((string)$_SESSION['user_id'], Permissions::TEMPLATEBUILDER_VIEW);
+        // Same permission, now referenced via alias constant
+        (new RBAC($this->db))->require((string)$_SESSION['user_id'], Permissions::SYLLABUSTEMPLATES_VIEW);
 
-        $user = $this->userModel->getUserProfile((string)$_SESSION['user_id']);
-        $role = (string)($user['role_name'] ?? '');
+        $user      = $this->userModel->getUserProfile((string)$_SESSION['user_id']);
+        $role      = (string)($user['role_name'] ?? '');
         $collegeId = isset($user['college_id']) ? (int)$user['college_id'] : null;
         $programId = isset($user['program_id']) ? (int)$user['program_id'] : null;
 
@@ -55,12 +64,12 @@ final class TemplateBuilderController
             $openCollegeId = (int)$_GET['college'];
         }
 
-        // Cache helpers
+        // Cache helpers (renamed to st_cache)
         $cacheGet = function (string $key) {
-            return $_SESSION['tb_cache'][$key] ?? null;
+            return $_SESSION['st_cache'][$key] ?? null;
         };
         $cacheSet = function (string $key, $value): void {
-            $_SESSION['tb_cache'][$key] = $value;
+            $_SESSION['st_cache'][$key] = $value;
         };
 
         // SYSTEM ROLES: show folders first. Only load templates when a folder is opened.
@@ -174,9 +183,11 @@ final class TemplateBuilderController
 
     public function create(): void
     {
-        (new RBAC($this->db))->require((string)$_SESSION['user_id'], Permissions::TEMPLATEBUILDER_CREATE);
+        (new RBAC($this->db))->require((string)$_SESSION['user_id'], Permissions::SYLLABUSTEMPLATES_CREATE);
         $user = $this->userModel->getUserProfile((string)$_SESSION['user_id']);
         $idno = (string)($user['id_no'] ?? 'SYS-UNKNOWN');
+
+        // NOTE: per your standard, get PDO via getConnection()
         $pdo  = $this->db->getConnection();
         $pdo->beginTransaction();
 
@@ -231,15 +242,16 @@ final class TemplateBuilderController
             $pdo->commit();
 
             // bust just enough cache so user sees new item on refresh
-            unset($_SESSION['tb_cache']);
+            unset($_SESSION['st_cache'], $_SESSION['tb_cache']);
             $_SESSION['flash'] = ['type'=>'success','message'=>'Template created.'];
 
-            header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=templatebuilder' . ($scope!=='system' && isset($colId) ? '&college='.$colId : ''));
+            // new slug ?page=syllabus-templates; keep college param
+            header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates' . ($scope!=='system' && isset($colId) ? '&college='.$colId : ''));
             exit;
         } catch (Throwable $e) {
             $pdo->rollBack();
             $_SESSION['flash'] = ['type'=>'danger','message'=>'Create failed: '.$e->getMessage()];
-            header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=templatebuilder');
+            header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates');
             exit;
         }
     }
@@ -248,6 +260,7 @@ final class TemplateBuilderController
     {
         extract($vars, EXTR_SKIP);
         ob_start();
+        // New Views path under SyllabusTemplates
         require dirname(__DIR__) . "/Views/{$view}.php";
         return (string)ob_get_clean();
     }

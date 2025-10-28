@@ -1,9 +1,12 @@
 <?php
-// /app/Modules/TemplateBuilder/Views/partials/Grid.php
-// expects: $templates (array), $esc (callable)
+/**
+ * /app/Modules/SyllabusTemplates/Views/partials/Grid.php
+ * Renders a responsive grid of template tiles.
+ * Expects: $templates (array) or $templates_local, and $esc (callable).
+ */
 $templates = $templates_local ?? $templates ?? [];
 if (empty($templates)) {
-  echo '<div class="text-muted">No templates.';
+  echo '<div class="text-muted">No templates.</div>';
   return;
 }
 ?>
@@ -15,11 +18,11 @@ if (empty($templates)) {
     $scope = $esc($t['scope'] ?? '');
   ?>
     <div class="col">
-      <div class="tb-tile card h-100" tabindex="0"
-           data-template-id="<?= $tid ?>"
-           data-title="<?= $title ?>"
-           data-owner="<?= $scope ?>"
-           data-updated="<?= $upd ?>">
+      <div class="tb-tile card h-100" tabindex="0" role="button" aria-label="Open template: <?= $title ?>"
+        data-template-id="<?= $tid ?>"
+        data-title="<?= $title ?>"
+        data-owner="<?= $scope ?>"
+        data-updated="<?= $upd ?>">
         <div class="card-body d-flex flex-column align-items-center text-center">
           <?php
             $iconClass = 'bi-file-earmark-text';

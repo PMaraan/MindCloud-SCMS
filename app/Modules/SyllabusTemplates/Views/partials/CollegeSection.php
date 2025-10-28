@@ -1,5 +1,8 @@
 <?php
-// /app/Modules/TemplateBuilder/Views/partials/CollegeSection.php
+/**
+ * /app/Modules/SyllabusTemplates/Views/partials/CollegeSection.php
+ * Accordion showing General templates + Program template sections for one college.
+ */
 // expects: $college (arr), $general (arr), $programs (arr), $esc (callable)
 $cLabel = trim(($college['short_name'] ?? '') . ' — ' . ($college['college_name'] ?? ''));
 if ($cLabel === '—') $cLabel = 'College';
