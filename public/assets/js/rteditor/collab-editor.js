@@ -80,6 +80,41 @@ export default function initBasicEditor(opts) {
 
   try { editor.commands.focus("end"); } catch {}
 
+  // Make available for other modules / debug tools
+  window.editor = editor;
+
+  // --- One-time hydration from server-injected payload (Option B) ---
+  try {
+    // Preferred: init-time object placed by the controller page before this script runs
+    let tiptapDoc = null;
+
+    if (window.__RT_pendingContent) {
+      tiptapDoc = window.__RT_pendingContent;
+      // clear after use to avoid re-using stale data
+      window.__RT_pendingContent = null;
+    } else {
+      // Fallback: read the <script id="rt-loaded-content"> tag if present
+      const tag = document.getElementById('rt-loaded-content');
+      if (tag) {
+        const payload = JSON.parse(tag.textContent || '{}');
+        const raw     = payload && payload.content;
+        tiptapDoc = (typeof raw === 'string') ? JSON.parse(raw) : (raw || null);
+
+        // Optional: title hint for your UI
+        if (payload && payload.title) {
+          const titleEl = document.querySelector('[data-rt-title]') || document.querySelector('.card-title, h2, h1');
+          if (titleEl) titleEl.textContent = payload.title + ' (Template)';
+        }
+      }
+    }
+
+    if (tiptapDoc) {
+      editor.commands.setContent(tiptapDoc, false); // false = don't add a new history step
+    }
+  } catch (e) {
+    console.warn('[RTEditor] hydration failed:', e);
+  }
+  
   return editor;
 }
 

@@ -85,7 +85,7 @@ return [
         'label'      => 'RT Editor',
         'permission' => \App\Config\Permissions::EDITOR_VIEW,
         'controller' => RTEditorController::class,
-        'actions'    => ['index', 'create', 'saveMeta', 'snapshot'],
+        'actions'    => ['index', 'create', 'saveMeta', 'snapshot', 'openTemplate'],
     ],
     'notifications' => [
         'label'      => 'Notifications',

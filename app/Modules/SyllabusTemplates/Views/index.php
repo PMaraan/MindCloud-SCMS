@@ -11,6 +11,12 @@ $base = defined('BASE_PATH') ? BASE_PATH : '';
 $PAGE_KEY = 'syllabus-templates';
 ?>
 <link rel="stylesheet" href="<?= $ASSET_BASE ?>/assets/css/TemplateBuilder-Scaffold.css">
+
+<script>
+  // Make BASE_PATH available to TemplateBuilder-Scaffold.js
+  window.BASE_PATH = "<?= $esc($base) ?>";
+</script>
+
 <script defer src="<?= $ASSET_BASE ?>/assets/js/TemplateBuilder-Scaffold.js"></script>
 
 <div ><!-- CONTAINER OPEN -->

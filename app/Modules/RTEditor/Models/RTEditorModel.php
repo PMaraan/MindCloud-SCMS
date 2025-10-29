@@ -221,6 +221,28 @@ final class RTEditorModel
         return $row ?: null;
     }
 
+    public function getTemplateForEdit(int $templateId): ?array
+    {
+        $sql = "SELECT template_id, title, status, version, filename, content
+                FROM public.syllabus_templates
+                WHERE template_id = :id";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([':id' => $templateId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row) return null;
+
+        // Normalize content: keep string as-is; if driver returns array, also ok
+        // (Some PDO drivers may auto-decode JSON; we support both)
+        if (is_string($row['content'])) {
+            // leave as string; front-end will JSON.parse(...)
+        } else {
+            // Encode array/object back to string for consistent hydration
+            $row['content'] = json_encode($row['content'] ?? new \stdClass(), JSON_UNESCAPED_UNICODE);
+        }
+        return $row;
+    }
+
+
     /**
      * List templates with optional filters + pagination.
      *

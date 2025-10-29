@@ -118,16 +118,17 @@ final class AppShellController
 
                 // Action dispatch (query param ?action=)
                 $action  = strtolower((string)($_GET['action'] ?? 'index'));
-                $allowed = ['index', 'create', 'edit', 'delete', 'savemeta', 'snapshot'];
+                $allowed = ['index', 'create', 'edit', 'delete', 'savemeta', 'snapshot', 'opentemplate'];
 
                 // Map lowercased action -> real controller method
                 $actionMap = [
-                    'index'    => 'index',
-                    'create'   => 'create',
-                    'edit'     => 'edit',
-                    'delete'   => 'delete',
-                    'savemeta' => 'saveMeta',
-                    'snapshot' => 'snapshot',
+                    'index'        => 'index',
+                    'create'       => 'create',
+                    'edit'         => 'edit',
+                    'delete'       => 'delete',
+                    'savemeta'     => 'saveMeta',
+                    'snapshot'     => 'snapshot',
+                    'opentemplate' => 'openTemplate', // NEW
                 ];
                 $method = $actionMap[$action] ?? 'index';
 
@@ -135,9 +136,11 @@ final class AppShellController
                     $action = 'index';
                 }
 
-                if ($action === 'index') {
-                    // Render HTML content for the region
-                    $contentHtml = $controller->index();
+                // Actions that RETURN HTML to embed inside the app shell
+                $renderActions = ['index', 'opentemplate'];
+
+                if (in_array($action, $renderActions, true)) {
+                    $contentHtml = $controller->{$method}();
                 } else {
                     // Mutating actions should handle redirect/flash themselves
                     $controller->{$method}();
