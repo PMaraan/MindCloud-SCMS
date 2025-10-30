@@ -167,7 +167,7 @@
               class="btn btn-primary"
               data-cmd="saveDoc"
               title="Save (Ctrl+S)">
-        <i class="bi bi-save"></i>
+        <i class="bi bi-floppy"></i>
       </button>
     </div>
 

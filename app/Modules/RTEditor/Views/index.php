@@ -49,6 +49,44 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
       <div id="rtHeader" class="rt-header" contenteditable="true">Header…</div>
       <div id="rtPageContent" class="rt-page-content">
         <div id="editor" class="border-0"></div>
+        <?php
+        /** ======================================================================
+         * [RT JSON PAYLOAD INJECTION] — This embeds initial TipTap JSON safely.
+         * What it does:
+         *   - Emits <script type="application/json"> with raw JSON (NO escaping)
+         *   - Emits a small #rt-meta div carrying scope/id for the editor JS
+         * Where this is used:
+         *   - In collab-editor.js, we JSON.parse(#rt-initial-json.textContent)
+         *   - We also read #rt-meta[data-scope][data-id] as a robust fallback
+         * When to update:
+         *   - If you change how the controller passes $doc/$scope, adjust below.
+         * ===================================================================== */
+        $doc = $doc ?? [];  // expected from controller openTemplate/openSyllabus
+        $initialJson = '{}';
+        if (!empty($doc['content'])) {
+          if (is_string($doc['content'])) {
+            $initialJson = $doc['content']; // already a JSON string, keep raw
+          } else {
+            $initialJson = json_encode($doc['content'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+          }
+        }
+        // Derive scope/id (controller should set these); fallback heuristics:
+        $rtScope = $scope ?? (($doc && array_key_exists('template_id', $doc)) ? 'template' : 'syllabus');
+        $rtId    = (int)($doc['template_id'] ?? $doc['syllabus_id'] ?? 0);
+        ?>
+        <script id="rt-initial-json" type="application/json"><?= $initialJson ?></script>
+        <div id="rt-meta" data-scope="<?= htmlspecialchars($rtScope, ENT_QUOTES) ?>" data-id="<?= $rtId ?>"></div>
+
+        <script>
+        /** ======================================================================
+         * [RT RUNTIME GLOBALS] — Expose globals needed by editor JS.
+         * What it does:
+         *   - Exposes BASE_PATH for building fetch URLs (save/snapshot)
+         *   - (Optionally) Expose CSRF if your endpoint checks it
+         * ===================================================================== */
+        window.BASE_PATH = "<?= htmlspecialchars(defined('BASE_PATH') ? BASE_PATH : '', ENT_QUOTES, 'UTF-8') ?>";
+        // window.CSRF_TOKEN = "<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8') ?>";
+        </script>
       </div>
       <div id="rtFooter" class="rt-footer" contenteditable="true">Footer…</div>
     </div>
@@ -89,6 +127,12 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
 }
 </script>
 
+<script>
+  window.BASE_PATH = "<?= htmlspecialchars(defined('BASE_PATH') ? BASE_PATH : '', ENT_QUOTES, 'UTF-8') ?>";
+  // If you expose CSRF in your app, also add:
+  // window.CSRF_TOKEN = "< htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8') ?>";
+</script>
+
 <script type="module">
   import initBasicEditor, { bindBasicToolbar } from "<?= BASE_PATH ?>/public/assets/js/rteditor/collab-editor.js";
   import { bindPageLayoutControls, getCurrentPageConfig } from "<?= BASE_PATH ?>/public/assets/js/rteditor/page-layout.js";
@@ -107,13 +151,50 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
   });
 
   // TipTap editor init
-  const editor = initBasicEditor({
-    selector: '#editor',
-    editable: true,
-    initialHTML: '<p>TipTap ready — start typing…</p>'
-  });
-  window.__RT_editor = editor;
-  bindBasicToolbar(editor, document);
+  // ======================================================================
+// [EDITOR INIT] — Creates the editor instance on #editor.
+// What it does:
+//   - Builds TipTap with your standard extensions
+//   - Later we load initial content JSON via setContent(JSON)
+// ======================================================================
+const editor = initBasicEditor({
+  selector: '#editor',
+  editable: true,
+  initialHTML: '<p>TipTap ready — start typing…</p>' // fallback only
+});
+window.__RT_editor = editor;
+bindBasicToolbar(editor, document);
+
+// ======================================================================
+// [HYDRATE FROM EMBEDDED JSON] — Read the raw JSON from the payload tag.
+// What it does:
+//   - Reads the JSON payload from the tag with id="rt-initial-json" (type="application/json")
+//   - Parses it and sets TipTap content to that JSON
+//   - Also reads #rt-meta for scope/id as a fallback sync
+// ======================================================================
+(function hydrateInitialContent() {
+  // --- read JSON payload
+  const tag = document.getElementById('rt-initial-json');
+  if (tag) {
+    const raw = tag.textContent || '';
+    if (raw.trim()) {
+      try {
+        const j = JSON.parse(raw);
+        editor.commands.setContent(j);
+      } catch (e) {
+        console.warn('[RTEditor] invalid initial JSON payload; using fallback.', e);
+      }
+    }
+  }
+  // --- sync scope/id from meta (fallback if URL params are missing)
+  const metaEl = document.getElementById('rt-meta');
+  if (metaEl) {
+    const ds = metaEl.dataset || {};
+    // only set if not already set via URL resolution
+    if (!window.__rt_scope && ds.scope) window.__rt_scope = ds.scope;
+    if (!window.__rt_id && (ds.id|0) > 0) window.__rt_id = ds.id|0;
+  }
+})();
 
   // Add the autoPaginate button wiring
   (() => {

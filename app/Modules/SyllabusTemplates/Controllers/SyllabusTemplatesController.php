@@ -58,6 +58,11 @@ final class SyllabusTemplatesController
             'role'       => $role,
         ];
 
+        // Convert simple GET flag into a flash (so JS can trigger a nice message without alert())
+        if (isset($_GET['flash']) && $_GET['flash'] === 'missing-id') {
+            \App\Helpers\FlashHelper::set('danger', 'Missing or invalid document id.');
+        }
+
         // FOLDER-FIRST for non-college-bound roles (system roles)
         $openCollegeId = null;
         if (isset($_GET['college']) && ctype_digit((string)$_GET['college'])) {

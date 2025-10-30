@@ -28,6 +28,26 @@ import SpacingExtension from "./extensions/spacing.js";
 import PageBreak        from "./nodes/page-break.js";
 import SignatureField   from "./nodes/signature-field.js";
 
+function postJSON(url, payload, extraHeaders = {}) {
+  return fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...extraHeaders,
+    },
+    body: JSON.stringify(payload),
+    credentials: 'same-origin',
+  });
+}
+
+// Build base path safely
+function getBasePath() {
+  if (typeof window.BASE_PATH !== 'undefined' && window.BASE_PATH) return window.BASE_PATH;
+  const path = window.location.pathname;
+  const cut = path.indexOf('/dashboard');
+  return cut > -1 ? path.slice(0, cut) : '';
+}
+
 /** Build editor with common word-like extensions */
 export default function initBasicEditor(opts) {
   const { selector, editable = true, initialHTML = "<p>Start typing…</p>" } = opts || {};
@@ -114,7 +134,7 @@ export default function initBasicEditor(opts) {
   } catch (e) {
     console.warn('[RTEditor] hydration failed:', e);
   }
-  
+
   return editor;
 }
 
@@ -193,6 +213,102 @@ export function bindBasicToolbar(editor, root = document) {
     },
 
     insertPageBreak: () => editor.chain().focus().insertPageBreak().run(),
+
+    saveDoc: async () => {
+      try {
+        // Decide scope & id from URL
+        // ---------------------------------------------------------------------------
+        // [Purpose] Resolve current editing target (template|syllabus) and numeric id
+        // - Accepts: ?templateId=, ?syllabusId=
+        // - Fallback: ?id= (assume template unless scope=syllabus is explicitly present)
+        // ---------------------------------------------------------------------------
+        const params = new URLSearchParams(location.search);
+        const _tpl = parseInt(params.get('templateId') || '0', 10);
+        const _syl = parseInt(params.get('syllabusId') || '0', 10);
+
+        let id   = parseInt(params.get('id') || '0', 10);
+        let scope = '';
+
+        // Preferred explicit params
+        if (_tpl > 0)        { id = _tpl; scope = 'template'; }
+        else if (_syl > 0)   { id = _syl; scope = 'syllabus'; }
+        else if (id > 0)     { scope = (params.get('scope') === 'syllabus') ? 'syllabus' : 'template'; }
+
+        if (!id) {
+          // Redirect back to Syllabus Templates with a flash flag; controller will convert it to FlashHelper
+          const base = (typeof window.BASE_PATH === 'string') ? window.BASE_PATH : '';
+          window.location.href = `${base}/dashboard?page=syllabus-templates&flash=missing-id`;
+          throw new Error('Missing id'); // stop further execution
+        }
+
+        // ---------------------------------------------------------------------------
+        // [Purpose] Read initial TipTap JSON payload from the view (safe hydration)
+        // - Looks for <script id="rt-initial-json" type="application/json">...</script>
+        // - Returns JS object or null
+        // ---------------------------------------------------------------------------
+        function getInitialTipTapJSON() {
+          const tag = document.getElementById('rt-initial-json');
+          if (!tag) return null;
+          const raw = tag.textContent || '';
+          if (!raw.trim()) return null;
+          try { return JSON.parse(raw); }
+          catch (e) {
+            console.warn('[RTEditor] hydration failed:', e);
+            return null;
+          }
+        }
+
+        // ---------------------------------------------------------------------------
+        // [Purpose] Resolve scope/id from #rt-meta if URL didn’t have them
+        // ---------------------------------------------------------------------------
+        (function syncScopeIdFromMeta() {
+          const metaEl = document.getElementById('rt-meta');
+          if (!metaEl) return;
+          const ds = metaEl.dataset || {};
+          if (!scope && ds.scope) scope = ds.scope;
+          if (!id && (ds.id|0) > 0) id = ds.id|0;
+        })();
+
+        // Collect TipTap JSON
+        const json = editor.getJSON();
+
+        // Optional filename (you can wire an input later)
+        const filename = null;
+
+        // CSRF (if you expose a token, add it here)
+        const headers = {};
+        if (window.CSRF_TOKEN) headers['X-CSRF-Token'] = window.CSRF_TOKEN;
+
+        const base = getBasePath();
+        const url  = `${base}/dashboard?page=rteditor&action=snapshot`;
+
+        const resp = await postJSON(url, { scope, id, json, filename }, headers);
+        const data = await resp.json();
+
+        if (!resp.ok || !data?.ok) {
+          throw new Error(data?.error || `HTTP ${resp.status}`);
+        }
+
+        // Tiny UX tick (replace with your own toast/flash)
+        console.log('[RTEditor] Saved', data);
+        // Optional: visual confirmation
+        const btn = root.querySelector('[data-cmd="saveDoc"]');
+        if (btn) {
+          const old = btn.innerHTML;
+          btn.innerHTML = '<i class="bi bi-check2-circle"></i>';
+          setTimeout(() => { btn.innerHTML = old; }, 1200);
+        }
+      } catch (e) {
+        console.error('[RTEditor] Save failed:', e);
+        const btn = root.querySelector('[data-cmd="saveDoc"]');
+        if (btn) {
+          const old = btn.innerHTML;
+          btn.innerHTML = '<i class="bi bi-x-circle"></i>';
+          setTimeout(() => { btn.innerHTML = old; }, 1500);
+        }
+      }
+    },
+
   };
 
   // buttons
@@ -218,4 +334,15 @@ export function bindBasicToolbar(editor, root = document) {
       if (clearCmd && map[clearCmd]) map[clearCmd]();
     });
   });
+
+  // Ctrl+S / Cmd+S
+  root.addEventListener('keydown', (ev) => {
+    const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
+    const mod = isMac ? ev.metaKey : ev.ctrlKey;
+    if (mod && ev.key.toLowerCase() === 's') {
+      ev.preventDefault();
+      map.saveDoc();
+    }
+  });
 }
+

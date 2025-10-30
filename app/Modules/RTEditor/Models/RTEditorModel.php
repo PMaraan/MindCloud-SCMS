@@ -199,6 +199,17 @@ final class RTEditorModel
     }
 
     /**
+     * Convenience: save only TipTap JSON (and optional filename) to a template.
+     */
+    public function saveTemplateContent(int $templateId, mixed $json, ?string $filename = null): bool
+    {
+        return $this->updateTemplate($templateId, [
+            'content'  => $json,       // updateTemplate() already handles JSON encoding
+            'filename' => $filename,   // optional
+        ]);
+    }
+
+    /**
      * Delete a template by id.
      */
     public function deleteTemplate(int $templateId): bool
@@ -440,6 +451,17 @@ final class RTEditorModel
             if ($this->pdo->inTransaction()) $this->pdo->rollBack();
             throw $e;
         }
+    }
+
+    /**
+     * Convenience: save only TipTap JSON (and optional filename) to a syllabus.
+     */
+    public function saveSyllabusContent(int $syllabusId, mixed $json, ?string $filename = null): bool
+    {
+        return $this->updateSyllabus($syllabusId, [
+            'content'  => $json,       // updateSyllabus() already handles JSON encoding
+            'filename' => $filename,   // optional
+        ]);
     }
 
     /**

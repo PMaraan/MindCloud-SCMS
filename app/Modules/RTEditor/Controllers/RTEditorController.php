@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace App\Modules\RTEditor\Controllers;
 
 use App\Interfaces\StorageInterface;
+use App\Modules\RTEditor\Models\RTEditorModel;
 
 final class RTEditorController
 {
@@ -38,6 +39,85 @@ final class RTEditorController
         ob_start();
         require __DIR__ . '/../Views/index.php';
         return (string)ob_get_clean();
+    }
+
+    /**
+     * Save (snapshot) TipTap JSON from the editor.
+     * Accepts POST with:
+     *  - scope: "template" | "syllabus"
+     *  - id: template_id or syllabus_id (int)
+     *  - json: TipTap JSON string
+     *  - filename: optional string
+     */
+    public function snapshot(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        try {
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                http_response_code(405);
+                echo json_encode(['ok' => false, 'error' => 'Method not allowed']);
+                return;
+            }
+
+            // If you have a CSRF helper, enforce it here:
+            // \App\Helpers\CsrfHelper::assertJson(); // or your variant
+
+            $raw  = file_get_contents('php://input');
+            $data = json_decode($raw ?: 'null', true);
+            if (!$data || !is_array($data)) {
+                // fallback to form-encoded POST
+                $data = $_POST;
+            }
+
+            $scope    = (string)($data['scope'] ?? '');
+            $id       = (int)($data['id'] ?? 0);
+            $filename = isset($data['filename']) ? trim((string)$data['filename']) : null;
+
+            if ($id <= 0) {
+                throw new \InvalidArgumentException('Missing or invalid id.');
+            }
+
+            // Accept TipTap JSON as object/array or string
+            $content = $data['json'] ?? $data['content'] ?? null;
+            if (is_string($content)) {
+                $decoded = json_decode($content, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $content = $decoded;
+                }
+            }
+            if (!is_array($content) && !is_object($content)) {
+                throw new \InvalidArgumentException('Missing or invalid TipTap JSON.');
+            }
+
+            // Use your existing model
+            $model = new \App\Modules\RTEditor\Models\RTEditorModel($this->db);
+
+            if ($scope === 'template') {
+                // Option A: if you added the convenience method
+                $ok = $model->saveTemplateContent($id, $content, $filename);
+
+                // Option B (no convenience): uncomment instead
+                // $ok = $model->updateTemplate($id, ['content' => $content, 'filename' => $filename]);
+            } elseif ($scope === 'syllabus') {
+                // Option A:
+                $ok = $model->saveSyllabusContent($id, $content, $filename);
+
+                // Option B (no convenience): uncomment instead
+                // $ok = $model->updateSyllabus($id, ['content' => $content, 'filename' => $filename]);
+            } else {
+                throw new \InvalidArgumentException('Invalid scope; must be "template" or "syllabus".');
+            }
+
+            if (!$ok) {
+                throw new \RuntimeException('Save failed (no changes or record not found).');
+            }
+
+            echo json_encode(['ok' => true, 'saved' => ['scope' => $scope, 'id' => $id]]);
+        } catch (\Throwable $e) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+        }
     }
 
     public function openTemplate(): string
