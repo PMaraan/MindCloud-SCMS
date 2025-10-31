@@ -2,16 +2,25 @@
 declare(strict_types=1);
 
 /**
- * RTEditorController (rebuild clean)
+ * RTEditorController
  * Path: /app/Modules/RTEditor/Controllers/RTEditorController.php
  *
- * Goal: render a bare page with a contenteditable area that we can type into.
- * No DB, no TipTap, no Yjs. We'll add them later.
+ * Purpose:
+ *  - Open a template/syllabus into the TipTap editor
+ *  - Emit initial JSON payload/meta via the view (rt-initial-json / rt-meta)
+ *  - Snapshot (save) TipTap JSON back to DB (templates/syllabi)
+ *
+ * Notes:
+ *  - Uses RTEditorModel (DB-agnostic, PDO)
+ *  - No inline <script id="rt-loaded-content"> is emitted anymore
  */
 namespace App\Modules\RTEditor\Controllers;
 
 use App\Interfaces\StorageInterface;
 use App\Modules\RTEditor\Models\RTEditorModel;
+use App\Helpers\FlashHelper;
+use App\Security\RBAC;
+use App\Config\Permissions;
 
 final class RTEditorController
 {
@@ -32,11 +41,62 @@ final class RTEditorController
      */
     public function index(): string
     {
-        // Hard-set a page title and a flag we'll use in the view
+        // 1) Page header & editability flag (same as before)
         $pageTitle = 'RT Editor (Clean Build)';
         $canEdit   = true; // force editable for now
 
+        // 2) Resolve scope/id from URL (accepts templateId/syllabusId, or fallback id+scope)
+        $rtScope = '';
+        $rtId    = 0;
+        $initialJsonRaw = ''; // raw TipTap doc JSON (string)
+
+        try {
+            $scopeParam = isset($_GET['scope']) ? (string)$_GET['scope'] : '';
+            $tplId  = isset($_GET['templateId']) ? (int)$_GET['templateId'] : 0;
+            $sylId  = isset($_GET['syllabusId']) ? (int)$_GET['syllabusId'] : 0;
+            $qid    = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+
+            if ($tplId > 0)      { $rtScope = 'template'; $rtId = $tplId; }
+            elseif ($sylId > 0)  { $rtScope = 'syllabus'; $rtId = $sylId; }
+            elseif ($qid > 0)    { $rtScope = ($scopeParam === 'syllabus') ? 'syllabus' : 'template'; $rtId = $qid; }
+
+            // 3) Fetch initial content using your existing model (DB-agnostic)
+            if ($rtId > 0) {
+                $model = new RTEditorModel($this->db);
+
+                if ($rtScope === 'template') {
+                    // getTemplateForEdit() already normalizes JSON to a string when needed
+                    $row = $model->getTemplateForEdit($rtId);
+                    if ($row && array_key_exists('content', $row)) {
+                        $initialJsonRaw = is_string($row['content'])
+                            ? $row['content']
+                            : json_encode($row['content'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                    }
+                } elseif ($rtScope === 'syllabus') {
+                    $row = $model->getSyllabus($rtId);
+                    if ($row && array_key_exists('content', $row)) {
+                        $initialJsonRaw = is_string($row['content'])
+                            ? $row['content']
+                            : json_encode($row['content'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            // Non-fatal hydrate error: leave $initialJsonRaw empty so the view falls back to a blank doc
+            // You can log if you want: error_log('[RTEditor@index] ' . $e->getMessage());
+        }
+
+        // 4) Provide a safe fallback doc so the <script id="rt-initial-json"> is always present
+        if (!is_string($initialJsonRaw) || trim($initialJsonRaw) === '') {
+            $initialJsonRaw = '{"type":"doc","content":[{"type":"paragraph"}]}';
+        }
+
+        // 5) Render the view (these vars are picked up by your existing index.php)
         ob_start();
+        // Expose to the included view:
+        /** @var string $initialJsonRaw */
+        /** @var string $rtScope */
+        /** @var int    $rtId */
         require __DIR__ . '/../Views/index.php';
         return (string)ob_get_clean();
     }
@@ -94,17 +154,9 @@ final class RTEditorController
             $model = new \App\Modules\RTEditor\Models\RTEditorModel($this->db);
 
             if ($scope === 'template') {
-                // Option A: if you added the convenience method
-                $ok = $model->saveTemplateContent($id, $content, $filename);
-
-                // Option B (no convenience): uncomment instead
-                // $ok = $model->updateTemplate($id, ['content' => $content, 'filename' => $filename]);
+                $ok = $model->updateTemplate($id, ['content' => $content, 'filename' => $filename]);
             } elseif ($scope === 'syllabus') {
-                // Option A:
-                $ok = $model->saveSyllabusContent($id, $content, $filename);
-
-                // Option B (no convenience): uncomment instead
-                // $ok = $model->updateSyllabus($id, ['content' => $content, 'filename' => $filename]);
+                $ok = $model->updateSyllabus($id, ['content' => $content, 'filename' => $filename]);
             } else {
                 throw new \InvalidArgumentException('Invalid scope; must be "template" or "syllabus".');
             }
@@ -122,58 +174,23 @@ final class RTEditorController
 
     public function openTemplate(): string
     {
-        // Permissions: view templates is enough to open for editing
-        (new \App\Security\RBAC($this->db))->require((string)$_SESSION['user_id'], \App\Config\Permissions::SYLLABUSTEMPLATES_VIEW);
+        // Gate by Syllabus Templates view permission
+        (new RBAC($this->db))->require((string)$_SESSION['user_id'], Permissions::SYLLABUSTEMPLATES_VIEW);
 
         $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
         if ($id <= 0) {
-            $_SESSION['flash'] = ['type'=>'danger','message'=>'Invalid template id'];
+            FlashHelper::set('danger', 'Invalid template id');
             header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates');
             exit;
         }
 
-        // Use RTEditorModel for loading (database-agnostic, pure PDO)
-        $model = new \App\Modules\RTEditor\Models\RTEditorModel($this->db);
-        $tpl   = $model->getTemplateForEdit($id);
-        if (!$tpl) {
-            $_SESSION['flash'] = ['type'=>'danger','message'=>'Template not found'];
-            header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates');
-            exit;
-        }
+        // Normalize the query so index() will pick it up and hydrate:
+        //  - index() reads templateId/syllabusId (or id+scope)
+        $_GET['templateId'] = $id;
+        unset($_GET['syllabusId'], $_GET['scope'], $_GET['id']);
 
-        // Prepare payload for hydration
-        $loaded = [
-            'kind'   => 'template',
-            'id'     => (int)$tpl['template_id'],
-            'title'  => (string)($tpl['title'] ?? 'Untitled'),
-            'status' => (string)($tpl['status'] ?? 'draft'),
-            // allow string or decoded array; front-end will handle both
-            'content'=> $tpl['content'] ?? null,
-            'filename' => (string)($tpl['filename'] ?? ''),
-            'version'  => (string)($tpl['version'] ?? ''),
-        ];
-
-        // Reuse your existing editor page (whatever your default render method uses)
-        // Pass $loaded to the view (we only need to embed JSON; no new view file added)
-        $ASSET_BASE = (defined('BASE_PATH') ? BASE_PATH : '') . '/public';
-        $esc = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
-
-        // If your controller has a standard render() for index/editor page, reuse it.
-        // Otherwise require the same existing editor view you already open at ?page=rteditor
-        ob_start();
-        $loadedJson = json_encode($loaded, JSON_UNESCAPED_UNICODE);
-        // The existing editor view will read this <script> for hydration
-        echo '<script id="rt-loaded-content" type="application/json">'. $esc($loadedJson) .'</script>';
-        // fall through to existing render
-        $htmlOfEditor = $this->index('index', [
-            'ASSET_BASE' => $ASSET_BASE,
-            'esc'        => $esc,
-            // anything else your view expects...
-        ]);
-        // Prepend the hydration tag before the closing </body> would also be fine; here we just echo it above.
-        // Combine and return
-        echo $htmlOfEditor;
-        return (string)ob_get_clean();
+        // Let index() do the fetch + view rendering (it embeds rt-initial-json / rt-meta)
+        return $this->index();
     }
 
 }

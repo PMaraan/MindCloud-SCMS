@@ -27,15 +27,38 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
       <div class="rt-toolbar-sticky">
         <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
           <?php include __DIR__ . '/partials/Toolbar.php'; ?>
+          <?php
+          /**
+           * [RTEditor Payload Injection]
+           * Purpose: Provide the initial TipTap JSON for hydration without HTML-escaping.
+           * - $initialJsonRaw MUST be a raw JSON string of the ProseMirror doc (e.g. {"type":"doc","content":[...]}).
+           * - Do NOT wrap with htmlspecialchars() or json_encode() here, or JSON.parse will fail.
+           * - We only neutralize the `</script` sequence to avoid early tag termination.
+           */
+          $initialJsonRaw = isset($initialJsonRaw) && is_string($initialJsonRaw) && trim($initialJsonRaw) !== ''
+            ? $initialJsonRaw
+            : '{"type":"doc","content":[{"type":"paragraph"}]}';
+
+          $safeJsonForScript = str_replace('</script', '<\/script', $initialJsonRaw);
+          ?>
+          <script id="rt-initial-json" type="application/json"><?= $safeJsonForScript ?></script>
+
+          <?php
+          /**
+           * [RTEditor Meta]
+           * Purpose: expose scope/id for front-end save/load logic (fallback if URL lacks them).
+           * data-scope: 'template' | 'syllabus'
+           * data-id   : numeric id
+           */
+          $rtScope = isset($rtScope) ? (string)$rtScope : '';
+          $rtId    = isset($rtId)    ? (int)$rtId      : 0;
+          ?>
+          <div id="rt-meta" data-scope="<?= htmlspecialchars($rtScope, ENT_QUOTES, 'UTF-8') ?>" data-id="<?= (int)$rtId ?>"></div>
+
         </div>
       </div>
 
-
-      
-
       <link rel="stylesheet" href="<?= BASE_PATH ?>/public/assets/css/rteditor/collab-editor.css">
-
-      
 
     </div>
   </div>
@@ -48,45 +71,7 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
     <div id="rtPage" class="rt-page">
       <div id="rtHeader" class="rt-header" contenteditable="true">Header…</div>
       <div id="rtPageContent" class="rt-page-content">
-        <div id="editor" class="border-0"></div>
-        <?php
-        /** ======================================================================
-         * [RT JSON PAYLOAD INJECTION] — This embeds initial TipTap JSON safely.
-         * What it does:
-         *   - Emits <script type="application/json"> with raw JSON (NO escaping)
-         *   - Emits a small #rt-meta div carrying scope/id for the editor JS
-         * Where this is used:
-         *   - In collab-editor.js, we JSON.parse(#rt-initial-json.textContent)
-         *   - We also read #rt-meta[data-scope][data-id] as a robust fallback
-         * When to update:
-         *   - If you change how the controller passes $doc/$scope, adjust below.
-         * ===================================================================== */
-        $doc = $doc ?? [];  // expected from controller openTemplate/openSyllabus
-        $initialJson = '{}';
-        if (!empty($doc['content'])) {
-          if (is_string($doc['content'])) {
-            $initialJson = $doc['content']; // already a JSON string, keep raw
-          } else {
-            $initialJson = json_encode($doc['content'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-          }
-        }
-        // Derive scope/id (controller should set these); fallback heuristics:
-        $rtScope = $scope ?? (($doc && array_key_exists('template_id', $doc)) ? 'template' : 'syllabus');
-        $rtId    = (int)($doc['template_id'] ?? $doc['syllabus_id'] ?? 0);
-        ?>
-        <script id="rt-initial-json" type="application/json"><?= $initialJson ?></script>
-        <div id="rt-meta" data-scope="<?= htmlspecialchars($rtScope, ENT_QUOTES) ?>" data-id="<?= $rtId ?>"></div>
-
-        <script>
-        /** ======================================================================
-         * [RT RUNTIME GLOBALS] — Expose globals needed by editor JS.
-         * What it does:
-         *   - Exposes BASE_PATH for building fetch URLs (save/snapshot)
-         *   - (Optionally) Expose CSRF if your endpoint checks it
-         * ===================================================================== */
-        window.BASE_PATH = "<?= htmlspecialchars(defined('BASE_PATH') ? BASE_PATH : '', ENT_QUOTES, 'UTF-8') ?>";
-        // window.CSRF_TOKEN = "<?= htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8') ?>";
-        </script>
+        <div id="editor" class="border-0"></div>        
       </div>
       <div id="rtFooter" class="rt-footer" contenteditable="true">Footer…</div>
     </div>
@@ -290,9 +275,6 @@ bindBasicToolbar(editor, document);
   })();
 </script>
 
-
-
-
 <script>
 // ====== SINGLE KEYDOWN REGISTRATION & ENTER TRACE (TEMP) ======
 (function () {
@@ -377,31 +359,6 @@ bindBasicToolbar(editor, document);
 
 <script>
 // ===== OVERLAY DETECTOR (keep this) =====
-(function () {
-  const ed = document.querySelector('#editor');
-  if (!ed) return;
-  ed.addEventListener('click', (ev) => {
-    const x = ev.clientX, y = ev.clientY;
-    const topEl = document.elementFromPoint(x, y);
-    if (!topEl) return;
-    if (!ed.contains(topEl)) {
-      console.warn('[OVERLAY] Click resolved to element OUTSIDE #editor at', topEl);
-    } else {
-      const z = getComputedStyle(topEl).zIndex;
-      console.log('[OVERLAY] Click inside editor resolved to', topEl, 'z-index=', z);
-    }
-  });
-})();
-</script>
-
-
-
-
-
-
-
-<script>
-// ===== OVERLAY DETECTOR (TEMP) =====
 (function () {
   const ed = document.querySelector('#editor');
   if (!ed) return;

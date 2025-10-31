@@ -28,6 +28,32 @@ import SpacingExtension from "./extensions/spacing.js";
 import PageBreak        from "./nodes/page-break.js";
 import SignatureField   from "./nodes/signature-field.js";
 
+/**
+ * [Hydration Helper] Read initial TipTap JSON from the view.
+ * Accepts either a plain ProseMirror doc ({"type":"doc",...}) or an envelope like:
+ *   {"scope":"template","id":123,"json":{...the doc...}}
+ * Returns: a valid ProseMirror doc object, or null if missing.
+ */
+function readInitialDocFromScriptTag() {
+  const tag = document.getElementById('rt-initial-json');
+  if (!tag) return null;
+
+  // Strip BOM and trim
+  const raw = (tag.textContent || '').replace(/^\uFEFF/, '').trim();
+  if (!raw || raw.startsWith('<')) return null; // looks like HTML, bail
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object' && parsed.json && typeof parsed.json === 'object') {
+      return parsed.json; // supports { json: {…} } envelope
+    }
+    return parsed; // direct ProseMirror doc
+  } catch (err) {
+    console.warn('[RTEditor] hydration skipped:', err);
+    return null;
+  }
+}
+
 function postJSON(url, payload, extraHeaders = {}) {
   return fetch(url, {
     method: 'POST',
@@ -57,7 +83,12 @@ export default function initBasicEditor(opts) {
   const editor = new Editor({
     element: mount,
     editable,
-    content: initialHTML,
+    // Prefer doc from server; fallback to provided initialHTML
+    content: (() => {
+      const doc = readInitialDocFromScriptTag();
+      if (doc && doc.type) return doc;      // valid PM doc object
+      return initialHTML;                   // fallback string
+    })(),
     extensions: [
       StarterKit.configure({ 
         history: true,
@@ -112,20 +143,6 @@ export default function initBasicEditor(opts) {
       tiptapDoc = window.__RT_pendingContent;
       // clear after use to avoid re-using stale data
       window.__RT_pendingContent = null;
-    } else {
-      // Fallback: read the <script id="rt-loaded-content"> tag if present
-      const tag = document.getElementById('rt-loaded-content');
-      if (tag) {
-        const payload = JSON.parse(tag.textContent || '{}');
-        const raw     = payload && payload.content;
-        tiptapDoc = (typeof raw === 'string') ? JSON.parse(raw) : (raw || null);
-
-        // Optional: title hint for your UI
-        if (payload && payload.title) {
-          const titleEl = document.querySelector('[data-rt-title]') || document.querySelector('.card-title, h2, h1');
-          if (titleEl) titleEl.textContent = payload.title + ' (Template)';
-        }
-      }
     }
 
     if (tiptapDoc) {
