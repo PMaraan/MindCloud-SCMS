@@ -10,12 +10,61 @@
   padding: 0; /* outer #editor already has padding (Bootstrap card-body) */
 }
 
-/* Make the card header stick at the top while the page scrolls */
-.card > .card-header {
-  position: sticky;
-  top: 0;
-  z-index: 2;          /* above the page canvas */
+/* Toolbar look when it sits inside the sticky card header */
+.card > .card-header .rt-toolbar {
+  background: #fff;
+}
+
+:root{
+  --app-topbar-h: 64px;   /* your navbar height from HeaderComponent.css */
+  --sidebar-w: 250px;     /* your fixed sidebar width */
+  --rt-toolbar-h: 52px;   /* fixed ribbon height */
+}
+
+.rt-fixed-toolbar{
+  position: fixed;
+  top: 113px;                /* hard-coded: sits right below the 64px navbar */
+  left: var(--sidebar-w);
+  right: 0;
+  height: var(--rt-toolbar-h);
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .5rem .75rem;
+  background: #fff;
   border-bottom: 1px solid #e9ecef;
+  box-shadow: 0 1px 0 rgba(0,0,0,.04);
+  z-index: 1019;           /* BELOW Bootstrap .sticky-top (≈1020) so navbar stays on top */
+}
+
+/* Ensure toolbar menus float above main content and canvas */
+.rt-fixed-toolbar .dropdown-menu,
+.rt-fixed-toolbar .popover,
+.rt-fixed-toolbar .tooltip {
+  z-index: 1055; /* above modals backdrop 1050, safe with Bootstrap */
+}
+
+/* Spacer to keep content from sliding under the fixed toolbar */
+.rt-toolbar-spacer{
+  height: calc(var(--rt-toolbar-h) + 8px); /* add a bit of breathing room */
+}
+
+/* Mobile / narrow: sidebar usually overlays; let toolbar span full width */
+@media (max-width: 991.98px){
+  .rt-fixed-toolbar{ left: 0; }
+}
+
+/* (Optional) If your sidebar toggle adds a body class, adjust offset when collapsed.
+   Replace `.sidebar-collapsed` with the real class your toggle uses. */
+body.sidebar-collapsed .rt-fixed-toolbar{
+  left: 0; /* or set to the collapsed width if it’s not zero */
+}
+
+.card > .card-header .rt-toolbar .btn,
+.card > .card-header .rt-toolbar .form-select,
+.card > .card-header .rt-toolbar .form-control {
+  margin-top: .25rem;
+  margin-bottom: .25rem;
 }
 
 /* Paragraph spacing */
@@ -152,19 +201,8 @@ select[data-cmd-input="setFontFamily"] option[value*="Consolas"]       { font-fa
   overflow-y: visible;  /* vertical scroll on window so sticky works */
 }
 
-/* If you have a fixed topbar height, set this once. Otherwise leave 0. */
-:root {
-  --rt-sticky-top: 0;
-}
-
-/* This is the element in the partial */
-.rt-toolbar-sticky {
-  position: sticky;
-  top: var(--rt-sticky-top);
-  z-index: 10;
-  background: #fff;
-  border-bottom: 1px solid #e9ecef;
-}
+/* If your site-wide layout sets a clipping scroll container, ensure the local ancestors don't clip */
+.card-body { overflow: visible; }
 
 /* Center the page and allow it to overflow horizontally inside pageRoot */
 #pageRoot .rt-page {

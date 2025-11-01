@@ -8,7 +8,7 @@
  */
 $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
 ?>
-<div class="container py-3">
+<div class="container py-3" style="padding-top:8rem !important;">
   <div class="d-flex align-items-center justify-content-between mb-3">
     <h5 class="mb-0"><?= htmlspecialchars($pageTitle) ?></h5>
     <span class="badge <?= $canEdit ? 'text-bg-success' : 'text-bg-warning' ?>">
@@ -18,45 +18,45 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
 
   <div class="card shadow-sm">
     <div class="card-header bg-white">
-      <strong>Typing Test Area</strong>
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <strong>Typing Test Area</strong>
+
+        <!-- FIXED ribbon just below navbar, aligned to the right of the sidebar -->
+        <div id="rt-toolbar-bar" class="rt-fixed-toolbar">
+          <?php include __DIR__ . '/partials/Toolbar.php'; ?>
+        </div>
+
+        <!-- Keep the payload/meta in the DOM (only one copy) -->
+        <?php
+        /**
+         * [RTEditor Payload Injection]
+         * Purpose: Provide the initial TipTap JSON for hydration without HTML-escaping.
+         */
+        $initialJsonRaw = isset($initialJsonRaw) && is_string($initialJsonRaw) && trim($initialJsonRaw) !== ''
+          ? $initialJsonRaw
+          : '{"type":"doc","content":[{"type":"paragraph"}]}';
+        $safeJsonForScript = str_replace('</script', '<\/script', $initialJsonRaw);
+        ?>
+        <script id="rt-initial-json" type="application/json"><?= $safeJsonForScript ?></script>
+
+        <?php
+        /**
+         * [RTEditor Meta]
+         * Purpose: expose scope/id for front-end save/load logic.
+         */
+        $rtScope = isset($rtScope) ? (string)$rtScope : '';
+        $rtId    = isset($rtId)    ? (int)$rtId      : 0;
+        ?>
+        <div id="rt-meta" data-scope="<?= htmlspecialchars($rtScope, ENT_QUOTES, 'UTF-8') ?>" data-id="<?= (int)$rtId ?>"></div>
+      </div>
     </div>
+
+    <!-- Spacer so the page canvas starts below the fixed toolbar -->
+    <div class="rt-toolbar-spacer"></div>
+
     <div class="card-body">
       <!-- Plain contenteditable area with zero external dependencies -->
       <!-- TipTap mount (no contenteditable attribute—TipTap will manage it) -->
-
-      <div class="rt-toolbar-sticky">
-        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-          <?php include __DIR__ . '/partials/Toolbar.php'; ?>
-          <?php
-          /**
-           * [RTEditor Payload Injection]
-           * Purpose: Provide the initial TipTap JSON for hydration without HTML-escaping.
-           * - $initialJsonRaw MUST be a raw JSON string of the ProseMirror doc (e.g. {"type":"doc","content":[...]}).
-           * - Do NOT wrap with htmlspecialchars() or json_encode() here, or JSON.parse will fail.
-           * - We only neutralize the `</script` sequence to avoid early tag termination.
-           */
-          $initialJsonRaw = isset($initialJsonRaw) && is_string($initialJsonRaw) && trim($initialJsonRaw) !== ''
-            ? $initialJsonRaw
-            : '{"type":"doc","content":[{"type":"paragraph"}]}';
-
-          $safeJsonForScript = str_replace('</script', '<\/script', $initialJsonRaw);
-          ?>
-          <script id="rt-initial-json" type="application/json"><?= $safeJsonForScript ?></script>
-
-          <?php
-          /**
-           * [RTEditor Meta]
-           * Purpose: expose scope/id for front-end save/load logic (fallback if URL lacks them).
-           * data-scope: 'template' | 'syllabus'
-           * data-id   : numeric id
-           */
-          $rtScope = isset($rtScope) ? (string)$rtScope : '';
-          $rtId    = isset($rtId)    ? (int)$rtId      : 0;
-          ?>
-          <div id="rt-meta" data-scope="<?= htmlspecialchars($rtScope, ENT_QUOTES, 'UTF-8') ?>" data-id="<?= (int)$rtId ?>"></div>
-
-        </div>
-      </div>
 
       <link rel="stylesheet" href="<?= BASE_PATH ?>/public/assets/css/rteditor/collab-editor.css">
 

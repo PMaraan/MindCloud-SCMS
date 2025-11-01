@@ -1,8 +1,10 @@
+/* HeaderComponent.css */
 .navbar {
   background-color: #670003 !important;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1) !important;
   min-height: 64px !important;
   max-height: 64px !important;
+  z-index: 1020; /* keep navbar above the fixed editor toolbar */
 }
 
 .navbar-brand {
