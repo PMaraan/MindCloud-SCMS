@@ -38,6 +38,11 @@ final class Permissions
     public const COURSES_EDIT   = 'CourseModification';
     public const COURSES_DELETE = 'CourseDeletion';
 
+    public const SYLLABI_VIEW   = 'SYLLABI_VIEW';
+    public const SYLLABI_CREATE = 'SYLLABI_CREATE';
+    public const SYLLABI_EDIT   = 'SYLLABI_EDIT';
+    public const SYLLABI_DELETE = 'SYLLABI_DELETE';
+
     public const TEMPLATEBUILDER_VIEW   = 'SyllabusTemplateViewing';
     public const TEMPLATEBUILDER_CREATE = 'SyllabusTemplateCreation';
     public const TEMPLATEBUILDER_EDIT   = 'SyllabusTemplateModification';

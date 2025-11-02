@@ -71,6 +71,17 @@ return [
             'delete' => Permissions::COURSES_DELETE,
         ],
     ],
+        'syllabi' => [
+        'label'      => 'Syllabi',
+        'permission' => \App\Config\Permissions::SYLLABI_VIEW,
+        'controller' => \App\Modules\Syllabi\Controllers\SyllabiController::class,
+        'actions'    => [
+            'index'  => 'index',   // GET /dashboard?page=syllabi
+            'create' => 'create',  // POST /dashboard?page=syllabi&action=create
+            'update' => 'update',  // POST /dashboard?page=syllabi&action=update
+            'delete' => 'delete',  // POST /dashboard?page=syllabi&action=delete
+        ],
+    ],
     'syllabus-templates' => [
         'label'      => 'Syllabus Templates',
         'controller' => SyllabusTemplatesController::class,
