@@ -43,8 +43,10 @@ final class SyllabiController
     }
 
     /**
-     * Index (list) – global pagination + search
-     * URL: /dashboard?page=syllabi[&pg=1][&q=...]
+     * Index (folders/sections) – mirrors Syllabus Templates layout
+     * URL:
+     *   /dashboard?page=syllabi
+     *   /dashboard?page=syllabi&college={id}   (open a college folder)
      */
     public function index(): string
     {
@@ -56,23 +58,19 @@ final class SyllabiController
         $programId = isset($user['program_id']) ? (int)$user['program_id'] : null;
 
         $ASSET_BASE = (defined('BASE_PATH') ? BASE_PATH : '') . '/public';
-        $esc = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
-        $PAGE_KEY = 'syllabi';
+        $esc        = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
+        $PAGE_KEY   = 'syllabi';
 
-        // Global pagination pattern
-        $pg      = isset($_GET['pg']) && ctype_digit((string)$_GET['pg']) ? max(1, (int)$_GET['pg']) : 1;
-        $perpage = 12; // UI grid-ready; adjust later if needed
-        $q       = trim((string)($_GET['q'] ?? ''));
+        // Query param to open a specific college folder in “system roles” view
+        $openCollegeId = null;
+        if (isset($_GET['college']) && ctype_digit((string)$_GET['college'])) {
+            $openCollegeId = (int)$_GET['college'];
+        }
 
-        // Base URL must already contain '?'
-        $baseUrl = (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=' . $PAGE_KEY;
-
-        // Delegate to model (abstracted; you’ll implement real queries later)
-        $list = $this->model->listSyllabi($role, $collegeId, $programId, $pg, $perpage, $q);
-        $rows  = $list['rows']  ?? [];
-        $total = $list['total'] ?? 0;
-        $from  = $total ? (($pg - 1) * $perpage + 1) : 0;
-        $to    = $total ? min($from + $perpage - 1, $total) : 0;
+        // Cache (optional; mirrors templates controller behavior)
+        if (!isset($_SESSION['sy_cache'])) $_SESSION['sy_cache'] = [];
+        $cacheGet = fn(string $k) => $_SESSION['sy_cache'][$k] ?? null;
+        $cacheSet = function(string $k, $v): void { $_SESSION['sy_cache'][$k] = $v; };
 
         $viewData = [
             'ASSET_BASE' => $ASSET_BASE,
@@ -80,25 +78,120 @@ final class SyllabiController
             'PAGE_KEY'   => $PAGE_KEY,
             'user'       => $user,
             'role'       => $role,
-
-            // Listing + pager
-            'rows'   => $rows,
-            'pager'  => [
-                'total'   => $total,
-                'pg'      => $pg,
-                'perpage' => $perpage,
-                'baseUrl' => $baseUrl,
-                'query'   => $q,
-                'from'    => $from,
-                'to'      => $to,
-            ],
-
-            // RBAC toggles (will be used by partials)
-            'canCreate' => $this->canCreate($role, $collegeId, $programId),
-            'canEdit'   => $this->canEdit($role, $collegeId, $programId),
-            'canDelete' => $this->canDelete($role, $collegeId, $programId),
         ];
 
+        // 1) SYSTEM ROLES → folders view by default; open a college if requested
+        if (in_array($role, $this->SYSTEM_ROLES, true)) {
+            // cache the college list
+            $colleges = $cacheGet('colleges_all');
+            if ($colleges === null) {
+                $colleges = $this->model->getAllColleges();
+                $cacheSet('colleges_all', $colleges);
+            }
+
+            if ($openCollegeId === null) {
+                $viewData['mode']     = 'system-folders';
+                $viewData['colleges'] = $colleges;
+                // show “New Syllabus” on system roles when drilled into a college (not here)
+                return $this->render('index', $viewData);
+            }
+
+            // opened a college: load sections (general + per-program)
+            $perKey = "college_sections_{$openCollegeId}";
+            $collegeSections = $cacheGet($perKey);
+            if ($collegeSections === null) {
+                $general  = $this->model->getCollegeGeneralSyllabi($openCollegeId);
+                $programs = $this->model->getProgramsByCollege($openCollegeId);
+
+                $progSecs = [];
+                foreach ($programs as $p) {
+                    $pid = (int)$p['program_id'];
+                    $progSecs[] = [
+                        'program' => $p,
+                        // “exclusive to this program” or simply “program’s syllabi”
+                        'syllabi' => $this->model->getProgramSyllabiExclusive($openCollegeId, $pid),
+                    ];
+                }
+
+                // pick the college row from cached list
+                $college = null;
+                foreach ($colleges as $c) {
+                    if ((int)$c['college_id'] === $openCollegeId) { $college = $c; break; }
+                }
+
+                $collegeSections = [
+                    'college'  => $college ?: ['college_id'=>$openCollegeId,'short_name'=>'','college_name'=>''],
+                    'general'  => $general,
+                    'programs' => $progSecs,
+                ];
+                $cacheSet($perKey, $collegeSections);
+            }
+
+            $viewData['mode']               = 'college';
+            $viewData['college']            = $collegeSections['college'];
+            $viewData['general']            = $collegeSections['general'];
+            $viewData['programs']           = $collegeSections['programs'];
+            $viewData['showBackToFolders']  = true;
+            $viewData['canCreateSyllabus']  = true; // system roles can create
+            $viewData['allColleges']        = $colleges;
+            $viewData['programsOfCollege']  = $this->model->getProgramsByCollege((int)$collegeSections['college']['college_id']);
+            return $this->render('index', $viewData);
+        }
+
+        // 2) DEANS → land directly on their college (general + programs)
+        if ($collegeId && in_array($role, $this->DEAN_ROLES, true)) {
+            $general  = $this->model->getCollegeGeneralSyllabi($collegeId);
+            $programs = $this->model->getProgramsByCollege($collegeId);
+
+            $progSecs = [];
+            foreach ($programs as $p) {
+                $pid = (int)$p['program_id'];
+                $progSecs[] = [
+                    'program' => $p,
+                    'syllabi' => $this->model->getProgramSyllabiExclusive($collegeId, $pid),
+                ];
+            }
+
+            $viewData['mode']              = 'college';
+            $viewData['college']           = [
+                'college_id'   => $collegeId,
+                'short_name'   => (string)($user['college_short_name'] ?? ''),
+                'college_name' => (string)($user['college_name'] ?? ''),
+            ];
+            $viewData['general']           = $general;
+            $viewData['programs']          = $progSecs;
+            $viewData['canCreateSyllabus'] = true;
+            $viewData['allColleges']       = [['college_id'=>$collegeId,'short_name'=>$user['college_short_name'] ?? '','college_name'=>$user['college_name'] ?? '']];
+            $viewData['programsOfCollege'] = $programs;
+            return $this->render('index', $viewData);
+        }
+
+        // 3) CHAIRS → college general + their program only
+        if ($collegeId && $programId && in_array($role, $this->CHAIR_ROLES, true)) {
+            $general       = $this->model->getCollegeGeneralSyllabi($collegeId);
+            $programSyl    = $this->model->getProgramSyllabiExclusive($collegeId, $programId);
+
+            $viewData['mode']              = 'program';
+            $viewData['college']           = [
+                'college_id'   => $collegeId,
+                'short_name'   => (string)($user['college_short_name'] ?? ''),
+                'college_name' => (string)($user['college_name'] ?? ''),
+            ];
+            $viewData['program']           = [
+                'program_id'   => $programId,
+                'program_name' => (string)($user['program_name'] ?? 'My Program'),
+            ];
+            $viewData['general']           = $general;
+            $viewData['program_syllabi']   = $programSyl;
+            $viewData['canCreateSyllabus'] = true;
+            $viewData['allColleges']       = [['college_id'=>$collegeId,'short_name'=>$user['college_short_name'] ?? '','college_name'=>$user['college_name'] ?? '']];
+            $viewData['programsOfCollege'] = [['program_id'=>$programId,'program_name'=>$user['program_name'] ?? '']];
+            return $this->render('index', $viewData);
+        }
+
+        // 4) Fallback → folders
+        $viewData['mode']     = 'system-folders';
+        $viewData['colleges'] = $this->model->getAllColleges();
         return $this->render('index', $viewData);
     }
 

@@ -8,11 +8,10 @@ use App\Modules\Courses\Controllers\CoursesController;
 use App\Modules\Programs\Controllers\ProgramsController;
 use App\Modules\Curricula\Controllers\CurriculaController;
 use App\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController;
+use App\Modules\Syllabi\Controllers\SyllabiController;
 use App\Modules\RTEditor\Controllers\RTEditorController;
 use App\Modules\Notifications\Controllers\NotificationsController;
 // use App\Controllers\RolesController; // might be deprecated. remove for production ...
-// use App\Controllers\TemplatesController;
-// use App\Controllers\SyllabusController;
 // use App\Controllers\FacultyController;
 
 return [
@@ -71,10 +70,20 @@ return [
             'delete' => Permissions::COURSES_DELETE,
         ],
     ],
-        'syllabi' => [
+    'syllabus-templates' => [
+        'label'      => 'Syllabus Templates',
+        'controller' => SyllabusTemplatesController::class,
+        'permission' => Permissions::SYLLABUSTEMPLATES_VIEW, // alias to old string        
+        'actions'    => [
+            'create' => Permissions::SYLLABUSTEMPLATES_CREATE// alias to old string
+            // 'edit'   => Permissions::TEMPLATES_EDIT,
+            // 'delete' => Permissions::TEMPLATES_DELETE,
+        ], 
+    ],
+    'syllabi' => [
         'label'      => 'Syllabi',
-        'permission' => \App\Config\Permissions::SYLLABI_VIEW,
-        'controller' => \App\Modules\Syllabi\Controllers\SyllabiController::class,
+        'permission' => Permissions::SYLLABI_VIEW,
+        'controller' => SyllabiController::class,
         'actions'    => [
             'index'  => 'index',   // GET /dashboard?page=syllabi
             'create' => 'create',  // POST /dashboard?page=syllabi&action=create
@@ -82,19 +91,9 @@ return [
             'delete' => 'delete',  // POST /dashboard?page=syllabi&action=delete
         ],
     ],
-    'syllabus-templates' => [
-        'label'      => 'Syllabus Templates',
-        'controller' => SyllabusTemplatesController::class,
-        'permission' => \App\Config\Permissions::SYLLABUSTEMPLATES_VIEW, // alias to old string        
-        'actions'    => [
-            'create' => \App\Config\Permissions::SYLLABUSTEMPLATES_CREATE// alias to old string
-            // 'edit'   => Permissions::TEMPLATES_EDIT,
-            // 'delete' => Permissions::TEMPLATES_DELETE,
-        ], 
-    ],
     'rteditor' => [
         'label'      => 'RT Editor',
-        'permission' => \App\Config\Permissions::EDITOR_VIEW,
+        'permission' => Permissions::EDITOR_VIEW,
         'controller' => RTEditorController::class,
         'actions'    => ['index', 'create', 'saveMeta', 'snapshot', 'openTemplate'],
     ],
