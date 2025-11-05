@@ -36,6 +36,109 @@ final class SyllabiModel
         $this->pdo = $db->getConnection();
     }
 
+    // --------- Simple read helpers for folders/college/program views ---------
+
+    /** List colleges for the folders screen. */
+    public function getCollegesForFolders(): array
+    {
+        $sql = "SELECT c.college_id, c.short_name, c.college_name
+                FROM public.colleges c
+                ORDER BY COALESCE(NULLIF(c.short_name,''), c.college_name) ASC";
+        return $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    /** One college by id. */
+    public function getCollege(int $collegeId): ?array
+    {
+        $stmt = $this->pdo->prepare("SELECT college_id, short_name, college_name FROM public.colleges WHERE college_id = :id");
+        $stmt->execute([':id' => $collegeId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
+    }
+
+    /** Programs for a college. */
+    public function getProgramsByCollege(int $collegeId): array
+    {
+        $stmt = $this->pdo->prepare("SELECT program_id, program_name, college_id FROM public.programs WHERE college_id = :cid ORDER BY program_name");
+        $stmt->execute([':cid' => $collegeId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    /** One program. */
+    public function getProgram(int $programId): ?array
+    {
+        $stmt = $this->pdo->prepare("SELECT program_id, program_name, college_id FROM public.programs WHERE program_id = :pid");
+        $stmt->execute([':pid' => $programId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
+    }
+
+    /**
+     * Courses “by program” (approx): filter courses by the program’s college_id.
+     * We don’t assume a program↔course mapping table; this keeps the modal useful
+     * without schema changes.
+     */
+    public function getCoursesByProgramApprox(int $programId): array
+    {
+        $prog = $this->getProgram($programId);
+        if (!$prog) return [];
+        $cid = (int)$prog['college_id'];
+        $stmt = $this->pdo->prepare("
+            SELECT course_id, course_code, course_name
+            FROM public.courses
+            WHERE college_id = :cid
+            ORDER BY course_code, course_name
+        ");
+        $stmt->execute([':cid' => $cid]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        // For client-side filter UX, add data-program-id attribute support (same pid)
+        foreach ($rows as &$r) { $r['program_id'] = $programId; }
+        return $rows;
+    }
+
+    /** College-wide syllabi (no per-program split). */
+    public function getCollegeSyllabi(int $collegeId): array
+    {
+        $sql = "
+            SELECT
+                s.syllabus_id, s.title, s.filename, s.version, s.status,
+                s.course_id, c.course_code, c.course_name,
+                s.program_id, p.program_name,
+                s.updated_at
+            FROM public.syllabi s
+            LEFT JOIN public.courses  c ON c.course_id  = s.course_id
+            LEFT JOIN public.programs p ON p.program_id = s.program_id
+            WHERE c.college_id = :cid
+            ORDER BY s.updated_at DESC, s.syllabus_id DESC
+            LIMIT 120
+        ";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([':cid' => $collegeId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    /** Syllabi for one program. */
+    public function getProgramSyllabi(int $programId): array
+    {
+        $sql = "
+            SELECT
+                s.syllabus_id, s.title, s.filename, s.version, s.status,
+                s.course_id, c.course_code, c.course_name,
+                s.program_id, p.program_name,
+                s.updated_at
+            FROM public.syllabi s
+            LEFT JOIN public.courses  c ON c.course_id  = s.course_id
+            LEFT JOIN public.programs p ON p.program_id = s.program_id
+            WHERE s.program_id = :pid
+            ORDER BY s.updated_at DESC, s.syllabus_id DESC
+            LIMIT 120
+        ";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([':pid' => $programId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+
     /**
      * List syllabi with filters:
      * - System roles: see all (optionally filter by search).
@@ -240,100 +343,7 @@ final class SyllabiModel
     // - getCollegeGeneralSyllabi($collegeId)
     // - getProgramSyllabiExclusive($collegeId, $programId)
     // =====================================================================
-
-    /**
-     * List all colleges (for folders view).
-     * Assumes public.colleges(college_id, short_name, college_name).
-     * Adjust field names if your table differs.
-     *
-     * @return array<int, array{college_id:int, short_name:string, college_name:string}>
-     */
-    public function getAllColleges(): array
-    {
-        $sql = "
-            SELECT c.college_id, c.short_name, c.college_name
-            FROM public.colleges c
-            ORDER BY NULLIF(TRIM(c.short_name),'') IS NULL, TRIM(c.short_name) ASC, TRIM(c.college_name) ASC
-        ";
-        $stmt = $this->pdo->query($sql);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
-    }
-
-    /**
-     * Programs belonging to a college.
-     *
-     * @return array<int, array{program_id:int, program_name:string}>
-     */
-    public function getProgramsByCollege(int $collegeId): array
-    {
-        $sql = "
-            SELECT p.program_id, p.program_name
-            FROM public.programs p
-            WHERE p.college_id = :cid
-            ORDER BY TRIM(p.program_name) ASC
-        ";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([':cid' => $collegeId]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
-    }
-
-    /**
-     * “General” syllabi for a college.
-     *
-     * Since the syllabi schema does not have a 'scope' or college-only row,
-     * we define college “General” as: the latest syllabus per course (by updated_at DESC)
-     * among all programs under that college. This gives a concise college-wide list.
-     *
-     * Returns a row set that matches your grid (includes course & program labels).
-     *
-     * @return array<int, array<string,mixed>>
-     */
-    public function getCollegeGeneralSyllabi(int $collegeId): array
-    {
-        // Postgres DISTINCT ON to pick latest per course inside the college
-        $sql = "
-            SELECT DISTINCT ON (s.course_id)
-                s.syllabus_id, s.title, s.filename, s.version, s.status,
-                s.course_id, c.course_code, c.course_name,
-                s.program_id, p.program_name,
-                s.updated_at
-            FROM public.syllabi s
-            JOIN public.programs p ON p.program_id = s.program_id
-            JOIN public.courses  c ON c.course_id  = s.course_id
-            WHERE p.college_id = :cid
-            ORDER BY s.course_id, s.updated_at DESC, s.syllabus_id DESC
-        ";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([':cid' => $collegeId]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
-    }
-
-    /**
-     * Program-exclusive syllabi list (within a college), ordered by most recent.
-     * Useful for each accordion program section.
-     *
-     * @return array<int, array<string,mixed>>
-     */
-    public function getProgramSyllabiExclusive(int $collegeId, int $programId): array
-    {
-        $sql = "
-            SELECT
-                s.syllabus_id, s.title, s.filename, s.version, s.status,
-                s.course_id, c.course_code, c.course_name,
-                s.program_id, p.program_name,
-                s.updated_at
-            FROM public.syllabi s
-            JOIN public.programs p ON p.program_id = s.program_id
-            JOIN public.courses  c ON c.course_id  = s.course_id
-            WHERE p.college_id = :cid
-              AND s.program_id = :pid
-            ORDER BY s.updated_at DESC, s.syllabus_id DESC
-        ";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([':cid' => $collegeId, ':pid' => $programId]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
-    }
-
+    
     // -----------------------
     // Helpers
     // -----------------------

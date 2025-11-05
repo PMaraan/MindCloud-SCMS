@@ -1,28 +1,35 @@
 <?php
 // /app/Modules/Syllabi/Views/index.php
 /**
- * View: Syllabi Index (aligned to Syllabus Templates layout)
+ * View: Syllabi – aligned with Syllabus Templates UX
  *
- * Expected vars from controller:
- *   - $mode: 'system-folders' | 'college' | 'program'
- *   - $ASSET_BASE, $esc, $user, $role
- *   - When $mode==='system-folders': $colleges
- *   - When $mode==='college':
- *        $college, $general, $programs,
- *        optional: $showBackToFolders, $canCreateSyllabus, $allColleges, $programsOfCollege
- *   - When $mode==='program':
- *        $college, $general, $program, $program_syllabi, $canCreateSyllabus
+ * Modes:
+ *  - system-folders : show colleges list (FoldersList)
+ *  - college        : show college-wide + per-program sections
+ *  - program        : show one program under a college
  *
- * Notes:
- *   - Mirrors /SyllabusTemplates/Views/index.php structure for consistency.
- *   - Uses Syllabi partials:
- *        /partials/FoldersList.php
- *        /partials/CollegeSection.php  (internally includes ProgramSections + Grid)
- *   - Info pane on the right matches the “Details” card pattern.
+ * Provided by controller:
+ *  $mode
+ *  $ASSET_BASE, $esc, $user, $role
+ *  $PAGE_KEY='syllabi'
+ *  When $mode==='system-folders': $colleges
+ *  When $mode==='college': $college, $general, $programs, $showBackToFolders?, $allColleges, $programsOfCollege, $coursesOfProgram
+ *  When $mode==='program': $college, $general, $program, $program_syllabi
+ *
+ * Reuses your Syllabi partials (FoldersList, CollegeSection, ProgramSections, Grid, CreateModal, etc.)
  */
 $base = defined('BASE_PATH') ? BASE_PATH : '';
 $PAGE_KEY = 'syllabi';
 ?>
+<link rel="stylesheet" href="<?= $ASSET_BASE ?>/assets/css/TemplateBuilder-Scaffold.css">
+
+<script>
+  // Make BASE_PATH available to the scaffold JS
+  window.BASE_PATH = "<?= $esc($base) ?>";
+</script>
+
+<script defer src="<?= $ASSET_BASE ?>/assets/js/Syllabi-Scaffold.js"></script>
+
 <div><!-- CONTAINER OPEN -->
 
   <!-- PAGE HEADER -->
@@ -31,9 +38,9 @@ $PAGE_KEY = 'syllabi';
       <h2 class="mb-0">Syllabi</h2>
       <div class="text-muted small">
         <?= $esc(
-          $mode === 'system-folders' ? 'Select a college folder to view syllabi.'
-          : ($mode === 'college' ? 'College-wide syllabi + Program syllabi for this college.'
-          : 'College-wide syllabi + my program syllabi.')
+          $mode === 'system-folders' ? 'Select a college folder to browse syllabi.'
+          : ($mode === 'college' ? 'All college syllabi + per-program sections.'
+          : 'College syllabi + selected program syllabi.')
         ) ?>
       </div>
     </div>
@@ -44,7 +51,8 @@ $PAGE_KEY = 'syllabi';
           <i class="bi bi-arrow-left"></i> All Colleges
         </a>
       <?php endif; ?>
-      <?php if (!empty($canCreateSyllabus)): ?>
+
+      <?php if (!empty($canCreate)): ?>
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#syCreateModal">
           <i class="bi bi-file-earmark-plus"></i> New Syllabus
         </button>
@@ -57,29 +65,26 @@ $PAGE_KEY = 'syllabi';
     $partialsDir = __DIR__ . '/partials';
 
     if ($mode === 'system-folders') {
-      // Simple list of folders (anchors) – no side pane here
       include $partialsDir . '/FoldersList.php';
 
     } else {
-      // FLEX LAYOUT: MAIN + ASIDE (match Templates)
+      // FLEX LAYOUT: MAIN + ASIDE
       ?>
       <div class="tb-flex-wrap d-block d-md-flex gap-3 align-items-start"><!-- FLEX WRAP OPEN -->
 
         <main class="tb-flex-main flex-grow-1"><!-- MAIN OPEN -->
           <?php
             if ($mode === 'college') {
-              // expects: $college, $general, $programs
               include $partialsDir . '/CollegeSection.php';
             } else {
-              // program mode → wrap into a single college section with one program section
-              // Syllabi version uses ['program' => {...}, 'syllabi' => [...]]
+              // program mode: reuse college section with one program group
               $programs = [
                 ['program' => ($program ?? []), 'syllabi' => ($program_syllabi ?? [])]
               ];
               include $partialsDir . '/CollegeSection.php';
             }
           ?>
-        </main><!-- MAIN CLOSE -->
+        </main><!-- /MAIN CLOSE -->
 
         <aside class="tb-flex-aside flex-shrink-0" id="sy-info-pane"><!-- ASIDE OPEN -->
           <div class="card">
@@ -98,10 +103,8 @@ $PAGE_KEY = 'syllabi';
                 <dt class="col-4">Actions</dt>
                 <dd class="col-8">
                   <div class="d-flex gap-2">
-                    <a class="btn btn-sm btn-primary" id="sy-open" href="#" role="button">Open</a>
-                    <!-- Optional future action:
-                    <button class="btn btn-sm btn-outline-secondary" id="sy-duplicate" type="button">Duplicate</button>
-                    -->
+                    <button class="btn btn-sm btn-primary" id="sy-open">Open</button>
+                    <button class="btn btn-sm btn-outline-secondary" id="sy-duplicate" disabled>Duplicate</button>
                   </div>
                 </dd>
               </dl>
@@ -113,68 +116,17 @@ $PAGE_KEY = 'syllabi';
       <?php
     }
 
-    // CREATE MODAL (optional; your real UI can replace this)
-    if (!empty($canCreateSyllabus)) {
-      // You can render a create modal here when ready, mirroring Templates’ CreateModal
-      if (file_exists($partialsDir . '/CreateModal.php')) {
-        include $partialsDir . '/CreateModal.php';
-      }
+    // CREATE / EDIT / DELETE MODALS
+    // We’ll show Create modal on college/program modes (it needs lists).
+    if ($mode !== 'system-folders') {
+      $colList  = $allColleges      ?? [];
+      $progList = $programsOfCollege?? [];
+      $courseList = $coursesOfProgram?? [];
+      include $partialsDir . '/CreateModal.php';
     }
+
+    include $partialsDir . '/EditModal.php';
+    include $partialsDir . '/DeleteModal.php';
   ?>
 
 </div><!-- /CONTAINER CLOSE -->
-
-<script>
-/**
- * Minimal pane wiring (non-invasive). Mirrors the Templates info pane behavior.
- * Reads data-* from tiles created in /partials/Grid.php (Syllabi version).
- */
-(function(){
-  const paneEmpty = document.getElementById('sy-info-empty');
-  const pane      = document.getElementById('sy-info');
-  if (!paneEmpty || !pane) return;
-
-  function selectTile(card){
-    const title   = card.getAttribute('data-title') || 'Untitled';
-    const program = card.getAttribute('data-program') || '';
-    const updated = card.getAttribute('data-updated') || '';
-    const status  = card.getAttribute('data-status') || '';
-    const id      = parseInt(card.getAttribute('data-syllabus-id') || '0', 10);
-
-    document.getElementById('sy-i-title').textContent   = title;
-    document.getElementById('sy-i-program').textContent = program;
-    document.getElementById('sy-i-updated').textContent = updated;
-    document.getElementById('sy-i-status').textContent  = status;
-
-    const openBtn = document.getElementById('sy-open');
-    if (openBtn && id > 0) {
-      const base = "<?= $esc($base) ?>";
-      openBtn.href = base + '/dashboard?page=rteditor&syllabusId=' + id;
-    }
-
-    paneEmpty.classList.add('d-none');
-    pane.classList.remove('d-none');
-  }
-
-  // Delegate clicks from tiles
-  document.addEventListener('click', (e) => {
-    const card = e.target.closest?.('.sy-tile.card');
-    if (!card) return;
-    // Prevent the outer <a> from navigating if we’re only updating the pane
-    const wrapperLink = e.target.closest('a');
-    if (wrapperLink && wrapperLink.contains(card)) {
-      e.preventDefault();
-    }
-    selectTile(card);
-  });
-
-  // Keyboard focus/enter to support accessibility
-  document.addEventListener('keydown', (e) => {
-    if (e.key !== 'Enter') return;
-    const card = document.activeElement?.classList?.contains('sy-tile') ? document.activeElement : null;
-    if (!card) return;
-    e.preventDefault();
-    selectTile(card);
-  });
-})();
-</script>

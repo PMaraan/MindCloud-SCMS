@@ -58,6 +58,18 @@ final class SyllabusTemplatesController
             'role'       => $role,
         ];
 
+        // DEBUG: show what the controller sees (visible only to logged-in users; safe for dev)
+        // Comment out when done.
+        if (!isset($_GET['nodebug'])) {
+            echo '<pre style="background:#111;color:#0f0;padding:8px;white-space:pre-wrap;">'
+            . 'DEBUG SyllabusTemplatesController@index' . PHP_EOL
+            . 'user_id=' . $esc((string)($_SESSION['user_id'] ?? '')) . PHP_EOL
+            . 'role=' . $esc($role) . PHP_EOL
+            . 'college_id=' . $esc((string)($collegeId ?? 'NULL')) . PHP_EOL
+            . 'program_id=' . $esc((string)($programId ?? 'NULL')) . PHP_EOL
+            . '</pre>';
+        }
+
         // Convert simple GET flag into a flash (so JS can trigger a nice message without alert())
         if (isset($_GET['flash']) && $_GET['flash'] === 'missing-id') {
             \App\Helpers\FlashHelper::set('danger', 'Missing or invalid document id.');

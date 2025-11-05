@@ -3668,3 +3668,29 @@ LINE 4:                 s.course_id, c.course_code, c.course_title,
 [2025-11-04T10:31:25+01:00] dev.CRITICAL [req:9e3044ec7fdfc330] SQLSTATE[42703]: Undefined column: 7 ERROR:  column c.course_title does not exist
 LINE 4:                 s.course_id, c.course_code, c.course_title,
                                                     ^ | {"exception":"PDOException","code":"42703","file":"C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Syllabi\\Models\\SyllabiModel.php","line":129,"trace":"#0 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Syllabi\\Models\\SyllabiModel.php(129): PDOStatement->execute()\n#1 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Syllabi\\Controllers\\SyllabiController.php(71): App\\Modules\\Syllabi\\Models\\SyllabiModel->listSyllabi('2025-01-20001', 'VPAA', NULL, NULL, 1, 12, '')\n#2 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Controllers\\AppShellController.php(143): App\\Modules\\Syllabi\\Controllers\\SyllabiController->index()\n#3 C:\\xampp\\htdocs\\MindCloud-SCMS\\Router\\router.php(100): App\\Controllers\\AppShellController->render('syllabi')\n#4 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\bootstrap.php(116): route('/MindCloud-SCMS...', Object(App\\Models\\Postgres), 'GET')\n#5 C:\\xampp\\htdocs\\MindCloud-SCMS\\public\\index.php(7): require_once('C:\\\\xampp\\\\htdocs...')\n#6 {main}"}
+[05-Nov-2025 00:55:12 Europe/Berlin] PHP Fatal error:  Cannot redeclare App\Modules\Syllabi\Models\SyllabiModel::getProgramsByCollege() in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Syllabi\Models\SyllabiModel.php on line 370
+[2025-11-05T00:55:12+01:00] dev.EMERGENCY [req:ca8a86aacf7f929e] Cannot redeclare App\Modules\Syllabi\Models\SyllabiModel::getProgramsByCollege() | {"file":"C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Syllabi\\Models\\SyllabiModel.php","line":370,"type":64}
+[05-Nov-2025 02:17:42 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[05-Nov-2025 02:17:42 Europe/Berlin] accounts.page rows=10 total=20 limit=10 offset=0
+[05-Nov-2025 02:17:42 Europe/Berlin] accounts.index total=20 rows=10
+[05-Nov-2025 02:17:42 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"department_id":null,"role_name":"Admin","department_short_name":"","college_short_name":""}
+[05-Nov-2025 02:17:48 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[05-Nov-2025 02:17:48 Europe/Berlin] accounts.page rows=6 total=6 limit=10 offset=0
+[05-Nov-2025 02:17:48 Europe/Berlin] accounts.index total=6 rows=6
+[05-Nov-2025 02:17:48 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-50003","fname":"Jack","mname":"","lname":"Black","email":"jackblack@lpunetwork.edu.ph","role_id":6,"department_id":1,"role_name":"Chair","department_short_name":"CCS","college_short_name":"CCS"}
+[05-Nov-2025 02:54:57 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[05-Nov-2025 02:54:57 Europe/Berlin] accounts.page rows=10 total=20 limit=10 offset=0
+[05-Nov-2025 02:54:57 Europe/Berlin] accounts.index total=20 rows=10
+[05-Nov-2025 02:54:57 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"department_id":null,"role_name":"Admin","department_short_name":"","college_short_name":""}
+[05-Nov-2025 02:55:02 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[05-Nov-2025 02:55:02 Europe/Berlin] accounts.page rows=6 total=6 limit=10 offset=0
+[05-Nov-2025 02:55:02 Europe/Berlin] accounts.index total=6 rows=6
+[05-Nov-2025 02:55:02 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-50003","fname":"Jack","mname":"","lname":"Black","email":"jackblack@lpunetwork.edu.ph","role_id":6,"department_id":1,"role_name":"Chair","department_short_name":"CCS","college_short_name":"CCS"}
+[05-Nov-2025 02:55:21 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[05-Nov-2025 02:55:21 Europe/Berlin] accounts.page rows=10 total=20 limit=10 offset=0
+[05-Nov-2025 02:55:21 Europe/Berlin] accounts.index total=20 rows=10
+[05-Nov-2025 02:55:21 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"department_id":null,"role_name":"Admin","department_short_name":"","college_short_name":""}
+[05-Nov-2025 02:59:03 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[05-Nov-2025 02:59:03 Europe/Berlin] accounts.page rows=10 total=20 limit=10 offset=0
+[05-Nov-2025 02:59:03 Europe/Berlin] accounts.index total=20 rows=10
+[05-Nov-2025 02:59:03 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"department_id":null,"role_name":"Admin","department_short_name":"","college_short_name":""}
