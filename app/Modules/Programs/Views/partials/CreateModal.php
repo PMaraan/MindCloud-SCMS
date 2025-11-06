@@ -14,7 +14,7 @@
         </div>
         <div class="mb-3">
           <label class="form-label">College</label>
-          <select name="college_id" class="form-select" required>
+          <select name="department_id" class="form-select" required>
             <option value="">— Select —</option>
             <?php foreach ($colleges as $c): ?>
               <option value="<?= (int)$c['id'] ?>"><?= htmlspecialchars($c['label']) ?></option>

@@ -36,7 +36,7 @@ final class ProgramsModel
             $where .= "
                 AND (
                     LOWER(p.program_name) LIKE :q
-                    OR LOWER(COALESCE(c.short_name, c.college_name::text)) LIKE :q
+                    OR LOWER(COALESCE(d.short_name, d.department_name::text)) LIKE :q
                 )
             ";
             $params[':q'] = '%' . $q . '%';
@@ -46,7 +46,7 @@ final class ProgramsModel
         $countSql = "
             SELECT COUNT(*)
             FROM programs p
-            JOIN colleges c ON c.college_id = p.college_id
+            JOIN departments d ON d.department_id = p.department_id AND d.is_college = TRUE
             {$where}
         ";
         $st = $this->pdo->prepare($countSql);
@@ -59,10 +59,10 @@ final class ProgramsModel
             SELECT
                 p.program_id,
                 p.program_name,
-                p.college_id,
-                COALESCE(c.short_name, c.college_name) AS college_label
+                p.department_id,
+                COALESCE(d.short_name, d.department_name) AS college_label
             FROM programs p
-            JOIN colleges c ON c.college_id = p.college_id
+            JOIN departments d ON d.department_id = p.department_id
             {$where}
             ORDER BY p.program_name ASC, p.program_id ASC
             " . $this->pageClause($limit, $offset);
@@ -79,22 +79,22 @@ final class ProgramsModel
     {
         if ($this->driver === 'pgsql') {
             $st = $this->pdo->prepare("
-                INSERT INTO programs (program_name, college_id)
-                VALUES (:program_name, :college_id)
+                INSERT INTO programs (program_name, department_id)
+                VALUES (:program_name, :department_id)
                 RETURNING program_id
             ");
             $st->bindValue(':program_name', $data['program_name']);
-            $st->bindValue(':college_id', $data['college_id'], PDO::PARAM_INT);
+            $st->bindValue(':department_id', $data['department_id'], PDO::PARAM_INT);
             $st->execute();
             return (int)$st->fetchColumn();
         }
 
         $st = $this->pdo->prepare("
-            INSERT INTO programs (program_name, college_id)
-            VALUES (:program_name, :college_id)
+            INSERT INTO programs (program_name, department_id)
+            VALUES (:program_name, :department_id)
         ");
         $st->bindValue(':program_name', $data['program_name']);
-        $st->bindValue(':college_id', $data['college_id'], PDO::PARAM_INT);
+        $st->bindValue(':department_id', $data['department_id'], PDO::PARAM_INT);
         $st->execute();
         return (int)$this->pdo->lastInsertId();
     }
@@ -104,12 +104,12 @@ final class ProgramsModel
         $st = $this->pdo->prepare("
             UPDATE programs
                SET program_name = :program_name,
-                   college_id   = :college_id
+                   department_id   = :department_id
              WHERE program_id   = :program_id
         ");
         $st->bindValue(':program_id', $programId, PDO::PARAM_INT);
         $st->bindValue(':program_name', $data['program_name']);
-        $st->bindValue(':college_id', $data['college_id'], PDO::PARAM_INT);
+        $st->bindValue(':department_id', $data['department_id'], PDO::PARAM_INT);
         $st->execute();
     }
 
@@ -123,9 +123,11 @@ final class ProgramsModel
     /** For dropdowns */
     public function getCollegesList(): array
     {
-        $sql = "SELECT college_id AS id, COALESCE(short_name, college_name) AS label
-                  FROM colleges
-              ORDER BY label ASC";
-        return $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+        $cond = "is_college = TRUE";
+        $sql  = "SELECT department_id AS id, COALESCE(short_name, department_name) AS label
+                FROM departments
+                WHERE {$cond}
+            ORDER BY label ASC";
+        return $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 }

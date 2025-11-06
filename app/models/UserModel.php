@@ -94,13 +94,25 @@ final class UserModel {
                 u.lname,
                 r.role_id,
                 r.role_name,
+
+                d.department_id,
                 d.short_name       AS department_short_name,
                 d.department_name  AS department_name,
-                d.is_college       AS department_is_college
+                d.is_college       AS department_is_college,
+
+                -- For compatibility with existing module vars:
+                -- Treat 'college_*' as the same department when is_college = TRUE; else NULL.
+                CASE WHEN d.is_college THEN d.department_id   ELSE NULL END AS college_id,
+                CASE WHEN d.is_college THEN d.short_name      ELSE NULL END AS college_short_name,
+                CASE WHEN d.is_college THEN d.department_name ELSE NULL END AS college_name,
+
+                -- Program context for Chairs (if any single mapping exists)
+                pc.program_id      AS program_id
             FROM users u
-            JOIN user_roles ur   ON ur.id_no = u.id_no
-            JOIN roles r         ON r.role_id = ur.role_id
+            JOIN user_roles ur ON ur.id_no = u.id_no
+            JOIN roles r       ON r.role_id = ur.role_id
             LEFT JOIN departments d ON d.department_id = ur.department_id
+            LEFT JOIN program_chairs pc ON pc.chair_id = u.id_no
             WHERE u.id_no = :id_no
             LIMIT 1
         ";

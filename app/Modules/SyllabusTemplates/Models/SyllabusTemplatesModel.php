@@ -22,22 +22,27 @@ final class SyllabusTemplatesModel
     /** Return all colleges (used by VPAA/Admin system view) */
     public function getAllColleges(): array
     {
-        $sql = "SELECT college_id, short_name, college_name
-                FROM public.colleges
-                ORDER BY short_name ASC";
+        $sql = "
+        SELECT 
+            d.department_id AS college_id,                -- alias for UI
+            d.short_name,
+            d.department_name AS college_name
+        FROM public.departments d
+        WHERE d.is_college = TRUE
+        ORDER BY d.short_name ASC";
         return $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
     /** Programs of a college (shown for deans; or all for system view’s college sections) */
-    public function getProgramsByCollege(int $collegeId): array
+    public function getProgramsByCollege(int $departmentId): array
     {
         $stmt = $this->pdo->prepare(
             "SELECT program_id, program_name
-             FROM public.programs
-             WHERE college_id = :cid
-             ORDER BY program_name ASC"
+            FROM public.programs
+            WHERE department_id = :did
+            ORDER BY program_name ASC"
         );
-        $stmt->execute([':cid' => $collegeId]);
+        $stmt->execute([':did' => $departmentId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
@@ -60,31 +65,37 @@ final class SyllabusTemplatesModel
      *    or system-global (no assignments at all))
      *  - NOT program-specific (no tprog rows at all)
      */
-    public function getCollegeGeneralTemplates(int $collegeId): array
+    public function getCollegeGeneralTemplates(int $departmentId): array
     {
         $stmt = $this->pdo->prepare("
         WITH visible AS (
-          SELECT t.*
-          FROM public.syllabus_templates t
-          WHERE
-            -- visible via explicit college assignment
+            SELECT t.*
+            FROM public.syllabus_templates t
+            WHERE
+            -- visible via explicit department assignment
             EXISTS (
-              SELECT 1 FROM public.syllabus_template_colleges c
-              WHERE c.template_id = t.template_id AND c.college_id = :cid
+                SELECT 1
+                FROM public.syllabus_template_departments td
+                WHERE td.template_id = t.template_id
+                    AND td.department_id = :did
             )
             OR
-            -- system-global (no assignments)
+            -- system-global (no dept/program assignments)
             (
-              t.scope = 'system'
-              AND NOT EXISTS (SELECT 1 FROM public.syllabus_template_colleges c WHERE c.template_id = t.template_id)
-              AND NOT EXISTS (SELECT 1 FROM public.syllabus_template_programs p WHERE p.template_id = t.template_id)
+                t.scope = 'system'
+                AND NOT EXISTS (SELECT 1 FROM public.syllabus_template_departments td WHERE td.template_id = t.template_id)
+                AND NOT EXISTS (SELECT 1 FROM public.syllabus_template_programs    p  WHERE p.template_id  = t.template_id)
             )
         )
         SELECT v.*
-        FROM visible v
-        WHERE NOT EXISTS (SELECT 1 FROM public.syllabus_template_programs p WHERE p.template_id = v.template_id)
-        ORDER BY v.updated_at DESC, v.title ASC");
-        $stmt->execute([':cid' => $collegeId]);
+            FROM visible v
+        WHERE NOT EXISTS (
+                SELECT 1 FROM public.syllabus_template_programs p
+                WHERE p.template_id = v.template_id
+                )
+        ORDER BY v.updated_at DESC, v.title ASC
+        ");
+        $stmt->execute([':did' => $departmentId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
@@ -94,26 +105,33 @@ final class SyllabusTemplatesModel
      *  - Must be assigned to THIS program
      *  - Must NOT be assigned to any other program (exclusive)
      */
-    public function getProgramExclusiveTemplates(int $collegeId, int $programId): array
+    public function getProgramExclusiveTemplates(int $departmentId, int $programId): array
     {
         $stmt = $this->pdo->prepare("
         SELECT t.*
-        FROM public.syllabus_templates t
+            FROM public.syllabus_templates t
         WHERE
-          EXISTS (
-            SELECT 1 FROM public.syllabus_template_colleges c
-            WHERE c.template_id = t.template_id AND c.college_id = :cid
-          )
-          AND EXISTS (
-            SELECT 1 FROM public.syllabus_template_programs p
-            WHERE p.template_id = t.template_id AND p.program_id = :pid
-          )
-          AND NOT EXISTS (
-            SELECT 1 FROM public.syllabus_template_programs p2
-            WHERE p2.template_id = t.template_id AND p2.program_id <> :pid
-          )
-        ORDER BY t.updated_at DESC, t.title ASC");
-        $stmt->execute([':cid' => $collegeId, ':pid' => $programId]);
+            EXISTS (
+            SELECT 1
+                FROM public.syllabus_template_departments td
+                WHERE td.template_id = t.template_id
+                AND td.department_id = :did
+            )
+            AND EXISTS (
+            SELECT 1
+                FROM public.syllabus_template_programs p
+                WHERE p.template_id = t.template_id
+                AND p.program_id   = :pid
+            )
+            AND NOT EXISTS (
+            SELECT 1
+                FROM public.syllabus_template_programs p2
+                WHERE p2.template_id = t.template_id
+                AND p2.program_id <> :pid
+            )
+        ORDER BY t.updated_at DESC, t.title ASC
+        ");
+        $stmt->execute([':did' => $departmentId, ':pid' => $programId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 

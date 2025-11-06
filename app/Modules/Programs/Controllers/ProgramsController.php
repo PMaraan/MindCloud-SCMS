@@ -70,17 +70,21 @@ final class ProgramsController
 
         $data = [
             'program_name' => trim((string)($_POST['program_name'] ?? '')),
-            'college_id'   => (int)($_POST['college_id'] ?? 0),
+            'department_id' => (int)($_POST['department_id'] ?? 0),
         ];
 
         try {
-            if ($data['program_name'] === '' || $data['college_id'] <= 0) {
-                throw new \InvalidArgumentException('Program name and college are required.');
+            if ($data['program_name'] === '' || $data['department_id'] <= 0) {
+                throw new \InvalidArgumentException('Program name and department are required.');
             }
             $this->model->createProgram($data);
             FlashHelper::set('success', 'Program created.');
         } catch (\Throwable $e) {
             FlashHelper::set('danger', 'Create failed: ' . $e->getMessage());
+        } finally {
+            // Invalidate Syllabus Templates cache so new programs appear immediately
+            if (session_status() !== \PHP_SESSION_ACTIVE) { session_start(); }
+            unset($_SESSION['st_cache'], $_SESSION['tb_cache']);
         }
 
         header('Location: ' . BASE_PATH . '/dashboard?page=programs');
@@ -94,20 +98,23 @@ final class ProgramsController
         $programId = (int)($_POST['program_id'] ?? 0);
         $data = [
             'program_name' => trim((string)($_POST['program_name'] ?? '')),
-            'college_id'   => (int)($_POST['college_id'] ?? 0),
+            'department_id' => (int)($_POST['department_id'] ?? 0),
         ];
 
         try {
             if ($programId <= 0) {
                 throw new \InvalidArgumentException('Invalid program id.');
             }
-            if ($data['program_name'] === '' || $data['college_id'] <= 0) {
+            if ($data['program_name'] === '' || $data['department_id'] <= 0) {
                 throw new \InvalidArgumentException('Program name and college are required.');
             }
             $this->model->updateProgram($programId, $data);
             FlashHelper::set('success', 'Program updated.');
         } catch (\Throwable $e) {
             FlashHelper::set('danger', 'Update failed: ' . $e->getMessage());
+        } finally {
+            if (session_status() !== \PHP_SESSION_ACTIVE) { session_start(); }
+            unset($_SESSION['st_cache'], $_SESSION['tb_cache']);
         }
 
         header('Location: ' . BASE_PATH . '/dashboard?page=programs');
@@ -128,6 +135,9 @@ final class ProgramsController
             FlashHelper::set('success', 'Program deleted.');
         } catch (\Throwable $e) {
             FlashHelper::set('danger', 'Delete failed: ' . $e->getMessage());
+        } finally {
+            if (session_status() !== \PHP_SESSION_ACTIVE) { session_start(); }
+            unset($_SESSION['st_cache'], $_SESSION['tb_cache']);
         }
 
         header('Location: ' . BASE_PATH . '/dashboard?page=programs');

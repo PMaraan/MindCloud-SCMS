@@ -19,7 +19,7 @@ final class SyllabusTemplatesController
     private SyllabusTemplatesModel $model;
 
     // Keep same role groupings
-    private array $SYSTEM_ROLES  = ['VPAA','Admin','Librarian','QA','Registrar'];
+    private array $SYSTEM_ROLES  = ['VPAA','VPAA Secretary'];
     private array $DEAN_ROLES    = ['Dean','College Dean'];
     private array $CHAIR_ROLES   = ['Program Chair','Department Chair','Coordinator'];
 
@@ -60,6 +60,7 @@ final class SyllabusTemplatesController
 
         // DEBUG: show what the controller sees (visible only to logged-in users; safe for dev)
         // Comment out when done.
+        /*
         if (!isset($_GET['nodebug'])) {
             echo '<pre style="background:#111;color:#0f0;padding:8px;white-space:pre-wrap;">'
             . 'DEBUG SyllabusTemplatesController@index' . PHP_EOL
@@ -69,6 +70,7 @@ final class SyllabusTemplatesController
             . 'program_id=' . $esc((string)($programId ?? 'NULL')) . PHP_EOL
             . '</pre>';
         }
+        */
 
         // Convert simple GET flag into a flash (so JS can trigger a nice message without alert())
         if (isset($_GET['flash']) && $_GET['flash'] === 'missing-id') {
@@ -99,48 +101,48 @@ final class SyllabusTemplatesController
             }
 
             if ($openCollegeId === null) {
-                // just folders view
-                $viewData['mode']     = 'system-folders';
-                $viewData['colleges'] = $colleges;
+                // folders view + allow AAO (VPAA + VPAA Secretary) to create Global/College templates
+                $viewData['mode']             = 'system-folders';
+                $viewData['colleges']         = $colleges;
+
+                // Show "New Template" on folders page ONLY for AAO roles
+                $aaoCanCreate = in_array($role, ['VPAA','VPAA Secretary'], true);
+                $viewData['canCreateGlobal']  = $aaoCanCreate;   // enables button + modal
+                $viewData['canCreateCollege'] = $aaoCanCreate;   // allow college-scope creation too
+                // Provide lists needed by the modal
+                $viewData['allColleges']       = $colleges;      // departments where is_college = true
+                $viewData['programsOfCollege'] = [];             // stays empty until a college is chosen
+
                 return $this->render('index', $viewData);
             }
 
-            // opened a college folder → load that college’s sections, but cache per-college
-            $perKey = "college_sections_{$openCollegeId}";
-            $collegeSections = $cacheGet($perKey);
-            if ($collegeSections === null) {
-                $general   = $this->model->getCollegeGeneralTemplates($openCollegeId);
-                $programs  = $this->model->getProgramsByCollege($openCollegeId);
-                $progSecs  = [];
-                foreach ($programs as $p) {
-                    $pid = (int)$p['program_id'];
-                    $progSecs[] = [
-                        'program'   => $p,
-                        'templates' => $this->model->getProgramExclusiveTemplates($openCollegeId, $pid),
-                    ];
-                }
-                // also fetch the college basic info (from cached list)
-                $college = null;
-                foreach ($colleges as $c) {
-                    if ((int)$c['college_id'] === $openCollegeId) { $college = $c; break; }
-                }
-                $collegeSections = [
-                    'college'  => $college ?: ['college_id'=>$openCollegeId,'short_name'=>'','college_name'=>''],
-                    'general'  => $general,
-                    'programs' => $progSecs,
+            // opened a folder → always fetch fresh sections to avoid stale program lists
+            $general   = $this->model->getCollegeGeneralTemplates($openCollegeId);
+            $programs  = $this->model->getProgramsByCollege($openCollegeId);
+            $progSecs  = [];
+            foreach ($programs as $p) {
+                $pid = (int)$p['program_id'];
+                $progSecs[] = [
+                    'program'   => $p,
+                    'templates' => $this->model->getProgramExclusiveTemplates($openCollegeId, $pid),
                 ];
-                $cacheSet($perKey, $collegeSections);
+            }
+            // find the “college” record from the folders list
+            $college = null;
+            foreach ($colleges as $c) {
+                if ((int)$c['college_id'] === $openCollegeId) { $college = $c; break; }
             }
 
-            $viewData['mode']    = 'college';
-            $viewData['college'] = $collegeSections['college'];
-            $viewData['general'] = $collegeSections['general'];
-            $viewData['programs']= $collegeSections['programs'];
+            $viewData['mode']     = 'college';
+            $viewData['college']  = $college ?: ['college_id'=>$openCollegeId,'short_name'=>'','college_name'=>''];
+            $viewData['general']  = $general;
+            $viewData['programs'] = $progSecs;
             $viewData['showBackToFolders'] = true;
             $viewData['canCreateGlobal']   = true; // VPAA/Admin can create system/global
             $viewData['canCreateCollege']  = true; // they can also create college-level
             $viewData['allColleges']       = $colleges; // for modal selects
-            $viewData['programsOfCollege'] = $this->model->getProgramsByCollege((int)$collegeSections['college']['college_id']);
+            $deptId = (int)($college['college_id'] ?? $openCollegeId);
+            $viewData['programsOfCollege'] = $this->model->getProgramsByCollege($deptId);
             return $this->render('index', $viewData);
         }
 
@@ -218,42 +220,58 @@ final class SyllabusTemplatesController
 
             // Insert template
             if ($scope === 'system') {
-                $stmt = $pdo->prepare("INSERT INTO public.syllabus_templates (scope, title, status, content, created_by)
-                                       VALUES ('system', :title, 'draft', '{}'::jsonb, :by)
-                                       RETURNING template_id");
-                $stmt->execute([':title'=>$title, ':by'=>$idno]);
+                $version = '1.0'; // default version for all new templates
+                $stmt = $pdo->prepare("
+                    INSERT INTO public.syllabus_templates
+                        (scope, owner_department_id, owner_program_id, course_id, program_id, title, version, status, content, created_by)
+                    VALUES
+                        ('system', NULL, NULL, NULL, NULL, :title, :ver, 'draft', '{}'::jsonb, :by)
+                    RETURNING template_id
+                ");
+                $stmt->execute([':title'=>$title, ':ver'=>$version, ':by'=>$idno]);
                 $tid = (int)$stmt->fetchColumn();
 
             } elseif ($scope === 'college') {
                 if (!$colId) throw new \RuntimeException('College is required for college scope.');
-                $stmt = $pdo->prepare("INSERT INTO public.syllabus_templates (scope, title, status, content, created_by)
-                                       VALUES ('college', :title, 'draft', '{}'::jsonb, :by)
-                                       RETURNING template_id");
-                $stmt->execute([':title'=>$title, ':by'=>$idno]);
+                $version = '1.0'; // default version
+                $stmt = $pdo->prepare("
+                    INSERT INTO public.syllabus_templates
+                        (scope, owner_department_id, owner_program_id, course_id, program_id, title, version, status, content, created_by)
+                    VALUES
+                        ('college', :dept, NULL, NULL, NULL, :title, :ver, 'draft', '{}'::jsonb, :by)
+                    RETURNING template_id
+                ");
+                $stmt->execute([':dept'=>$colId, ':title'=>$title, ':ver'=>$version, ':by'=>$idno]);
                 $tid = (int)$stmt->fetchColumn();
 
-                // exactly one college assignment
-                $pdo->prepare("INSERT INTO public.syllabus_template_colleges (template_id, college_id) VALUES (:t,:c)")
-                    ->execute([':t'=>$tid, ':c'=>$colId]);
+                // exactly one department (college-department) assignment
+                $pdo->prepare("INSERT INTO public.syllabus_template_departments (template_id, department_id) VALUES (:t,:d)")
+                    ->execute([':t'=>$tid, ':d'=>$colId]);
 
             } else { // program
                 if (!$progId) throw new \RuntimeException('Program is required for program scope.');
-                // derive college for the program
-                $colId = (int)$pdo->query("SELECT college_id FROM public.programs WHERE program_id = {$progId}")->fetchColumn();
-                if (!$colId) throw new \RuntimeException('Program has no college.');
+                // derive college-department for the program (department_id is now canonical)
+                $deptId = (int)$pdo->query("SELECT department_id FROM public.programs WHERE program_id = {$progId}")->fetchColumn();
+                if (!$deptId) throw new \RuntimeException('Program has no college department.');
 
-                $stmt = $pdo->prepare("INSERT INTO public.syllabus_templates (scope, owner_program_id, title, status, content, created_by)
-                                       VALUES ('program', :pid, :title, 'draft', '{}'::jsonb, :by)
-                                       RETURNING template_id");
-                $stmt->execute([':pid'=>$progId, ':title'=>$title, ':by'=>$idno]);
+                $version = '1.0'; // default version
+                $stmt = $pdo->prepare("
+                    INSERT INTO public.syllabus_templates
+                        (scope, owner_department_id, owner_program_id, course_id, program_id, title, version, status, content, created_by)
+                    VALUES
+                        ('program', :dept, :pid, NULL, :pid, :title, :ver, 'draft', '{}'::jsonb, :by)
+                    RETURNING template_id
+                ");
+                $stmt->execute([':dept'=>$deptId, ':pid'=>$progId, ':title'=>$title, ':ver'=>$version, ':by'=>$idno]);
                 $tid = (int)$stmt->fetchColumn();
 
-                // enforce program + its single college assignment
+                // enforce program + its single department assignment
                 $pdo->prepare("INSERT INTO public.syllabus_template_programs (template_id, program_id) VALUES (:t,:p)")
                     ->execute([':t'=>$tid, ':p'=>$progId]);
-                $pdo->prepare("INSERT INTO public.syllabus_template_colleges (template_id, college_id) VALUES (:t,:c)
-                               ON CONFLICT DO NOTHING")
-                    ->execute([':t'=>$tid, ':c'=>$colId]);
+
+                $pdo->prepare("INSERT INTO public.syllabus_template_departments (template_id, department_id) VALUES (:t,:d)
+                            ON CONFLICT DO NOTHING")
+                    ->execute([':t'=>$tid, ':d'=>$deptId]);
             }
 
             $pdo->commit();

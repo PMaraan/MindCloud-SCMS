@@ -4,7 +4,7 @@
  * Programs listing table.
  *
  * Expects:
- * @var array $rows       Each row: program_id, program_name, college_id, college_label
+ * @var array $rows       Each row: program_id, program_name, department_id, college_label
  * @var bool  $canEdit
  * @var bool  $canDelete
  */
@@ -24,7 +24,7 @@
         <tr
           data-program-id="<?= (int)$r['program_id'] ?>"
           data-program-name="<?= htmlspecialchars((string)$r['program_name'], ENT_QUOTES) ?>"
-          data-college-id="<?= (int)$r['college_id'] ?>"
+          data-college-id="<?= (int)$r['department_id'] ?>"
         >
           <td><?= htmlspecialchars((string)$r['program_name'], ENT_QUOTES) ?></td>
           <td><?= htmlspecialchars((string)($r['college_label'] ?? ''), ENT_QUOTES) ?></td>
