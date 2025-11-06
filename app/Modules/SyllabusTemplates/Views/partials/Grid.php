@@ -22,7 +22,15 @@ if (empty($templates)) {
         data-template-id="<?= $tid ?>"
         data-title="<?= $title ?>"
         data-owner="<?= $scope ?>"
-        data-updated="<?= $upd ?>">
+        data-updated="<?= $upd ?>"
+        data-scope="<?= $esc($t['scope'] ?? '') ?>"
+        data-owner-department-id="<?= (int)($t['owner_department_id'] ?? 0) ?>"
+        data-program-id="<?= (int)($t['program_id'] ?? 0) ?>"
+        data-owner-program-id="<?= (int)($t['owner_program_id'] ?? 0) ?>"
+        data-course-id="<?= (int)($t['course_id'] ?? 0) ?>"
+        data-version="<?= $esc($t['version'] ?? '') ?>"
+        data-status="<?= $esc($t['status'] ?? '') ?>"
+      >
         <div class="card-body d-flex flex-column align-items-center text-center">
           <?php
             $iconClass = 'bi-file-earmark-text';

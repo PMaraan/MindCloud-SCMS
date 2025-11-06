@@ -256,14 +256,10 @@ final class SyllabusTemplatesController
                 if (!$deptId) throw new \RuntimeException('Program has no college department.');
 
                 $version = '1.0'; // default version
-                $stmt = $pdo->prepare("
-                    INSERT INTO public.syllabus_templates
-                        (scope, owner_department_id, owner_program_id, course_id, program_id, title, version, status, content, created_by)
-                    VALUES
-                        ('program', :dept, :pid, NULL, :pid, :title, :ver, 'draft', '{}'::jsonb, :by)
-                    RETURNING template_id
-                ");
-                $stmt->execute([':dept'=>$deptId, ':pid'=>$progId, ':title'=>$title, ':ver'=>$version, ':by'=>$idno]);
+                $stmt = $pdo->prepare("INSERT INTO public.syllabus_templates (scope, program_id, title, status, content, created_by)
+                                    VALUES ('program', :pid, :title, 'draft', '{}'::jsonb, :by)
+                                    RETURNING template_id");
+                $stmt->execute([':pid'=>$progId, ':title'=>$title, ':by'=>$idno]);
                 $tid = (int)$stmt->fetchColumn();
 
                 // enforce program + its single department assignment
@@ -307,6 +303,151 @@ final class SyllabusTemplatesController
         $list = $this->model->getProgramsByCollege($deptId); // already department-aware in your model
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode($list, JSON_UNESCAPED_UNICODE);
+    }
+
+    public function edit(): void
+    {
+        (new RBAC($this->db))->require((string)$_SESSION['user_id'], Permissions::SYLLABUSTEMPLATES_EDIT);
+
+        $pdo = $this->db->getConnection();
+        $tid = (int)($_POST['template_id'] ?? 0);
+        if ($tid <= 0) {
+            $_SESSION['flash'] = ['type'=>'danger','message'=>'Invalid template id.'];
+            header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates');
+            exit;
+        }
+
+        // Gather + normalize
+        $title  = trim((string)($_POST['title'] ?? ''));
+        $scope  = strtolower(trim((string)($_POST['scope'] ?? 'system')));
+        $deptId = (string)($_POST['owner_department_id'] ?? ''); // '' => NULL
+        $progId = (string)($_POST['program_id'] ?? '');
+        $course = (string)($_POST['course_id'] ?? '');
+        $status = (string)($_POST['status'] ?? 'draft');
+
+        if ($title === '') {
+            $_SESSION['flash'] = ['type'=>'danger','message'=>'Title is required.'];
+            header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates');
+            exit;
+        }
+
+        // Scope guards: enforce consistent nullability
+        $owner_department_id = ($scope === 'college' || $scope === 'program') && ctype_digit($deptId) && (int)$deptId > 0 ? (int)$deptId : null;
+        $program_id          = ($scope === 'program') && ctype_digit($progId) && (int)$progId > 0 ? (int)$progId : null;
+        $course_id           = ctype_digit($course) && (int)$course > 0 ? (int)$course : null;
+
+        $pdo->beginTransaction();
+        try {
+            // 1) Update main record (NO owner_program_id here)
+            $st = $pdo->prepare("
+                UPDATE public.syllabus_templates
+                SET title = :title,
+                    scope = :scope,
+                    owner_department_id = :dept,
+                    program_id = :prog,
+                    course_id = :course,
+                    status = :status
+                WHERE template_id = :tid
+            ");
+            $st->bindValue(':title',  $title);
+            $st->bindValue(':scope',  $scope);
+            $st->bindValue(':dept',   $owner_department_id, $owner_department_id === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
+            $st->bindValue(':prog',   $program_id,          $program_id === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
+            $st->bindValue(':course', $course_id,           $course_id === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
+            $st->bindValue(':status', $status);
+            $st->bindValue(':tid',    $tid, PDO::PARAM_INT);
+            $st->execute();
+
+            // 2) Sync mapping tables based on scope
+
+            // 2a) Department assignment (college/program scopes)
+            if ($owner_department_id !== null) {
+                $pdo->prepare("
+                    INSERT INTO public.syllabus_template_departments (template_id, department_id)
+                    VALUES (:t,:d)
+                    ON CONFLICT (template_id, department_id) DO NOTHING
+                ")->execute([':t'=>$tid, ':d'=>$owner_department_id]);
+                // Optionally clear other dept rows if you want single ownership:
+                $pdo->prepare("
+                    DELETE FROM public.syllabus_template_departments
+                    WHERE template_id = :t AND department_id <> :d
+                ")->execute([':t'=>$tid, ':d'=>$owner_department_id]);
+            } else {
+                // System scope: remove any dept rows
+                $pdo->prepare("DELETE FROM public.syllabus_template_departments WHERE template_id = :t")
+                    ->execute([':t'=>$tid]);
+            }
+
+            // 2b) Program assignment (program scope only)
+            if ($scope === 'program' && $program_id !== null) {
+                $pdo->prepare("
+                    INSERT INTO public.syllabus_template_programs (template_id, program_id)
+                    VALUES (:t,:p)
+                    ON CONFLICT (template_id, program_id) DO NOTHING
+                ")->execute([':t'=>$tid, ':p'=>$program_id]);
+
+                // Ensure exclusivity to just this one program
+                $pdo->prepare("
+                    DELETE FROM public.syllabus_template_programs
+                    WHERE template_id = :t AND program_id <> :p
+                ")->execute([':t'=>$tid, ':p'=>$program_id]);
+            } else {
+                // Not program scope → clear all program links
+                $pdo->prepare("DELETE FROM public.syllabus_template_programs WHERE template_id = :t")
+                    ->execute([':t'=>$tid]);
+            }
+
+            $pdo->commit();
+            $_SESSION['flash'] = ['type'=>'success','message'=>'Template updated.'];
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            $_SESSION['flash'] = ['type'=>'danger','message'=>'Update failed: '.$e->getMessage()];
+        }
+
+        header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates');
+        exit;
+    }
+
+    public function apiPrograms(): void
+    {
+        // GET /dashboard?page=syllabus-templates&action=apiPrograms&department_id=#
+        header('Content-Type: application/json; charset=utf-8');
+
+        $depId = isset($_GET['department_id']) ? (int)$_GET['department_id'] : 0;
+        if ($depId <= 0) { echo json_encode([]); return; }
+
+        $pdo = $this->db->getConnection();
+        $st = $pdo->prepare("
+            SELECT program_id AS id, program_name AS label
+            FROM public.programs
+            WHERE department_id = :did
+            ORDER BY program_name ASC
+        ");
+        $st->execute([':did' => $depId]);
+        echo json_encode($st->fetchAll(\PDO::FETCH_ASSOC) ?: []);
+        exit;
+    }
+
+    public function apiCourses(): void
+    {
+        // GET /dashboard?page=syllabus-templates&action=apiCourses&program_id=#
+        header('Content-Type: application/json; charset=utf-8');
+
+        $pid = isset($_GET['program_id']) ? (int)$_GET['program_id'] : 0;
+        if ($pid <= 0) { echo json_encode([]); return; }
+
+        $pdo = $this->db->getConnection();
+        // Adjust the SELECT fields to match your courses schema (using course_name below).
+        $st = $pdo->prepare("
+            SELECT c.course_id AS id,
+                c.course_name AS label
+            FROM public.courses c
+            WHERE c.program_id = :pid
+            ORDER BY label ASC NULLS LAST
+        ");
+        $st->execute([':pid' => $pid]);
+        echo json_encode($st->fetchAll(\PDO::FETCH_ASSOC) ?: []);
+        exit;
     }
 
     private function render(string $view, array $vars): string

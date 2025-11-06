@@ -114,6 +114,14 @@ $basePath = rtrim(BASE_PATH, '/'); // BASE_PATH is from config.php
         crossorigin="anonymous"></script>
 <script src="<?= $basePath ?>/public/assets/js/notifications.js"></script>
 <script>
+document.addEventListener('DOMContentLoaded', () => {
+  const t = document.getElementById('notifDropdown');
+  if (t && !t.dataset.basePath) {
+    t.dataset.basePath = (window.BASE_PATH || '');
+  }
+});
+</script>
+<script>
 document.addEventListener("DOMContentLoaded", () => {
   // Reset forms inside ANY Bootstrap modal when it closes,
   // unless the modal has data-no-reset attribute.
@@ -135,6 +143,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }, true);
 });
 </script>
+
+<!-- Global BASE_PATH -->
+<script>window.BASE_PATH = "<?= htmlspecialchars(defined('BASE_PATH')? BASE_PATH : '', ENT_QUOTES) ?>";</script>
 <!-- Page-Specific JS -->
 <?php /*
 if (!empty($pageJs)): 

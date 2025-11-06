@@ -92,6 +92,13 @@ $PAGE_KEY = 'syllabus-templates';
                   <div class="d-flex gap-2">
                     <button class="btn btn-sm btn-primary" id="tb-open">Open</button>
                     <button class="btn btn-sm btn-outline-secondary" id="tb-duplicate">Duplicate</button>
+                    <button class="btn btn-sm btn-warning"
+                            id="tb-edit"
+                            type="button"
+                            data-bs-toggle="modal"
+                            data-bs-target="#tbEditModal">
+                      Edit
+                    </button>
                   </div>
                 </dd>
               </dl>
@@ -126,6 +133,19 @@ $PAGE_KEY = 'syllabus-templates';
           $esc
         );
       }
+    }
+
+    // EDIT MODAL (always render so the button works on any mode)
+    $colList  = $allColleges       ?? [];
+    $progList = $programsOfCollege ?? [];
+    include $partialsDir . '/EditModal.php';
+    if (function_exists('renderEditModal')) {
+      renderEditModal(
+        $ASSET_BASE,
+        $colList,
+        $progList,
+        $esc
+      );
     }
   ?>
 

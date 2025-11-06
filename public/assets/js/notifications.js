@@ -4,6 +4,27 @@
 // - Badge is kept fresh via unread-count polling.
 
 (function () {
+  async function safeGetJSON(url, opts) {
+    try {
+      const res = await fetch(url, Object.assign({
+        headers: { 'Accept': 'application/json' },
+        credentials: 'same-origin',
+        cache: 'no-store'
+      }, opts || {}));
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const ct = (res.headers.get('content-type') || '').toLowerCase();
+      if (!ct.includes('application/json')) {
+        // read text (likely HTML) to avoid JSON parse error
+        await res.text();
+        throw new Error('Non-JSON response');
+      }
+      return await res.json();
+    } catch (err) {
+      // bubble a compact error; callers can decide how to react
+      throw err;
+    }
+  }
+
   const toggle = document.getElementById('notifDropdown');
   if (!toggle) return;
 
@@ -122,37 +143,21 @@
       if (latestAbort) latestAbort.abort();
       latestAbort = new AbortController();
 
-      const basePath = toggle.dataset.basePath || '';
+      const basePath = (toggle.dataset.basePath || (window.BASE_PATH || ''));
       const url = `${basePath}/notifications/latest`;
 
-      const res = await fetch(url, {
-        headers: { 'Accept': 'application/json' },
-        credentials: 'same-origin',
-        signal: latestAbort.signal,
-      });
+      const data = await safeGetJSON(url, { signal: latestAbort.signal });
 
-      if (!res.ok) {
-        showFailed(`Failed (${res.status})`);
-        return;
-      }
-
-      const data = await res.json();
       const unreadIds = render(Array.isArray(data?.items) ? data.items : []);
-
-      // If any unread were shown, mark them read now so the badge clears.
       if (unreadIds.length > 0) {
         try {
           await markRead(unreadIds);
-          // Remove bg-light from just-marked rows
           list.querySelectorAll('.dropdown-item.bg-light').forEach(el => el.classList.remove('bg-light'));
-          // Refresh badge
           await loadUnreadCount();
         } catch { /* ignore */ }
       }
     } catch (e) {
-      if (e.name !== 'AbortError') {
-        showFailed('Failed to load notifications');
-      }
+      if (e.name !== 'AbortError') showFailed('Failed to load notifications');
     }
   }
 
@@ -162,29 +167,17 @@
       if (countAbort) countAbort.abort();
       countAbort = new AbortController();
 
-      const basePath = toggle.dataset.basePath || '';
+      const basePath = (toggle.dataset.basePath || (window.BASE_PATH || ''));
       const url = `${basePath}/notifications/unread-count`;
 
-      const res = await fetch(url, {
-        headers: { 'Accept': 'application/json' },
-        credentials: 'same-origin',
-        signal: countAbort.signal,
-        cache: 'no-store'
-      });
-
-      if (!res.ok) {
-        if (res.status === 401) setBadge(0);
-        return;
-      }
-
-      const data = await res.json();
+      const data = await safeGetJSON(url, { signal: countAbort.signal });
       const total = Number(data?.total_unread ?? 0);
       setBadge(Number.isFinite(total) ? total : 0);
     } catch { /* transient errors ignored */ }
   }
 
   async function markRead(ids) {
-    const basePath = toggle.dataset.basePath || '';
+    const basePath = (toggle.dataset.basePath || (window.BASE_PATH || ''));
     const url = `${basePath}/notifications/mark-read`;
     const res = await fetch(url, {
       method: 'POST',
