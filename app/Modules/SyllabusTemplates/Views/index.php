@@ -108,9 +108,24 @@ $PAGE_KEY = 'syllabus-templates';
       $globalAllowed  = !empty($canCreateGlobal);
       $collegeAllowed = !empty($canCreateCollege);
       $programAllowed = !empty($canCreateProgram);
-      $colList        = $allColleges ?? [];
+      $colList        = $allColleges       ?? [];
       $progList       = $programsOfCollege ?? [];
+
+      // include the function definition
       include $partialsDir . '/CreateModal.php';
+
+      // actually render the modal markup
+      if (function_exists('renderCreateModal')) {
+        renderCreateModal(
+          $ASSET_BASE,
+          $globalAllowed,
+          $collegeAllowed,
+          $programAllowed,
+          $colList,
+          $progList,
+          $esc
+        );
+      }
     }
   ?>
 

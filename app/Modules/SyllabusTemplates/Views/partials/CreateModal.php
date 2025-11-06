@@ -110,12 +110,32 @@ document.addEventListener('DOMContentLoaded', function(){
     if (wrapPrg) wrapPrg.classList.toggle('d-none', !vPrg);
   }
 
-  // Basic college→program filter (client-side quick pass)
+  // College → Program dynamic load
   if (selCol && selPrg) {
-    selCol.addEventListener('change', function(){
+    selCol.addEventListener('change', async function(){
       const cid = this.value;
-      // If you want live filtering, you can data-annotate options or load via AJAX later.
-      // For now we leave the list static (agile pass).
+      // reset program select
+      selPrg.innerHTML = '<option value="">— Select program —</option>';
+
+      if (!cid) return;
+
+      try {
+        const base = (typeof window.BASE_PATH === 'string') ? window.BASE_PATH : '';
+        const url  = `${base}/dashboard?page=<?= $esc($pageKey) ?>&action=programs&department_id=${encodeURIComponent(cid)}`;
+        const res  = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          for (const p of data) {
+            const opt = document.createElement('option');
+            opt.value = p.program_id ?? '';
+            opt.textContent = p.program_name ?? '';
+            selPrg.appendChild(opt);
+          }
+        }
+      } catch (e) {
+        // swallow; keep UX simple
+      }
     });
   }
 

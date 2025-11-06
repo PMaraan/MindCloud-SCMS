@@ -106,9 +106,10 @@ final class SyllabusTemplatesController
                 $viewData['colleges']         = $colleges;
 
                 // Show "New Template" on folders page ONLY for AAO roles
-                $aaoCanCreate = in_array($role, ['VPAA','VPAA Secretary'], true);
-                $viewData['canCreateGlobal']  = $aaoCanCreate;   // enables button + modal
-                $viewData['canCreateCollege'] = $aaoCanCreate;   // allow college-scope creation too
+                $isAAO = in_array($role, ['VPAA','VPAA Secretary'], true);
+                $viewData['canCreateGlobal']   = $isAAO;      // system/global
+                $viewData['canCreateCollege']  = $isAAO;      // college (department)
+                $viewData['canCreateProgram']  = $isAAO;      // program (we’ll load programs via AJAX)
                 // Provide lists needed by the modal
                 $viewData['allColleges']       = $colleges;      // departments where is_college = true
                 $viewData['programsOfCollege'] = [];             // stays empty until a college is chosen
@@ -289,6 +290,23 @@ final class SyllabusTemplatesController
             header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates');
             exit;
         }
+    }
+
+    public function programs(): void
+    {
+        // Permissions: only users who can create templates may fetch programs here
+        (new RBAC($this->db))->require((string)$_SESSION['user_id'], Permissions::SYLLABUSTEMPLATES_CREATE);
+
+        $deptId = isset($_GET['department_id']) ? (int)$_GET['department_id'] : 0;
+        if ($deptId <= 0) {
+            header('Content-Type: application/json');
+            echo json_encode([]);
+            return;
+        }
+
+        $list = $this->model->getProgramsByCollege($deptId); // already department-aware in your model
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode($list, JSON_UNESCAPED_UNICODE);
     }
 
     private function render(string $view, array $vars): string

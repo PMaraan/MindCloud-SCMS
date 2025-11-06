@@ -118,9 +118,8 @@ final class AppShellController
 
                 // Action dispatch (query param ?action=)
                 $action  = strtolower((string)($_GET['action'] ?? 'index'));
-                $allowed = ['index', 'create', 'edit', 'delete', 'savemeta', 'snapshot', 'opentemplate'];
+                $allowed = ['index', 'create', 'edit', 'delete', 'savemeta', 'snapshot', 'opentemplate', 'programs'];
 
-                // Map lowercased action -> real controller method
                 $actionMap = [
                     'index'        => 'index',
                     'create'       => 'create',
@@ -128,7 +127,8 @@ final class AppShellController
                     'delete'       => 'delete',
                     'savemeta'     => 'saveMeta',
                     'snapshot'     => 'snapshot',
-                    'opentemplate' => 'openTemplate', // NEW
+                    'opentemplate' => 'openTemplate',
+                    'programs'     => 'programs',     // JSON: programs by department
                 ];
                 $method = $actionMap[$action] ?? 'index';
 
