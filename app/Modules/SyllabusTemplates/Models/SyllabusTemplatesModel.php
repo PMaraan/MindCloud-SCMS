@@ -46,6 +46,29 @@ final class SyllabusTemplatesModel
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
+    /** Courses of a program (name-based labels).
+     *  Uses program's department_id to fetch courses with matching courses.college_id.
+     *  Returns: [{ id: int, label: string }, ...]
+     */
+    public function getCoursesByProgram(int $programId): array
+    {
+        $sql = "
+            SELECT
+                c.course_id AS id,
+                c.course_name AS label
+            FROM public.courses c
+            WHERE c.college_id = (
+                SELECT p.department_id
+                FROM public.programs p
+                WHERE p.program_id = :pid
+            )
+            ORDER BY c.course_name ASC
+        ";
+        $st = $this->pdo->prepare($sql);
+        $st->execute([':pid' => $programId]);
+        return $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
     /** System → Global/General templates (no assignments to college nor program) */
     public function getSystemGlobalTemplates(): array
     {

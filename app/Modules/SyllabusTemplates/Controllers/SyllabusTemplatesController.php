@@ -45,6 +45,56 @@ final class SyllabusTemplatesController
 
         $user      = $this->userModel->getUserProfile((string)$_SESSION['user_id']);
         $role      = (string)($user['role_name'] ?? '');
+
+        // ---- JSON gates for dependent selects (no router change needed) ----
+        if (isset($_GET['ajax'])) {
+            header('Content-Type: application/json; charset=utf-8');
+            $ajax = (string)$_GET['ajax'];
+
+            try {
+                if ($ajax === 'programs') {
+                    // Return [] on missing/invalid id (do not 400 — keeps console clean)
+                    $deptId = (int)($_GET['department_id'] ?? 0);
+                    if ($deptId <= 0) {
+                        echo json_encode(['programs' => []], JSON_UNESCAPED_SLASHES);
+                        return '';
+                    }
+                    $rows = $this->model->getProgramsByCollege($deptId);
+                    $out  = array_map(static fn($r) => [
+                        'id'    => (int)($r['program_id'] ?? 0),
+                        'label' => (string)($r['program_name'] ?? ''),
+                    ], $rows);
+                    echo json_encode(['programs' => $out], JSON_UNESCAPED_SLASHES);
+                    exit;
+                }
+
+                if ($ajax === 'courses') {
+                    $pid = (int)($_GET['program_id'] ?? 0);
+                    if ($pid <= 0) {
+                        echo json_encode(['courses' => []], JSON_UNESCAPED_SLASHES);
+                        return '';
+                    }
+                    if (method_exists($this->model, 'getCoursesForProgram')) {
+                        $rows = $this->model->getCoursesForProgram($pid); // returns [ ['id'=>..,'label'=>..], ... ]
+                        echo json_encode(['courses' => $rows], JSON_UNESCAPED_SLASHES);
+                        exit;
+                    }
+                    // Fallback if helper not present yet
+                    echo json_encode(['courses' => []], JSON_UNESCAPED_SLASHES);
+                    return '';
+                }
+
+                // Unknown ajax -> empty OK
+                echo json_encode([], JSON_UNESCAPED_SLASHES);
+                return '';
+
+            } catch (\Throwable $e) {
+                // Mask server errors as empty list to avoid noisy consoles
+                echo json_encode(['programs' => [], 'courses' => []], JSON_UNESCAPED_SLASHES);
+                exit;
+            }
+        }
+
         $collegeId = isset($user['college_id']) ? (int)$user['college_id'] : null;
         $programId = isset($user['program_id']) ? (int)$user['program_id'] : null;
 
@@ -199,6 +249,67 @@ final class SyllabusTemplatesController
         $viewData['mode']   = 'system-folders';
         $viewData['colleges'] = $this->model->getAllColleges();
         return $this->render('index', $viewData);
+    }
+
+    public function apiPrograms(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        // Require login (private route already guards this, but double-safety)
+        if (empty($_SESSION['user_id'])) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Unauthorized'], JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $deptId = isset($_GET['department_id']) ? (int)$_GET['department_id'] : 0;
+        if ($deptId <= 0) {
+            http_response_code(400);
+            echo json_encode(['error' => 'department_id required'], JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        try {
+            // Uses your existing model method
+            $rows = $this->model->getProgramsByCollege($deptId);
+            // Normalize shape for the select helper
+            $out = array_map(static fn(array $r) => [
+                'id'    => (int)($r['program_id'] ?? 0),
+                'label' => (string)($r['program_name'] ?? ''),
+            ], $rows);
+            echo json_encode($out, JSON_UNESCAPED_SLASHES);
+        } catch (\Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Server error'], JSON_UNESCAPED_SLASHES);
+        }
+        exit;
+    }
+
+    public function apiCourses(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        if (empty($_SESSION['user_id'])) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Unauthorized'], JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        $programId = isset($_GET['program_id']) ? (int)$_GET['program_id'] : 0;
+        if ($programId <= 0) {
+            http_response_code(400);
+            echo json_encode(['error' => 'program_id required'], JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        try {
+            $rows = $this->model->getCoursesByProgram($programId);
+            echo json_encode($rows, JSON_UNESCAPED_SLASHES);
+        } catch (\Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Server error'], JSON_UNESCAPED_SLASHES);
+        }
+        exit;
     }
 
     public function create(): void
@@ -405,48 +516,6 @@ final class SyllabusTemplatesController
         }
 
         header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates');
-        exit;
-    }
-
-    public function apiPrograms(): void
-    {
-        // GET /dashboard?page=syllabus-templates&action=apiPrograms&department_id=#
-        header('Content-Type: application/json; charset=utf-8');
-
-        $depId = isset($_GET['department_id']) ? (int)$_GET['department_id'] : 0;
-        if ($depId <= 0) { echo json_encode([]); return; }
-
-        $pdo = $this->db->getConnection();
-        $st = $pdo->prepare("
-            SELECT program_id AS id, program_name AS label
-            FROM public.programs
-            WHERE department_id = :did
-            ORDER BY program_name ASC
-        ");
-        $st->execute([':did' => $depId]);
-        echo json_encode($st->fetchAll(\PDO::FETCH_ASSOC) ?: []);
-        exit;
-    }
-
-    public function apiCourses(): void
-    {
-        // GET /dashboard?page=syllabus-templates&action=apiCourses&program_id=#
-        header('Content-Type: application/json; charset=utf-8');
-
-        $pid = isset($_GET['program_id']) ? (int)$_GET['program_id'] : 0;
-        if ($pid <= 0) { echo json_encode([]); return; }
-
-        $pdo = $this->db->getConnection();
-        // Adjust the SELECT fields to match your courses schema (using course_name below).
-        $st = $pdo->prepare("
-            SELECT c.course_id AS id,
-                c.course_name AS label
-            FROM public.courses c
-            WHERE c.program_id = :pid
-            ORDER BY label ASC NULLS LAST
-        ");
-        $st->execute([':pid' => $pid]);
-        echo json_encode($st->fetchAll(\PDO::FETCH_ASSOC) ?: []);
         exit;
     }
 

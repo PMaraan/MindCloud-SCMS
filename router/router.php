@@ -7,6 +7,7 @@
     use App\Modules\Notifications\Controllers\NotificationsController;
     use App\Modules\Settings\Controllers\SettingsController;
     use App\Modules\Profile\Controllers\ProfileController;
+    use App\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController;
 
     /**
      * Build an absolute URL from BASE_PATH and a path.
@@ -53,6 +54,8 @@
             '/notifications/latest' => [NotificationsController::class, 'latestJson'],
             '/notifications/unread-count' => [NotificationsController::class, 'unreadCountJson'],
             '/api/settings/get'  => [SettingsController::class, 'getPreference'],
+            '/api/syllabus-templates/programs' => [SyllabusTemplatesController::class, 'apiPrograms'],
+            '/api/syllabus-templates/courses'  => [SyllabusTemplatesController::class, 'apiCourses'],
             // add more GET private routes here
         ],
         'POST' => [

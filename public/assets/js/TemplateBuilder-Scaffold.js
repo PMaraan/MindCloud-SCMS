@@ -77,7 +77,7 @@
       const stEl      = document.getElementById('tb-e-status');
       const deptSel   = document.getElementById('tb-e-college'); // department/college select
       const progSel   = document.getElementById('tb-e-program');   // program select
-      const courseEl  = document.getElementById('tb-e-course-id');
+      const courseEl  = document.getElementById('tb-e-course');
 
       if (idEl)      idEl.value    = g('templateId', '');
       if (titleEl)   titleEl.value = g('title', '');
@@ -122,8 +122,19 @@
 
     // ---- Auto-filter (College -> Programs, Program -> Courses) ----
     async function fetchJSON(url) {
-      const r = await fetch(url, { credentials: 'same-origin' });
-      if (!r.ok) throw new Error('Network error');
+      const r = await fetch(url, {
+        credentials: 'same-origin',
+        headers: { 'Accept': 'application/json' },
+        cache: 'no-store'
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+
+      const ct = (r.headers.get('content-type') || '').toLowerCase();
+      if (!ct.includes('application/json')) {
+        // drain HTML to avoid JSON parser error, then throw
+        await r.text();
+        throw new Error('Non-JSON response');
+      }
       return r.json();
     }
     function getBase() {
@@ -149,13 +160,21 @@
 
     async function loadProgramsForDepartment(departmentId, preselectId) {
       const sel = document.getElementById('tb-e-program');
-      if (!departmentId) {
+      // Normalize to a number and guard
+      const depNum = Number(departmentId);
+      if (!sel || !Number.isFinite(depNum) || depNum <= 0) {
         fillSelect(sel, [], '— Select program —');
+        // Also clear courses when college/department is cleared
+        const courseSel = document.getElementById('tb-e-course');
+        fillSelect(courseSel, [], '— Select course —');
         return;
       }
-      const url = `${getBase()}/dashboard?page=syllabus-templates&action=apiPrograms&department_id=${encodeURIComponent(departmentId)}`;
+
+      const url = `${getBase()}/dashboard?page=syllabus-templates&ajax=programs&department_id=${encodeURIComponent(depNum)}`;
       const data = await fetchJSON(url);
-      fillSelect(sel, data, '— Select program —');
+      // endpoint returns { programs: [...] }
+      const items = Array.isArray(data?.programs) ? data.programs : [];
+      fillSelect(sel, items, '— Select program —');
       if (preselectId) sel.value = String(preselectId);
       sel.dispatchEvent(new Event('change')); // trigger course loading
     }
@@ -167,7 +186,7 @@
         fillSelect(sel, [], '— Select course —');
         return;
       }
-      const url = `${getBase()}/dashboard?page=syllabus-templates&action=apiCourses&program_id=${encodeURIComponent(programId)}`;
+      const url = `${getBase()}/api/syllabus-templates/courses?program_id=${encodeURIComponent(programId)}`;
       const data = await fetchJSON(url);
       fillSelect(sel, data, '— Select course —');
       if (preselectId) sel.value = String(preselectId);
@@ -203,6 +222,12 @@
         if (deptSel) {
           deptSel.onchange = async (e) => {
             const depId = e.target.value;
+            if (!depId) {
+              // clear both selects if user clears college/department
+              fillSelect(progSel, [], '— Select program —');
+              fillSelect(document.getElementById('tb-e-course'), [], '— Select course —');
+              return;
+            }
             await loadProgramsForDepartment(depId, null);
           };
         }
