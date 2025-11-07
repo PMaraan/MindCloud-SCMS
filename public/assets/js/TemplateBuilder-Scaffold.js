@@ -84,10 +84,11 @@
 
       // scope radios
       const scope = (g('scope','system') || 'system').toLowerCase();
-      const scopeMap = {
-        system:  'tb-e-scope-system',
-        college: 'tb-e-scope-college',
-        program: 'tb-e-scope-program'
+      const scopeMap = { 
+        system:'tb-e-scope-system', 
+        college:'tb-e-scope-college', 
+        program:'tb-e-scope-program', 
+        course:'tb-e-scope-course' 
       };
       const scopeId = scopeMap[scope] || 'tb-e-scope-system';
       const r = document.getElementById(scopeId);
@@ -106,7 +107,7 @@
 
       // refresh scope-dependent visibility
       const evt = new Event('change');
-      ['tb-e-scope-system','tb-e-scope-college','tb-e-scope-program']
+      ['tb-e-scope-system','tb-e-scope-college','tb-e-scope-program','tb-e-scope-course']
         .map(id => document.getElementById(id))
         .filter(Boolean)
         .forEach(el => el.dispatchEvent(evt));
@@ -175,14 +176,24 @@
       // endpoint returns { programs: [...] }
       const items = Array.isArray(data?.programs) ? data.programs : [];
       fillSelect(sel, items, '— Select program —');
-      if (preselectId) sel.value = String(preselectId);
-      sel.dispatchEvent(new Event('change')); // trigger course loading
+
+      if (preselectId) {
+        sel.value = String(preselectId);
+        // Only trigger course loading if we actually have a program preselected
+        sel.dispatchEvent(new Event('change'));
+      } else {
+        // No program chosen yet → do NOT hit the courses API; just clear it
+        const courseSel = document.getElementById('tb-e-course');
+        fillSelect(courseSel, [], '— Select course —');
+      }
     }
 
     async function loadCoursesForProgram(programId, preselectId) {
       const sel = document.getElementById('tb-e-course');
       if (!sel) return;
-      if (!programId) {
+
+      // Nothing selected yet? Do NOT call the API.
+      if (!programId || programId === '0') {
         fillSelect(sel, [], '— Select course —');
         return;
       }
@@ -221,11 +232,10 @@
         // Live change handlers
         if (deptSel) {
           deptSel.onchange = async (e) => {
-            const depId = e.target.value;
-            if (!depId) {
-              // clear both selects if user clears college/department
-              fillSelect(progSel, [], '— Select program —');
-              fillSelect(document.getElementById('tb-e-course'), [], '— Select course —');
+            const depId = String(e.target.value || '');
+            if (!depId || depId === '0') {
+              fillSelect(document.getElementById('tb-e-program'), [], '— Select program —');
+              fillSelect(document.getElementById('tb-e-course'),  [], '— Select course —');
               return;
             }
             await loadProgramsForDepartment(depId, null);
@@ -233,7 +243,11 @@
         }
         if (progSel) {
           progSel.onchange = async (e) => {
-            const pid = e.target.value;
+            const pid = String(e.target.value || '');
+            if (!pid || pid === '0') {
+              fillSelect(document.getElementById('tb-e-course'), [], '— Select course —');
+              return;
+            }
             await loadCoursesForProgram(pid, null);
           };
         }

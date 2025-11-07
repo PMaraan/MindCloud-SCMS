@@ -43,6 +43,10 @@ if (!function_exists('renderEditModal')) {
               <input class="form-check-input" type="radio" name="scope" id="tb-e-scope-program" value="program">
               <label class="form-check-label" for="tb-e-scope-program">Program</label>
             </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="scope" id="tb-e-scope-course" value="course">
+              <label class="form-check-label" for="tb-e-scope-course">Course</label>
+            </div>
           </div>
         </div>
 
@@ -70,14 +74,12 @@ if (!function_exists('renderEditModal')) {
             </select>
         </div>
 
-        <div class="row g-3">
-            <div class="col-sm-12">
-                <label class="form-label">Course</label>
-                <select name="course_id" id="tb-e-course" class="form-select">
-                <option value="">— Select course —</option>
-                <!-- Options are loaded dynamically based on selected Program -->
-                </select>
-            </div>
+        <div class="mb-3 d-none" id="tb-e-course-wrap">
+          <label class="form-label">Course</label>
+          <select name="course_id" id="tb-e-course" class="form-select">
+            <option value="">— Select course —</option>
+            <!-- Options are loaded dynamically based on selected Program -->
+          </select>
         </div>
 
         <!-- Keep server happy if it still reads owner_program_id; send blank -->
@@ -109,25 +111,84 @@ if (!function_exists('renderEditModal')) {
 </div>
 
 <script>
-// Scope-aware visibility
+// Scope-aware visibility + required attributes for Edit Modal
 document.addEventListener('DOMContentLoaded', function(){
-  const sys = document.getElementById('tb-e-scope-system');
-  const col = document.getElementById('tb-e-scope-college');
-  const prg = document.getElementById('tb-e-scope-program');
-  const wrapCol = document.getElementById('tb-e-college-wrap');
-  const wrapPrg = document.getElementById('tb-e-program-wrap');
+  // Radios
+  const rSys = document.getElementById('tb-e-scope-system');
+  const rCol = document.getElementById('tb-e-scope-college');
+  const rPrg = document.getElementById('tb-e-scope-program');
+  // (Optional) If you already added a "course" scope radio, wire it here:
+  const rCrs = document.getElementById('tb-e-scope-course'); // may be null if you haven't added it yet
 
-  function updateVis(){
-    const vSys = sys && sys.checked;
-    const vCol = col && col.checked;
-    const vPrg = prg && prg.checked;
-    if (wrapCol) wrapCol.classList.toggle('d-none', !(vCol || vPrg));
-    if (wrapPrg) wrapPrg.classList.toggle('d-none', !vPrg);
+  // Wraps (sections)
+  const wrapCol = document.getElementById('tb-e-college-wrap'); // department/college selector
+  const wrapPrg = document.getElementById('tb-e-program-wrap');
+  const wrapCrs = document.getElementById('tb-e-course-wrap');
+
+  // Inputs
+  const selCol  = document.getElementById('tb-e-college');
+  const selPrg  = document.getElementById('tb-e-program');
+  const selCrs  = document.getElementById('tb-e-course');
+
+  function setRequired(el, on) {
+    if (!el) return;
+    if (on) el.setAttribute('required', 'required'); else el.removeAttribute('required');
   }
-  [sys,col,prg].forEach(el => el && el.addEventListener('change', updateVis));
-  updateVis();
+  function show(el, on) {
+    if (!el) return;
+    el.classList.toggle('d-none', !on);
+  }
+
+  function currentScope() {
+    if (rCrs && rCrs.checked) return 'course';
+    if (rPrg && rPrg.checked) return 'program';
+    if (rCol && rCol.checked) return 'college';
+    return 'system';
+  }
+
+  function updateVisAndRequired() {
+    const scope = currentScope();
+
+    // Defaults: hide all, none required
+    show(wrapCol, false); show(wrapPrg, false); show(wrapCrs, false);
+    setRequired(selCol, false); setRequired(selPrg, false); setRequired(selCrs, false);
+
+    if (scope === 'system') {
+      // nothing shown / required
+      return;
+    }
+    if (scope === 'college') {
+      show(wrapCol, true);
+      setRequired(selCol, true);
+      return;
+    }
+    if (scope === 'program') {
+      show(wrapCol, true); show(wrapPrg, true);
+      setRequired(selCol, true); setRequired(selPrg, true);
+      return;
+    }
+    if (scope === 'course') {
+      show(wrapCol, true); show(wrapPrg, true); show(wrapCrs, true);
+      setRequired(selCol, true); setRequired(selPrg, true); setRequired(selCrs, true);
+      return;
+    }
+  }
+
+  // Listen for radio changes
+  [rSys, rCol, rPrg, rCrs].forEach(el => el && el.addEventListener('change', updateVisAndRequired));
+
+  // Re-evaluate whenever the modal actually becomes visible (important for autofill timing)
+  const editModalEl = document.getElementById('tbEditModal');
+  if (editModalEl) {
+    editModalEl.addEventListener('show.bs.modal', updateVisAndRequired);
+    editModalEl.addEventListener('shown.bs.modal', updateVisAndRequired);
+  }
+
+  // Initial pass (covers direct loads and cases where radios are pre-checked)
+  updateVisAndRequired();
 });
 </script>
+
 <?php
   }
 }

@@ -54,6 +54,11 @@ if (!function_exists('renderCreateModal')) {
               <label class="form-check-label" for="tb-scope-program">Program</label>
             </div>
           <?php endif; ?>
+          <?php /* NEW: Course scope */ ?>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="scope" id="tb-scope-course" value="course" <?= (!$allowSystem && !$allowCollege && !$allowProgram) ? 'checked' : '' ?>>
+              <label class="form-check-label" for="tb-scope-course">Course</label>
+            </div>
         </div>
 
         <div class="mb-3 d-none" id="tb-college-wrap">
@@ -81,6 +86,14 @@ if (!function_exists('renderCreateModal')) {
           <div class="form-text">Programs list auto-filters based on the selected college when available.</div>
         </div>
 
+        <div class="mb-3 d-none" id="tb-course-wrap">
+          <label class="form-label">Course <span class="text-danger">*</span></label>
+          <select name="course_id" id="tb-course" class="form-select">
+            <option value="">— Select course —</option>
+            <!-- options loaded dynamically based on Program -->
+          </select>
+        </div>
+
       </div>
 
       <div class="modal-footer">
@@ -96,50 +109,97 @@ document.addEventListener('DOMContentLoaded', function(){
   const scopeSys = document.getElementById('tb-scope-system');
   const scopeCol = document.getElementById('tb-scope-college');
   const scopePrg = document.getElementById('tb-scope-program');
+  const scopeCrs = document.getElementById('tb-scope-course');
+
   const wrapCol  = document.getElementById('tb-college-wrap');
   const wrapPrg  = document.getElementById('tb-program-wrap');
+  const wrapCrs  = document.getElementById('tb-course-wrap');
+
   const selCol   = document.getElementById('tb-college');
   const selPrg   = document.getElementById('tb-program');
+  const selCrs   = document.getElementById('tb-course');
 
-  function updateVisibility() {
-    const vSys = scopeSys && scopeSys.checked;
-    const vCol = scopeCol && scopeCol.checked;
-    const vPrg = scopePrg && scopePrg.checked;
+  function show(el, on){ if (el) el.classList.toggle('d-none', !on); }
+  function req(el, on){ if (!el) return; if (on) el.setAttribute('required','required'); else el.removeAttribute('required'); }
 
-    if (wrapCol) wrapCol.classList.toggle('d-none', !(vCol || vPrg));
-    if (wrapPrg) wrapPrg.classList.toggle('d-none', !vPrg);
+  function scope(){
+    if (scopeCrs && scopeCrs.checked) return 'course';
+    if (scopePrg && scopePrg.checked) return 'program';
+    if (scopeCol && scopeCol.checked) return 'college';
+    return 'system';
   }
 
-  // College → Program dynamic load
-  if (selCol && selPrg) {
-    selCol.addEventListener('change', async function(){
-      const cid = this.value;
-      // reset program select
-      selPrg.innerHTML = '<option value="">— Select program —</option>';
+  function updateVisibility(){
+    const s = scope();
+    // reset
+    show(wrapCol,false); show(wrapPrg,false); show(wrapCrs,false);
+    req(selCol,false); req(selPrg,false); req(selCrs,false);
 
-      if (!cid) return;
+    if (s === 'system') return;
+    if (s === 'college'){ show(wrapCol,true); req(selCol,true); return; }
+    if (s === 'program'){ show(wrapCol,true); show(wrapPrg,true); req(selCol,true); req(selPrg,true); return; }
+    if (s === 'course'){ show(wrapCol,true); show(wrapPrg,true); show(wrapCrs,true); req(selCol,true); req(selPrg,true); req(selCrs,true); return; }
+  }
 
-      try {
-        const base = (typeof window.BASE_PATH === 'string') ? window.BASE_PATH : '';
-        const url  = `${base}/dashboard?page=<?= $esc($pageKey) ?>&action=programs&department_id=${encodeURIComponent(cid)}`;
-        const res  = await fetch(url, { headers: { 'Accept': 'application/json' } });
-        if (!res.ok) return;
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          for (const p of data) {
-            const opt = document.createElement('option');
-            opt.value = p.program_id ?? '';
-            opt.textContent = p.program_name ?? '';
-            selPrg.appendChild(opt);
-          }
-        }
-      } catch (e) {
-        // swallow; keep UX simple
-      }
+  [scopeSys,scopeCol,scopePrg,scopeCrs].forEach(el => el && el.addEventListener('change', updateVisibility));
+
+  function getBase(){
+    if (typeof window.BASE_PATH === 'string') return window.BASE_PATH;
+    const p = window.location.pathname; const cut = p.indexOf('/dashboard'); return cut>-1 ? p.slice(0,cut) : '';
+  }
+  async function safeGetJSON(url){
+    const r = await fetch(url, { headers: { 'Accept':'application/json' }, credentials:'same-origin', cache:'no-store' });
+    if (!r.ok) throw new Error('HTTP '+r.status);
+    const ct = (r.headers.get('content-type')||'').toLowerCase();
+    if (!ct.includes('application/json')){ await r.text(); throw new Error('Non-JSON'); }
+    return r.json();
+  }
+  function fillSelect(sel, items, placeholder){
+    if (!sel) return;
+    sel.innerHTML = '';
+    const o0 = document.createElement('option');
+    o0.value = ''; o0.textContent = placeholder || '— Select —';
+    sel.appendChild(o0);
+    (items||[]).forEach(it => {
+      const o = document.createElement('option');
+      o.value = String(it.id ?? it.program_id ?? it.course_id ?? '');
+      o.textContent = String(it.label ?? it.program_name ?? it.course_name ?? '');
+      sel.appendChild(o);
     });
   }
 
-  [scopeSys, scopeCol, scopePrg].forEach(el => el && el.addEventListener('change', updateVisibility));
+  // College -> Programs
+  if (selCol && selPrg){
+    selCol.addEventListener('change', async function(){
+      const cid = Number(this.value);
+      fillSelect(selPrg, [], '— Select program —');
+      fillSelect(selCrs, [], '— Select course —');
+      if (!Number.isFinite(cid) || cid<=0) return;
+      try{
+        const url = `${getBase()}/api/syllabus-templates/programs?department_id=${encodeURIComponent(cid)}`;
+        const data = await safeGetJSON(url);
+        const items = Array.isArray(data?.programs) ? data.programs : data; // accepts either shape
+        fillSelect(selPrg, items, '— Select program —');
+      }catch{}
+    });
+  }
+
+  // Program -> Courses
+  if (selPrg && selCrs){
+    selPrg.addEventListener('change', async function(){
+      const pid = Number(this.value);
+      fillSelect(selCrs, [], '— Select course —');
+      if (!Number.isFinite(pid) || pid<=0) return;
+      try{
+        const url = `${getBase()}/api/syllabus-templates/courses?program_id=${encodeURIComponent(pid)}`;
+        const data = await safeGetJSON(url);
+        const items = Array.isArray(data?.courses) ? data.courses : data; // accepts either shape
+        fillSelect(selCrs, items, '— Select course —');
+      }catch{}
+    });
+  }
+
+  // Initial state
   updateVisibility();
 });
 </script>

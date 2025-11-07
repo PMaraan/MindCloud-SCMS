@@ -332,54 +332,60 @@ final class SyllabusTemplatesController
 
             // Insert template
             if ($scope === 'system') {
-                $version = '1.0'; // default version for all new templates
-                $stmt = $pdo->prepare("
-                    INSERT INTO public.syllabus_templates
-                        (scope, owner_department_id, owner_program_id, course_id, program_id, title, version, status, content, created_by)
-                    VALUES
-                        ('system', NULL, NULL, NULL, NULL, :title, :ver, 'draft', '{}'::jsonb, :by)
-                    RETURNING template_id
-                ");
-                $stmt->execute([':title'=>$title, ':ver'=>$version, ':by'=>$idno]);
+                $stmt = $pdo->prepare("INSERT INTO public.syllabus_templates (scope, title, status, content, created_by)
+                                    VALUES ('system', :title, 'draft', '{}'::jsonb, :by)
+                                    RETURNING template_id");
+                $stmt->execute([':title'=>$title, ':by'=>$idno]);
                 $tid = (int)$stmt->fetchColumn();
 
             } elseif ($scope === 'college') {
                 if (!$colId) throw new \RuntimeException('College is required for college scope.');
-                $version = '1.0'; // default version
-                $stmt = $pdo->prepare("
-                    INSERT INTO public.syllabus_templates
-                        (scope, owner_department_id, owner_program_id, course_id, program_id, title, version, status, content, created_by)
-                    VALUES
-                        ('college', :dept, NULL, NULL, NULL, :title, :ver, 'draft', '{}'::jsonb, :by)
-                    RETURNING template_id
-                ");
-                $stmt->execute([':dept'=>$colId, ':title'=>$title, ':ver'=>$version, ':by'=>$idno]);
+                $stmt = $pdo->prepare("INSERT INTO public.syllabus_templates (scope, title, status, content, created_by, owner_department_id)
+                                    VALUES ('college', :title, 'draft', '{}'::jsonb, :by, :dept)
+                                    RETURNING template_id");
+                $stmt->execute([':title'=>$title, ':by'=>$idno, ':dept'=>$colId]);
                 $tid = (int)$stmt->fetchColumn();
 
-                // exactly one department (college-department) assignment
                 $pdo->prepare("INSERT INTO public.syllabus_template_departments (template_id, department_id) VALUES (:t,:d)")
                     ->execute([':t'=>$tid, ':d'=>$colId]);
 
-            } else { // program
+            } elseif ($scope === 'program') {
                 if (!$progId) throw new \RuntimeException('Program is required for program scope.');
-                // derive college-department for the program (department_id is now canonical)
                 $deptId = (int)$pdo->query("SELECT department_id FROM public.programs WHERE program_id = {$progId}")->fetchColumn();
                 if (!$deptId) throw new \RuntimeException('Program has no college department.');
 
-                $version = '1.0'; // default version
-                $stmt = $pdo->prepare("INSERT INTO public.syllabus_templates (scope, program_id, title, status, content, created_by)
-                                    VALUES ('program', :pid, :title, 'draft', '{}'::jsonb, :by)
+                $stmt = $pdo->prepare("INSERT INTO public.syllabus_templates (scope, title, status, content, created_by, owner_department_id, program_id)
+                                    VALUES ('program', :title, 'draft', '{}'::jsonb, :by, :dept, :pid)
                                     RETURNING template_id");
-                $stmt->execute([':pid'=>$progId, ':title'=>$title, ':by'=>$idno]);
+                $stmt->execute([':title'=>$title, ':by'=>$idno, ':dept'=>$deptId, ':pid'=>$progId]);
                 $tid = (int)$stmt->fetchColumn();
 
-                // enforce program + its single department assignment
                 $pdo->prepare("INSERT INTO public.syllabus_template_programs (template_id, program_id) VALUES (:t,:p)")
                     ->execute([':t'=>$tid, ':p'=>$progId]);
-
                 $pdo->prepare("INSERT INTO public.syllabus_template_departments (template_id, department_id) VALUES (:t,:d)
-                            ON CONFLICT DO NOTHING")
-                    ->execute([':t'=>$tid, ':d'=>$deptId]);
+                            ON CONFLICT DO NOTHING")->execute([':t'=>$tid, ':d'=>$deptId]);
+
+            } elseif ($scope === 'course') {
+                if (!$progId) throw new \RuntimeException('Program is required for course scope.');
+                $deptId = (int)$pdo->query("SELECT department_id FROM public.programs WHERE program_id = {$progId}")->fetchColumn();
+                if (!$deptId) throw new \RuntimeException('Program has no college department.');
+                $courseId = isset($_POST['course_id']) ? (int)$_POST['course_id'] : 0;
+                if ($courseId <= 0) throw new \RuntimeException('Course is required for course scope.');
+
+                $stmt = $pdo->prepare("INSERT INTO public.syllabus_templates (scope, title, status, content, created_by,
+                                                    owner_department_id, program_id, course_id)
+                                    VALUES ('course', :title, 'draft', '{}'::jsonb, :by, :dept, :pid, :cid)
+                                    RETURNING template_id");
+                $stmt->execute([':title'=>$title, ':by'=>$idno, ':dept'=>$deptId, ':pid'=>$progId, ':cid'=>$courseId]);
+                $tid = (int)$stmt->fetchColumn();
+
+                $pdo->prepare("INSERT INTO public.syllabus_template_programs (template_id, program_id) VALUES (:t,:p)
+                            ON CONFLICT DO NOTHING")->execute([':t'=>$tid, ':p'=>$progId]);
+                $pdo->prepare("INSERT INTO public.syllabus_template_departments (template_id, department_id) VALUES (:t,:d)
+                            ON CONFLICT DO NOTHING")->execute([':t'=>$tid, ':d'=>$deptId]);
+
+            } else {
+                throw new \RuntimeException('Invalid scope.');
             }
 
             $pdo->commit();
@@ -418,106 +424,88 @@ final class SyllabusTemplatesController
 
     public function edit(): void
     {
-        (new RBAC($this->db))->require((string)$_SESSION['user_id'], Permissions::SYLLABUSTEMPLATES_EDIT);
+        (new \App\Security\RBAC($this->db))->require((string)$_SESSION['user_id'], \App\Config\Permissions::SYLLABUSTEMPLATES_EDIT);
 
         $pdo = $this->db->getConnection();
-        $tid = (int)($_POST['template_id'] ?? 0);
-        if ($tid <= 0) {
-            $_SESSION['flash'] = ['type'=>'danger','message'=>'Invalid template id.'];
-            header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates');
-            exit;
-        }
-
-        // Gather + normalize
-        $title  = trim((string)($_POST['title'] ?? ''));
-        $scope  = strtolower(trim((string)($_POST['scope'] ?? 'system')));
-        $deptId = (string)($_POST['owner_department_id'] ?? ''); // '' => NULL
-        $progId = (string)($_POST['program_id'] ?? '');
-        $course = (string)($_POST['course_id'] ?? '');
-        $status = (string)($_POST['status'] ?? 'draft');
-
-        if ($title === '') {
-            $_SESSION['flash'] = ['type'=>'danger','message'=>'Title is required.'];
-            header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates');
-            exit;
-        }
-
-        // Scope guards: enforce consistent nullability
-        $owner_department_id = ($scope === 'college' || $scope === 'program') && ctype_digit($deptId) && (int)$deptId > 0 ? (int)$deptId : null;
-        $program_id          = ($scope === 'program') && ctype_digit($progId) && (int)$progId > 0 ? (int)$progId : null;
-        $course_id           = ctype_digit($course) && (int)$course > 0 ? (int)$course : null;
-
         $pdo->beginTransaction();
+
         try {
-            // 1) Update main record (NO owner_program_id here)
-            $st = $pdo->prepare("
+            $tid   = (int)($_POST['template_id'] ?? 0);
+            $title = trim((string)($_POST['title'] ?? ''));
+            $scope = strtolower(trim((string)($_POST['scope'] ?? 'system')));
+
+            // incoming (may be empty strings)
+            $deptId   = $_POST['owner_department_id'] ?? $_POST['college_id'] ?? null;
+            $progId   = $_POST['program_id'] ?? null;
+            $courseId = $_POST['course_id'] ?? null;
+            $status   = (string)($_POST['status'] ?? 'draft');
+            $version  = (string)($_POST['version'] ?? '');
+
+            if ($tid <= 0 || $title === '') {
+                throw new \RuntimeException('Missing template id or title.');
+            }
+
+            // normalize to ints or NULL
+            $toIntOrNull = static function($v) {
+                if ($v === '' || $v === null) return null;
+                $n = (int)$v;
+                return $n > 0 ? $n : null;
+            };
+            $deptId   = $toIntOrNull($deptId);
+            $progId   = $toIntOrNull($progId);
+            $courseId = $toIntOrNull($courseId);
+
+            // enforce by scope
+            if ($scope === 'system') {
+                $deptId = $progId = $courseId = null;
+            } elseif ($scope === 'college') {
+                if (!$deptId) throw new \RuntimeException('College is required.');
+                $progId = $courseId = null;
+            } elseif ($scope === 'program') {
+                if (!$deptId || !$progId) throw new \RuntimeException('College and Program are required.');
+                $courseId = null;
+            } elseif ($scope === 'course') {
+                if (!$deptId || !$progId || !$courseId) throw new \RuntimeException('College, Program, and Course are required.');
+            } else {
+                throw new \RuntimeException('Invalid scope.');
+            }
+
+            // Update row
+            $stmt = $pdo->prepare("
                 UPDATE public.syllabus_templates
                 SET title = :title,
                     scope = :scope,
                     owner_department_id = :dept,
                     program_id = :prog,
                     course_id = :course,
-                    status = :status
+                    status = :status,
+                    updated_at = NOW()
                 WHERE template_id = :tid
             ");
-            $st->bindValue(':title',  $title);
-            $st->bindValue(':scope',  $scope);
-            $st->bindValue(':dept',   $owner_department_id, $owner_department_id === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
-            $st->bindValue(':prog',   $program_id,          $program_id === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
-            $st->bindValue(':course', $course_id,           $course_id === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
-            $st->bindValue(':status', $status);
-            $st->bindValue(':tid',    $tid, PDO::PARAM_INT);
-            $st->execute();
-
-            // 2) Sync mapping tables based on scope
-
-            // 2a) Department assignment (college/program scopes)
-            if ($owner_department_id !== null) {
-                $pdo->prepare("
-                    INSERT INTO public.syllabus_template_departments (template_id, department_id)
-                    VALUES (:t,:d)
-                    ON CONFLICT (template_id, department_id) DO NOTHING
-                ")->execute([':t'=>$tid, ':d'=>$owner_department_id]);
-                // Optionally clear other dept rows if you want single ownership:
-                $pdo->prepare("
-                    DELETE FROM public.syllabus_template_departments
-                    WHERE template_id = :t AND department_id <> :d
-                ")->execute([':t'=>$tid, ':d'=>$owner_department_id]);
-            } else {
-                // System scope: remove any dept rows
-                $pdo->prepare("DELETE FROM public.syllabus_template_departments WHERE template_id = :t")
-                    ->execute([':t'=>$tid]);
-            }
-
-            // 2b) Program assignment (program scope only)
-            if ($scope === 'program' && $program_id !== null) {
-                $pdo->prepare("
-                    INSERT INTO public.syllabus_template_programs (template_id, program_id)
-                    VALUES (:t,:p)
-                    ON CONFLICT (template_id, program_id) DO NOTHING
-                ")->execute([':t'=>$tid, ':p'=>$program_id]);
-
-                // Ensure exclusivity to just this one program
-                $pdo->prepare("
-                    DELETE FROM public.syllabus_template_programs
-                    WHERE template_id = :t AND program_id <> :p
-                ")->execute([':t'=>$tid, ':p'=>$program_id]);
-            } else {
-                // Not program scope → clear all program links
-                $pdo->prepare("DELETE FROM public.syllabus_template_programs WHERE template_id = :t")
-                    ->execute([':t'=>$tid]);
-            }
+            $stmt->execute([
+                ':title'  => $title,
+                ':scope'  => $scope,    // now accepts 'course' after enum migration
+                ':dept'   => $deptId,
+                ':prog'   => $progId,
+                ':course' => $courseId,
+                ':status' => $status,
+                ':tid'    => $tid,
+            ]);
 
             $pdo->commit();
+            unset($_SESSION['st_cache'], $_SESSION['tb_cache']);
             $_SESSION['flash'] = ['type'=>'success','message'=>'Template updated.'];
+
+            header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates');
+            exit;
         } catch (\Throwable $e) {
             $pdo->rollBack();
             $_SESSION['flash'] = ['type'=>'danger','message'=>'Update failed: '.$e->getMessage()];
+            header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates');
+            exit;
         }
-
-        header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates');
-        exit;
     }
+
 
     private function render(string $view, array $vars): string
     {
