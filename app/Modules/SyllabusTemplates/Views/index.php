@@ -49,6 +49,9 @@ $PAGE_KEY = 'syllabus-templates';
   </div>
   <!-- /PAGE HEADER -->
 
+  <!-- CSRF token for JS actions (duplicate, etc.) -->
+  <span id="tb-csrf" data-token="<?= $esc($_SESSION['csrf_token'] ?? '') ?>" hidden></span>
+
   <?php
     $partialsDir = __DIR__ . '/partials';
 

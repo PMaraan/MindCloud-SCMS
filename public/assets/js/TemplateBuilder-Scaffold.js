@@ -332,24 +332,44 @@
       window.open(url, '_blank', 'noopener');
     });
 
-    // --- DUPLICATE TEMPLATE (POST -> duplicate, then reload) ---
+    // --- DUPLICATE TEMPLATE (POST to controller) ---
     if (btnDup) btnDup.addEventListener('click', async function () {
-      const id = window.__tb_selectedId;
-      if (!id) { alert('Select a template first.'); return; }
+      const tile = document.querySelector('.tb-tile.tb-card--active');
+      const id = tile?.getAttribute('data-template-id') || window.__tb_selectedId;
+      if (!id) {
+        alert('Select a template first.');
+        return;
+      }
 
-      if (!confirm('Duplicate this template?')) return;
+      const tokenEl = document.getElementById('tb-csrf');
+      const csrf = tokenEl?.dataset.token || '';
 
       try {
-        const base = (typeof window.BASE_PATH === 'string') ? window.BASE_PATH : '';
-        const url  = `${base}/dashboard?page=syllabus-templates&action=duplicate`;
-        const form = new FormData();
-        form.append('template_id', String(id));
-        // if you use CSRF token in forms, include it here as well:
-        const csrf = document.querySelector('input[name="csrf_token"]')?.value || '';
-        if (csrf) form.append('csrf_token', csrf);
+        // Derive base path robustly
+        let base = (typeof window.BASE_PATH !== 'undefined' && window.BASE_PATH) ? window.BASE_PATH : '';
+        if (!base) {
+          const path = window.location.pathname;
+          const cut = path.indexOf('/dashboard');
+          base = cut > -1 ? path.slice(0, cut) : '';
+        }
 
-        const res = await fetch(url, { method: 'POST', credentials: 'same-origin', body: form });
-        // On success, the server redirects; on fetch we can just force a reload:
+        const url = `${base}/dashboard?page=syllabus-templates&action=duplicate`;
+        const body = new FormData();
+        body.append('csrf_token', csrf);
+        body.append('template_id', String(id));
+
+        const res = await fetch(url, {
+          method: 'POST',
+          credentials: 'same-origin',
+          body
+        });
+
+        if (!res.ok) {
+          alert('Duplicate failed.');
+          return;
+        }
+
+        // The controller redirects with flash; mimic that UX here:
         window.location.reload();
       } catch {
         alert('Duplicate failed.');

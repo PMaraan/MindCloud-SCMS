@@ -118,17 +118,27 @@ final class AppShellController
 
                 // Action dispatch (query param ?action=)
                 $action  = strtolower((string)($_GET['action'] ?? 'index'));
-                $allowed = ['index', 'create', 'edit', 'delete', 'savemeta', 'snapshot', 'opentemplate', 'programs'];
+                $allowed = [
+                    'index', 'create', 'edit', 'delete',
+                    'duplicate',          // <-- add
+                    'savemeta', 'snapshot', 'opentemplate',
+                    'programs',           // existing JSON (by department)
+                    'apiprograms',        // <-- add (alias-safe JSON name)
+                    'apicourses'          // <-- add (JSON courses by program)
+                ];
 
                 $actionMap = [
                     'index'        => 'index',
                     'create'       => 'create',
                     'edit'         => 'edit',
                     'delete'       => 'delete',
+                    'duplicate'    => 'duplicate',    // <-- add
                     'savemeta'     => 'saveMeta',
                     'snapshot'     => 'snapshot',
                     'opentemplate' => 'openTemplate',
-                    'programs'     => 'programs',     // JSON: programs by department
+                    'programs'     => 'programs',     // existing JSON (by department)
+                    'apiprograms'  => 'apiPrograms',  // <-- add (method in SyllabusTemplatesController)
+                    'apicourses'   => 'apiCourses'    // <-- add (method in SyllabusTemplatesController)
                 ];
                 $method = $actionMap[$action] ?? 'index';
 
