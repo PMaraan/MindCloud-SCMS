@@ -3811,3 +3811,11 @@ LINE 1: SELECT program_id, program_name, college_id FROM public.prog...
 [07-Nov-2025 07:16:59 Europe/Berlin] accounts.page rows=6 total=6 limit=10 offset=0
 [07-Nov-2025 07:16:59 Europe/Berlin] accounts.index total=6 rows=6
 [07-Nov-2025 07:16:59 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-50003","fname":"Jack","mname":"","lname":"Black","email":"jackblack@lpunetwork.edu.ph","role_id":6,"department_id":1,"role_name":"Chair","department_short_name":"CCS","college_short_name":"CCS"}
+[07-Nov-2025 08:42:08 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[07-Nov-2025 08:42:08 Europe/Berlin] accounts.page rows=10 total=20 limit=10 offset=0
+[07-Nov-2025 08:42:08 Europe/Berlin] accounts.index total=20 rows=10
+[07-Nov-2025 08:42:08 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"department_id":null,"role_name":"Admin","department_short_name":"","college_short_name":""}
+[07-Nov-2025 08:42:17 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[07-Nov-2025 08:42:17 Europe/Berlin] accounts.page rows=6 total=6 limit=10 offset=0
+[07-Nov-2025 08:42:17 Europe/Berlin] accounts.index total=6 rows=6
+[07-Nov-2025 08:42:17 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-50003","fname":"Jack","mname":"","lname":"Black","email":"jackblack@lpunetwork.edu.ph","role_id":6,"department_id":1,"role_name":"Chair","department_short_name":"CCS","college_short_name":"CCS"}

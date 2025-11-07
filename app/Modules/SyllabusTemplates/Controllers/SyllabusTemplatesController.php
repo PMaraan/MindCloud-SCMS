@@ -20,8 +20,8 @@ final class SyllabusTemplatesController
 
     // Keep same role groupings
     private array $SYSTEM_ROLES  = ['VPAA','VPAA Secretary'];
-    private array $DEAN_ROLES    = ['Dean','College Dean'];
-    private array $CHAIR_ROLES   = ['Program Chair','Department Chair','Coordinator'];
+    private array $DEAN_ROLES    = ['Dean'];
+    private array $CHAIR_ROLES   = ['Chair'];
 
     public function __construct(StorageInterface $db)
     {
@@ -107,6 +107,22 @@ final class SyllabusTemplatesController
             'user'       => $user,
             'role'       => $role,
         ];
+
+        // ---- Per-scope edit permissions to drive UI/JS ----
+        // Canonical role names (DB): VPAA, VPAA Secretary, Dean, Chair
+        $roleL = strtolower((string)$role);
+
+        // Only AAO roles may edit System scope
+        $canEditSystem  = in_array($roleL, ['vpaa', 'vpaa secretary'], true);
+
+        // Dean can edit college; Chair can edit program.
+        // AAO can edit both college and program scopes as well.
+        $canEditCollege = in_array($roleL, ['vpaa', 'vpaa secretary', 'dean', 'college secretary'], true);
+        $canEditProgram = in_array($roleL, ['vpaa', 'vpaa secretary', 'dean', 'college secretary', 'chair'], true);
+
+        $viewData['canEditSystem']  = $canEditSystem;
+        $viewData['canEditCollege'] = $canEditCollege;
+        $viewData['canEditProgram'] = $canEditProgram;
 
         // DEBUG: show what the controller sees (visible only to logged-in users; safe for dev)
         // Comment out when done.
@@ -217,31 +233,65 @@ final class SyllabusTemplatesController
             ];
             $viewData['general'] = $general;
             $viewData['programs']= $progSecs;
+
+            // Create permissions for deans:
             $viewData['canCreateCollege']  = true;
+            $viewData['canCreateProgram']  = true; // <— allow Program-scope creation
+            // if you also want Course scope creation for deans, set a flag your modal can read
+            $viewData['canCreateCourse']   = true; // optional: toggle to false if you don't want it yet
+
+            // Lists used by the Create modal
             $viewData['allColleges']       = [['college_id'=>$collegeId,'short_name'=>$user['college_short_name'] ?? '','college_name'=>$user['college_name'] ?? '']];
             $viewData['programsOfCollege'] = $programs;
+
+            // Pass default college for preselect
+            $viewData['defaultCollegeId']  = $collegeId;
+
             return $this->render('index', $viewData);
         }
 
-        // CHAIRS: general (college-level) + their program section only
+        // CHAIRS: show their college (general) + ONLY their own program section
         if ($collegeId && $programId && in_array($role, $this->CHAIR_ROLES, true)) {
-            $general  = $this->model->getCollegeGeneralTemplates($collegeId);
-            $progOnly = $this->model->getProgramExclusiveTemplates($collegeId, $programId);
-            $viewData['mode']    = 'program';
+            $general   = $this->model->getCollegeGeneralTemplates($collegeId);
+
+            // Only the chair's program section (view & duplicate allowed; edit only for their program)
+            $programRow = [
+                'program_id'   => $programId,
+                'program_name' => (string)($user['program_name'] ?? 'My Program'),
+            ];
+            $progSection = [
+                'program'   => $programRow,
+                'templates' => $this->model->getProgramExclusiveTemplates($collegeId, $programId),
+            ];
+
+            $viewData['mode']    = 'college';
             $viewData['college'] = [
                 'college_id'   => $collegeId,
                 'short_name'   => (string)($user['college_short_name'] ?? ''),
                 'college_name' => (string)($user['college_name'] ?? ''),
             ];
-            $viewData['program'] = [
+            $viewData['general']  = $general;
+            $viewData['programs'] = [$progSection];
+
+            // Creation capabilities for Chair: program/course only; never system/college
+            $viewData['canCreateGlobal']   = false;
+            $viewData['canCreateCollege']  = false;
+            $viewData['canCreateProgram']  = true;
+
+            // For selects in modals
+            $viewData['allColleges']       = [[
+                'college_id'   => $collegeId,
+                'short_name'   => (string)($user['college_short_name'] ?? ''),
+                'college_name' => (string)($user['college_name'] ?? ''),
+            ]];
+            $viewData['programsOfCollege'] = [[
                 'program_id'   => $programId,
                 'program_name' => (string)($user['program_name'] ?? 'My Program'),
-            ];
-            $viewData['general'] = $general;
-            $viewData['program_templates'] = $progOnly;
-            $viewData['canCreateProgram']  = true;
-            $viewData['allColleges']       = [['college_id'=>$collegeId,'short_name'=>$user['college_short_name'] ?? '','college_name'=>$user['college_name'] ?? '']];
-            $viewData['programsOfCollege'] = [['program_id'=>$programId,'program_name'=>$user['program_name'] ?? '']];
+            ]];
+
+            // No "Back to folders" for chairs
+            $viewData['showBackToFolders'] = false;
+
             return $this->render('index', $viewData);
         }
 
@@ -317,6 +367,22 @@ final class SyllabusTemplatesController
         (new RBAC($this->db))->require((string)$_SESSION['user_id'], Permissions::SYLLABUSTEMPLATES_CREATE);
         $user = $this->userModel->getUserProfile((string)$_SESSION['user_id']);
         $idno = (string)($user['id_no'] ?? 'SYS-UNKNOWN');
+        $roleName  = strtolower((string)($user['role_name'] ?? ''));
+        $userColId = isset($user['college_id']) ? (int)$user['college_id'] : null;
+
+        // Deans cannot create system scope
+        if (in_array($roleName, ['dean'], true) && $scope === 'system') {
+            throw new \RuntimeException('Not allowed: deans cannot create System templates.');
+        }
+
+        // If dean is creating college/program/course, force college to their own
+        if (in_array($roleName, ['dean'], true) && in_array($scope, ['college','program','course'], true)) {
+            if ($userColId) {
+                $colId = $userColId; // override incoming
+            } else {
+                throw new \RuntimeException('Your profile is missing a college.');
+            }
+        }
 
         // NOTE: per your standard, get PDO via getConnection()
         $pdo  = $this->db->getConnection();
@@ -425,7 +491,24 @@ final class SyllabusTemplatesController
     public function edit(): void
     {
         (new \App\Security\RBAC($this->db))->require((string)$_SESSION['user_id'], \App\Config\Permissions::SYLLABUSTEMPLATES_EDIT);
+        $user = $this->userModel->getUserProfile((string)$_SESSION['user_id']);
+        $roleName  = strtolower((string)($user['role_name'] ?? ''));
+        $userColId = isset($user['college_id']) ? (int)$user['college_id'] : null;
 
+        // Only VPAA / VPAA Secretary can edit System templates
+        $allowedSystemEditors = ['vpaa', 'vpaa secretary'];
+        if ($scope === 'system' && !in_array($roleName, $allowedSystemEditors, true)) {
+            throw new \RuntimeException('Not allowed: only VPAA or VPAA Secretary can edit System templates.');
+        }
+
+        // If dean saving as college/program/course, force college to their own
+        if (in_array($roleName, ['dean'], true) && in_array($scope, ['college','program','course'], true)) {
+            if ($userColId) {
+                $deptId = $userColId; // override
+            } else {
+                throw new \RuntimeException('Your profile is missing a college.');
+            }
+        }
         $pdo = $this->db->getConnection();
         $pdo->beginTransaction();
 
@@ -506,6 +589,94 @@ final class SyllabusTemplatesController
         }
     }
 
+    public function duplicate(): void
+    {
+        (new \App\Security\RBAC($this->db))->require((string)$_SESSION['user_id'], \App\Config\Permissions::SYLLABUSTEMPLATES_CREATE);
+
+        $user = $this->userModel->getUserProfile((string)$_SESSION['user_id']);
+        $roleL = strtolower((string)($user['role_name'] ?? ''));
+        $idno  = (string)($user['id_no'] ?? 'SYS-UNKNOWN');
+
+        $srcId = isset($_POST['template_id']) ? (int)$_POST['template_id'] : 0;
+        if ($srcId <= 0) {
+            $_SESSION['flash'] = ['type'=>'danger','message'=>'Duplicate failed: missing template id.'];
+            header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates');
+            exit;
+        }
+
+        $pdo = $this->db->getConnection();
+        try {
+            // Pull source
+            $src = $pdo->query("SELECT template_id, scope, title, content FROM public.syllabus_templates WHERE template_id = {$srcId}")->fetch(\PDO::FETCH_ASSOC);
+            if (!$src) throw new \RuntimeException('Source template not found.');
+
+            // Decide target scope & associations based on role
+            $targetScope = null;
+            $deptId = null;
+            $progId = null;
+
+            // Canonical names: dean, chair
+            if ($roleL === 'dean') {
+                $targetScope = 'college';
+                $deptId = (int)($user['college_id'] ?? 0);
+                if ($deptId <= 0) throw new \RuntimeException('Your profile has no college.');
+            } elseif ($roleL === 'chair') {
+                $targetScope = 'program';
+                $progId = (int)($user['program_id'] ?? 0);
+                if ($progId <= 0) throw new \RuntimeException('Your profile has no program.');
+            } else {
+                // AAO or others keep original scope by default
+                $targetScope = (string)($src['scope'] ?? 'system');
+            }
+
+            $pdo->beginTransaction();
+
+            // Insert cloned template
+            $stmt = $pdo->prepare("
+                INSERT INTO public.syllabus_templates (scope, title, status, content, created_by)
+                VALUES (:scope, :title, 'draft', :content::jsonb, :by)
+                RETURNING template_id
+            ");
+            $newTitle = (string)($src['title'] ?? 'Untitled') . ' (Copy)';
+            $stmt->execute([
+                ':scope'   => $targetScope,
+                ':title'   => $newTitle,
+                ':content' => json_encode($src['content'] ?? (object)[]),
+                ':by'      => $idno,
+            ]);
+            $newId = (int)$stmt->fetchColumn();
+            if ($newId <= 0) throw new \RuntimeException('Failed to insert clone.');
+
+            // Link to college/program as needed
+            if ($targetScope === 'college' && $deptId) {
+                $pdo->prepare("INSERT INTO public.syllabus_template_departments (template_id, department_id) VALUES (:t,:d)")
+                    ->execute([':t'=>$newId, ':d'=>$deptId]);
+            }
+            if ($targetScope === 'program' && $progId) {
+                $pdo->prepare("INSERT INTO public.syllabus_template_programs (template_id, program_id) VALUES (:t,:p)")
+                    ->execute([':t'=>$newId, ':p'=>$progId]);
+
+                // Also ensure its college dept link exists
+                $dep = (int)$pdo->query("SELECT department_id FROM public.programs WHERE program_id = {$progId}")->fetchColumn();
+                if ($dep) {
+                    $pdo->prepare("INSERT INTO public.syllabus_template_departments (template_id, department_id) VALUES (:t,:d) ON CONFLICT DO NOTHING")
+                        ->execute([':t'=>$newId, ':d'=>$dep]);
+                }
+            }
+
+            $pdo->commit();
+            unset($_SESSION['st_cache'], $_SESSION['tb_cache']);
+            $_SESSION['flash'] = ['type'=>'success','message'=>'Template duplicated.'];
+
+            header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates');
+            exit;
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            $_SESSION['flash'] = ['type'=>'danger','message'=>'Duplicate failed: '.$e->getMessage()];
+            header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates');
+            exit;
+        }
+    }
 
     private function render(string $view, array $vars): string
     {

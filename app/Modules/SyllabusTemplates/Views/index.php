@@ -96,10 +96,26 @@ $PAGE_KEY = 'syllabus-templates';
                             id="tb-edit"
                             type="button"
                             data-bs-toggle="modal"
-                            data-bs-target="#tbEditModal">
+                            data-bs-target="#tbEditModal"
+                            style="display:none">
                       Edit
                     </button>
                   </div>
+
+                  <script>
+                    // Expose per-scope edit permissions for client logic
+                    window.TB_PERMS = {
+                      canEditSystem:  <?= !empty($canEditSystem)  ? 'true' : 'false' ?>,
+                      canEditCollege: <?= !empty($canEditCollege) ? 'true' : 'false' ?>,
+                      canEditProgram: <?= !empty($canEditProgram) ? 'true' : 'false' ?>,
+                    };
+                  </script>
+                  <?php if (empty($canEditSystem) && empty($canEditCollege) && empty($canEditProgram)): ?>
+                  <script>
+                    // Remove the edit button entirely if user has no edit perms
+                    (function(){ const b = document.getElementById('tb-edit'); if (b) b.remove(); })();
+                  </script>
+                  <?php endif; ?>
                 </dd>
               </dl>
             </div>
@@ -112,28 +128,30 @@ $PAGE_KEY = 'syllabus-templates';
 
     // CREATE MODAL (optional)
     if (!empty($canCreateGlobal) || !empty($canCreateCollege) || !empty($canCreateProgram)) {
-      $globalAllowed  = !empty($canCreateGlobal);
-      $collegeAllowed = !empty($canCreateCollege);
-      $programAllowed = !empty($canCreateProgram);
-      $colList        = $allColleges       ?? [];
-      $progList       = $programsOfCollege ?? [];
+    $globalAllowed   = !empty($canCreateGlobal);
+    $collegeAllowed  = !empty($canCreateCollege);
+    $programAllowed  = !empty($canCreateProgram);
+    $courseAllowed   = !empty($canCreateCourse); // may be undefined; defaults false
+    $colList         = $allColleges       ?? [];
+    $progList        = $programsOfCollege ?? [];
+    $defaultCollegeId= $defaultCollegeId  ?? null;
 
-      // include the function definition
-      include $partialsDir . '/CreateModal.php';
+    include $partialsDir . '/CreateModal.php';
 
-      // actually render the modal markup
-      if (function_exists('renderCreateModal')) {
-        renderCreateModal(
-          $ASSET_BASE,
-          $globalAllowed,
-          $collegeAllowed,
-          $programAllowed,
-          $colList,
-          $progList,
-          $esc
-        );
-      }
+    if (function_exists('renderCreateModal')) {
+      renderCreateModal(
+        $ASSET_BASE,
+        $globalAllowed,
+        $collegeAllowed,
+        $programAllowed,
+        $courseAllowed,      // NEW
+        $colList,
+        $progList,
+        $defaultCollegeId,   // NEW
+        $esc
+      );
     }
+  }
 
     // EDIT MODAL (always render so the button works on any mode)
     $colList  = $allColleges       ?? [];

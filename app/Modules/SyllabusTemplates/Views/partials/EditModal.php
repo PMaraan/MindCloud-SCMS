@@ -31,10 +31,13 @@ if (!function_exists('renderEditModal')) {
         <div class="mb-3">
           <label class="form-label d-block">Scope <span class="text-danger">*</span></label>
           <div class="d-flex gap-3 flex-wrap">
+          <?php $roleName = (string)($GLOBALS['role'] ?? ''); ?>
+          <?php if (strtolower($roleName) !== 'dean' && strtolower($roleName) !== 'college dean'): ?>
             <div class="form-check">
               <input class="form-check-input" type="radio" name="scope" id="tb-e-scope-system" value="system">
               <label class="form-check-label" for="tb-e-scope-system">System / Global</label>
             </div>
+          <?php endif; ?>
             <div class="form-check">
               <input class="form-check-input" type="radio" name="scope" id="tb-e-scope-college" value="college">
               <label class="form-check-label" for="tb-e-scope-college">College</label>
@@ -187,6 +190,15 @@ document.addEventListener('DOMContentLoaded', function(){
   // Initial pass (covers direct loads and cases where radios are pre-checked)
   updateVisAndRequired();
 });
+
+// If user is Dean (system radio missing), ensure default is College
+(function(){
+  const hasSystem = !!document.getElementById('tb-e-scope-system');
+  if (!hasSystem) {
+    const r = document.getElementById('tb-e-scope-college');
+    if (r && !r.checked) r.checked = true;
+  }
+})();
 </script>
 
 <?php

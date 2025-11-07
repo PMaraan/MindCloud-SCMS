@@ -169,9 +169,9 @@ final class SyllabusTemplatesModel
         $programId = isset($user['program_id']) ? (int)$user['program_id'] : null;
 
         // Role maps (edit here to adjust behavior)
-        $SYSTEM_ROLES  = ['VPAA','Admin','Librarian','QA','Registrar'];
-        $DEAN_ROLES    = ['Dean','College Dean'];
-        $CHAIR_ROLES   = ['Program Chair','Department Chair','Coordinator'];
+        $SYSTEM_ROLES  = ['VPAA','VPAA Secretary']; // AAO only
+        $DEAN_ROLES    = ['Dean'];
+        $CHAIR_ROLES   = ['Chair'];
 
         // SYSTEM: see everything (global + each college [general + per-program])
         if (in_array($role, $SYSTEM_ROLES, true)) {

@@ -12,6 +12,20 @@
       document.getElementById('tb-i-updated').textContent = card.dataset.updated || '';
       empty.classList.add('d-none');
       info.classList.remove('d-none');
+      // Toggle Edit button based on scope + user rights
+      const btnEdit = document.getElementById('tb-edit');
+      if (btnEdit) {
+        const scope = (card.dataset.scope || 'system').toLowerCase();
+        const P = (window.TB_PERMS || {});
+        let can = false;
+        if (scope === 'system')  can = !!P.canEditSystem;
+        if (scope === 'college') can = !!P.canEditCollege;
+        if (scope === 'program') can = !!P.canEditProgram;
+        // course scope maps to program-level edit permission (same granularity)
+        if (scope === 'course')  can = !!P.canEditProgram;
+
+        btnEdit.style.display = can ? '' : 'none';
+      }
     }
 
     window.__tb_selectedId = card.dataset.templateId || null;
@@ -318,10 +332,28 @@
       window.open(url, '_blank', 'noopener');
     });
 
-    // --- DUPLICATE TEMPLATE (alert only) ---
-    if (btnDup) btnDup.addEventListener('click', function () {
-      if (!window.__tb_selectedId) return;
-      alert('Duplicate template ID: ' + window.__tb_selectedId);
+    // --- DUPLICATE TEMPLATE (POST -> duplicate, then reload) ---
+    if (btnDup) btnDup.addEventListener('click', async function () {
+      const id = window.__tb_selectedId;
+      if (!id) { alert('Select a template first.'); return; }
+
+      if (!confirm('Duplicate this template?')) return;
+
+      try {
+        const base = (typeof window.BASE_PATH === 'string') ? window.BASE_PATH : '';
+        const url  = `${base}/dashboard?page=syllabus-templates&action=duplicate`;
+        const form = new FormData();
+        form.append('template_id', String(id));
+        // if you use CSRF token in forms, include it here as well:
+        const csrf = document.querySelector('input[name="csrf_token"]')?.value || '';
+        if (csrf) form.append('csrf_token', csrf);
+
+        const res = await fetch(url, { method: 'POST', credentials: 'same-origin', body: form });
+        // On success, the server redirects; on fetch we can just force a reload:
+        window.location.reload();
+      } catch {
+        alert('Duplicate failed.');
+      }
     });
   });
 
