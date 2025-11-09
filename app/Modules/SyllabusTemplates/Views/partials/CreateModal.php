@@ -69,8 +69,8 @@ if (!function_exists('renderCreateModal')) {
         </div>
 
         <div class="mb-3 d-none" id="tb-college-wrap">
-          <label class="form-label">College <span class="text-danger">*</span></label>
-          <select name="college_id" id="tb-college" class="form-select">
+          <label class="form-label" for="tb-college">College <span class="text-danger">*</span></label>
+          <select name="college_id" id="tb-college" class="form-select" aria-label="College" title="College">
             <option value="">— Select college —</option>
             <?php foreach ($colleges as $c): 
                   $cid = (int)($c['college_id'] ?? 0);
@@ -84,8 +84,8 @@ if (!function_exists('renderCreateModal')) {
         </div>
 
         <div class="mb-3 d-none" id="tb-program-wrap">
-          <label class="form-label">Program <span class="text-danger">*</span></label>
-          <select name="program_id" id="tb-program" class="form-select">
+          <label class="form-label" for="tb-program">Program</label>Program <span class="text-danger">*</span></label>
+          <select name="program_id" id="tb-program" class="form-select" aria-label="Program" title="Program">
             <option value="">— Select program —</option>
             <?php foreach ($programsOfCollege as $p): ?>
               <option value="<?= (int)($p['program_id'] ?? 0) ?>">
@@ -97,8 +97,8 @@ if (!function_exists('renderCreateModal')) {
         </div>
 
         <div class="mb-3 d-none" id="tb-course-wrap">
-          <label class="form-label">Course <span class="text-danger">*</span></label>
-          <select name="course_id" id="tb-course" class="form-select">
+          <label class="form-label" for="tb-course">Course <span class="text-danger">*</span></label>
+          <select name="course_id" id="tb-course" class="form-select" aria-label="Course" title="Course">
             <option value="">— Select course —</option>
             <!-- Will be filled based on selected Program -->
           </select>

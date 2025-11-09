@@ -261,4 +261,48 @@ final class SyllabusTemplatesModel
             'colleges' => [],
         ];
     }
+
+    public function cloneTemplateWithMeta(int $sourceId, array $meta): int
+    {
+        $pdo = $this->pdo;
+
+        // Load source template (content + version we’ll copy)
+        $src = $pdo->prepare("SELECT content, version FROM public.syllabus_templates WHERE template_id = :id");
+        $src->execute([':id' => $sourceId]);
+        $row = $src->fetch(\PDO::FETCH_ASSOC);
+        if (!$row) {
+            throw new \RuntimeException('Source template not found.');
+        }
+
+        $content = $row['content'] ?? null;
+        $version = $row['version'] ?? null;
+
+        // Insert new template
+        $stmt = $pdo->prepare("
+            INSERT INTO public.syllabus_templates
+                (scope, owner_department_id, program_id, course_id, title, version, status, content, source_template_id, created_by)
+            VALUES
+                (:scope, :dept, :prog, :course, :title, :version, :status, :content, :src, :created_by)
+            RETURNING template_id
+        ");
+
+        $stmt->execute([
+            ':scope'      => $meta['scope'],                         // 'system' | 'college' | 'program' | 'course'
+            ':dept'       => $meta['owner_department_id'] ?? null,
+            ':prog'       => $meta['program_id'] ?? null,
+            ':course'     => $meta['course_id'] ?? null,
+            ':title'      => $meta['title'],
+            ':version'    => $version,                               // keep same version; you can reset to 'v1.0' if preferred
+            ':status'     => $meta['status'] ?? 'draft',
+            ':content'    => $content,
+            ':src'        => $sourceId,
+            ':created_by' => $meta['created_by'] ?? '',
+        ]);
+
+        $newId = (int)$stmt->fetchColumn();
+        if ($newId <= 0) throw new \RuntimeException('Failed to insert duplicate.');
+
+        // Triggers (mc_trg_tpl_program_scope_autosync + mc_validate_template_scope) will maintain link tables/consistency.
+        return $newId;
+    }
 }

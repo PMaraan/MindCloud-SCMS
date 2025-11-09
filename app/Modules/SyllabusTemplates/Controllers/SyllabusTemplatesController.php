@@ -473,108 +473,83 @@ final class SyllabusTemplatesController
 
     public function duplicate(): void
     {
-        (new RBAC($this->db))->require((string)$_SESSION['user_id'], Permissions::SYLLABUSTEMPLATES_CREATE);
+        if (session_status() !== PHP_SESSION_ACTIVE) session_start();
 
-        $user = $this->userModel->getUserProfile((string)$_SESSION['user_id']);
-        $roleName   = strtolower((string)($user['role_name'] ?? ''));
-        $userColId  = isset($user['college_id']) ? (int)$user['college_id'] : null;
-        $userProgId = isset($user['program_id']) ? (int)$user['program_id'] : null;
-        $idno       = (string)($user['id_no'] ?? 'SYS-UNKNOWN');
-
-        $tid = isset($_POST['template_id']) ? (int)$_POST['template_id'] : 0;
-        if ($tid <= 0) {
-            $_SESSION['flash'] = ['type'=>'danger','message'=>'Duplicate failed: missing template id.'];
-            header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates');
-            exit;
+        // CSRF
+        $token = (string)($_POST['csrf_token'] ?? '');
+        if ($token === '' || $token !== (string)($_SESSION['csrf_token'] ?? '')) {
+            \App\Helpers\FlashHelper::set('danger', 'Invalid CSRF.');
+            header('Location: ' . BASE_PATH . '/dashboard?page=syllabus-templates');
+            return;
         }
 
-        $pdo = $this->db->getConnection();
-        $pdo->beginTransaction();
+        $srcId = (int)($_POST['source_template_id'] ?? 0);
+        $title = trim((string)($_POST['title'] ?? ''));
+        $scope = strtolower((string)($_POST['scope'] ?? 'college')); // default to college
+
+        $deptId = isset($_POST['college_id']) ? (int)$_POST['college_id'] : null;
+        $progId = isset($_POST['program_id']) ? (int)$_POST['program_id'] : null;
+        $crsId  = isset($_POST['course_id'])  ? (int)$_POST['course_id']  : null;
+
+        if ($srcId <= 0 || $title === '') {
+            \App\Helpers\FlashHelper::set('danger', 'Missing source or title.');
+            header('Location: ' . BASE_PATH . '/dashboard?page=syllabus-templates');
+            return;
+        }
+
+        // Normalize scope and required fields
+        switch ($scope) {
+            case 'system':
+                $deptId = $progId = $crsId = null;
+                break;
+            case 'college':
+                if (!$deptId) { \App\Helpers\FlashHelper::set('danger', 'College is required.'); goto dup_fail; }
+                $progId = $crsId = null;
+                break;
+            case 'program':
+                if (!$deptId || !$progId) { \App\Helpers\FlashHelper::set('danger', 'College and Program are required.'); goto dup_fail; }
+                $crsId = null;
+                break;
+            case 'course':
+                if (!$deptId || !$progId || !$crsId) { \App\Helpers\FlashHelper::set('danger', 'College, Program, and Course are required.'); goto dup_fail; }
+                break;
+            default:
+                $scope = 'college';
+                if (!$deptId) { \App\Helpers\FlashHelper::set('danger', 'College is required.'); goto dup_fail; }
+                $progId = $crsId = null;
+        }
+
+        // Role gate: only VPAA / VPAA Secretary can duplicate into system
+        $roleName = strtolower((string)($_SESSION['role_name'] ?? ''));
+        if ($scope === 'system' && !in_array($roleName, ['vpaa','vpaa secretary'], true)) {
+            \App\Helpers\FlashHelper::set('danger', 'You are not allowed to create System templates.');
+            goto dup_fail;
+        }
+
         try {
-            // Fetch source
-            $src = $pdo->prepare("SELECT template_id, scope, title, content, course_id FROM public.syllabus_templates WHERE template_id = :t");
-            $src->execute([':t'=>$tid]);
-            $row = $src->fetch(PDO::FETCH_ASSOC);
-            if (!$row) {
-                throw new \RuntimeException('Source template not found.');
-            }
+            $model = new \App\Modules\SyllabusTemplates\Models\SyllabusTemplatesModel($this->db);
+            $newId = $model->cloneTemplateWithMeta(
+                $srcId,
+                [
+                    'title'                  => $title,
+                    'scope'                  => $scope,
+                    'owner_department_id'    => $deptId,
+                    'program_id'             => $progId,
+                    'course_id'              => $crsId,
+                    'status'                 => 'draft',
+                    'created_by'             => (string)($_SESSION['user_id'] ?? ''),
+                ]
+            );
 
-            $newTitle = 'Copy of ' . (string)$row['title'];
-            $content  = (string)($row['content'] ?? '{}');
-
-            // Decide destination by role
-            $destScope = null;
-            $destDept  = null;
-            $destProg  = null;
-            $destCourse= null;
-
-            if (in_array($roleName, array_map('strtolower', $this->SYSTEM_ROLES), true)) {
-                // AAO roles can clone as system by default (or you can keep scope from source)
-                $destScope = 'system';
-            } elseif (in_array($roleName, array_map('strtolower', $this->DEAN_ROLES), true)) {
-                if (!$userColId) throw new \RuntimeException('Your profile is missing a college.');
-                $destScope = 'college';
-                $destDept  = $userColId;
-                // Drop program/course context when cloning to college
-                $destProg  = null;
-                $destCourse= null;
-            } elseif (in_array($roleName, array_map('strtolower', $this->CHAIR_ROLES), true)) {
-                if (!$userProgId) throw new \RuntimeException('Your profile is missing a program.');
-                $destScope = 'program';
-                $destProg  = $userProgId;
-
-                // Derive department from program
-                $q = $pdo->prepare("SELECT department_id FROM public.programs WHERE program_id = :p");
-                $q->execute([':p'=>$userProgId]);
-                $destDept = (int)$q->fetchColumn() ?: null;
-
-                // Carry over course if the source had one (optional rule; adjust if needed)
-                $destCourse = isset($row['course_id']) ? (int)$row['course_id'] : null;
-            } else {
-                // Other roles: not allowed
-                throw new \RuntimeException('Not allowed to duplicate.');
-            }
-
-            // Insert new template row
-            $ins = $pdo->prepare("
-                INSERT INTO public.syllabus_templates (scope, title, status, content, created_by, owner_department_id, program_id, course_id)
-                VALUES (:scope, :title, 'draft', :content, :by, :dept, :prog, :course)
-                RETURNING template_id
-            ");
-            $ins->execute([
-                ':scope'  => $destScope,
-                ':title'  => $newTitle,
-                ':content'=> $content,
-                ':by'     => $idno,
-                ':dept'   => $destDept,
-                ':prog'   => $destProg,
-                ':course' => $destCourse,
-            ]);
-            $newTid = (int)$ins->fetchColumn();
-
-            // Ensure mapping rows for visibility (mirrors your create() behavior)
-            if ($destDept) {
-                $pdo->prepare("INSERT INTO public.syllabus_template_departments (template_id, department_id) VALUES (:t,:d) ON CONFLICT DO NOTHING")
-                    ->execute([':t'=>$newTid, ':d'=>$destDept]);
-            }
-            if ($destProg) {
-                $pdo->prepare("INSERT INTO public.syllabus_template_programs (template_id, program_id) VALUES (:t,:p) ON CONFLICT DO NOTHING")
-                    ->execute([':t'=>$newTid, ':p'=>$destProg]);
-            }
-
-            $pdo->commit();
-
-            unset($_SESSION['st_cache'], $_SESSION['tb_cache']);
-            $_SESSION['flash'] = ['type'=>'success','message'=>'Template duplicated.'];
-
-            header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates');
-            exit;
+            \App\Helpers\FlashHelper::set('success', 'Template duplicated.');
+            header('Location: ' . BASE_PATH . '/dashboard?page=syllabus-templates');
+            return;
         } catch (\Throwable $e) {
-            $pdo->rollBack();
-            $_SESSION['flash'] = ['type'=>'danger','message'=>'Duplicate failed: '.$e->getMessage()];
-            header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates');
-            exit;
+            \App\Helpers\FlashHelper::set('danger', 'Duplicate failed: ' . $e->getMessage());
         }
+
+    dup_fail:
+        header('Location: ' . BASE_PATH . '/dashboard?page=syllabus-templates');
     }
 
     public function programs(): void

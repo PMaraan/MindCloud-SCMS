@@ -94,7 +94,13 @@ $PAGE_KEY = 'syllabus-templates';
                 <dd class="col-8">
                   <div class="d-flex gap-2">
                     <button class="btn btn-sm btn-primary" id="tb-open">Open</button>
-                    <button class="btn btn-sm btn-outline-secondary" id="tb-duplicate">Duplicate</button>
+                    <button class="btn btn-sm btn-outline-secondary"
+                            id="tb-duplicate"
+                            type="button"
+                            data-bs-toggle="modal"
+                            data-bs-target="#tbDuplicateModal">
+                      Duplicate
+                    </button>
                     <button class="btn btn-sm btn-warning"
                             id="tb-edit"
                             type="button"
@@ -163,6 +169,26 @@ $PAGE_KEY = 'syllabus-templates';
     if (function_exists('renderEditModal')) {
       renderEditModal(
         $ASSET_BASE,
+        $colList,
+        $progList,
+        $esc
+      );
+    }
+
+    // DUPLICATE MODAL (same scope rules as Create)
+    $globalAllowed  = !empty($canCreateGlobal);
+    $collegeAllowed = !empty($canCreateCollege);
+    $programAllowed = !empty($canCreateProgram);
+    $colList        = $allColleges       ?? [];
+    $progList       = $programsOfCollege ?? [];
+
+    include $partialsDir . '/DuplicateModal.php';
+    if (function_exists('renderDuplicateModal')) {
+      renderDuplicateModal(
+        $ASSET_BASE,
+        $globalAllowed,
+        $collegeAllowed,
+        $programAllowed,
         $colList,
         $progList,
         $esc

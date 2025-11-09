@@ -1,4 +1,15 @@
 (function () {
+  // Fallback for CSS.escape on older browsers
+  if (!window.CSS || typeof window.CSS.escape !== 'function') {
+    (function() {
+      const r = /[{}|\\^~\[\]`"<>#%]/g;
+      window.CSS = window.CSS || {};
+      window.CSS.escape = function(v) {
+        return String(v).replace(r, '\\$&');
+      };
+    })();
+  }
+  
   function selectTile(card) {
     document.querySelectorAll('.tb-tile.tb-card--active')
       .forEach(el => el.classList.remove('tb-card--active'));
@@ -217,6 +228,46 @@
       if (preselectId) sel.value = String(preselectId);
     }
 
+    // === Generic variants for the Duplicate modal (target different selects) ===
+    async function loadProgramsForDepartmentTo(departmentId, preselectId, programSelectId, courseSelectId) {
+      const progSel = document.getElementById(programSelectId);
+      const crsSel  = document.getElementById(courseSelectId);
+      const depNum = Number(departmentId);
+
+      if (!progSel || !Number.isFinite(depNum) || depNum <= 0) {
+        fillSelect(progSel, [], '— Select program —');
+        fillSelect(crsSel,  [], '— Select course —');
+        return;
+      }
+
+      const url  = `${getBase()}/dashboard?page=syllabus-templates&ajax=programs&department_id=${encodeURIComponent(depNum)}`;
+      const data = await fetchJSON(url);
+      const items = Array.isArray(data?.programs) ? data.programs : [];
+      fillSelect(progSel, items, '— Select program —');
+
+      if (preselectId) {
+        progSel.value = String(preselectId);
+        // Only pull courses if we actually have a program preselected
+        progSel.dispatchEvent(new Event('change'));
+      } else {
+        fillSelect(crsSel, [], '— Select course —');
+      }
+    }
+
+    async function loadCoursesForProgramTo(programId, preselectId, courseSelectId) {
+      const crsSel = document.getElementById(courseSelectId);
+      if (!crsSel) return;
+
+      if (!programId || programId === '0') {
+        fillSelect(crsSel, [], '— Select course —');
+        return;
+      }
+      const url  = `${getBase()}/api/syllabus-templates/courses?program_id=${encodeURIComponent(programId)}`;
+      const data = await fetchJSON(url);
+      fillSelect(crsSel, data, '— Select course —');
+      if (preselectId) crsSel.value = String(preselectId);
+    }
+
     // Wire change events inside the Edit modal
     if (editModalEl) {
       editModalEl.addEventListener('shown.bs.modal', async () => {
@@ -263,6 +314,280 @@
               return;
             }
             await loadCoursesForProgram(pid, null);
+          };
+        }
+      });
+    }
+
+    // --- visibility + required + always-show-placeholder when newly visible
+    function dupUpdateVisRequired() {
+      const sys = document.getElementById('tb-d-scope-system');
+      const col = document.getElementById('tb-d-scope-college');
+      const prg = document.getElementById('tb-d-scope-program');
+      const crs = document.getElementById('tb-d-scope-course');
+
+      const wCol = document.getElementById('tb-d-college-wrap');
+      const wPrg = document.getElementById('tb-d-program-wrap');
+      const wCrs = document.getElementById('tb-d-course-wrap');
+
+      const selCol = document.getElementById('tb-d-college');
+      const selPrg = document.getElementById('tb-d-program');
+      const selCrs = document.getElementById('tb-d-course');
+
+      const isSys = !!(sys && sys.checked);
+      const isCol = !!(col && col.checked);
+      const isPrg = !!(prg && prg.checked);
+      const isCrs = !!(crs && crs.checked);
+
+      // Show/hide wraps
+      if (wCol) wCol.classList.toggle('d-none', !(isCol || isPrg || isCrs));
+      if (wPrg) wPrg.classList.toggle('d-none', !(isPrg || isCrs));
+      if (wCrs) wCrs.classList.toggle('d-none', !isCrs);
+
+      // Required flags
+      if (selCol) selCol.required = (isCol || isPrg || isCrs);
+      if (selPrg) selPrg.required = (isPrg || isCrs);
+      if (selCrs) selCrs.required = isCrs;
+
+      // IMPORTANT: Always ensure placeholders + selectedIndex=0 for any newly visible select
+      // College (visible for college/program/course)
+      if ((isCol || isPrg || isCrs) && selCol) {
+        if (!selCol.value) {
+          // Don’t wipe options; just ensure the first option is the placeholder and select it
+          if (selCol.options.length === 0 || selCol.options[0].value !== '') {
+            // (fallback) insert placeholder if markup was altered
+            const opt0 = document.createElement('option');
+            opt0.value = '';
+            opt0.textContent = '— Select college —';
+            selCol.insertBefore(opt0, selCol.firstChild);
+          }
+          selCol.selectedIndex = 0;
+        }
+      }
+
+      // Program (visible for program/course)
+      if ((isPrg || isCrs) && selPrg) {
+        if (!selPrg.value) {
+          // Always show placeholder immediately (even if an async load is about to run)
+          if (selPrg.options.length === 0 || selPrg.options[0].value !== '') {
+            // reset to clean placeholder state
+            selPrg.innerHTML = '';
+            const opt0 = document.createElement('option');
+            opt0.value = '';
+            opt0.textContent = '— Select program —';
+            selPrg.appendChild(opt0);
+          } else {
+            selPrg.selectedIndex = 0;
+          }
+        }
+      }
+
+      // Course (visible for course)
+      if (isCrs && selCrs) {
+        if (!selCrs.value) {
+          if (selCrs.options.length === 0 || selCrs.options[0].value !== '') {
+            selCrs.innerHTML = '';
+            const opt0 = document.createElement('option');
+            opt0.value = '';
+            opt0.textContent = '— Select course —';
+            selCrs.appendChild(opt0);
+          } else {
+            selCrs.selectedIndex = 0;
+          }
+        }
+      }
+    }
+
+    function dupEnsurePlaceholdersForScopeBeforeLoads() {
+      const col = document.getElementById('tb-d-scope-college');
+      const prg = document.getElementById('tb-d-scope-program');
+      const crs = document.getElementById('tb-d-scope-course');
+
+      const selCol = document.getElementById('tb-d-college');
+      const selPrg = document.getElementById('tb-d-program');
+      const selCrs = document.getElementById('tb-d-course');
+
+      // If the user is narrowing scope, make sure placeholders are visible immediately
+      if (col && col.checked && selCol && !selCol.value) {
+        if (selCol.options.length > 0) selCol.selectedIndex = 0;
+      }
+      if (prg && prg.checked) {
+        if (selPrg) {
+          selPrg.innerHTML = '<option value="">— Select program —</option>';
+        }
+        if (selCrs) {
+          selCrs.innerHTML = '<option value="">— Select course —</option>';
+        }
+      }
+      if (crs && crs.checked) {
+        if (selPrg && selPrg.options.length === 0) {
+          selPrg.innerHTML = '<option value="">— Select program —</option>';
+        }
+        if (selCrs) {
+          selCrs.innerHTML = '<option value="">— Select course —</option>';
+        }
+      }
+    }
+
+    // ----- DUPLICATE MODAL (prefill + cascades; frontend-only for now) -----
+    const dupModalEl = document.getElementById('tbDuplicateModal');
+
+    function __tb_fillDuplicateModalFrom(tile) {
+      if (!tile) return;
+      const g = (k, d='') => (tile.dataset[k] ?? d);
+
+      // Hidden source id
+      const srcEl = document.getElementById('tb-d-src-id');
+      if (srcEl) srcEl.value = g('templateId', '');
+
+      // Title suggestion
+      const titleEl = document.getElementById('tb-d-title');
+      if (titleEl && !titleEl.value) {
+        const baseTitle = g('title','Untitled');
+        titleEl.value = `Copy of ${baseTitle}`;
+      }
+
+      // Scope radios — prefer same scope as source if allowed, else we’ll override below
+      const scope = (g('scope','system') || 'system').toLowerCase();
+      const scopeIds = {
+        system:  'tb-d-scope-system',
+        college: 'tb-d-scope-college',
+        program: 'tb-d-scope-program',
+        course:  'tb-d-scope-course',
+      };
+      const preferredRadio = document.getElementById(scopeIds[scope] || scopeIds.system);
+      if (preferredRadio && !preferredRadio.disabled) preferredRadio.checked = true;
+
+      // Preselect cascading values from tile
+      const depId = g('ownerDepartmentId','');
+      const pid   = g('programId','');
+      const cid   = g('courseId','');
+
+      const deptSel = document.getElementById('tb-d-college');
+      const progSel = document.getElementById('tb-d-program');
+      const crsSel  = document.getElementById('tb-d-course');
+
+      if (deptSel) deptSel.value = String(depId || '');
+
+      (async () => {
+        if (depId) {
+          await loadProgramsForDepartmentTo(depId, pid || null, 'tb-d-program', 'tb-d-course');
+          if (pid) {
+            await loadCoursesForProgramTo(pid, cid || null, 'tb-d-course');
+          } else {
+            fillSelect(crsSel, [], '— Select course —');
+          }
+        } else {
+          fillSelect(progSel, [], '— Select program —');
+          fillSelect(crsSel, [],  '— Select course —');
+        }
+      })();
+    }
+
+    if (dupModalEl) {
+      // When the Duplicate modal is about to show…
+      dupModalEl.addEventListener('show.bs.modal', async () => {
+        const tile = __tb_getActiveTile();
+
+        // 1) Ensure placeholders are visible immediately (prevents “blank” look)
+        fillSelect(document.getElementById('tb-d-program'), [], '— Select program —');
+        fillSelect(document.getElementById('tb-d-course'),  [], '— Select course —');
+
+        // 2) Fill from selected tile (title, src id, and try to preload dept/program/course ids)
+        __tb_fillDuplicateModalFrom(tile);
+
+        // 3) If caller provided defaults (e.g., Dean), honor them:
+        //    <div id="tbDuplicateModal" data-default-scope="college" data-default-college="123">…
+        const defScope   = (dupModalEl.dataset.defaultScope || '').toLowerCase();
+        const defCollege = Number(dupModalEl.dataset.defaultCollege || 0);
+
+        if (defScope === 'college') {
+          // Set scope radio to College unless locked/disabled for the role
+          const rCol = document.getElementById('tb-d-scope-college');
+          if (rCol && !rCol.disabled) rCol.checked = true;
+
+          // Preselect the Dean’s college if none is prefilled from the tile
+          const deptSel = document.getElementById('tb-d-college');
+          if (deptSel) {
+            if (!deptSel.value && defCollege > 0) {
+              deptSel.value = String(defCollege);
+            }
+            // Show program/course placeholders *immediately* then populate via API
+            fillSelect(document.getElementById('tb-d-program'), [], '— Select program —');
+            fillSelect(document.getElementById('tb-d-course'),  [], '— Select course —');
+
+            if (deptSel.value) {
+              await loadProgramsForDepartmentTo(deptSel.value, null, 'tb-d-program', 'tb-d-course');
+            }
+          }
+        }
+
+        // 4) Sync visibility + required flags once on open
+        dupUpdateVisRequired();
+        dupEnsurePlaceholdersForScopeBeforeLoads();
+
+        // Force one more pass on the next tick to avoid “first open” blank selects on some browsers
+        setTimeout(() => {
+          // re-apply placeholders in case scope default changed synchronously
+          fillSelect(document.getElementById('tb-d-program'), [], '— Select program —');
+          fillSelect(document.getElementById('tb-d-course'),  [], '— Select course —');
+          dupUpdateVisRequired();
+        }, 0);
+        
+      });
+
+      // After the modal is fully shown, wire live interactions
+      dupModalEl.addEventListener('shown.bs.modal', () => {
+        // Scope radios
+        const sys = document.getElementById('tb-d-scope-system');
+        const col = document.getElementById('tb-d-scope-college');
+        const prg = document.getElementById('tb-d-scope-program');
+        const crs = document.getElementById('tb-d-scope-course');
+        [sys, col, prg, crs].forEach(el => el && el.addEventListener('change', async () => {
+          // 1) Immediately show placeholders so the user never sees a blank select
+          dupEnsurePlaceholdersForScopeBeforeLoads();
+          // 2) Toggle visibility/required
+          dupUpdateVisRequired();
+
+          // 3) Kick cascades if we have enough inputs
+          const deptSel = document.getElementById('tb-d-college');
+          const progSel = document.getElementById('tb-d-program');
+
+          const isPrg = !!(prg && prg.checked);
+          const isCrs = !!(crs && crs.checked);
+
+          if ((isPrg || isCrs) && deptSel && deptSel.value) {
+            await loadProgramsForDepartmentTo(deptSel.value, null, 'tb-d-program', 'tb-d-course');
+          }
+          if (isCrs && progSel && progSel.value) {
+            await loadCoursesForProgramTo(progSel.value, null, 'tb-d-course');
+          }
+        }));
+
+        // Cascading selects
+        const deptSel = document.getElementById('tb-d-college');
+        const progSel = document.getElementById('tb-d-program');
+
+        if (deptSel) {
+          deptSel.onchange = async (e) => {
+            const depId = String(e.target.value || '');
+            // Always reveal placeholders *immediately*, even before API returns:
+            fillSelect(document.getElementById('tb-d-program'), [], '— Select program —');
+            fillSelect(document.getElementById('tb-d-course'),  [], '— Select course —');
+
+            if (!depId || depId === '0') return;
+            await loadProgramsForDepartmentTo(depId, null, 'tb-d-program', 'tb-d-course');
+          };
+        }
+
+        if (progSel) {
+          progSel.onchange = async (e) => {
+            const pid = String(e.target.value || '');
+            // Always reveal course placeholder *immediately*
+            fillSelect(document.getElementById('tb-d-course'), [], '— Select course —');
+
+            if (!pid || pid === '0') return;
+            await loadCoursesForProgramTo(pid, null, 'tb-d-course');
           };
         }
       });
@@ -332,49 +657,6 @@
       window.open(url, '_blank', 'noopener');
     });
 
-    // --- DUPLICATE TEMPLATE (POST to controller) ---
-    if (btnDup) btnDup.addEventListener('click', async function () {
-      const tile = document.querySelector('.tb-tile.tb-card--active');
-      const id = tile?.getAttribute('data-template-id') || window.__tb_selectedId;
-      if (!id) {
-        alert('Select a template first.');
-        return;
-      }
-
-      const tokenEl = document.getElementById('tb-csrf');
-      const csrf = tokenEl?.dataset.token || '';
-
-      try {
-        // Derive base path robustly
-        let base = (typeof window.BASE_PATH !== 'undefined' && window.BASE_PATH) ? window.BASE_PATH : '';
-        if (!base) {
-          const path = window.location.pathname;
-          const cut = path.indexOf('/dashboard');
-          base = cut > -1 ? path.slice(0, cut) : '';
-        }
-
-        const url = `${base}/dashboard?page=syllabus-templates&action=duplicate`;
-        const body = new FormData();
-        body.append('csrf_token', csrf);
-        body.append('template_id', String(id));
-
-        const res = await fetch(url, {
-          method: 'POST',
-          credentials: 'same-origin',
-          body
-        });
-
-        if (!res.ok) {
-          alert('Duplicate failed.');
-          return;
-        }
-
-        // The controller redirects with flash; mimic that UX here:
-        window.location.reload();
-      } catch {
-        alert('Duplicate failed.');
-      }
-    });
   });
 
   console.log('[TB] module JS loaded');
