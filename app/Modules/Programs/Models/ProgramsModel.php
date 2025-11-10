@@ -60,9 +60,20 @@ final class ProgramsModel
                 p.program_id,
                 p.program_name,
                 p.department_id,
-                COALESCE(d.short_name, d.department_name) AS college_label
+                COALESCE(d.short_name, d.department_name) AS college_label,
+                pc.chair_id,
+                CASE 
+                WHEN u.id_no IS NOT NULL 
+                THEN TRIM(
+                    COALESCE(u.lname,'') || ', ' || COALESCE(u.fname,'') || 
+                    CASE WHEN COALESCE(u.mname,'') <> '' THEN ' ' || u.mname ELSE '' END
+                )
+                ELSE NULL
+                END AS chair_full_name
             FROM programs p
             JOIN departments d ON d.department_id = p.department_id
+            LEFT JOIN program_chairs pc ON pc.program_id = p.program_id
+            LEFT JOIN users u ON u.id_no = pc.chair_id
             {$where}
             ORDER BY p.program_name ASC, p.program_id ASC
             " . $this->pageClause($limit, $offset);
@@ -129,5 +140,28 @@ final class ProgramsModel
                 WHERE {$cond}
             ORDER BY label ASC";
         return $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    /**
+     * Return chair candidates for a given department (college).
+     * A candidate is any user with role "Program Chair" whose user_roles.department_id = :did.
+     *
+     * @return array<int,array{id_no:string,fname:string,lname:string,mname:?string}>
+     */
+    public function listChairsByDepartment(int $departmentId): array
+    {
+        $sql = "
+            SELECT u.id_no, u.fname, u.lname, u.mname
+            FROM users u
+            JOIN user_roles ur ON ur.id_no = u.id_no
+            JOIN roles r       ON r.role_id = ur.role_id
+            WHERE ur.department_id = :did
+            AND (LOWER(r.role_name) = 'program chair' OR LOWER(r.role_name) = 'chair')
+            ORDER BY u.lname, u.fname, u.mname
+        ";
+        $st = $this->pdo->prepare($sql);
+        $st->bindValue(':did', $departmentId, \PDO::PARAM_INT);
+        $st->execute();
+        return $st->fetchAll(\PDO::FETCH_ASSOC) ?: [];
     }
 }

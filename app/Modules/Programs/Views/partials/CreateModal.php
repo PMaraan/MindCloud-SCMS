@@ -8,10 +8,12 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
+
         <div class="mb-3">
           <label class="form-label">Program name</label>
           <input type="text" name="program_name" class="form-control" maxlength="255" required>
         </div>
+
         <div class="mb-3">
           <label class="form-label">College</label>
           <select name="department_id" class="form-select" required>
@@ -21,6 +23,14 @@
             <?php endforeach; ?>
           </select>
         </div>
+
+        <div class="mb-3">
+          <label class="form-label">Program Chair (optional)</label>
+          <select name="chair_id_no" id="createProgChair" class="form-select">
+            <option value="">— None —</option>
+          </select>
+        </div>
+
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>

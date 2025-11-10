@@ -9,6 +9,9 @@
       </div>
       <div class="modal-body">
         <p>You're about to delete <strong id="progDelName">this program</strong>. This action cannot be undone.</p>
+        <div class="mt-2 small text-muted" id="progDelChairLine" hidden>
+          Current chair: <span id="progDelChair"></span>
+        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>

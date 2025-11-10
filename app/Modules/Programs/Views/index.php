@@ -43,9 +43,24 @@ $globalPagination = dirname(__DIR__, 3) . '/Views/partials/Pagination.php';
 <?php if (!empty($canDelete)) require __DIR__ . '/partials/DeleteModal.php'; ?>
 
 <?php
-// Cache-bust Programs JS file
-$jsPath = '/public/assets/js/programs.js';
-$ver    = @filemtime($_SERVER['DOCUMENT_ROOT'] . $jsPath) ?: '1';
-?>
-<script src="<?= BASE_PATH . $jsPath ?>?v=<?= urlencode((string)$ver) ?>"></script>
+// Cache-bust Programs JS file (env-aware: prefers prod path, falls back to dev)
+$relProd = '/assets/js/programs.js';           // production URL (no /public in URL)
+$relDev  = '/public/assets/js/programs.js';    // development URL (with /public)
 
+$docroot = rtrim((string)($_SERVER['DOCUMENT_ROOT'] ?? ''), '/');
+
+// Pick URL based on which file exists at the document root
+if ($docroot && is_file($docroot . $relProd)) {
+    $urlJsPath = $relProd;
+} elseif ($docroot && is_file($docroot . $relDev)) {
+    $urlJsPath = $relDev;
+} else {
+    // Default to dev path if detection fails
+    $urlJsPath = $relDev;
+}
+
+// Version from actual file on disk
+$ver = @filemtime($docroot . $urlJsPath) ?: '1';
+?>
+<script>window.BASE_PATH = '<?= BASE_PATH ?>';</script>
+<script src="<?= BASE_PATH . $urlJsPath ?>?v=<?= urlencode((string)$ver) ?>"></script>

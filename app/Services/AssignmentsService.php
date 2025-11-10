@@ -8,9 +8,25 @@ use App\Interfaces\StorageInterface;
 use PDO;
 
 /**
- * AssignmentsService (Departments-unified, no schema qualifiers)
- * - Enforces: only departments with is_college = TRUE can have a dean.
- * - Cross-DB: pgsql / mysql / sqlsrv supported.
+ * AssignmentsService
+ *
+ * Cross-DB (pgsql / mysql / sqlsrv) helpers for assignment rules:
+ *  • College Deans
+ *      - Only departments where is_college = TRUE may have a dean.
+ *      - Target user must already have the Dean role.
+ *      - Ensures 1 dean per department and 1 department per dean.
+ *      - Keeps user_roles.department_id in sync for the Dean role.
+ *
+ *  • Program Chairs
+ *      - Target user must already have the Program Chair role.
+ *      - Ensures 1 chair per program and 1 program per chair.
+ *      - Writes program_chairs (program_id, chair_id) with proper upsert.
+ *      - (Optional best-effort) Syncs user_roles.program_id for the Program Chair role
+ *        if that column exists; any schema mismatch is silently ignored.
+ *
+ * Notes:
+ *  - No schema qualifiers (assumes default schema).
+ *  - Booleans are normalized across drivers.
  */
 final class AssignmentsService
 {
@@ -31,6 +47,22 @@ final class AssignmentsService
     }
 
     private function hasDeanRole(string $idNo, int $rid): bool
+    {
+        $q = $this->pdo->prepare(
+            "SELECT 1 FROM user_roles WHERE id_no = :id AND role_id = :rid LIMIT 1"
+        );
+        $q->execute([':id' => $idNo, ':rid' => $rid]);
+        return (bool)$q->fetchColumn();
+    }
+
+    private function programChairRoleId(): ?int
+    {
+        $stmt = $this->pdo->query("SELECT role_id FROM roles WHERE LOWER(role_name) = 'program chair' LIMIT 1");
+        $rid  = $stmt->fetchColumn();
+        return $rid !== false ? (int)$rid : null;
+    }
+
+    private function hasProgramChairRole(string $idNo, int $rid): bool
     {
         $q = $this->pdo->prepare(
             "SELECT 1 FROM user_roles WHERE id_no = :id AND role_id = :rid LIMIT 1"
@@ -189,6 +221,157 @@ final class AssignmentsService
                     INSERT INTO college_deans (department_id, dean_id) VALUES (:did, :id)
                 ");
                 $ins->execute([':did' => $departmentId, ':id' => $newDeanIdNo]);
+            }
+
+            $this->pdo->commit();
+        } catch (\Throwable $e) {
+            $this->pdo->rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * Assign / clear the Program Chair of a program.
+     * - Target user must already have the Program Chair role.
+     * - Ensures one chair per program and one program per chair via program_chairs.
+     * - Best-effort: sync user_roles.program_id for the Program Chair role if the column exists.
+     *
+     * @param int         $programId    Target program_id
+     * @param string|null $newChairIdNo ID number of the new chair, or null/'' to clear
+     * @throws \DomainException|\RuntimeException|\Throwable
+     */
+    public function setProgramChair(int $programId, ?string $newChairIdNo): void
+    {
+        $rid = $this->programChairRoleId();
+        if ($rid === null) {
+            throw new \RuntimeException("Program Chair role not found.");
+        }
+
+        $programId   = (int)$programId;
+        $newChairIdNo = trim((string)$newChairIdNo);
+        if ($newChairIdNo === '') {
+            $newChairIdNo = null; // treat empty as "clear"
+        }
+        if ($programId <= 0) {
+            throw new \DomainException("Selected program does not exist.");
+        }
+
+        // Verify program exists
+        $chk = $this->pdo->prepare("
+            SELECT 1 FROM programs WHERE program_id = :pid LIMIT 1
+        ");
+        $chk->bindValue(':pid', $programId, PDO::PARAM_INT);
+        $chk->execute();
+        if ($chk->fetchColumn() === false) {
+            throw new \DomainException("Selected program does not exist.");
+        }
+
+        $this->pdo->beginTransaction();
+        try {
+            // Current chair (if any)
+            $curStmt = $this->pdo->prepare("
+                SELECT chair_id
+                FROM program_chairs
+                WHERE program_id = :pid
+                LIMIT 1
+            ");
+            $curStmt->execute([':pid' => $programId]);
+            $currentChairIdNo = $curStmt->fetchColumn();
+            $currentChairIdNo = ($currentChairIdNo !== false) ? (string)$currentChairIdNo : null;
+
+            // Clearing?
+            if ($newChairIdNo === null) {
+                // Remove mapping
+                $del = $this->pdo->prepare("DELETE FROM program_chairs WHERE program_id = :pid");
+                $del->execute([':pid' => $programId]);
+
+                // Best-effort: clear user_roles.program_id for previous chair's Program Chair role (if column exists)
+                if ($currentChairIdNo !== null) {
+                    try {
+                        $upd = $this->pdo->prepare("
+                            UPDATE user_roles
+                            SET program_id = NULL
+                            WHERE id_no = :id AND role_id = :rid
+                        ");
+                        $upd->execute([':id' => $currentChairIdNo, ':rid' => $rid]);
+                    } catch (\Throwable $ignore) { /* column may not exist; ignore */ }
+                }
+
+                $this->pdo->commit();
+                return;
+            }
+
+            // Assigning: ensure target user has the Program Chair role
+            if (!$this->hasProgramChairRole($newChairIdNo, $rid)) {
+                throw new \DomainException("Selected user does not have the Program Chair role.");
+            }
+
+            // If chair changed, clear old chair's user_roles.program_id (best-effort)
+            if ($currentChairIdNo !== null && $currentChairIdNo !== $newChairIdNo) {
+                try {
+                    $c = $this->pdo->prepare("
+                        UPDATE user_roles
+                        SET program_id = NULL
+                        WHERE id_no = :id AND role_id = :rid
+                    ");
+                    $c->execute([':id' => $currentChairIdNo, ':rid' => $rid]);
+                } catch (\Throwable $ignore) { /* optional column; ignore */ }
+            }
+
+            // A chair can only map to one program → free the new chair elsewhere
+            $free = $this->pdo->prepare("
+                DELETE FROM program_chairs
+                WHERE chair_id = :id AND program_id <> :pid
+            ");
+            $free->execute([':id' => $newChairIdNo, ':pid' => $programId]);
+
+            // Best-effort: sync user_roles.program_id for the Program Chair role
+            try {
+                $upd = $this->pdo->prepare("
+                    UPDATE user_roles
+                    SET program_id = :pid
+                    WHERE id_no = :id AND role_id = :rid
+                ");
+                $upd->execute([':pid' => $programId, ':id' => $newChairIdNo, ':rid' => $rid]);
+            } catch (\Throwable $ignore) { /* optional column; ignore */ }
+
+            // Upsert in program_chairs
+            if ($this->driver === 'pgsql') {
+                $upsert = $this->pdo->prepare("
+                    INSERT INTO program_chairs (program_id, chair_id)
+                    VALUES (:pid, :id)
+                    ON CONFLICT (program_id) DO UPDATE
+                    SET chair_id = EXCLUDED.chair_id
+                ");
+                $upsert->execute([':pid' => $programId, ':id' => $newChairIdNo]);
+            } elseif ($this->driver === 'mysql') {
+                // Requires UNIQUE on program_id (you have uq_programchairs_programid)
+                $upsert = $this->pdo->prepare("
+                    INSERT INTO program_chairs (program_id, chair_id)
+                    VALUES (:pid, :id)
+                    ON DUPLICATE KEY UPDATE chair_id = VALUES(chair_id)
+                ");
+                $upsert->execute([':pid' => $programId, ':id' => $newChairIdNo]);
+            } elseif ($this->driver === 'sqlsrv') {
+                $sql = "
+                    MERGE program_chairs AS target
+                    USING (SELECT :pid AS program_id, :id AS chair_id) AS src
+                    ON target.program_id = src.program_id
+                    WHEN MATCHED THEN
+                    UPDATE SET chair_id = src.chair_id
+                    WHEN NOT MATCHED THEN
+                    INSERT (program_id, chair_id) VALUES (src.program_id, src.chair_id);
+                ";
+                $upsert = $this->pdo->prepare($sql);
+                $upsert->execute([':pid' => $programId, ':id' => $newChairIdNo]);
+            } else {
+                // Fallback: delete+insert
+                $del = $this->pdo->prepare("DELETE FROM program_chairs WHERE program_id = :pid");
+                $del->execute([':pid' => $programId]);
+                $ins = $this->pdo->prepare("
+                    INSERT INTO program_chairs (program_id, chair_id) VALUES (:pid, :id)
+                ");
+                $ins->execute([':pid' => $programId, ':id' => $newChairIdNo]);
             }
 
             $this->pdo->commit();

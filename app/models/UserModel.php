@@ -141,6 +141,31 @@ final class UserModel {
     }
 
     /**
+     * List users who have the 'Chair' role within a specific department.
+     * - Role name match: only 'chair' (case-insensitive).
+     * - Filters via user_roles.department_id.
+     *
+     * @param int $departmentId
+     * @return array<int, array{id_no:string,fname?:string,mname?:string,lname?:string}>
+     */
+    public function listChairsInDepartment(int $departmentId): array
+    {
+        $sql = "
+            SELECT u.id_no, u.fname, u.mname, u.lname
+              FROM users u
+              JOIN user_roles ur ON ur.id_no = u.id_no
+              JOIN roles r       ON r.role_id = ur.role_id
+             WHERE ur.department_id = :dept
+               AND LOWER(r.role_name) = 'chair'
+             ORDER BY u.lname ASC, u.fname ASC, u.mname ASC
+        ";
+        $st = $this->pdo->prepare($sql);
+        $st->bindValue(':dept', $departmentId, \PDO::PARAM_INT);
+        $st->execute();
+        return $st->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+    }
+    
+    /**
      * Update password hash after login rehash.
      */
     public function rehashPassword(string $userId, string $newHash): bool {

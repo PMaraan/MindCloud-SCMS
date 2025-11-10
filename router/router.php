@@ -8,6 +8,7 @@
     use App\Modules\Settings\Controllers\SettingsController;
     use App\Modules\Profile\Controllers\ProfileController;
     use App\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController;
+    use App\Modules\Programs\Controllers\ProgramsController;
 
     /**
      * Build an absolute URL from BASE_PATH and a path.
@@ -56,6 +57,7 @@
             '/api/settings/get'  => [SettingsController::class, 'getPreference'],
             '/api/syllabus-templates/programs' => [SyllabusTemplatesController::class, 'apiPrograms'],
             '/api/syllabus-templates/courses'  => [SyllabusTemplatesController::class, 'apiCourses'],
+            '/api/programs/chairs' => [ProgramsController::class, 'apiChairs'],
             // add more GET private routes here
         ],
         'POST' => [
