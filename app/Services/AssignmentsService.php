@@ -308,16 +308,6 @@ final class AssignmentsService
                 $del = $this->pdo->prepare("DELETE FROM program_chairs WHERE program_id = :pid");
                 $del->execute([':pid' => $programId]);
 
-                // Clear old chair’s department_id (Chair role row)
-                if ($currentChairIdNo !== null) {
-                    $upd = $this->pdo->prepare("
-                        UPDATE user_roles
-                           SET department_id = NULL
-                         WHERE id_no = :id AND role_id = :rid
-                    ");
-                    $upd->execute([':id' => $currentChairIdNo, ':rid' => $rid]);
-                }
-
                 $this->pdo->commit();
                 return;
             }
@@ -325,16 +315,6 @@ final class AssignmentsService
             // Assigning: ensure target user has the Chair role
             if (!$this->hasChairRole($newChairIdNo, $rid)) {
                 throw new \DomainException("Selected user does not have the Chair role.");
-            }
-
-            // If chair changed, clear old chair’s department_id
-            if ($currentChairIdNo !== null && $currentChairIdNo !== $newChairIdNo) {
-                $c = $this->pdo->prepare("
-                    UPDATE user_roles
-                       SET department_id = NULL
-                     WHERE id_no = :id AND role_id = :rid
-                ");
-                $c->execute([':id' => $currentChairIdNo, ':rid' => $rid]);
             }
 
             // A chair can only map to one program → free the new chair elsewhere
