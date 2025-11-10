@@ -236,7 +236,7 @@
 
       if (!progSel || !Number.isFinite(depNum) || depNum <= 0) {
         fillSelect(progSel, [], '— Select program —');
-        fillSelect(crsSel,  [], '— Select course —');
+        if (crsSel) fillSelect(crsSel, [], '— Select course —');
         return;
       }
 
@@ -245,12 +245,13 @@
       const items = Array.isArray(data?.programs) ? data.programs : [];
       fillSelect(progSel, items, '— Select program —');
 
-      if (preselectId) {
-        progSel.value = String(preselectId);
-        // Only pull courses if we actually have a program preselected
-        progSel.dispatchEvent(new Event('change'));
+      const wantPid = preselectId ? String(preselectId) : '';
+      if (wantPid) {
+        // Strongly attempt to preselect the program the source tile had
+        await robustSelect(progSel, wantPid);
+        // If we *did* select a program now, leave course to caller
       } else {
-        fillSelect(crsSel, [], '— Select course —');
+        if (crsSel) fillSelect(crsSel, [], '— Select course —');
       }
     }
 
@@ -258,14 +259,19 @@
       const crsSel = document.getElementById(courseSelectId);
       if (!crsSel) return;
 
-      if (!programId || programId === '0') {
+      const pid = String(programId || '');
+      if (!pid || pid === '0') {
         fillSelect(crsSel, [], '— Select course —');
         return;
       }
-      const url  = `${getBase()}/api/syllabus-templates/courses?program_id=${encodeURIComponent(programId)}`;
+      const url  = `${getBase()}/api/syllabus-templates/courses?program_id=${encodeURIComponent(pid)}`;
       const data = await fetchJSON(url);
       fillSelect(crsSel, data, '— Select course —');
-      if (preselectId) crsSel.value = String(preselectId);
+
+      const wantCid = preselectId ? String(preselectId) : '';
+      if (wantCid) {
+        await robustSelect(crsSel, wantCid);
+      }
     }
 
     // Wire change events inside the Edit modal
@@ -352,15 +358,15 @@
       // IMPORTANT: Always ensure placeholders + selectedIndex=0 for any newly visible select
       // College (visible for college/program/course)
       if ((isCol || isPrg || isCrs) && selCol) {
+        // If already selected (e.g., we preselected/locked dean’s college), don’t override it.
         if (!selCol.value) {
-          // Don’t wipe options; just ensure the first option is the placeholder and select it
           if (selCol.options.length === 0 || selCol.options[0].value !== '') {
-            // (fallback) insert placeholder if markup was altered
             const opt0 = document.createElement('option');
             opt0.value = '';
             opt0.textContent = '— Select college —';
             selCol.insertBefore(opt0, selCol.firstChild);
           }
+          // Only select placeholder when truly empty
           selCol.selectedIndex = 0;
         }
       }
@@ -447,18 +453,13 @@
         titleEl.value = `Copy of ${baseTitle}`;
       }
 
-      // Scope radios — prefer same scope as source if allowed, else we’ll override below
+      // Prefer same scope as source if radio exists and not disabled
       const scope = (g('scope','system') || 'system').toLowerCase();
-      const scopeIds = {
-        system:  'tb-d-scope-system',
-        college: 'tb-d-scope-college',
-        program: 'tb-d-scope-program',
-        course:  'tb-d-scope-course',
-      };
-      const preferredRadio = document.getElementById(scopeIds[scope] || scopeIds.system);
-      if (preferredRadio && !preferredRadio.disabled) preferredRadio.checked = true;
+      const scopeIds = { system:'tb-d-scope-system', college:'tb-d-scope-college', program:'tb-d-scope-program', course:'tb-d-scope-course' };
+      const pref = document.getElementById(scopeIds[scope] || scopeIds.system);
+      if (pref && !pref.disabled) pref.checked = true;
 
-      // Preselect cascading values from tile
+      // Preselect cascading values from tile (only as initial hints)
       const depId = g('ownerDepartmentId','');
       const pid   = g('programId','');
       const cid   = g('courseId','');
@@ -484,97 +485,156 @@
       })();
     }
 
+    // Helpers to read the currently selected scope in the Duplicate modal
+    function dupGetScope() {
+      const ids = ['tb-d-scope-system','tb-d-scope-college','tb-d-scope-program','tb-d-scope-course'];
+      for (const id of ids) {
+        const el = document.getElementById(id);
+        if (el && el.checked) return el.value;
+      }
+      return ''; // none yet
+    }
+
+    function dupNeedsCollege(scope) {
+      return scope === 'college' || scope === 'program' || scope === 'course';
+    }
+
     if (dupModalEl) {
       // When the Duplicate modal is about to show…
       dupModalEl.addEventListener('show.bs.modal', async () => {
         const tile = __tb_getActiveTile();
 
-        // 1) Ensure placeholders are visible immediately (prevents “blank” look)
+        // 0) Ensure placeholders are visible immediately (prevents “blank” look)
         fillSelect(document.getElementById('tb-d-program'), [], '— Select program —');
         fillSelect(document.getElementById('tb-d-course'),  [], '— Select course —');
 
-        // 2) Fill from selected tile (title, src id, and try to preload dept/program/course ids)
+        // 1) Fill from selected tile (title, src id, and try to preload dept/program/course ids)
         __tb_fillDuplicateModalFrom(tile);
 
-        // 3) If caller provided defaults (e.g., Dean), honor them:
-        //    <div id="tbDuplicateModal" data-default-scope="college" data-default-college="123">…
-        const defScope   = (dupModalEl.dataset.defaultScope || '').toLowerCase();
-        const defCollege = Number(dupModalEl.dataset.defaultCollege || 0);
+        // Capture whatever __tb_fillDuplicateModalFrom just set (so we can preserve it)
+        const progSel0 = document.getElementById('tb-d-program');
+        const crsSel0  = document.getElementById('tb-d-course');
+        let wantPid = progSel0?.value || '';   // may be '' for global dup
+        let wantCid = crsSel0?.value  || '';
 
-        if (defScope === 'college') {
-          // Set scope radio to College unless locked/disabled for the role
-          const rCol = document.getElementById('tb-d-scope-college');
-          if (rCol && !rCol.disabled) rCol.checked = true;
+        // 2) Defaults coming from PHP (role-aware)
+        const defScope    = (dupModalEl.dataset.defaultScope || '').toLowerCase();   // e.g., "college" for dean/chair
+        const defCollege  = Number(dupModalEl.dataset.defaultCollege || 0);          // their college_id
+        const lockCollege = ['1','true','yes'].includes(String(dupModalEl.dataset.lockCollege || '').toLowerCase());
 
-          // Preselect the Dean’s college if none is prefilled from the tile
-          const deptSel = document.getElementById('tb-d-college');
-          if (deptSel) {
-            if (!deptSel.value && defCollege > 0) {
-              deptSel.value = String(defCollege);
-            }
-            // Show program/course placeholders *immediately* then populate via API
-            fillSelect(document.getElementById('tb-d-program'), [], '— Select program —');
-            fillSelect(document.getElementById('tb-d-course'),  [], '— Select course —');
+        const rSys = document.getElementById('tb-d-scope-system');
+        const rCol = document.getElementById('tb-d-scope-college');
+        const rPrg = document.getElementById('tb-d-scope-program');
+        const rCrs = document.getElementById('tb-d-scope-course');
 
-            if (deptSel.value) {
-              await loadProgramsForDepartmentTo(deptSel.value, null, 'tb-d-program', 'tb-d-course');
-            }
+        const deptSel = document.getElementById('tb-d-college');
+
+        // 2a) If no radio is checked yet, pick a sane default:
+        const anyChecked = !!dupGetScope();
+        if (!anyChecked) {
+          if (defScope === 'college' && rCol && !rCol.disabled) {
+            rCol.checked = true;
+          } else if (rCol && !rCol.disabled) {
+            rCol.checked = true;
+          } else if (rPrg && !rPrg.disabled) {
+            rPrg.checked = true;
+          } else if (rCrs && !rCrs.disabled) {
+            rCrs.checked = true;
+          } else if (rSys && !rSys.disabled) {
+            rSys.checked = true;
           }
         }
 
-        // 4) Sync visibility + required flags once on open
-        dupUpdateVisRequired();
-        dupEnsurePlaceholdersForScopeBeforeLoads();
+        // 2b) If dean/chair and scope needs a college, force-select + lock BEFORE visibility/loads
+        let scopeNow = dupGetScope(); // <-- recompute AFTER defaults are set
+        if (deptSel && dupNeedsCollege(scopeNow)) {
+          if ((lockCollege || !deptSel.value) && defCollege > 0) {
+            await robustSelect(deptSel, defCollege, { injectIfMissing: true, labelIfInjected: '(Your College)' });
+          }
+          if (lockCollege) {
+            deptSel.disabled = true;
+            deptSel.setAttribute('aria-disabled','true');
+            deptSel.setAttribute('data-locked','1');
+          } else {
+            deptSel.disabled = false;
+            deptSel.removeAttribute('aria-disabled');
+            deptSel.removeAttribute('data-locked');
+          }
+        }
 
-        // Force one more pass on the next tick to avoid “first open” blank selects on some browsers
-        setTimeout(() => {
-          // re-apply placeholders in case scope default changed synchronously
-          fillSelect(document.getElementById('tb-d-program'), [], '— Select program —');
-          fillSelect(document.getElementById('tb-d-course'),  [], '— Select course —');
-          dupUpdateVisRequired();
-        }, 0);
-        
+        // 2c) Show correct rows + required flags
+        dupUpdateVisRequired();
+
+        // 2d) If we need program/course lists and have a college, populate them.
+        //     Preserve any preselected program/course we captured earlier.
+        if (dupNeedsCollege(scopeNow) && deptSel && deptSel.value) {
+          await loadProgramsForDepartmentTo(deptSel.value, wantPid || null, 'tb-d-program', 'tb-d-course');
+          const progSel = document.getElementById('tb-d-program');
+          if (wantPid && progSel) progSel.value = String(wantPid);
+
+          if (scopeNow === 'course' && wantPid) {
+            await loadCoursesForProgramTo(wantPid, wantCid || null, 'tb-d-course');
+            const crsSel = document.getElementById('tb-d-course');
+            if (wantCid && crsSel) crsSel.value = String(wantCid);
+          }
+        }
       });
 
       // After the modal is fully shown, wire live interactions
       dupModalEl.addEventListener('shown.bs.modal', () => {
-        // Scope radios
         const sys = document.getElementById('tb-d-scope-system');
         const col = document.getElementById('tb-d-scope-college');
         const prg = document.getElementById('tb-d-scope-program');
         const crs = document.getElementById('tb-d-scope-course');
+
+        const deptSel = document.getElementById('tb-d-college');
+        const progSel = document.getElementById('tb-d-program');
+
+        const defCollege  = Number(dupModalEl.dataset.defaultCollege || 0);
+        const lockCollege = ['1','true','yes'].includes(String(dupModalEl.dataset.lockCollege || '').toLowerCase());
+
+        // Keep visibility/required flags correct as scope changes…
         [sys, col, prg, crs].forEach(el => el && el.addEventListener('change', async () => {
-          // 1) Immediately show placeholders so the user never sees a blank select
-          dupEnsurePlaceholdersForScopeBeforeLoads();
-          // 2) Toggle visibility/required
+          // Always show placeholders first
+          fillSelect(document.getElementById('tb-d-program'), [], '— Select program —');
+          fillSelect(document.getElementById('tb-d-course'),  [], '— Select course —');
+
+          const scopeNow = dupGetScope();
+
+          // If narrowing to a scope that needs college, auto-select + lock dean/chair’s college immediately
+          if (deptSel && dupNeedsCollege(scopeNow)) {
+            if ((lockCollege || !deptSel.value) && defCollege > 0) {
+              await robustSelect(deptSel, defCollege, { injectIfMissing: true, labelIfInjected: '(Your College)' });
+            }
+            if (lockCollege) {
+              deptSel.disabled = true;
+              deptSel.setAttribute('aria-disabled','true');
+              deptSel.setAttribute('data-locked','1');
+            } else {
+              deptSel.disabled = false;
+              deptSel.removeAttribute('aria-disabled');
+              deptSel.removeAttribute('data-locked');
+            }
+          }
+
+          // Now update visibility/required (after any forced selection)
           dupUpdateVisRequired();
 
-          // 3) Kick cascades if we have enough inputs
-          const deptSel = document.getElementById('tb-d-college');
-          const progSel = document.getElementById('tb-d-program');
-
-          const isPrg = !!(prg && prg.checked);
-          const isCrs = !!(crs && crs.checked);
-
-          if ((isPrg || isCrs) && deptSel && deptSel.value) {
+          // Populate dependent selects (no preselect here on scope flip)
+          if (dupNeedsCollege(scopeNow) && deptSel && deptSel.value) {
             await loadProgramsForDepartmentTo(deptSel.value, null, 'tb-d-program', 'tb-d-course');
           }
-          if (isCrs && progSel && progSel.value) {
+          if (scopeNow === 'course' && progSel && progSel.value) {
             await loadCoursesForProgramTo(progSel.value, null, 'tb-d-course');
           }
         }));
 
         // Cascading selects
-        const deptSel = document.getElementById('tb-d-college');
-        const progSel = document.getElementById('tb-d-program');
-
         if (deptSel) {
           deptSel.onchange = async (e) => {
             const depId = String(e.target.value || '');
-            // Always reveal placeholders *immediately*, even before API returns:
             fillSelect(document.getElementById('tb-d-program'), [], '— Select program —');
             fillSelect(document.getElementById('tb-d-course'),  [], '— Select course —');
-
             if (!depId || depId === '0') return;
             await loadProgramsForDepartmentTo(depId, null, 'tb-d-program', 'tb-d-course');
           };
@@ -583,9 +643,7 @@
         if (progSel) {
           progSel.onchange = async (e) => {
             const pid = String(e.target.value || '');
-            // Always reveal course placeholder *immediately*
             fillSelect(document.getElementById('tb-d-course'), [], '— Select course —');
-
             if (!pid || pid === '0') return;
             await loadCoursesForProgramTo(pid, null, 'tb-d-course');
           };
@@ -660,4 +718,46 @@
   });
 
   console.log('[TB] module JS loaded');
+
+  // Robustly select a value in a <select>. If the option isn't there yet,
+  // retry a few times. If still missing and we *know* the value is correct,
+  // we can optionally inject a fallback option.
+  async function robustSelect(sel, value, { injectIfMissing = false, labelIfInjected = '(Selected)' } = {}) {
+    if (!sel) return false;
+    const v = String(value ?? '');
+    if (!v) return false;
+
+    const tryPick = () => {
+      const opt = sel.querySelector(`option[value="${CSS.escape(v)}"]`);
+      if (opt) {
+        // Make it *explicitly* selected; some UIs keep first option selected otherwise.
+        sel.value = v;
+        Array.from(sel.options).forEach(o => { o.selected = (o.value === v); });
+        return true;
+      }
+      return false;
+    };
+
+    if (tryPick()) return true;
+
+    // microtask
+    await Promise.resolve();
+    if (tryPick()) return true;
+
+    // next frame
+    await new Promise(r => requestAnimationFrame(r));
+    if (tryPick()) return true;
+
+    if (injectIfMissing) {
+      const opt = document.createElement('option');
+      opt.value = v;
+      opt.textContent = labelIfInjected;
+      sel.appendChild(opt);
+      sel.value = v;
+      Array.from(sel.options).forEach(o => { o.selected = (o.value === v); });
+      return true;
+    }
+    return false;
+  }
+
 })();

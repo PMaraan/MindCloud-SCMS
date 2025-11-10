@@ -74,3 +74,15 @@
   position: sticky;    /* keep it visible while scrolling the left column */
   top: 12px;
 }
+
+/* Disabled select styling */
+select[aria-disabled="true"] {
+  background-color: #f8f9fa;   /* light gray */
+  pointer-events: none;        /* belt & suspenders */
+}
+
+/* Disabled select styling (data-locked) */
+select[data-locked="1"] {
+  background-color: #f8f9fa;
+  pointer-events: none;
+}

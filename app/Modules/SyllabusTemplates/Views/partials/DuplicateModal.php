@@ -14,26 +14,24 @@ if (!function_exists('renderDuplicateModal')) {
     bool $allowProgram,
     array $colleges,
     array $programsOfCollege,
-    callable $esc
+    callable $esc,
+    string $defaultScope,          // NEW
+    int $defaultCollegeId,         // NEW
+    bool $lockCollege              // NEW
   ): void {
     $pageKey = $GLOBALS['PAGE_KEY'] ?? 'syllabus-templates';
     $base = (defined('BASE_PATH') ? BASE_PATH : '');
     ?>
-<?php
-  // Use $GLOBALS so we don’t need to change the function args
-  $__u = $GLOBALS['user'] ?? [];
-  $__role = strtolower((string)($__u['role_name'] ?? ''));
-  $__defaultScope = (in_array($__role, ['dean','chair'], true) ? 'college' : '');
-  $__defaultCollegeId = (int)($__u['college_id'] ?? 0);
-?>
+
 <div class="modal fade"
     id="tbDuplicateModal"
     tabindex="-1"
     aria-hidden="true"
     aria-labelledby="tbDupLabel"
     data-no-reset
-    data-default-scope="<?= htmlspecialchars($__defaultScope, ENT_QUOTES) ?>"
-    data-default-college="<?= (int)$__defaultCollegeId ?>">
+    data-default-scope="<?= htmlspecialchars($defaultScope, ENT_QUOTES) ?>"
+    data-default-college="<?= (int)$defaultCollegeId ?>"
+    data-lock-college="<?= $lockCollege ? 1 : 0 ?>">
   <div class="modal-dialog">
     <form id="tb-dup-form"
             method="post"
@@ -140,42 +138,6 @@ if (!function_exists('renderDuplicateModal')) {
   </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function(){
-  // Toggle visibility based on scope (same rules as Create/Edit)
-  const rSys = document.getElementById('tb-d-scope-system');
-  const rCol = document.getElementById('tb-d-scope-college');
-  const rPrg = document.getElementById('tb-d-scope-program');
-  const rCrs = document.getElementById('tb-d-scope-course');
-
-  const wrapCol = document.getElementById('tb-d-college-wrap');
-  const wrapPrg = document.getElementById('tb-d-program-wrap');
-  const wrapCrs = document.getElementById('tb-d-course-wrap');
-
-  function updateVis() {
-    const vSys = rSys && rSys.checked;
-    const vCol = rCol && rCol.checked;
-    const vPrg = rPrg && rPrg.checked;
-    const vCrs = rCrs && rCrs.checked;
-
-    if (wrapCol) wrapCol.classList.toggle('d-none', !(vCol || vPrg || vCrs));
-    if (wrapPrg) wrapPrg.classList.toggle('d-none', !(vPrg || vCrs));
-    if (wrapCrs) wrapCrs.classList.toggle('d-none', !vCrs);
-
-    // Required flags
-    const selCol = document.getElementById('tb-d-college');
-    const selPrg = document.getElementById('tb-d-program');
-    const selCrs = document.getElementById('tb-d-course');
-
-    if (selCol) selCol.required = (vCol || vPrg || vCrs);
-    if (selPrg) selPrg.required = (vPrg || vCrs);
-    if (selCrs) selCrs.required = vCrs;
-  }
-
-  [rSys, rCol, rPrg, rCrs].forEach(el => el && el.addEventListener('change', updateVis));
-  updateVis();
-});
-</script>
 <?php
   }
 }

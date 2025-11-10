@@ -182,16 +182,37 @@ $PAGE_KEY = 'syllabus-templates';
     $colList        = $allColleges       ?? [];
     $progList       = $programsOfCollege ?? [];
 
+    // include the function definition
     include $partialsDir . '/DuplicateModal.php';
+
+    // Role-aware defaults for Duplicate modal (computed from *current* $user)
+    $__role           = strtolower((string)($user['role_name'] ?? ''));
+    $__defaultCollege = (int)($user['college_id'] ?? 0);
+    $__defaultScope   = in_array($__role, ['dean','chair'], true) ? 'college' : '';
+    $__lockCollege    = (in_array($__role, ['dean','chair'], true) && $__defaultCollege > 0);
+?>
+    <script>
+      window.__TB_DUP_DEFAULTS = {
+        scope: '<?= $esc($__defaultScope ?? '') ?>',
+        college: '<?= (int)($__defaultCollege ?? 0) ?>',
+        lock: '<?= !empty($__lockCollege) ? '1' : '0' ?>'
+      };
+      console.log('[TB probe] server defaults:', window.__TB_DUP_DEFAULTS);
+    </script>
+<?php
+    // actually render the modal markup
     if (function_exists('renderDuplicateModal')) {
       renderDuplicateModal(
         $ASSET_BASE,
         $globalAllowed,
         $collegeAllowed,
         $programAllowed,
-        $colList,
-        $progList,
-        $esc
+        $allColleges,
+        $programsOfCollege,
+        $esc,
+        $__defaultScope,       // NEW
+        $__defaultCollege,     // NEW
+        $__lockCollege         // NEW
       );
     }
   ?>
