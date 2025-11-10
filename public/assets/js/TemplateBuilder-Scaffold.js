@@ -438,8 +438,9 @@
     // ----- DUPLICATE MODAL (prefill + cascades; frontend-only for now) -----
     const dupModalEl = document.getElementById('tbDuplicateModal');
 
-    function __tb_fillDuplicateModalFrom(tile) {
-      if (!tile) return;
+    async function __tb_fillDuplicateModalFrom(tile) 
+    {
+      if (!tile) return { depId: '', pid: '', cid: '' };
       const g = (k, d='') => (tile.dataset[k] ?? d);
 
       // Hidden source id
@@ -460,29 +461,31 @@
       if (pref && !pref.disabled) pref.checked = true;
 
       // Preselect cascading values from tile (only as initial hints)
-      const depId = g('ownerDepartmentId','');
-      const pid   = g('programId','');
-      const cid   = g('courseId','');
+      const depId = String(g('ownerDepartmentId','') || '');
+      const pid   = String(g('programId','') || '');
+      const cid   = String(g('courseId','') || '');
 
       const deptSel = document.getElementById('tb-d-college');
       const progSel = document.getElementById('tb-d-program');
       const crsSel  = document.getElementById('tb-d-course');
 
-      if (deptSel) deptSel.value = String(depId || '');
+      if (deptSel) deptSel.value = depId;
 
-      (async () => {
-        if (depId) {
-          await loadProgramsForDepartmentTo(depId, pid || null, 'tb-d-program', 'tb-d-course');
-          if (pid) {
-            await loadCoursesForProgramTo(pid, cid || null, 'tb-d-course');
-          } else {
-            fillSelect(crsSel, [], '— Select course —');
-          }
+      if (depId) {
+        // Load programs and preselect pid (if any)
+        await loadProgramsForDepartmentTo(depId, pid || null, 'tb-d-program', 'tb-d-course');
+        if (pid) {
+          // Load courses and preselect cid (if any)
+          await loadCoursesForProgramTo(pid, cid || null, 'tb-d-course');
         } else {
-          fillSelect(progSel, [], '— Select program —');
-          fillSelect(crsSel, [],  '— Select course —');
+          fillSelect(crsSel, [], '— Select course —');
         }
-      })();
+      } else {
+        fillSelect(progSel, [], '— Select program —');
+        fillSelect(crsSel, [],  '— Select course —');
+      }
+
+      return { depId, pid, cid };
     }
 
     // Helpers to read the currently selected scope in the Duplicate modal
@@ -504,18 +507,12 @@
       dupModalEl.addEventListener('show.bs.modal', async () => {
         const tile = __tb_getActiveTile();
 
-        // 0) Ensure placeholders are visible immediately (prevents “blank” look)
+        // 0) Show placeholders first to avoid “blank” look while async loads run
         fillSelect(document.getElementById('tb-d-program'), [], '— Select program —');
         fillSelect(document.getElementById('tb-d-course'),  [], '— Select course —');
 
-        // 1) Fill from selected tile (title, src id, and try to preload dept/program/course ids)
-        __tb_fillDuplicateModalFrom(tile);
-
-        // Capture whatever __tb_fillDuplicateModalFrom just set (so we can preserve it)
-        const progSel0 = document.getElementById('tb-d-program');
-        const crsSel0  = document.getElementById('tb-d-course');
-        let wantPid = progSel0?.value || '';   // may be '' for global dup
-        let wantCid = crsSel0?.value  || '';
+        // 1) Fill from selected tile (title, src id, preload dept/program/course) — and WAIT for it
+        const { depId: preDepId, pid: prePid, cid: preCid } = await __tb_fillDuplicateModalFrom(tile);
 
         // 2) Defaults coming from PHP (role-aware)
         const defScope    = (dupModalEl.dataset.defaultScope || '').toLowerCase();   // e.g., "college" for dean/chair
@@ -566,16 +563,13 @@
         dupUpdateVisRequired();
 
         // 2d) If we need program/course lists and have a college, populate them.
-        //     Preserve any preselected program/course we captured earlier.
+        //     Use the IDs returned by the tile prefill (prePid/preCid) so we don’t lose selection.
         if (dupNeedsCollege(scopeNow) && deptSel && deptSel.value) {
-          await loadProgramsForDepartmentTo(deptSel.value, wantPid || null, 'tb-d-program', 'tb-d-course');
-          const progSel = document.getElementById('tb-d-program');
-          if (wantPid && progSel) progSel.value = String(wantPid);
+          // If the tile had a program, preselect it; otherwise just load the list (no preselect)
+          await loadProgramsForDepartmentTo(deptSel.value, prePid || null, 'tb-d-program', 'tb-d-course');
 
-          if (scopeNow === 'course' && wantPid) {
-            await loadCoursesForProgramTo(wantPid, wantCid || null, 'tb-d-course');
-            const crsSel = document.getElementById('tb-d-course');
-            if (wantCid && crsSel) crsSel.value = String(wantCid);
+          if (scopeNow === 'course' && prePid) {
+            await loadCoursesForProgramTo(prePid, preCid || null, 'tb-d-course');
           }
         }
       });
@@ -595,16 +589,30 @@
 
         // Keep visibility/required flags correct as scope changes…
         [sys, col, prg, crs].forEach(el => el && el.addEventListener('change', async () => {
-          // Always show placeholders first
-          fillSelect(document.getElementById('tb-d-program'), [], '— Select program —');
-          fillSelect(document.getElementById('tb-d-course'),  [], '— Select course —');
+          const progSelEl   = document.getElementById('tb-d-program');
+          const courseSelEl = document.getElementById('tb-d-course');
+
+          // Capture current selections BEFORE we touch the selects
+          const prevPid = progSelEl?.value   || '';
+          const prevCid = courseSelEl?.value || '';
 
           const scopeNow = dupGetScope();
 
           // If narrowing to a scope that needs college, auto-select + lock dean/chair’s college immediately
           if (deptSel && dupNeedsCollege(scopeNow)) {
             if ((lockCollege || !deptSel.value) && defCollege > 0) {
-              await robustSelect(deptSel, defCollege, { injectIfMissing: true, labelIfInjected: '(Your College)' });
+              const ok = await ensureOptionAndSelect(deptSel, defCollege);
+              if (!ok) {
+                deptSel.value = String(defCollege);
+                if (deptSel.value !== String(defCollege)) {
+                  const opt = document.createElement('option');
+                  opt.value = String(defCollege);
+                  opt.textContent = '(Your College)';
+                  deptSel.appendChild(opt);
+                  deptSel.value = String(defCollege);
+                }
+              }
+              // No need to dispatch change here; we’ll load manually below.
             }
             if (lockCollege) {
               deptSel.disabled = true;
@@ -617,15 +625,26 @@
             }
           }
 
-          // Now update visibility/required (after any forced selection)
+          // Update visibility/required states now (placeholders will be managed by loaders)
           dupUpdateVisRequired();
 
-          // Populate dependent selects (no preselect here on scope flip)
+          // Re-populate dependent selects while PRESERVING the previous program/course if still valid
           if (dupNeedsCollege(scopeNow) && deptSel && deptSel.value) {
-            await loadProgramsForDepartmentTo(deptSel.value, null, 'tb-d-program', 'tb-d-course');
-          }
-          if (scopeNow === 'course' && progSel && progSel.value) {
-            await loadCoursesForProgramTo(progSel.value, null, 'tb-d-course');
+            // Rebuild program list and reselect previous program if any
+            await loadProgramsForDepartmentTo(deptSel.value, prevPid || null, 'tb-d-program', 'tb-d-course');
+
+            // If target scope is COURSE (or we were already in course), rebuild courses and reselect previous course if any
+            if (scopeNow === 'course') {
+              const pidNow = document.getElementById('tb-d-program')?.value || prevPid;
+              await loadCoursesForProgramTo(pidNow, prevCid || null, 'tb-d-course');
+            } else {
+              // Not course scope → ensure course select shows placeholder only
+              fillSelect(document.getElementById('tb-d-course'), [], '— Select course —');
+            }
+          } else {
+            // No college needed/selected → reset both to placeholders
+            fillSelect(document.getElementById('tb-d-program'), [], '— Select program —');
+            fillSelect(document.getElementById('tb-d-course'),  [], '— Select course —');
           }
         }));
 
@@ -760,4 +779,12 @@
     return false;
   }
 
+  // Back-compat wrapper used by scope-change code paths.
+  // Keeps previous code that called ensureOptionAndSelect working.
+  async function ensureOptionAndSelect(sel, value) {
+    return robustSelect(sel, value, {
+      injectIfMissing: true,
+      labelIfInjected: '(Your College)'
+    });
+  }
 })();
