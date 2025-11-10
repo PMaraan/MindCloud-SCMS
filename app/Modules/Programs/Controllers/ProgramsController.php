@@ -186,7 +186,7 @@ final class ProgramsController
 
         try {
             $users = (new \App\Models\UserModel($this->db))
-                ->listChairsInDepartment($deptId);
+                ->listChairsInDepartment($deptId); // must filter by department
 
             $chairs = array_map(static function ($u) {
                 $lname = (string)($u['lname'] ?? '');

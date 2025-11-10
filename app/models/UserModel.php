@@ -152,19 +152,19 @@ final class UserModel {
     {
         $sql = "
             SELECT u.id_no, u.fname, u.mname, u.lname
-              FROM users u
-              JOIN user_roles ur ON ur.id_no = u.id_no
-              JOIN roles r       ON r.role_id = ur.role_id
-             WHERE ur.department_id = :dept
-               AND LOWER(r.role_name) = 'chair'
-             ORDER BY u.lname ASC, u.fname ASC, u.mname ASC
+            FROM users u
+            JOIN user_roles ur ON ur.id_no = u.id_no
+            JOIN roles r       ON r.role_id = ur.role_id
+            WHERE ur.department_id = :dept
+            AND TRIM(LOWER(r.role_name)) = 'chair'
+            ORDER BY u.lname ASC, u.fname ASC, u.mname ASC
         ";
         $st = $this->pdo->prepare($sql);
         $st->bindValue(':dept', $departmentId, \PDO::PARAM_INT);
         $st->execute();
         return $st->fetchAll(\PDO::FETCH_ASSOC) ?: [];
     }
-    
+
     /**
      * Update password hash after login rehash.
      */

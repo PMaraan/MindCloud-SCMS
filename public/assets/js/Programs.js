@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!res.ok) throw new Error('Network error');
       const data = await res.json();
       const chairs = Array.isArray(data.chairs) ? data.chairs : [];
+      console.log('API chairs response for', dep, chairs);
       console.debug('[programs] chairs for dept', dep, chairs);
 
       for (const ch of chairs) {
@@ -58,8 +59,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
       // When department changes, reload chair list (bind once per modal open)
       if (collegeSel) {
-        const onChange = () => loadChairsForDepartment(collegeSel.value, chairSel, '');
-        collegeSel.addEventListener('change', onChange, { once: true });
+        // Remove any previous listener to avoid duplicates across multiple opens
+        if (collegeSel._onDeptChange) {
+          collegeSel.removeEventListener('change', collegeSel._onDeptChange);
+        }
+        collegeSel._onDeptChange = () => loadChairsForDepartment(collegeSel.value, chairSel, '');
+        collegeSel.addEventListener('change', collegeSel._onDeptChange);
       }
     });
   }
@@ -76,8 +81,16 @@ document.addEventListener('DOMContentLoaded', function () {
         // If already chosen (back nav), load immediately
         if (deptSel.value) loadChairsForDepartment(deptSel.value, chairSel, '');
         // Then watch for changes (bind once per open)
-        const onChange = () => loadChairsForDepartment(deptSel.value, chairSel, '');
-        deptSel.addEventListener('change', onChange, { once: true });
+        if (deptSel) {
+          // If already chosen (back nav), load immediately
+          if (deptSel.value) loadChairsForDepartment(deptSel.value, chairSel, '');
+          // Bind persistent change listener (and de-dup across opens)
+          if (deptSel._onDeptChange) {
+            deptSel.removeEventListener('change', deptSel._onDeptChange);
+          }
+          deptSel._onDeptChange = () => loadChairsForDepartment(deptSel.value, chairSel, '');
+          deptSel.addEventListener('change', deptSel._onDeptChange);
+        }
       }
     });
   }
