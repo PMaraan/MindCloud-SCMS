@@ -384,4 +384,70 @@ final class AssignmentsService
     {
         $this->setDepartmentDean($collegeId, $newDeanIdNo);
     }
+
+    /**
+     * Clear college_deans mapping for a user (if any).
+     * Safe to call when the user has lost the Dean role.
+     */
+    public function clearCollegeDeanForUser(string $idNo): void
+    {
+        $idNo = trim((string)$idNo);
+        if ($idNo === '') return;
+
+        $this->pdo->beginTransaction();
+        try {
+            $del = $this->pdo->prepare("DELETE FROM college_deans WHERE dean_id = :id");
+            $del->execute([':id' => $idNo]);
+
+            // Also clear any user_roles.department_id entries for Dean role (best-effort).
+            // If the schema doesn't have a matching row, UPDATE will simply affect 0 rows.
+            $rid = $this->deanRoleId();
+            if ($rid !== null) {
+                $upd = $this->pdo->prepare("
+                    UPDATE user_roles
+                    SET department_id = NULL
+                    WHERE id_no = :id AND role_id = :rid
+                ");
+                $upd->execute([':id' => $idNo, ':rid' => $rid]);
+            }
+
+            $this->pdo->commit();
+        } catch (\Throwable $e) {
+            $this->pdo->rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * Clear program_chairs mapping for a user (if any).
+     * Safe to call when the user has lost the Chair role.
+     */
+    public function clearProgramChairForUser(string $idNo): void
+    {
+        $idNo = trim((string)$idNo);
+        if ($idNo === '') return;
+
+        $this->pdo->beginTransaction();
+        try {
+            $del = $this->pdo->prepare("DELETE FROM program_chairs WHERE chair_id = :id");
+            $del->execute([':id' => $idNo]);
+
+            // Optionally clear user_roles.department_id for Chair role (best-effort).
+            $rid = $this->chairRoleId();
+            if ($rid !== null) {
+                $upd = $this->pdo->prepare("
+                    UPDATE user_roles
+                    SET department_id = NULL
+                    WHERE id_no = :id AND role_id = :rid
+                ");
+                $upd->execute([':id' => $idNo, ':rid' => $rid]);
+            }
+
+            $this->pdo->commit();
+        } catch (\Throwable $e) {
+            $this->pdo->rollBack();
+            throw $e;
+        }
+    }
+    
 }

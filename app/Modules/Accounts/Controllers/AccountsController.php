@@ -277,18 +277,74 @@ final class AccountsController
         if ($data['mname'] === '')             $data['mname'] = null;
         if ($data['department_id'] === '')     $data['department_id'] = null;
 
+        // Get previous role_id (single role row) BEFORE we treat the update result.
+        // Use direct PDO on the shared connection to avoid adding new model methods.
+        $prevRoleId = null;
+        try {
+            $pdo = $this->db->getConnection();
+            $st = $pdo->prepare("SELECT role_id FROM user_roles WHERE id_no = :id LIMIT 1");
+            $st->execute([':id' => $data['id_no']]);
+            $f = $st->fetchColumn();
+            $prevRoleId = ($f !== false) ? (int)$f : null;
+        } catch (\Throwable $e) {
+            // If we cannot read previous role for some reason, continue — we still perform the update.
+            $prevRoleId = null;
+        }
+
         $ok = $this->model->updateUserWithRoleDepartment($data);
 
         if ($ok) {
-            // If edited as Dean and a college was selected, propagate to Departments module.
+            // If edited as Dean: either set the college dean mapping (when department present)
+            // or clear it (when department was explicitly cleared in the edit form).
             $deanRid = $this->deanRoleId();
-            if ($deanRid !== null && (int)$data['role_id'] === $deanRid && $data['department_id'] !== null) {
-                try {
-                    $this->assignments->setDepartmentDean((int)$data['department_id'], (string)$data['id_no']);
-                } catch (\Throwable $e) {
-                    FlashHelper::set('warning', 'User updated, but dean assignment could not be updated: ' . $e->getMessage());
+            if ($deanRid !== null && (int)$data['role_id'] === $deanRid) {
+                if ($data['department_id'] !== null) {
+                    // Normal: assign this user as dean of the selected college
+                    try {
+                        $this->assignments->setDepartmentDean((int)$data['department_id'], (string)$data['id_no']);
+                    } catch (\Throwable $e) {
+                        FlashHelper::set('warning', 'User updated, but dean assignment could not be updated: ' . $e->getMessage());
+                    }
+                } else {
+                    // NEW: department was cleared in the edit form -> remove any college_deans mapping for this user
+                    try {
+                        $this->assignments->clearCollegeDeanForUser((string)$data['id_no']);
+                    } catch (\Throwable $e) {
+                        // Non-fatal; inform admin
+                        FlashHelper::set('warning', 'User updated, but failed to clear former dean assignment: ' . $e->getMessage());
+                    }
                 }
             }
+
+            // --- NEW: role-change detection + cleanup for lost duties ---
+            // Determine the new role id (after update) as integer:
+            $newRoleId = (int)$data['role_id'];
+
+            // If previous role existed and it differs from the new role, clear mappings for the role(s) the user lost.
+            if ($prevRoleId !== null && $prevRoleId !== $newRoleId) {
+                // If the user previously had the Dean role but no longer does -> clear college_deans mapping.
+                $deanRid = $this->deanRoleId();
+                if ($deanRid !== null && $prevRoleId === $deanRid && $newRoleId !== $deanRid) {
+                    try {
+                        $this->assignments->clearCollegeDeanForUser((string)$data['id_no']);
+                    } catch (\Throwable $e) {
+                        // Non-fatal: log and show a warning to admin
+                        FlashHelper::set('warning', 'User updated, but failed to clear old dean assignment: ' . $e->getMessage());
+                    }
+                }
+
+                // If the user previously had the Chair role but no longer does -> clear program_chairs mapping.
+                // Use 'chair' lookup via model to be consistent (case-insensitive).
+                $chairRid = $this->model->findRoleIdByName('chair'); // your AccountsModel already includes findRoleIdByName used earlier
+                if ($chairRid !== null && $prevRoleId === $chairRid && $newRoleId !== $chairRid) {
+                    try {
+                        $this->assignments->clearProgramChairForUser((string)$data['id_no']);
+                    } catch (\Throwable $e) {
+                        FlashHelper::set('warning', 'User updated, but failed to clear old chair assignment: ' . $e->getMessage());
+                    }
+                }
+            }
+            // --- END role-change cleanup ---
 
             FlashHelper::set('success', 'User updated successfully.');
 
