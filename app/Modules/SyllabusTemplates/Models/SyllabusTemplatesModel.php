@@ -19,7 +19,7 @@ final class SyllabusTemplatesModel
         $this->pdo = $db->getConnection();
     }
 
-    /** Return all colleges (used by VPAA/Admin system view) */
+    /** Return all colleges (used by VPAA/Admin global view) */
     public function getAllColleges(): array
     {
         $sql = "
@@ -33,7 +33,7 @@ final class SyllabusTemplatesModel
         return $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
-    /** Programs of a college (shown for deans; or all for system view’s college sections) */
+    /** Programs of a college (shown for deans; or all for global view’s college sections) */
     public function getProgramsByCollege(int $departmentId): array
     {
         $stmt = $this->pdo->prepare(
@@ -69,53 +69,68 @@ final class SyllabusTemplatesModel
         return $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
-    /** System → Global/General templates (no assignments to college nor program) */
-    public function getSystemGlobalTemplates(): array
+    /** Global/General templates (no assignments to college nor program)
+     *  Also include human-friendly names so views/JS can show College/Program/Course.
+     */
+    public function getGlobalTemplates(): array
     {
         $sql = "
-        SELECT t.*
+        SELECT
+            t.*,
+            NULL::text AS college_name,
+            NULL::text AS college_short_name,
+            NULL::text AS program_name,
+            NULL::text AS course_name
         FROM public.syllabus_templates t
-        WHERE t.scope = 'system'
-          AND NOT EXISTS (SELECT 1 FROM public.syllabus_template_colleges c WHERE c.template_id = t.template_id)
-          AND NOT EXISTS (SELECT 1 FROM public.syllabus_template_programs p WHERE p.template_id = t.template_id)
-        ORDER BY t.updated_at DESC, t.title ASC";
+        WHERE t.scope = 'global'
+          AND NOT EXISTS (SELECT 1 FROM public.syllabus_template_departments td WHERE td.template_id = t.template_id)
+          AND NOT EXISTS (SELECT 1 FROM public.syllabus_template_programs    p  WHERE p.template_id  = t.template_id)
+        ORDER BY t.updated_at DESC, t.title ASC
+        ";
         return $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
     /**
      * College General templates:
      *  - visible to the college (either explicitly assigned via tcol,
-     *    or system-global (no assignments at all))
+     *    or global (no assignments at all))
      *  - NOT program-specific (no tprog rows at all)
      */
-    public function getCollegeGeneralTemplates(int $departmentId): array
+     public function getCollegeGeneralTemplates(int $departmentId): array
     {
         $stmt = $this->pdo->prepare("
         WITH visible AS (
-            SELECT t.*
+            SELECT t.*,
+                   d.department_name AS college_name,
+                   d.short_name       AS college_short_name,
+                   NULL::text         AS program_name,
+                   NULL::text         AS course_name
             FROM public.syllabus_templates t
+            LEFT JOIN public.departments d ON d.department_id = t.owner_department_id
             WHERE
-            -- visible via explicit department assignment
-            EXISTS (
-                SELECT 1
-                FROM public.syllabus_template_departments td
-                WHERE td.template_id = t.template_id
+              (
+                -- visible via explicit department assignment
+                EXISTS (
+                  SELECT 1
+                  FROM public.syllabus_template_departments td
+                  WHERE td.template_id = t.template_id
                     AND td.department_id = :did
-            )
-            OR
-            -- system-global (no dept/program assignments)
-            (
-                t.scope = 'system'
+                )
+              )
+              OR
+              (
+                -- global (no dept/program assignments)
+                t.scope = 'global'
                 AND NOT EXISTS (SELECT 1 FROM public.syllabus_template_departments td WHERE td.template_id = t.template_id)
-                AND NOT EXISTS (SELECT 1 FROM public.syllabus_template_programs    p  WHERE p.template_id  = t.template_id)
-            )
+                AND NOT EXISTS (SELECT 1 FROM public.syllabus_template_programs p WHERE p.template_id = t.template_id)
+              )
         )
         SELECT v.*
-            FROM visible v
+        FROM visible v
         WHERE NOT EXISTS (
-                SELECT 1 FROM public.syllabus_template_programs p
-                WHERE p.template_id = v.template_id
-                )
+            SELECT 1 FROM public.syllabus_template_programs p
+            WHERE p.template_id = v.template_id
+        )
         ORDER BY v.updated_at DESC, v.title ASC
         ");
         $stmt->execute([':did' => $departmentId]);
@@ -131,26 +146,33 @@ final class SyllabusTemplatesModel
     public function getProgramExclusiveTemplates(int $departmentId, int $programId): array
     {
         $stmt = $this->pdo->prepare("
-        SELECT t.*
-            FROM public.syllabus_templates t
+        SELECT
+            t.*,
+            d.department_name AS college_name,
+            d.short_name       AS college_short_name,
+            p.program_name     AS program_name,
+            NULL::text         AS course_name
+        FROM public.syllabus_templates t
+        LEFT JOIN public.departments d ON d.department_id = t.owner_department_id
+        LEFT JOIN public.programs p     ON p.program_id = t.program_id
         WHERE
             EXISTS (
-            SELECT 1
-                FROM public.syllabus_template_departments td
-                WHERE td.template_id = t.template_id
+              SELECT 1
+              FROM public.syllabus_template_departments td
+              WHERE td.template_id = t.template_id
                 AND td.department_id = :did
             )
             AND EXISTS (
-            SELECT 1
-                FROM public.syllabus_template_programs p
-                WHERE p.template_id = t.template_id
-                AND p.program_id   = :pid
+              SELECT 1
+              FROM public.syllabus_template_programs sp
+              WHERE sp.template_id = t.template_id
+                AND sp.program_id   = :pid
             )
             AND NOT EXISTS (
-            SELECT 1
-                FROM public.syllabus_template_programs p2
-                WHERE p2.template_id = t.template_id
-                AND p2.program_id <> :pid
+              SELECT 1
+              FROM public.syllabus_template_programs sp2
+              WHERE sp2.template_id = t.template_id
+                AND sp2.program_id <> :pid
             )
         ORDER BY t.updated_at DESC, t.title ASC
         ");
@@ -169,13 +191,13 @@ final class SyllabusTemplatesModel
         $programId = isset($user['program_id']) ? (int)$user['program_id'] : null;
 
         // Role maps (edit here to adjust behavior)
-        $SYSTEM_ROLES  = ['VPAA','VPAA Secretary']; // AAO only
+        $GLOBAL_ROLES  = ['VPAA','VPAA Secretary']; // AAO only
         $DEAN_ROLES    = ['Dean'];
         $CHAIR_ROLES   = ['Chair'];
 
-        // SYSTEM: see everything (global + each college [general + per-program])
-        if (in_array($role, $SYSTEM_ROLES, true)) {
-            $global = $this->getSystemGlobalTemplates();
+        // GLOBAL: see everything (global + each college [general + per-program])
+        if (in_array($role, $GLOBAL_ROLES, true)) {
+            $global = $this->getGlobalTemplates();
             $colleges = $this->getAllColleges();
 
             $collegeSections = [];
@@ -200,7 +222,7 @@ final class SyllabusTemplatesModel
             }
 
             return [
-                'mode'     => 'system',
+                'mode'     => 'global',
                 'global'   => $global,
                 'colleges' => $collegeSections,
             ];
@@ -254,10 +276,10 @@ final class SyllabusTemplatesModel
             ];
         }
 
-        // Fallback: treat as system read-only (global only)
+        // Fallback: treat as global read-only (global only)
         return [
-            'mode'   => 'system',
-            'global' => $this->getSystemGlobalTemplates(),
+            'mode'   => 'global',
+            'global' => $this->getGlobalTemplates(),
             'colleges' => [],
         ];
     }
@@ -287,7 +309,7 @@ final class SyllabusTemplatesModel
         ");
 
         $stmt->execute([
-            ':scope'      => $meta['scope'],                         // 'system' | 'college' | 'program' | 'course'
+            ':scope'      => $meta['scope'],                         // 'global' | 'college' | 'program' | 'course'
             ':dept'       => $meta['owner_department_id'] ?? null,
             ':prog'       => $meta['program_id'] ?? null,
             ':course'     => $meta['course_id'] ?? null,

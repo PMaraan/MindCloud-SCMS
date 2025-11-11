@@ -13,14 +13,16 @@ if ($cLabel === '—') $cLabel = 'College';
   </div>
   <div class="card-body">
     <?php
-      // Split $general into system/global and college lists
+      // Split $general into global and college lists (accept both 'global' and legacy 'system')
       $globalTemplates  = [];
       $collegeTemplates = [];
 
       if (!empty($general) && is_array($general)) {
           foreach ($general as $t) {
               $scope = strtolower((string)($t['scope'] ?? ''));
-              if ($scope === 'system') {
+
+              // Accept both 'global' (new name) and 'system' (legacy)
+              if ($scope === 'global' || $scope === 'system') {
                   $globalTemplates[] = $t;
               } elseif ($scope === 'college') {
                   $collegeTemplates[] = $t;
@@ -45,9 +47,15 @@ if ($cLabel === '—') $cLabel = 'College';
           $version     = $esc((string)($t['version'] ?? ''));
           $status      = $esc((string)($t['status'] ?? 'draft'));
 
+          // Optional human-readable names (used by JS Details pane). If your $t[] includes these keys,
+          // they'll be printed; otherwise they are empty and the JS will hide those rows.
+          $collegeName = $esc((string)($t['college_name'] ?? $t['department_name'] ?? ''));
+          $programName = $esc((string)($t['program_name'] ?? ''));
+          $courseName  = $esc((string)($t['course_name'] ?? ''));
+
           // icon class by scope
           $icon = 'bi bi-file-earmark-text';
-          if ($scope === 'system') $icon = 'bi bi-globe2';
+          if ($scope === 'global' || $scope === 'system') $icon = 'bi bi-globe2';
           if ($scope === 'college') $icon = 'bi bi-building';
           if ($scope === 'program') $icon = 'bi bi-mortarboard';
           if ($scope === 'course')  $icon = 'bi bi-file-earmark-text';
@@ -65,6 +73,9 @@ if ($cLabel === '—') $cLabel = 'College';
                 data-program-id="{$programId}"
                 data-owner-program-id="{$ownerProgId}"
                 data-course-id="{$courseId}"
+                data-college-name="{$collegeName}"
+                data-program-name="{$programName}"
+                data-course-name="{$courseName}"
                 data-version="{$version}"
                 data-status="{$status}">
               <div class="card-body d-flex flex-column align-items-center text-center">
@@ -192,6 +203,6 @@ if ($cLabel === '—') $cLabel = 'College';
         </div>
       </div>
     <?php endif; ?>
-    
+
   </div>
 </div>

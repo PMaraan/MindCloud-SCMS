@@ -19,7 +19,7 @@ final class SyllabusTemplatesController
     private SyllabusTemplatesModel $model;
 
     // Keep same role groupings
-    private array $SYSTEM_ROLES  = ['VPAA','VPAA Secretary'];
+    private array $GLOBAL_ROLES  = ['VPAA','VPAA Secretary'];
     private array $DEAN_ROLES    = ['Dean'];
     private array $CHAIR_ROLES   = ['Chair'];
 
@@ -112,15 +112,15 @@ final class SyllabusTemplatesController
         // Canonical role names (DB): VPAA, VPAA Secretary, Dean, Chair
         $roleL = strtolower((string)$role);
 
-        // Only AAO roles may edit System scope
-        $canEditSystem  = in_array($roleL, ['vpaa', 'vpaa secretary'], true);
+        // Only AAO roles may edit Global scope
+        $canEditGlobal  = in_array($roleL, ['vpaa', 'vpaa secretary'], true);
 
         // Dean can edit college; Chair can edit program.
         // AAO can edit both college and program scopes as well.
         $canEditCollege = in_array($roleL, ['vpaa', 'vpaa secretary', 'dean', 'college secretary'], true);
         $canEditProgram = in_array($roleL, ['vpaa', 'vpaa secretary', 'dean', 'college secretary', 'chair'], true);
 
-        $viewData['canEditSystem']  = $canEditSystem;
+        $viewData['canEditGlobal']  = $canEditGlobal;
         $viewData['canEditCollege'] = $canEditCollege;
         $viewData['canEditProgram'] = $canEditProgram;
 
@@ -143,7 +143,7 @@ final class SyllabusTemplatesController
             \App\Helpers\FlashHelper::set('danger', 'Missing or invalid document id.');
         }
 
-        // FOLDER-FIRST for non-college-bound roles (system roles)
+        // FOLDER-FIRST for non-college-bound roles (global roles)
         $openCollegeId = null;
         if (isset($_GET['college']) && ctype_digit((string)$_GET['college'])) {
             $openCollegeId = (int)$_GET['college'];
@@ -157,8 +157,8 @@ final class SyllabusTemplatesController
             $_SESSION['st_cache'][$key] = $value;
         };
 
-        // SYSTEM ROLES: show folders first. Only load templates when a folder is opened.
-        if (in_array($role, $this->SYSTEM_ROLES, true)) {
+        // GLOBAL ROLES: show folders first. Only load templates when a folder is opened.
+        if (in_array($role, $this->GLOBAL_ROLES, true)) {
             // Cache colleges list
             $colleges = $cacheGet('colleges_all');
             if ($colleges === null) {
@@ -168,12 +168,12 @@ final class SyllabusTemplatesController
 
             if ($openCollegeId === null) {
                 // folders view + allow AAO (VPAA + VPAA Secretary) to create Global/College templates
-                $viewData['mode']             = 'system-folders';
+                $viewData['mode']             = 'global-folders';
                 $viewData['colleges']         = $colleges;
 
                 // Show "New Template" on folders page ONLY for AAO roles
                 $isAAO = in_array($role, ['VPAA','VPAA Secretary'], true);
-                $viewData['canCreateGlobal']   = $isAAO;      // system/global
+                $viewData['canCreateGlobal']   = $isAAO;      // global
                 $viewData['canCreateCollege']  = $isAAO;      // college (department)
                 $viewData['canCreateProgram']  = $isAAO;      // program (we’ll load programs via AJAX)
                 // Provide lists needed by the modal
@@ -205,7 +205,7 @@ final class SyllabusTemplatesController
             $viewData['general']  = $general;
             $viewData['programs'] = $progSecs;
             $viewData['showBackToFolders'] = true;
-            $viewData['canCreateGlobal']   = true; // VPAA/Admin can create system/global
+            $viewData['canCreateGlobal']   = true; // VPAA/Admin can create global
             $viewData['canCreateCollege']  = true; // they can also create college-level
             $viewData['allColleges']       = $colleges; // for modal selects
             $deptId = (int)($college['college_id'] ?? $openCollegeId);
@@ -273,7 +273,7 @@ final class SyllabusTemplatesController
             $viewData['general']  = $general;
             $viewData['programs'] = [$progSection];
 
-            // Creation capabilities for Chair: program/course only; never system/college
+            // Creation capabilities for Chair: program/course only; never global/college
             $viewData['canCreateGlobal']   = false;
             $viewData['canCreateCollege']  = false;
             $viewData['canCreateProgram']  = true;
@@ -296,7 +296,7 @@ final class SyllabusTemplatesController
         }
 
         // fallback
-        $viewData['mode']   = 'system-folders';
+        $viewData['mode']   = 'global-folders';
         $viewData['colleges'] = $this->model->getAllColleges();
         return $this->render('index', $viewData);
     }
@@ -370,9 +370,9 @@ final class SyllabusTemplatesController
         $roleName  = strtolower((string)($user['role_name'] ?? ''));
         $userColId = isset($user['college_id']) ? (int)$user['college_id'] : null;
 
-        // Deans cannot create system scope
-        if (in_array($roleName, ['dean'], true) && $scope === 'system') {
-            throw new \RuntimeException('Not allowed: deans cannot create System templates.');
+        // Deans cannot create global scope
+        if (in_array($roleName, ['dean'], true) && $scope === 'global') {
+            throw new \RuntimeException('Not allowed: deans cannot create Global templates.');
         }
 
         // If dean is creating college/program/course, force college to their own
@@ -390,16 +390,16 @@ final class SyllabusTemplatesController
 
         try {
             $title  = trim((string)($_POST['title'] ?? ''));
-            $scope  = (string)($_POST['scope'] ?? 'system'); // system | college | program
+            $scope  = (string)($_POST['scope'] ?? 'global'); // global | college | program
             $colId  = isset($_POST['college_id']) ? (int)$_POST['college_id'] : null;
             $progId = isset($_POST['program_id']) ? (int)$_POST['program_id'] : null;
 
             if ($title === '') throw new \RuntimeException('Title is required.');
 
             // Insert template
-            if ($scope === 'system') {
+            if ($scope === 'global') {
                 $stmt = $pdo->prepare("INSERT INTO public.syllabus_templates (scope, title, status, content, created_by)
-                                    VALUES ('system', :title, 'draft', '{}'::jsonb, :by)
+                                    VALUES ('global', :title, 'draft', '{}'::jsonb, :by)
                                     RETURNING template_id");
                 $stmt->execute([':title'=>$title, ':by'=>$idno]);
                 $tid = (int)$stmt->fetchColumn();
@@ -461,7 +461,7 @@ final class SyllabusTemplatesController
             $_SESSION['flash'] = ['type'=>'success','message'=>'Template created.'];
 
             // new slug ?page=syllabus-templates; keep college param
-            header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates' . ($scope!=='system' && isset($colId) ? '&college='.$colId : ''));
+            header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates' . ($scope!=='global' && isset($colId) ? '&college='.$colId : ''));
             exit;
         } catch (Throwable $e) {
             $pdo->rollBack();
@@ -499,7 +499,7 @@ final class SyllabusTemplatesController
 
         // Normalize scope and required fields
         switch ($scope) {
-            case 'system':
+            case 'global':
                 $deptId = $progId = $crsId = null;
                 break;
             case 'college':
@@ -519,10 +519,10 @@ final class SyllabusTemplatesController
                 $progId = $crsId = null;
         }
 
-        // Role gate: only VPAA / VPAA Secretary can duplicate into system
+        // Role gate: only VPAA / VPAA Secretary can duplicate into global
         $roleName = strtolower((string)($_SESSION['role_name'] ?? ''));
-        if ($scope === 'system' && !in_array($roleName, ['vpaa','vpaa secretary'], true)) {
-            \App\Helpers\FlashHelper::set('danger', 'You are not allowed to create System templates.');
+        if ($scope === 'global' && !in_array($roleName, ['vpaa','vpaa secretary'], true)) {
+            \App\Helpers\FlashHelper::set('danger', 'You are not allowed to create Global templates.');
             goto dup_fail;
         }
 
@@ -576,10 +576,10 @@ final class SyllabusTemplatesController
         $roleName  = strtolower((string)($user['role_name'] ?? ''));
         $userColId = isset($user['college_id']) ? (int)$user['college_id'] : null;
 
-        // Only VPAA / VPAA Secretary can edit System templates
-        $allowedSystemEditors = ['vpaa', 'vpaa secretary'];
-        if ($scope === 'system' && !in_array($roleName, $allowedSystemEditors, true)) {
-            throw new \RuntimeException('Not allowed: only VPAA or VPAA Secretary can edit System templates.');
+        // Only VPAA / VPAA Secretary can edit Global templates
+        $allowedGlobalEditors = ['vpaa', 'vpaa secretary'];
+        if ($scope === 'global' && !in_array($roleName, $allowedGlobalEditors, true)) {
+            throw new \RuntimeException('Not allowed: only VPAA or VPAA Secretary can edit Global templates.');
         }
 
         // If dean saving as college/program/course, force college to their own
@@ -596,7 +596,7 @@ final class SyllabusTemplatesController
         try {
             $tid   = (int)($_POST['template_id'] ?? 0);
             $title = trim((string)($_POST['title'] ?? ''));
-            $scope = strtolower(trim((string)($_POST['scope'] ?? 'system')));
+            $scope = strtolower(trim((string)($_POST['scope'] ?? 'global')));
 
             // incoming (may be empty strings)
             $deptId   = $_POST['owner_department_id'] ?? $_POST['college_id'] ?? null;
@@ -620,7 +620,7 @@ final class SyllabusTemplatesController
             $courseId = $toIntOrNull($courseId);
 
             // enforce by scope
-            if ($scope === 'system') {
+            if ($scope === 'global') {
                 $deptId = $progId = $courseId = null;
             } elseif ($scope === 'college') {
                 if (!$deptId) throw new \RuntimeException('College is required.');

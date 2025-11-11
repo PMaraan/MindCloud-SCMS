@@ -40,8 +40,8 @@ if (!function_exists('renderCreateModal')) {
           <label class="form-label d-block">Scope <span class="text-danger">*</span></label>
           <?php if ($allowSystem): ?>
             <div class="form-check">
-              <input class="form-check-input" type="radio" name="scope" id="tb-scope-system" value="system" checked>
-              <label class="form-check-label" for="tb-scope-system">System / Global</label>
+              <input class="form-check-input" type="radio" name="scope" id="tb-scope-global" value="global" checked>
+              <label class="form-check-label" for="tb-scope-global">Global</label>
             </div>
           <?php endif; ?>
 

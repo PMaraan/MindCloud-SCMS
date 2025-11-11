@@ -86,10 +86,26 @@ $PAGE_KEY = 'syllabus-templates';
               <dl class="row mt-3 mb-0 d-none" id="tb-info">
                 <dt class="col-4">Title</dt>
                 <dd class="col-8" id="tb-i-title"></dd>
-                <dt class="col-4">Owner</dt>
-                <dd class="col-8" id="tb-i-owner"></dd>
+
+                <dt class="col-4">Scope</dt>
+                <dd class="col-8" id="tb-i-scope"></dd>
+
+                <!-- College / Program / Course — hidden unless tile provides values -->
+                <dt class="col-4 d-none" id="tb-i-college-dt">College</dt>
+                <dd class="col-8 d-none" id="tb-i-college"></dd>
+
+                <dt class="col-4 d-none" id="tb-i-program-dt">Program</dt>
+                <dd class="col-8 d-none" id="tb-i-program"></dd>
+
+                <dt class="col-4 d-none" id="tb-i-course-dt">Course</dt>
+                <dd class="col-8 d-none" id="tb-i-course"></dd>
+
+                <dt class="col-4">Status</dt>
+                <dd class="col-8" id="tb-i-status"></dd>
+
                 <dt class="col-4">Updated</dt>
                 <dd class="col-8" id="tb-i-updated"></dd>
+
                 <dt class="col-4">Actions</dt>
                 <dd class="col-8">
                   <div class="d-flex gap-2">
@@ -112,7 +128,7 @@ $PAGE_KEY = 'syllabus-templates';
                   </div>
 
                   <script>
-                    // Expose per-scope edit permissions for client logic
+                    // Expose per-scope edit permissions for client logic (kept as before)
                     window.TB_PERMS = {
                       canEditSystem:  <?= !empty($canEditSystem)  ? 'true' : 'false' ?>,
                       canEditCollege: <?= !empty($canEditCollege) ? 'true' : 'false' ?>,
@@ -121,7 +137,6 @@ $PAGE_KEY = 'syllabus-templates';
                   </script>
                   <?php if (empty($canEditSystem) && empty($canEditCollege) && empty($canEditProgram)): ?>
                   <script>
-                    // Remove the edit button entirely if user has no edit perms
                     (function(){ const b = document.getElementById('tb-edit'); if (b) b.remove(); })();
                   </script>
                   <?php endif; ?>

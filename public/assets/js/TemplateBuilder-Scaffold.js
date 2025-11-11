@@ -18,23 +18,104 @@
     const info  = document.getElementById('tb-info');
     const empty = document.getElementById('tb-info-empty');
     if (info && empty) {
-      document.getElementById('tb-i-title').textContent   = card.dataset.title   || '';
-      document.getElementById('tb-i-owner').textContent   = card.dataset.owner   || '';
-      document.getElementById('tb-i-updated').textContent = card.dataset.updated || '';
+      // Title
+      document.getElementById('tb-i-title').textContent = card.dataset.title || '';
+
+      // Scope (human friendly)
+      const scopeRaw = (card.dataset.scope || '').toString();
+      const scopeLabel = (scopeRaw === 'system' ? 'global' : scopeRaw) || '';
+      document.getElementById('tb-i-scope').textContent = scopeLabel;
+
+      // Status
+      document.getElementById('tb-i-status').textContent = (card.dataset.status || '').toString();
+
+      // Updated -> show date + time (YYYY-MM-DD h:mm AM/PM)
+      const updatedRaw = (card.dataset.updated || '').toString();
+      let updatedDisplay = updatedRaw;
+      if (updatedRaw) {
+        // Try to parse; server timestamp is like "2025-11-11 15:42:36.656982"
+        try {
+          // Replace space with T so Date parses reliably
+          const iso = updatedRaw.replace(' ', 'T');
+          const d = new Date(iso);
+          if (!isNaN(d.getTime())) {
+            const y = d.getFullYear();
+            const mo = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+
+            let hh = d.getHours();
+            const mm = String(d.getMinutes()).padStart(2, '0');
+            const ampm = hh >= 12 ? 'PM' : 'AM';
+            hh = hh % 12;
+            if (hh === 0) hh = 12;
+            updatedDisplay = `${y}-${mo}-${day} ${hh}:${mm} ${ampm}`;
+          } else {
+            // fallback keep original string
+            updatedDisplay = updatedRaw;
+          }
+        } catch (e) {
+          updatedDisplay = updatedRaw;
+        }
+      }
+      const updEl = document.getElementById('tb-i-updated');
+      if (updEl) updEl.textContent = updatedDisplay;
+
+      // College / Program / Course — show only when explicit *name* attributes exist on the tile.
+      const collegeDt = document.getElementById('tb-i-college-dt');
+      const collegeDd = document.getElementById('tb-i-college');
+      const programDt = document.getElementById('tb-i-program-dt');
+      const programDd = document.getElementById('tb-i-program');
+      const courseDt  = document.getElementById('tb-i-course-dt');
+      const courseDd  = document.getElementById('tb-i-course');
+
+      // Read the *name* attributes only (do NOT fallback to owner/scope)
+      const collegeName = (card.dataset.collegeName || '').toString().trim();
+      const programName = (card.dataset.programName || '').toString().trim();
+      const courseName  = (card.dataset.courseName  || '').toString().trim();
+
+      // Show / hide college row: ONLY if scope requires a college AND we have a name
+      const scopeLower = (scopeRaw || '').toLowerCase();
+      const needsCollege = (scopeLower === 'college' || scopeLower === 'program' || scopeLower === 'course');
+
+      if (needsCollege && collegeName) {
+        if (collegeDt) collegeDt.classList.remove('d-none');
+        if (collegeDd) { collegeDd.textContent = collegeName; collegeDd.classList.remove('d-none'); }
+      } else {
+        if (collegeDt) collegeDt.classList.add('d-none');
+        if (collegeDd) { collegeDd.textContent = ''; collegeDd.classList.add('d-none'); }
+      }
+
+      // Program: only show for program/course scopes AND when programName exists
+      if ((scopeLower === 'program' || scopeLower === 'course') && programName) {
+        if (programDt) programDt.classList.remove('d-none');
+        if (programDd)  { programDd.textContent = programName; programDd.classList.remove('d-none'); }
+      } else {
+        if (programDt) programDt.classList.add('d-none');
+        if (programDd) { programDd.textContent = ''; programDd.classList.add('d-none'); }
+      }
+
+      // Course: only show for course scope AND when courseName exists
+      if (scopeLower === 'course' && courseName) {
+        if (courseDt) courseDt.classList.remove('d-none');
+        if (courseDd) { courseDd.textContent = courseName; courseDd.classList.remove('d-none'); }
+      } else {
+        if (courseDt) courseDt.classList.add('d-none');
+        if (courseDd) { courseDd.textContent = ''; courseDd.classList.add('d-none'); }
+      }
+
       empty.classList.add('d-none');
       info.classList.remove('d-none');
+
       // Toggle Edit button based on scope + user rights
       const btnEdit = document.getElementById('tb-edit');
       if (btnEdit) {
-        const scope = (card.dataset.scope || 'system').toLowerCase();
         const P = (window.TB_PERMS || {});
         let can = false;
-        if (scope === 'system')  can = !!P.canEditSystem;
-        if (scope === 'college') can = !!P.canEditCollege;
-        if (scope === 'program') can = !!P.canEditProgram;
-        // course scope maps to program-level edit permission (same granularity)
-        if (scope === 'course')  can = !!P.canEditProgram;
-
+        // Accept both legacy 'system' and new 'global' keys
+        if (scopeLower === 'system' || scopeLower === 'global') can = !!P.canEditGlobal || !!P.canEditSystem;
+        if (scopeLower === 'college') can = !!P.canEditCollege;
+        if (scopeLower === 'program') can = !!P.canEditProgram;
+        if (scopeLower === 'course')  can = !!P.canEditProgram;
         btnEdit.style.display = can ? '' : 'none';
       }
     }
@@ -108,14 +189,14 @@
       if (titleEl)   titleEl.value = g('title', '');
 
       // scope radios
-      const scope = (g('scope','system') || 'system').toLowerCase();
+      const scope = (g('scope','global') || 'global').toLowerCase();
       const scopeMap = { 
-        system:'tb-e-scope-system', 
+        global: 'tb-e-scope-global', 
         college:'tb-e-scope-college', 
         program:'tb-e-scope-program', 
         course:'tb-e-scope-course' 
       };
-      const scopeId = scopeMap[scope] || 'tb-e-scope-system';
+      const scopeId = scopeMap[scope] || 'tb-e-scope-global';
       const r = document.getElementById(scopeId);
       if (r) r.checked = true;
 
@@ -132,7 +213,7 @@
 
       // refresh scope-dependent visibility
       const evt = new Event('change');
-      ['tb-e-scope-system','tb-e-scope-college','tb-e-scope-program','tb-e-scope-course']
+      ['tb-e-scope-global','tb-e-scope-college','tb-e-scope-program','tb-e-scope-course']
         .map(id => document.getElementById(id))
         .filter(Boolean)
         .forEach(el => el.dispatchEvent(evt));
@@ -327,7 +408,7 @@
 
     // --- visibility + required + always-show-placeholder when newly visible
     function dupUpdateVisRequired() {
-      const sys = document.getElementById('tb-d-scope-system');
+      const sys = document.getElementById('tb-d-scope-global');
       const col = document.getElementById('tb-d-scope-college');
       const prg = document.getElementById('tb-d-scope-program');
       const crs = document.getElementById('tb-d-scope-course');
@@ -455,9 +536,9 @@
       }
 
       // Prefer same scope as source if radio exists and not disabled
-      const scope = (g('scope','system') || 'system').toLowerCase();
-      const scopeIds = { system:'tb-d-scope-system', college:'tb-d-scope-college', program:'tb-d-scope-program', course:'tb-d-scope-course' };
-      const pref = document.getElementById(scopeIds[scope] || scopeIds.system);
+      const scope = (g('scope','global') || 'global').toLowerCase();
+      const scopeIds = { global:'tb-d-scope-global', college:'tb-d-scope-college', program:'tb-d-scope-program', course:'tb-d-scope-course' };
+      const pref = document.getElementById(scopeIds[scope] || scopeIds.global);
       if (pref && !pref.disabled) pref.checked = true;
 
       // Preselect cascading values from tile (only as initial hints)
@@ -490,7 +571,7 @@
 
     // Helpers to read the currently selected scope in the Duplicate modal
     function dupGetScope() {
-      const ids = ['tb-d-scope-system','tb-d-scope-college','tb-d-scope-program','tb-d-scope-course'];
+      const ids = ['tb-d-scope-global','tb-d-scope-college','tb-d-scope-program','tb-d-scope-course'];
       for (const id of ids) {
         const el = document.getElementById(id);
         if (el && el.checked) return el.value;
@@ -519,7 +600,7 @@
         const defCollege  = Number(dupModalEl.dataset.defaultCollege || 0);          // their college_id
         const lockCollege = ['1','true','yes'].includes(String(dupModalEl.dataset.lockCollege || '').toLowerCase());
 
-        const rSys = document.getElementById('tb-d-scope-system');
+        const rSys = document.getElementById('tb-d-scope-global');
         const rCol = document.getElementById('tb-d-scope-college');
         const rPrg = document.getElementById('tb-d-scope-program');
         const rCrs = document.getElementById('tb-d-scope-course');
@@ -576,7 +657,7 @@
 
       // After the modal is fully shown, wire live interactions
       dupModalEl.addEventListener('shown.bs.modal', () => {
-        const sys = document.getElementById('tb-d-scope-system');
+        const sys = document.getElementById('tb-d-scope-global');
         const col = document.getElementById('tb-d-scope-college');
         const prg = document.getElementById('tb-d-scope-program');
         const crs = document.getElementById('tb-d-scope-course');

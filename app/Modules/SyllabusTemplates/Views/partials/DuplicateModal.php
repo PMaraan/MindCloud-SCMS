@@ -72,8 +72,8 @@ if (!function_exists('renderDuplicateModal')) {
           <label class="form-label d-block">Scope <span class="text-danger">*</span></label>
           <?php if ($allowSystem): ?>
             <div class="form-check">
-              <input class="form-check-input" type="radio" name="scope" id="tb-d-scope-system" value="system">
-              <label class="form-check-label" for="tb-d-scope-system">System / Global</label>
+              <input class="form-check-input" type="radio" name="scope" id="tb-d-scope-global" value="global">
+              <label class="form-check-label" for="tb-d-scope-global">Global</label>
             </div>
           <?php endif; ?>
           <?php if ($allowCollege): ?>

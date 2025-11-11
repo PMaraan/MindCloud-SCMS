@@ -34,8 +34,8 @@ if (!function_exists('renderEditModal')) {
           <?php $roleName = (string)($GLOBALS['role'] ?? ''); ?>
           <?php if (strtolower($roleName) !== 'dean' && strtolower($roleName) !== 'college dean'): ?>
             <div class="form-check">
-              <input class="form-check-input" type="radio" name="scope" id="tb-e-scope-system" value="system">
-              <label class="form-check-label" for="tb-e-scope-system">System / Global</label>
+              <input class="form-check-input" type="radio" name="scope" id="tb-e-scope-global" value="global">
+              <label class="form-check-label" for="tb-e-scope-global">Global</label>
             </div>
           <?php endif; ?>
             <div class="form-check">
