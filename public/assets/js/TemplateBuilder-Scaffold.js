@@ -21,21 +21,22 @@
       // Title
       document.getElementById('tb-i-title').textContent = card.dataset.title || '';
 
-      // Scope (human friendly)
+      // Scope (human friendly) — map legacy 'system' to 'global' then Capitalize first letter
       const scopeRaw = (card.dataset.scope || '').toString();
-      const scopeLabel = (scopeRaw === 'system' ? 'global' : scopeRaw) || '';
-      document.getElementById('tb-i-scope').textContent = scopeLabel;
+      const scopeNorm = (scopeRaw === 'system' ? 'global' : scopeRaw || '');
+      const scopeLabel = scopeNorm ? (scopeNorm.charAt(0).toUpperCase() + scopeNorm.slice(1)) : '';
+      const scopeEl = document.getElementById('tb-i-scope');
+      if (scopeEl) scopeEl.textContent = scopeLabel;
 
       // Status
-      document.getElementById('tb-i-status').textContent = (card.dataset.status || '').toString();
+      const status = (card.dataset.status || '').toString();
+      document.getElementById('tb-i-status').textContent = status;
 
       // Updated -> show date + time (YYYY-MM-DD h:mm AM/PM)
       const updatedRaw = (card.dataset.updated || '').toString();
       let updatedDisplay = updatedRaw;
       if (updatedRaw) {
-        // Try to parse; server timestamp is like "2025-11-11 15:42:36.656982"
         try {
-          // Replace space with T so Date parses reliably
           const iso = updatedRaw.replace(' ', 'T');
           const d = new Date(iso);
           if (!isNaN(d.getTime())) {
@@ -50,7 +51,6 @@
             if (hh === 0) hh = 12;
             updatedDisplay = `${y}-${mo}-${day} ${hh}:${mm} ${ampm}`;
           } else {
-            // fallback keep original string
             updatedDisplay = updatedRaw;
           }
         } catch (e) {
@@ -111,13 +111,53 @@
       if (btnEdit) {
         const P = (window.TB_PERMS || {});
         let can = false;
-        // Accept both legacy 'system' and new 'global' keys
         if (scopeLower === 'system' || scopeLower === 'global') can = !!P.canEditGlobal || !!P.canEditSystem;
         if (scopeLower === 'college') can = !!P.canEditCollege;
         if (scopeLower === 'program') can = !!P.canEditProgram;
         if (scopeLower === 'course')  can = !!P.canEditProgram;
         btnEdit.style.display = can ? '' : 'none';
       }
+
+      // Archive / Delete buttons: show/hide + set text
+      const btnArchive = document.getElementById('tb-archive');
+      const btnDelete  = document.getElementById('tb-delete');
+
+      if (btnArchive) {
+        // Show archive button when user can edit that scope (reuse can computation)
+        const P2 = (window.TB_PERMS || {});
+        let allowArchive = false;
+        if (scopeLower === 'system' || scopeLower === 'global') allowArchive = !!P2.canEditGlobal || !!P2.canEditSystem;
+        if (scopeLower === 'college') allowArchive = !!P2.canEditCollege;
+        if (scopeLower === 'program' || scopeLower === 'course') allowArchive = !!P2.canEditProgram;
+
+        if (!allowArchive) {
+          btnArchive.style.display = 'none';
+        } else {
+          btnArchive.style.display = '';
+          // Text depends on status
+          if (status === 'archived' || status === 'archive') {
+            btnArchive.textContent = 'Unarchive';
+          } else {
+            btnArchive.textContent = 'Archive';
+          }
+        }
+      }
+
+      if (btnDelete) {
+        // Show delete only when status is archived (and user can archive — reuse allowArchive)
+        const showDelete = ((card.dataset.status || '').toString().toLowerCase() === 'archived');
+        if (showDelete) {
+          btnDelete.classList.remove('d-none');
+        } else {
+          btnDelete.classList.add('d-none');
+        }
+      }
+
+      // Update delete modal title (so the modal displays the proper template title)
+      const deleteTitleEl = document.getElementById('tb-delete-title');
+      if (deleteTitleEl) deleteTitleEl.textContent = card.dataset.title || '—';
+
+      // done
     }
 
     window.__tb_selectedId = card.dataset.templateId || null;
@@ -790,6 +830,71 @@
       });
     }
 
+    // Archive / Unarchive button behaviour (UI-only)
+    const btnArchive = document.getElementById('tb-archive');
+    const btnDelete  = document.getElementById('tb-delete');
+    const deleteConfirm = document.getElementById('tb-delete-confirm');
+    const deleteModalEl = document.getElementById('tbDeleteModal');
+
+    if (btnArchive) {
+      btnArchive.addEventListener('click', () => {
+        const tile = __tb_getActiveTile();
+        if (!tile) return;
+
+        // Toggle status
+        const cur = (tile.dataset.status || '').toString().toLowerCase();
+        const isArchived = (cur === 'archived' || cur === 'archive');
+        const newStatus = isArchived ? 'draft' : 'archived';
+
+        // Update tile dataset + UI
+        tile.dataset.status = newStatus;
+        // Update details pane status text
+        const statusEl = document.getElementById('tb-i-status');
+        if (statusEl) statusEl.textContent = newStatus;
+
+        // Update archive button text
+        btnArchive.textContent = (newStatus === 'archived') ? 'Unarchive' : 'Archive';
+
+        // Show/hide delete button
+        if (btnDelete) {
+          if (newStatus === 'archived') btnDelete.classList.remove('d-none');
+          else btnDelete.classList.add('d-none');
+        }
+
+        // Optional: visual marker on card (muted)
+        if (newStatus === 'archived') {
+          tile.classList.add('tb-card--archived');
+        } else {
+          tile.classList.remove('tb-card--archived');
+        }
+      });
+    }
+
+    // Delete confirm (UI-only): remove tile from DOM, hide details, close modal
+    if (deleteConfirm && deleteModalEl) {
+      deleteConfirm.addEventListener('click', () => {
+        const tile = __tb_getActiveTile();
+        if (tile) {
+          // Remove card element
+          tile.remove();
+        }
+        // Hide modal via bootstrap JS if available
+        try {
+          const modal = bootstrap.Modal.getInstance(deleteModalEl);
+          if (modal) modal.hide();
+        } catch (e) { /* ignore */ }
+
+        // Clear details pane
+        const info = document.getElementById('tb-info');
+        const empty = document.getElementById('tb-info-empty');
+        if (info && empty) {
+          info.classList.add('d-none');
+          empty.classList.remove('d-none');
+        }
+        window.__tb_selectedId = null;
+      });
+    }
+    
     // Double-click a tile to open
     document.body.addEventListener('dblclick', function (ev) {
       const tile = ev.target.closest('.tb-tile');

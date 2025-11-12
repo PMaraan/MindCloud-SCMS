@@ -146,7 +146,9 @@ final class SyllabusTemplatesController
         // FOLDER-FIRST for non-college-bound roles (global roles)
         $openCollegeId = null;
         if (isset($_GET['college']) && ctype_digit((string)$_GET['college'])) {
-            $openCollegeId = (int)$_GET['college'];
+            $val = (int)$_GET['college'];
+            // Only accept positive college ids — ignore 0 / empty/invalid which would incorrectly open a "college"
+            if ($val > 0) $openCollegeId = $val;
         }
 
         // Cache helpers (renamed to st_cache)
@@ -168,17 +170,22 @@ final class SyllabusTemplatesController
 
             if ($openCollegeId === null) {
                 // folders view + allow AAO (VPAA + VPAA Secretary) to create Global/College templates
+                // View expects 'global-folders'
                 $viewData['mode']             = 'global-folders';
                 $viewData['colleges']         = $colleges;
 
-                // Show "New Template" on folders page ONLY for AAO roles
-                $isAAO = in_array($role, ['VPAA','VPAA Secretary'], true);
-                $viewData['canCreateGlobal']   = $isAAO;      // global
-                $viewData['canCreateCollege']  = $isAAO;      // college (department)
-                $viewData['canCreateProgram']  = $isAAO;      // program (we’ll load programs via AJAX)
+                // AAO roles (can manage global templates)
+                $isAAO = in_array($role, $this->GLOBAL_ROLES, true);
+                $viewData['canCreateGlobal']   = $isAAO;
+                $viewData['canCreateCollege']  = $isAAO;
+                $viewData['canCreateProgram']  = $isAAO;
+                // expose AAO action flags for global-scope templates (used by details pane)
+                $viewData['canEditGlobal']     = $isAAO;
+                $viewData['canArchiveGlobal']  = $isAAO;
+
                 // Provide lists needed by the modal
-                $viewData['allColleges']       = $colleges;      // departments where is_college = true
-                $viewData['programsOfCollege'] = [];             // stays empty until a college is chosen
+                $viewData['allColleges']       = $colleges;
+                $viewData['programsOfCollege'] = [];
 
                 return $this->render('index', $viewData);
             }
@@ -292,13 +299,46 @@ final class SyllabusTemplatesController
             // No "Back to folders" for chairs
             $viewData['showBackToFolders'] = false;
 
+
+
+            // --- DEBUG DUMP (developer only) ----------------------------------
+            // Temporarily print what the model returned so we can inspect
+            if (isset($_GET['devdump']) && $_GET['devdump'] === '1') {
+                echo '<pre style="background:#111;color:#0f0;padding:8px;">';
+                echo "DEBUG: SyllabusTemplatesController@index debug dump\n\n";
+
+                // Global / general / programs depending on mode
+                try {
+                    $glo = method_exists($this->model, 'getGlobalTemplates') ? $this->model->getGlobalTemplates() : null;
+                    $gen = isset($general) ? $general : (method_exists($this->model,'getCollegeGeneralTemplates') ? $this->model->getCollegeGeneralTemplates($openCollegeId ?? $collegeId ?? 0) : null);
+                    $progs = isset($programs) ? $programs : (method_exists($this->model,'getProgramsByCollege') ? $this->model->getProgramsByCollege($openCollegeId ?? $collegeId ?? 0) : null);
+
+                    echo "getGlobalTemplates(): " . (is_array($glo) ? count($glo) . " rows" : var_export($glo, true)) . "\n";
+                    echo "getCollegeGeneralTemplates(): " . (is_array($gen) ? count($gen) . " rows" : var_export($gen, true)) . "\n";
+                    echo "getProgramsByCollege(): " . (is_array($progs) ? count($progs) . " rows" : var_export($progs, true)) . "\n\n";
+
+                    // show first 5 rows of each, if arrays
+                    if (is_array($glo)) { echo "GLOBAL sample:\n" . print_r(array_slice($glo,0,5), true) . "\n"; }
+                    if (is_array($gen)) { echo "GENERAL sample:\n" . print_r(array_slice($gen,0,5), true) . "\n"; }
+                    if (is_array($progs)) { echo "PROGRAMS sample:\n" . print_r(array_slice($progs,0,5), true) . "\n"; }
+
+                } catch (\Throwable $e) {
+                    echo "Model exception: " . get_class($e) . " - " . $e->getMessage() . "\n" . $e->getTraceAsString();
+                }
+
+                echo '</pre>';
+                // stop so you see only debug info
+                exit;
+            }
+
+
             return $this->render('index', $viewData);
         }
 
-        // fallback
+        // fallback: show folders first
         $viewData['mode']   = 'global-folders';
-        $viewData['colleges'] = $this->model->getAllColleges();
-        return $this->render('index', $viewData);
+         $viewData['colleges'] = $this->model->getAllColleges();
+         return $this->render('index', $viewData);
     }
 
     public function apiPrograms(): void

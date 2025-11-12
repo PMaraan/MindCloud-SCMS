@@ -47,9 +47,15 @@ if ($cLabel === '—') $cLabel = 'College';
           $version     = $esc((string)($t['version'] ?? ''));
           $status      = $esc((string)($t['status'] ?? 'draft'));
 
-          // Optional human-readable names (used by JS Details pane). If your $t[] includes these keys,
-          // they'll be printed; otherwise they are empty and the JS will hide those rows.
-          $collegeName = $esc((string)($t['college_name'] ?? $t['department_name'] ?? ''));
+          // Optional human-readable names (used by JS Details pane).
+          // Prefer "short_name — full name" when short_name exists.
+          $collegeShort = trim((string)($t['college_short_name'] ?? ''));
+          $collegeFull  = trim((string)($t['college_name'] ?? $t['department_name'] ?? ''));
+          if ($collegeShort !== '') {
+              $collegeName = $esc($collegeShort . ' — ' . $collegeFull);
+          } else {
+              $collegeName = $esc($collegeFull);
+          }
           $programName = $esc((string)($t['program_name'] ?? ''));
           $courseName  = $esc((string)($t['course_name'] ?? ''));
 

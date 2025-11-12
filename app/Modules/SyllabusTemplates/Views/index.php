@@ -1,7 +1,7 @@
 <?php
 // /app/Modules/SyllabusTemplates/Views/index.php
 /** vars:
- * $mode: 'system-folders' | 'college' | 'program'
+ * $mode: 'global-folders' | 'college' | 'program'
  * $ASSET_BASE, $esc, $user, $role
  * when $mode==='system-folders': $colleges
  * when $mode==='college': $college, $general, $programs, optional: $showBackToFolders, $canCreateGlobal, $canCreateCollege, $allColleges, $programsOfCollege
@@ -27,7 +27,7 @@ $PAGE_KEY = 'syllabus-templates';
       <h2 class="mb-0">Syllabus Templates</h2>
       <div class="text-muted small">
         <?= $esc(
-          $mode === 'system-folders' ? 'Select a college folder to view templates.'
+          $mode === 'global-folders' ? 'Select a college folder to view templates.'
           : ($mode === 'college' ? 'General + Program templates for this college.'
           : 'College general + my program templates.')
         ) ?>
@@ -55,7 +55,7 @@ $PAGE_KEY = 'syllabus-templates';
   <?php
     $partialsDir = __DIR__ . '/partials';
 
-    if ($mode === 'system-folders') {
+    if ($mode === 'global-folders') {
       // Simple list of folders (anchors) – no side pane here
       include $partialsDir . '/FoldersList.php';
 
@@ -110,14 +110,18 @@ $PAGE_KEY = 'syllabus-templates';
                 <dd class="col-8">
                   <div class="d-flex gap-2">
                     <button class="btn btn-sm btn-primary" id="tb-open">Open</button>
+
+                    <!-- Use Template (formerly Duplicate) — same behavior, kept as outline secondary -->
                     <button class="btn btn-sm btn-outline-secondary"
                             id="tb-duplicate"
                             type="button"
                             data-bs-toggle="modal"
                             data-bs-target="#tbDuplicateModal">
-                      Duplicate
+                      Use Template
                     </button>
-                    <button class="btn btn-sm btn-warning"
+
+                    <!-- Edit: should be filled like duplicate but filled (secondary filled) -->
+                    <button class="btn btn-sm btn-secondary"
                             id="tb-edit"
                             type="button"
                             data-bs-toggle="modal"
@@ -125,17 +129,28 @@ $PAGE_KEY = 'syllabus-templates';
                             style="display:none">
                       Edit
                     </button>
+
+                    <!-- Archive / Unarchive: same color as previous edit (yellowish) -->
+                    <button class="btn btn-sm btn-warning" id="tb-archive" style="display:none">
+                      Archive
+                    </button>
+
+                    <!-- Delete: only shown when status is archived. Hidden by default. -->
+                    <button class="btn btn-sm btn-danger d-none" id="tb-delete" data-bs-toggle="modal" data-bs-target="#tbDeleteModal">
+                      Delete
+                    </button>
                   </div>
 
                   <script>
-                    // Expose per-scope edit permissions for client logic (kept as before)
+                    // Expose per-scope edit permissions for client logic
+                    // prefer canEditGlobal (AAO) name; kept for clarity in JS
                     window.TB_PERMS = {
-                      canEditSystem:  <?= !empty($canEditSystem)  ? 'true' : 'false' ?>,
+                      canEditGlobal:  <?= !empty($canEditGlobal)  ? 'true' : 'false' ?>,
                       canEditCollege: <?= !empty($canEditCollege) ? 'true' : 'false' ?>,
                       canEditProgram: <?= !empty($canEditProgram) ? 'true' : 'false' ?>,
                     };
                   </script>
-                  <?php if (empty($canEditSystem) && empty($canEditCollege) && empty($canEditProgram)): ?>
+                  <?php if (empty($canEditGlobal) && empty($canEditCollege) && empty($canEditProgram)): ?>
                   <script>
                     (function(){ const b = document.getElementById('tb-edit'); if (b) b.remove(); })();
                   </script>
@@ -181,6 +196,7 @@ $PAGE_KEY = 'syllabus-templates';
     $colList  = $allColleges       ?? [];
     $progList = $programsOfCollege ?? [];
     include $partialsDir . '/EditModal.php';
+    include $partialsDir . '/DeleteModal.php';
     if (function_exists('renderEditModal')) {
       renderEditModal(
         $ASSET_BASE,

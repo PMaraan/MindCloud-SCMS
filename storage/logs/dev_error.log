@@ -4173,3 +4173,7 @@ LINE 1: SELECT program_id, program_name, college_id FROM public.prog...
 [11-Nov-2025 15:44:52 Europe/Berlin] PHP Warning:  Undefined variable $icon in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Views\partials\CollegeSection.php on line 74
 [11-Nov-2025 15:44:52 Europe/Berlin] PHP Warning:  Undefined variable $icon in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Views\partials\CollegeSection.php on line 74
 [11-Nov-2025 15:44:52 Europe/Berlin] PHP Warning:  Undefined variable $icon in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Views\partials\CollegeSection.php on line 74
+[12-Nov-2025 04:54:50 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[12-Nov-2025 04:54:50 Europe/Berlin] accounts.page rows=10 total=21 limit=10 offset=0
+[12-Nov-2025 04:54:50 Europe/Berlin] accounts.index total=21 rows=10
+[12-Nov-2025 04:54:50 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"department_id":null,"role_name":"Admin","department_short_name":"","college_short_name":""}
