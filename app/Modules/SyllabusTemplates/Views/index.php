@@ -131,12 +131,19 @@ $PAGE_KEY = 'syllabus-templates';
                     </button>
 
                     <!-- Archive / Unarchive: same color as previous edit (yellowish) -->
-                    <button class="btn btn-sm btn-warning" id="tb-archive" style="display:none">
+                    <button class="btn btn-sm btn-warning" 
+                            id="tb-archive" 
+                            type="button"
+                            style="display:none">
                       Archive
                     </button>
 
                     <!-- Delete: only shown when status is archived. Hidden by default. -->
-                    <button class="btn btn-sm btn-danger d-none" id="tb-delete" data-bs-toggle="modal" data-bs-target="#tbDeleteModal">
+                    <button class="btn btn-sm btn-danger d-none" 
+                            id="tb-delete" 
+                            type="button"
+                            data-bs-toggle="modal" 
+                            data-bs-target="#tbDeleteModal">
                       Delete
                     </button>
                   </div>

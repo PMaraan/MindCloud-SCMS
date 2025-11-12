@@ -870,28 +870,80 @@
       });
     }
 
-    // Delete confirm (UI-only): remove tile from DOM, hide details, close modal
+    // Delete confirm (wire to backend)
     if (deleteConfirm && deleteModalEl) {
-      deleteConfirm.addEventListener('click', () => {
+      deleteConfirm.addEventListener('click', async () => {
+        // get selected tile / id
         const tile = __tb_getActiveTile();
-        if (tile) {
-          // Remove card element
-          tile.remove();
+        const id = tile ? (tile.dataset.templateId || '') : (window.__tb_selectedId || '');
+        const tid = id ? parseInt(String(id), 10) : 0;
+        if (!tid) {
+          alert('No template selected to delete.');
+          return;
         }
-        // Hide modal via bootstrap JS if available
-        try {
-          const modal = bootstrap.Modal.getInstance(deleteModalEl);
-          if (modal) modal.hide();
-        } catch (e) { /* ignore */ }
 
-        // Clear details pane
-        const info = document.getElementById('tb-info');
-        const empty = document.getElementById('tb-info-empty');
-        if (info && empty) {
-          info.classList.add('d-none');
-          empty.classList.remove('d-none');
+        // Get CSRF token from the page
+        const csrfSpan = document.getElementById('tb-csrf');
+        const csrfToken = csrfSpan ? (csrfSpan.dataset.token || '') : '';
+
+        // Disable button while request is in-flight
+        deleteConfirm.disabled = true;
+        deleteConfirm.textContent = 'Deleting…';
+
+        try {
+          // Build endpoint (uses same base path logic as other actions)
+          const base = getBase();
+          const url = `${base}/dashboard?page=syllabus-templates&action=delete`;
+
+          const fd = new FormData();
+          fd.append('template_id', String(tid));
+          fd.append('csrf_token', csrfToken);
+
+          const resp = await fetch(url, {
+            method: 'POST',
+            body: fd,
+            credentials: 'same-origin',
+            headers: {
+              'Accept': 'application/json'
+            }
+          });
+
+          let json = null;
+          try { json = await resp.json(); } catch (e) { json = { success: false, message: 'Invalid server response' }; }
+
+          if (resp.ok && json && json.success) {
+            // remove tile from DOM if present
+            if (tile) tile.remove();
+
+            // hide modal
+            try { const m = bootstrap.Modal.getInstance(deleteModalEl); if (m) m.hide(); } catch (e) { /* ignore */ }
+
+            // reset details pane
+            const info = document.getElementById('tb-info');
+            const empty = document.getElementById('tb-info-empty');
+            if (info && empty) {
+              info.classList.add('d-none');
+              empty.classList.remove('d-none');
+            }
+            window.__tb_selectedId = null;
+
+            // optional simple flash
+            if (typeof window.showFlashMessage === 'function') {
+              window.showFlashMessage('Template deleted.', 'success');
+            } else {
+              console.info('Template deleted:', tid);
+            }
+          } else {
+            const msg = (json && json.message) ? json.message : 'Delete failed.';
+            alert(msg);
+          }
+        } catch (err) {
+          console.error('Delete error', err);
+          alert('Server error while deleting template.');
+        } finally {
+          deleteConfirm.disabled = false;
+          deleteConfirm.textContent = 'Yes, delete';
         }
-        window.__tb_selectedId = null;
       });
     }
     

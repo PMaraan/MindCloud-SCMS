@@ -710,6 +710,72 @@ final class SyllabusTemplatesController
         }
     }
 
+    public function delete(): void
+    {
+        // Accept only POST
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+            exit;
+        }
+
+        // Basic CSRF
+        $token = (string)($_POST['csrf_token'] ?? '');
+        if ($token === '' || $token !== (string)($_SESSION['csrf_token'] ?? '')) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Invalid CSRF token']);
+            exit;
+        }
+
+        // Permission: prefer explicit delete perm if defined, otherwise require edit perm
+        $permConst = 'App\\Config\\Permissions::SYLLABUSTEMPLATES_DELETE';
+        $requiredPerm = defined($permConst) ? constant($permConst) : Permissions::SYLLABUSTEMPLATES_EDIT;
+        (new RBAC($this->db))->require((string)$_SESSION['user_id'], $requiredPerm);
+
+        $tplId = isset($_POST['template_id']) ? (int)$_POST['template_id'] : 0;
+        if ($tplId <= 0) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Missing template id']);
+            exit;
+        }
+
+        try {
+            $pdo = $this->db->getConnection();
+
+            // Ensure template exists
+            $st = $pdo->prepare("SELECT template_id, status FROM public.syllabus_templates WHERE template_id = :tid");
+            $st->execute([':tid' => $tplId]);
+            $row = $st->fetch(\PDO::FETCH_ASSOC);
+            if (!$row) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Template not found']);
+                exit;
+            }
+
+            // Enforce UI rule: only allow permanent delete for archived templates (delete button visible only when archived)
+            if (($row['status'] ?? '') !== 'archived') {
+                http_response_code(409);
+                echo json_encode(['success' => false, 'message' => 'Template must be archived before it can be deleted.']);
+                exit;
+            }
+
+            // Soft-delete: mark as deleted (safer than hard DELETE)
+            $upd = $pdo->prepare("UPDATE public.syllabus_templates SET status = 'deleted', updated_at = NOW() WHERE template_id = :tid");
+            $upd->execute([':tid' => $tplId]);
+
+            // Bust caches used by UI
+            unset($_SESSION['st_cache'], $_SESSION['tb_cache']);
+
+            echo json_encode(['success' => true]);
+            exit;
+        } catch (Throwable $e) {
+            http_response_code(500);
+            error_log('TB delete error: ' . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Server error']);
+            exit;
+        }
+    }
+
     private function render(string $view, array $vars): string
     {
         extract($vars, EXTR_SKIP);

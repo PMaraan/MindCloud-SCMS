@@ -86,3 +86,20 @@ select[data-locked="1"] {
   background-color: #f8f9fa;
   pointer-events: none;
 }
+
+/* Ensure details pane buttons are visible and wrap instead of overflowing */
+#tb-info-pane .card-body {
+    overflow: visible; /* allow buttons to escape inner clipping */
+}
+
+/* Actions row in the details pane: allow wrapping and keep buttons readable */
+#tb-info dd .d-flex {
+    flex-wrap: wrap;
+    gap: .5rem;
+}
+
+/* Prevent tiny buttons from collapsing or wrapping their label */
+#tb-info .btn {
+    white-space: nowrap;
+}
+#tb-info .btn .bi { vertical-align: -0.125em; }
