@@ -411,103 +411,46 @@ final class SyllabusTemplatesController
         $roleName  = strtolower((string)($user['role_name'] ?? ''));
         $userColId = isset($user['college_id']) ? (int)$user['college_id'] : null;
 
-        // Deans cannot create global scope
-        if (in_array($roleName, ['dean'], true) && $scope === 'global') {
-            throw new \RuntimeException('Not allowed: deans cannot create Global templates.');
-        }
-
-        // If dean is creating college/program/course, force college to their own
-        if (in_array($roleName, ['dean'], true) && in_array($scope, ['college','program','course'], true)) {
-            if ($userColId) {
-                $colId = $userColId; // override incoming
-            } else {
-                throw new \RuntimeException('Your profile is missing a college.');
-            }
-        }
-
-        // NOTE: per your standard, get PDO via getConnection()
-        $pdo  = $this->db->getConnection();
-        $pdo->beginTransaction();
-
         try {
             $title  = trim((string)($_POST['title'] ?? ''));
-            $scope  = (string)($_POST['scope'] ?? 'global'); // global | college | program
+            $scope  = (string)($_POST['scope'] ?? 'global');
             $colId  = isset($_POST['college_id']) ? (int)$_POST['college_id'] : null;
             $progId = isset($_POST['program_id']) ? (int)$_POST['program_id'] : null;
+            $courseId = isset($_POST['course_id']) ? (int)$_POST['course_id'] : null;
 
-            if ($title === '') throw new \RuntimeException('Title is required.');
-
-            // Insert template
-            if ($scope === 'global') {
-                $stmt = $pdo->prepare("INSERT INTO public.syllabus_templates (scope, title, status, content, created_by)
-                                    VALUES ('global', :title, 'draft', '{}'::jsonb, :by)
-                                    RETURNING template_id");
-                $stmt->execute([':title'=>$title, ':by'=>$idno]);
-                $tid = (int)$stmt->fetchColumn();
-
-            } elseif ($scope === 'college') {
-                if (!$colId) throw new \RuntimeException('College is required for college scope.');
-                $stmt = $pdo->prepare("INSERT INTO public.syllabus_templates (scope, title, status, content, created_by, owner_department_id)
-                                    VALUES ('college', :title, 'draft', '{}'::jsonb, :by, :dept)
-                                    RETURNING template_id");
-                $stmt->execute([':title'=>$title, ':by'=>$idno, ':dept'=>$colId]);
-                $tid = (int)$stmt->fetchColumn();
-
-                $pdo->prepare("INSERT INTO public.syllabus_template_departments (template_id, department_id) VALUES (:t,:d)")
-                    ->execute([':t'=>$tid, ':d'=>$colId]);
-
-            } elseif ($scope === 'program') {
-                if (!$progId) throw new \RuntimeException('Program is required for program scope.');
-                $deptId = (int)$pdo->query("SELECT department_id FROM public.programs WHERE program_id = {$progId}")->fetchColumn();
-                if (!$deptId) throw new \RuntimeException('Program has no college department.');
-
-                $stmt = $pdo->prepare("INSERT INTO public.syllabus_templates (scope, title, status, content, created_by, owner_department_id, program_id)
-                                    VALUES ('program', :title, 'draft', '{}'::jsonb, :by, :dept, :pid)
-                                    RETURNING template_id");
-                $stmt->execute([':title'=>$title, ':by'=>$idno, ':dept'=>$deptId, ':pid'=>$progId]);
-                $tid = (int)$stmt->fetchColumn();
-
-                $pdo->prepare("INSERT INTO public.syllabus_template_programs (template_id, program_id) VALUES (:t,:p)")
-                    ->execute([':t'=>$tid, ':p'=>$ProgId]);
-                $pdo->prepare("INSERT INTO public.syllabus_template_departments (template_id, department_id) VALUES (:t,:d)
-                            ON CONFLICT DO NOTHING")->execute([':t'=>$tid, ':d'=>$deptId]);
-
-            } elseif ($scope === 'course') {
-                if (!$progId) throw new \RuntimeException('Program is required for course scope.');
-                $deptId = (int)$pdo->query("SELECT department_id FROM public.programs WHERE program_id = {$progId}")->fetchColumn();
-                if (!$deptId) throw new \RuntimeException('Program has no college department.');
-                $courseId = isset($_POST['course_id']) ? (int)$_POST['course_id'] : 0;
-                if ($courseId <= 0) throw new \RuntimeException('Course is required for course scope.');
-
-                $stmt = $pdo->prepare("INSERT INTO public.syllabus_templates (scope, title, status, content, created_by,
-                                                    owner_department_id, program_id, course_id)
-                                    VALUES ('course', :title, 'draft', '{}'::jsonb, :by, :dept, :pid, :cid)
-                                    RETURNING template_id");
-                $stmt->execute([':title'=>$title, ':by'=>$idno, ':dept'=>$deptId, ':pid'=>$progId, ':cid'=>$courseId]);
-                $tid = (int)$stmt->fetchColumn();
-
-                $pdo->prepare("INSERT INTO public.syllabus_template_programs (template_id, program_id) VALUES (:t,:p)
-                            ON CONFLICT DO NOTHING")->execute([':t'=>$tid, ':p'=>$ProgId]);
-                $pdo->prepare("INSERT INTO public.syllabus_template_departments (template_id, department_id) VALUES (:t,:d)
-                            ON CONFLICT DO NOTHING")->execute([':t'=>$tid, ':d'=>$deptId]);
-
-            } else {
-                throw new \RuntimeException('Invalid scope.');
+            // Deans cannot create global scope
+            if (in_array($roleName, ['dean'], true) && $scope === 'global') {
+                throw new \RuntimeException('Not allowed: deans cannot create Global templates.');
             }
 
-            $pdo->commit();
+            // If dean is creating college/program/course, force college to their own
+            if (in_array($roleName, ['dean'], true) && in_array($scope, ['college','program','course'], true)) {
+                if ($userColId) {
+                    $colId = $userColId;
+                } else {
+                    throw new \RuntimeException('Your profile is missing a college.');
+                }
+            }
 
-            // bust just enough cache so user sees new item on refresh
+            // Call model to create template (handles transaction)
+            $tid = $this->model->createTemplate([
+                'title' => $title,
+                'scope' => $scope,
+                'college_id' => $colId,
+                'program_id' => $progId,
+                'course_id' => $courseId,
+                'created_by' => $idno,
+            ]);
+
             unset($_SESSION['st_cache'], $_SESSION['tb_cache']);
-            $_SESSION['flash'] = ['type'=>'success','message'=>'Template created.'];
+            $_SESSION['flash'] = ['type' => 'success', 'message' => 'Template created.'];
 
             // Redirect: preserve college param or use the college from the created template
             $redirectUrl = (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates';
             
-            // Determine which college to redirect to
             $targetCollege = null;
             
-            // 1) If college param exists in request, use it (user was in a college view)
+            // 1) If college param exists in request, use it
             if (isset($_GET['college']) && ctype_digit((string)$_GET['college'])) {
                 $targetCollege = (int)$_GET['college'];
             }
@@ -516,6 +459,7 @@ final class SyllabusTemplatesController
                 if ($scope === 'college') {
                     $targetCollege = $colId;
                 } elseif ($scope === 'program' || $scope === 'course') {
+                    $pdo = $this->db->getConnection();
                     $deptId = (int)$pdo->query("SELECT department_id FROM public.programs WHERE program_id = {$progId}")->fetchColumn();
                     $targetCollege = $deptId ?: null;
                 }
@@ -528,8 +472,7 @@ final class SyllabusTemplatesController
             header('Location: ' . $redirectUrl);
             exit;
         } catch (Throwable $e) {
-            $pdo->rollBack();
-            $_SESSION['flash'] = ['type'=>'danger','message'=>'Create failed: '.$e->getMessage()];
+            $_SESSION['flash'] = ['type' => 'danger', 'message' => 'Create failed: ' . $e->getMessage()];
             
             // Preserve college param on error redirect too
             $redirectUrl = (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates';

@@ -325,4 +325,70 @@ final class SyllabusTemplatesModel
 
         return $newId;
     }
+
+    public function createTemplate(array $data): int
+    {
+        $pdo = $this->pdo;
+        $pdo->beginTransaction();
+
+        try {
+            $title  = $data['title'] ?? '';
+            $scope  = $data['scope'] ?? 'global';
+            $colId  = $data['college_id'] ?? null;
+            $progId = $data['program_id'] ?? null;
+            $courseId = $data['course_id'] ?? null;
+            $createdBy = $data['created_by'] ?? '';
+
+            if (!$title) {
+                throw new \RuntimeException('Title is required.');
+            }
+
+            if ($scope === 'global') {
+                $stmt = $pdo->prepare("INSERT INTO public.syllabus_templates (scope, title, status, content, created_by)
+                                    VALUES ('global', :title, 'draft', '{}'::jsonb, :by)
+                                    RETURNING template_id");
+                $stmt->execute([':title' => $title, ':by' => $createdBy]);
+                $tid = (int)$stmt->fetchColumn();
+
+            } elseif ($scope === 'college') {
+                $stmt = $pdo->prepare("INSERT INTO public.syllabus_templates (scope, title, status, content, created_by, owner_department_id)
+                                    VALUES ('college', :title, 'draft', '{}'::jsonb, :by, :dept)
+                                    RETURNING template_id");
+                $stmt->execute([':title' => $title, ':by' => $createdBy, ':dept' => $colId]);
+                $tid = (int)$stmt->fetchColumn();
+
+            } elseif ($scope === 'program') {
+                $deptId = (int)$this->pdo->query("SELECT department_id FROM public.programs WHERE program_id = {$progId}")->fetchColumn();
+                if (!$deptId) throw new \RuntimeException('Program has no college department.');
+
+                $stmt = $pdo->prepare("INSERT INTO public.syllabus_templates (scope, title, status, content, created_by, owner_department_id, program_id)
+                                    VALUES ('program', :title, 'draft', '{}'::jsonb, :by, :dept, :pid)
+                                    RETURNING template_id");
+                $stmt->execute([':title' => $title, ':by' => $createdBy, ':dept' => $deptId, ':pid' => $progId]);
+                $tid = (int)$stmt->fetchColumn();
+
+            } elseif ($scope === 'course') {
+                $deptId = (int)$this->pdo->query("SELECT department_id FROM public.programs WHERE program_id = {$progId}")->fetchColumn();
+                if (!$deptId) throw new \RuntimeException('Program has no college department.');
+                if (!$courseId) throw new \RuntimeException('Course is required for course scope.');
+
+                $stmt = $pdo->prepare("INSERT INTO public.syllabus_templates (scope, title, status, content, created_by,
+                                                    owner_department_id, program_id, course_id)
+                                    VALUES ('course', :title, 'draft', '{}'::jsonb, :by, :dept, :pid, :cid)
+                                    RETURNING template_id");
+                $stmt->execute([':title' => $title, ':by' => $createdBy, ':dept' => $deptId, ':pid' => $progId, ':cid' => $courseId]);
+                $tid = (int)$stmt->fetchColumn();
+
+            } else {
+                throw new \RuntimeException('Invalid scope.');
+            }
+
+            $pdo->commit();
+            return $tid;
+
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+    }
 }
