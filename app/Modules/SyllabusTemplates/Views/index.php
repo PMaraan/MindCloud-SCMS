@@ -182,6 +182,12 @@ $PAGE_KEY = 'syllabus-templates';
     $progList        = $programsOfCollege ?? [];
     $defaultCollegeId= $defaultCollegeId  ?? null;
 
+    // Role-based locking for college scope
+    $roleSlug         = strtolower((string)($user['role_name'] ?? ''));
+    $isDean           = in_array($roleSlug, ['dean','college dean','dean/chair'], true);
+    $defaultCollegeId = $isDean ? (int)($user['college_id'] ?? 0) : null;
+    $lockCollege      = $isDean && $defaultCollegeId;
+
     include $partialsDir . '/CreateModal.php';
 
     if (function_exists('renderCreateModal')) {
@@ -190,10 +196,11 @@ $PAGE_KEY = 'syllabus-templates';
         $globalAllowed,
         $collegeAllowed,
         $programAllowed,
-        $courseAllowed,      // NEW
+        $courseAllowed,
         $colList,
         $progList,
-        $defaultCollegeId,   // NEW
+        $defaultCollegeId,
+        $lockCollege,
         $esc
       );
     }
@@ -210,6 +217,8 @@ $PAGE_KEY = 'syllabus-templates';
         $ASSET_BASE,
         $colList,
         $progList,
+        $defaultCollegeId,
+        $lockCollege,
         $esc
       );
     }

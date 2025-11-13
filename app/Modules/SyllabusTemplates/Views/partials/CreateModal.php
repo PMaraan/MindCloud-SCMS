@@ -10,10 +10,11 @@ if (!function_exists('renderCreateModal')) {
     bool $allowSystem,
     bool $allowCollege,
     bool $allowProgram,
-    bool $allowCourse,              // NEW
+    bool $allowCourse,
     array $colleges,
     array $programsOfCollege,
-    ?int $defaultCollegeId,         // NEW
+    ?int $defaultCollegeId,
+    bool $lockCollege,
     callable $esc
   ): void {
     // Page key comes from parent view; fall back to default if not set
@@ -22,7 +23,11 @@ if (!function_exists('renderCreateModal')) {
     ?>
 <div class="modal fade" id="tbCreateModal" tabindex="-1" aria-hidden="true" aria-labelledby="tbCreateLabel">
   <div class="modal-dialog">
-    <form method="post" action="<?= $esc($base) ?>/dashboard?page=<?= $esc($pageKey) ?>&action=create" class="modal-content">
+    <form method="post"
+          action="<?= $esc($base) ?>/dashboard?page=<?= $esc($pageKey) ?>&action=create"
+          class="modal-content"
+          data-default-college="<?= (int)($defaultCollegeId ?? 0) ?>"
+          data-lock-college="<?= $lockCollege ? '1' : '0' ?>">
       <div class="modal-header">
         <h5 class="modal-title" id="tbCreateLabel">New Template</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -68,6 +73,7 @@ if (!function_exists('renderCreateModal')) {
           <?php endif; ?>
         </div>
 
+        <!-- College Select (shown if scope is College/Program/Course) -->
         <div class="mb-3 d-none" id="tb-college-wrap">
           <label class="form-label" for="tb-college">College <span class="text-danger">*</span></label>
           <select name="college_id" id="tb-college" class="form-select" aria-label="College" title="College">
@@ -83,6 +89,7 @@ if (!function_exists('renderCreateModal')) {
           </select>
         </div>
 
+        <!-- Program Select (shown if scope is Program/Course) -->
         <div class="mb-3 d-none" id="tb-program-wrap">
           <label class="form-label" for="tb-program">Program</label>Program <span class="text-danger">*</span></label>
           <select name="program_id" id="tb-program" class="form-select" aria-label="Program" title="Program">
@@ -96,6 +103,7 @@ if (!function_exists('renderCreateModal')) {
           <div class="form-text">Programs list auto-filters based on the selected college when available.</div>
         </div>
 
+        <!-- Course Select (shown if scope is Course) -->
         <div class="mb-3 d-none" id="tb-course-wrap">
           <label class="form-label" for="tb-course">Course <span class="text-danger">*</span></label>
           <select name="course_id" id="tb-course" class="form-select" aria-label="Course" title="Course">
@@ -226,7 +234,23 @@ document.addEventListener('DOMContentLoaded', function(){
 document.addEventListener('DOMContentLoaded', function(){
   const createForm = document.querySelector('#tbCreateModal form');
   const selCol = document.getElementById('tb-college');
-  
+  const lockCollege = createForm?.dataset.lockCollege === '1';
+  const defaultCollege = createForm?.dataset.defaultCollege || '';
+  // lock + default selection
+  if (createForm && selCol) {
+    if (lockCollege && defaultCollege) {
+      selCol.value = defaultCollege;
+      selCol.dispatchEvent(new Event('change'));
+      selCol.disabled = true;
+      selCol.setAttribute('aria-disabled','true');
+    }
+    // default scope for locked states
+    if (lockCollege) {
+      const scopeCollege = document.getElementById('tb-scope-college');
+      if (scopeCollege) scopeCollege.checked = true;
+    }
+  }
+
   if (createForm) {
     // Function to build action URL with college param
     const buildCreateActionUrl = () => {

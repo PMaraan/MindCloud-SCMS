@@ -7,13 +7,17 @@
  * Posts to ?action=edit (handled by SyllabusTemplatesController@edit).
  */
 if (!function_exists('renderEditModal')) {
-  function renderEditModal(string $ASSET_BASE, array $colleges, array $programsOfCollege, callable $esc): void {
+  function renderEditModal(string $ASSET_BASE, array $colleges, array $programsOfCollege, ?int $defaultCollegeId, bool $lockCollege, callable $esc): void {
     $base = (defined('BASE_PATH') ? BASE_PATH : '');
     $pageKey = $GLOBALS['PAGE_KEY'] ?? 'syllabus-templates';
     ?>
 <div class="modal fade" id="tbEditModal" tabindex="-1" aria-hidden="true" aria-labelledby="tbEditLabel" data-no-reset>
   <div class="modal-dialog">
-    <form method="post" action="<?= $esc($base) ?>/dashboard?page=<?= $esc($pageKey) ?>&action=edit" class="modal-content">
+    <form method="post"
+          action="<?= $esc($base) ?>/dashboard?page=<?= $esc($pageKey) ?>&action=edit"
+          class="modal-content"
+          data-default-college="<?= (int)($defaultCollegeId ?? 0) ?>"
+          data-lock-college="<?= $lockCollege ? '1' : '0' ?>">
       <div class="modal-header">
         <h5 class="modal-title" id="tbEditLabel">Edit Template</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -53,6 +57,7 @@ if (!function_exists('renderEditModal')) {
           </div>
         </div>
 
+        <!-- College Select (shown if scope is College/Program/Course) -->
         <div class="mb-3" id="tb-e-college-wrap">
             <label class="form-label" for="tb-e-college">College</label>
             <select name="college_id" id="tb-e-college" class="form-select" aria-label="College" title="College">
@@ -65,6 +70,7 @@ if (!function_exists('renderEditModal')) {
             </select>
         </div>
 
+        <!-- Program Select (shown if scope is Program/Course) -->
         <div class="mb-3" id="tb-e-program-wrap">
             <label class="form-label" for="tb-e-program">Program</label>
             <select name="program_id" id="tb-e-program" class="form-select" aria-label="Program" title="Program">
@@ -77,6 +83,7 @@ if (!function_exists('renderEditModal')) {
             </select>
         </div>
 
+        <!-- Course Select (shown if scope is Course) -->
         <div class="mb-3 d-none" id="tb-e-course-wrap">
           <label class="form-label" for="tb-e-course">Course</label>
           <select name="course_id" id="tb-e-course" class="form-select" aria-label="Course" title="Course">
@@ -205,7 +212,18 @@ document.addEventListener('DOMContentLoaded', function(){
 document.addEventListener('DOMContentLoaded', function(){
   const editForm = document.querySelector('#tbEditModal form');
   const selCol = document.getElementById('tb-e-college');
-  
+  const lockCollege = editForm?.dataset.lockCollege === '1';
+  const defaultCollege = editForm?.dataset.defaultCollege || '';
+  if (editForm && selCol && lockCollege && defaultCollege) {
+    const applyLock = () => {
+      selCol.value = defaultCollege;
+      selCol.dispatchEvent(new Event('change'));
+      selCol.disabled = true;
+      selCol.setAttribute('aria-disabled','true');
+    };
+    editForm.addEventListener('show.bs.modal', applyLock, { once: true });
+    editForm.addEventListener('shown.bs.modal', applyLock);
+  }
   if (editForm) {
     // Function to build action URL with college param
     const buildEditActionUrl = () => {
