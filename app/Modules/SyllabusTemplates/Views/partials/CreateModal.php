@@ -91,7 +91,7 @@ if (!function_exists('renderCreateModal')) {
 
         <!-- Program Select (shown if scope is Program/Course) -->
         <div class="mb-3 d-none" id="tb-program-wrap">
-          <label class="form-label" for="tb-program">Program</label>Program <span class="text-danger">*</span></label>
+          <label class="form-label" for="tb-program">Program <span class="text-danger">*</span></label>
           <select name="program_id" id="tb-program" class="form-select" aria-label="Program" title="Program">
             <option value="">— Select program —</option>
             <?php foreach ($programsOfCollege as $p): ?>
@@ -103,18 +103,9 @@ if (!function_exists('renderCreateModal')) {
           <div class="form-text">Programs list auto-filters based on the selected college when available.</div>
         </div>
 
-        <!-- Course Select (shown if scope is Course) -->
         <div class="mb-3 d-none" id="tb-course-wrap">
           <label class="form-label" for="tb-course">Course <span class="text-danger">*</span></label>
           <select name="course_id" id="tb-course" class="form-select" aria-label="Course" title="Course">
-            <option value="">— Select course —</option>
-            <!-- Will be filled based on selected Program -->
-          </select>
-        </div>
-
-        <div class="mb-3 d-none" id="tb-course-wrap">
-          <label class="form-label">Course <span class="text-danger">*</span></label>
-          <select name="course_id" id="tb-course" class="form-select">
             <option value="">— Select course —</option>
             <!-- options loaded dynamically based on Program -->
           </select>
@@ -165,31 +156,30 @@ document.addEventListener('DOMContentLoaded', function(){
   if (selCol && selPrg) {
     selCol.addEventListener('change', async function(){
       const cid = this.value;
-      // reset program
       selPrg.innerHTML = '<option value="">— Select program —</option>';
-      // reset course
       if (selCrs) selCrs.innerHTML = '<option value="">— Select course —</option>';
-
       if (!cid) return;
       try {
         const base = (typeof window.BASE_PATH === 'string') ? window.BASE_PATH : '';
-        const url  = `${base}/api/syllabus-templates/programs?department_id=${encodeURIComponent(cid)}`;
+        const url  = `${base}/dashboard?page=<?= rawurlencode($pageKey) ?>&ajax=programs&department_id=${encodeURIComponent(cid)}`;
         const res  = await fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' });
         if (!res.ok) return;
-        const data = await res.json();
-        if (Array.isArray(data?.programs)) {
-          for (const p of data.programs) {
-            const opt = document.createElement('option');
-            opt.value = p.id ?? '';
-            opt.textContent = p.label ?? '';
-            selPrg.appendChild(opt);
-          }
+        const payload = await res.json();
+        const programs = Array.isArray(payload)
+          ? payload
+          : (Array.isArray(payload?.programs) ? payload.programs : []);
+        for (const p of programs) {
+          const opt = document.createElement('option');
+          opt.value = p.id ?? '';
+          opt.textContent = p.label ?? '';
+          selPrg.appendChild(opt);
         }
-      } catch {}
+      } catch (err) {
+        console.error('Failed to load programs', err);
+      }
     });
   }
 
-  // Program → Course dynamic load (new)
   if (selPrg && selCrs) {
     selPrg.addEventListener('change', async function(){
       const pid = this.value;
@@ -197,19 +187,22 @@ document.addEventListener('DOMContentLoaded', function(){
       if (!pid) return;
       try {
         const base = (typeof window.BASE_PATH === 'string') ? window.BASE_PATH : '';
-        const url  = `${base}/api/syllabus-templates/courses?program_id=${encodeURIComponent(pid)}`;
+        const url  = `${base}/dashboard?page=<?= rawurlencode($pageKey) ?>&ajax=courses&program_id=${encodeURIComponent(pid)}`;
         const res  = await fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' });
         if (!res.ok) return;
-        const data = await res.json();
-        if (Array.isArray(data?.courses)) {
-          for (const c of data.courses) {
-            const opt = document.createElement('option');
-            opt.value = c.id ?? '';
-            opt.textContent = c.label ?? '';
-            selCrs.appendChild(opt);
-          }
+        const payload = await res.json();
+        const courses = Array.isArray(payload)
+          ? payload
+          : (Array.isArray(payload?.courses) ? payload.courses : []);
+        for (const c of courses) {
+          const opt = document.createElement('option');
+          opt.value = c.id ?? '';
+          opt.textContent = c.label ?? '';
+          selCrs.appendChild(opt);
         }
-      } catch {}
+      } catch (err) {
+        console.error('Failed to load courses', err);
+      }
     });
   }
 
