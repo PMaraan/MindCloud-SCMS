@@ -14,7 +14,7 @@
       <div class="modal-body">
         <p>Are you sure you want to <strong>permanently delete</strong> the template:</p>
         <p class="fw-semibold" id="tb-delete-title">—</p>
-        <p class="text-danger small mb-0">This action cannot be undone. (Currently UI-only — server wiring will be added later.)</p>
+        <p class="text-danger small mb-0">This action cannot be undone.</p>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
