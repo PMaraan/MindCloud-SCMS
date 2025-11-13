@@ -706,15 +706,9 @@
           if ((lockCollege || !deptSel.value) && defCollege > 0) {
             await robustSelect(deptSel, defCollege, { injectIfMissing: true, labelIfInjected: '(Your College)' });
           }
-          if (lockCollege) {
-            deptSel.disabled = true;
-            deptSel.setAttribute('aria-disabled','true');
-            deptSel.setAttribute('data-locked','1');
-          } else {
-            deptSel.disabled = false;
-            deptSel.removeAttribute('aria-disabled');
-            deptSel.removeAttribute('data-locked');
-          }
+          lockSelectElement(deptSel, lockCollege, deptSel.value || defCollege);
+        } else {
+          lockSelectElement(deptSel, false);
         }
 
         // 2c) Show correct rows + required flags
@@ -758,29 +752,13 @@
 
           // If narrowing to a scope that needs college, auto-select + lock dean/chair’s college immediately
           if (deptSel && dupNeedsCollege(scopeNow)) {
-            if ((lockCollege || !deptSel.value) && defCollege > 0) {
-              const ok = await ensureOptionAndSelect(deptSel, defCollege);
-              if (!ok) {
-                deptSel.value = String(defCollege);
-                if (deptSel.value !== String(defCollege)) {
-                  const opt = document.createElement('option');
-                  opt.value = String(defCollege);
-                  opt.textContent = '(Your College)';
-                  deptSel.appendChild(opt);
-                  deptSel.value = String(defCollege);
-                }
-              }
-              // No need to dispatch change here; we’ll load manually below.
-            }
-            if (lockCollege) {
-              deptSel.disabled = true;
-              deptSel.setAttribute('aria-disabled','true');
-              deptSel.setAttribute('data-locked','1');
+            if ((lockCollege || deptSel.dataset.locked === '1') && defCollege > 0) {
+              lockSelectElement(deptSel, true, deptSel.value || defCollege);
             } else {
-              deptSel.disabled = false;
-              deptSel.removeAttribute('aria-disabled');
-              deptSel.removeAttribute('data-locked');
+              lockSelectElement(deptSel, false);
             }
+          } else {
+            lockSelectElement(deptSel, false);
           }
 
           // Update visibility/required states now (placeholders will be managed by loaders)
@@ -1092,4 +1070,46 @@
       labelIfInjected: '(Your College)'
     });
   }
+
+  const lockSelectElement = (sel, locked, value, injectLabel = '(Your College)') => {
+    if (!sel) return;
+
+    if (locked) {
+      const targetValue = value !== undefined && value !== null ? String(value) : '';
+      if (targetValue !== '') {
+        let opt = sel.querySelector(`option[value="${CSS.escape(targetValue)}"]`);
+        if (!opt) {
+          opt = document.createElement('option');
+          opt.value = targetValue;
+          opt.textContent = injectLabel;
+          sel.appendChild(opt);
+        }
+        sel.value = targetValue;
+        sel.dataset.lockedValue = targetValue;
+      }
+      sel.dataset.locked = '1';
+      sel.setAttribute('aria-readonly', 'true');
+      sel.classList.add('tb-select-locked');
+
+      if (!sel.__tbReadonlyBound) {
+        sel.addEventListener('mousedown', (ev) => {
+          if (sel.dataset.locked === '1') ev.preventDefault();
+        }, true);
+        sel.addEventListener('keydown', (ev) => {
+          if (sel.dataset.locked === '1') ev.preventDefault();
+        }, true);
+        sel.addEventListener('change', () => {
+          if (sel.dataset.locked === '1' && sel.dataset.lockedValue) {
+            sel.value = sel.dataset.lockedValue;
+          }
+        });
+        sel.__tbReadonlyBound = true;
+      }
+    } else {
+      sel.dataset.locked = '0';
+      sel.dataset.lockedValue = '';
+      sel.removeAttribute('aria-readonly');
+      sel.classList.remove('tb-select-locked');
+    }
+  };
 })();

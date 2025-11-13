@@ -4360,3 +4360,9 @@ PL/pgSQL function mc_trg_tprog_validate_scope() line 3 at PERFORM
 CONTEXT:  PL/pgSQL function mc_validate_template_scope(integer) line 14 at RAISE
 SQL statement "SELECT public.mc_validate_template_scope(COALESCE(NEW.template_id, OLD.template_id))"
 PL/pgSQL function mc_trg_tprog_validate_scope() line 3 at PERFORM
+[13-Nov-2025 15:19:41 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 596
+[13-Nov-2025 15:19:41 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 601
+[13-Nov-2025 15:20:06 Europe/Berlin] TB delete error: SQLSTATE[P0001]: Raise exception: 7 ERROR:  Template 26 not found
+CONTEXT:  PL/pgSQL function mc_validate_template_scope(integer) line 14 at RAISE
+SQL statement "SELECT public.mc_validate_template_scope(COALESCE(NEW.template_id, OLD.template_id))"
+PL/pgSQL function mc_trg_tprog_validate_scope() line 3 at PERFORM
