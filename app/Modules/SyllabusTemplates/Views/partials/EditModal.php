@@ -209,53 +209,83 @@ document.addEventListener('DOMContentLoaded', function(){
 </script>
 
 <script>
-document.addEventListener('DOMContentLoaded', function(){
-  const editForm = document.querySelector('#tbEditModal form');
+document.addEventListener('DOMContentLoaded', function () {
+  const editModalEl = document.getElementById('tbEditModal');
+  const editForm = editModalEl ? editModalEl.querySelector('form') : null;
   const selCol = document.getElementById('tb-e-college');
-  const lockCollege = editForm?.dataset.lockCollege === '1';
-  const defaultCollege = editForm?.dataset.defaultCollege || '';
-  if (editForm && selCol && lockCollege && defaultCollege) {
-    const applyLock = () => {
-      selCol.value = defaultCollege;
-      selCol.dispatchEvent(new Event('change'));
-      selCol.disabled = true;
-      selCol.setAttribute('aria-disabled','true');
-    };
-    editForm.addEventListener('show.bs.modal', applyLock, { once: true });
-    editForm.addEventListener('shown.bs.modal', applyLock);
-  }
-  if (editForm) {
-    // Function to build action URL with college param
-    const buildEditActionUrl = () => {
-      let collegeId = null;
-      
-      // 1) Check if college select has a value
-      if (selCol && selCol.value && selCol.value.trim() !== '') {
-        collegeId = selCol.value;
-      }
-      // 2) Fall back to URL param
-      else {
-        const params = new URLSearchParams(window.location.search);
-        collegeId = params.get('college');
-      }
-      
-      let actionUrl = '<?= $esc($base) ?>/dashboard?page=<?= $esc($pageKey) ?>&action=edit';
-      if (collegeId && collegeId.trim() !== '') {
-        actionUrl += '&college=' + encodeURIComponent(collegeId);
-      }
-      
-      return actionUrl;
-    };
-    
-    // Set initial action URL
-    editForm.action = buildEditActionUrl();
-    
-    // Update action URL when college changes
-    if (selCol) {
-      selCol.addEventListener('change', () => {
-        editForm.action = buildEditActionUrl();
-      });
+
+  if (!editForm) return;
+
+  const lockCollege = editForm.dataset.lockCollege === '1';
+  const defaultCollege = (editForm.dataset.defaultCollege || '').trim();
+
+  const buildEditActionUrl = () => {
+    let collegeId = null;
+
+    if (selCol && selCol.value && selCol.value.trim() !== '') {
+      collegeId = selCol.value;
+    } else {
+      const params = new URLSearchParams(window.location.search);
+      collegeId = params.get('college');
     }
+
+    let actionUrl = '<?= $esc($base) ?>/dashboard?page=<?= $esc($pageKey) ?>&action=edit';
+    if (collegeId && collegeId.trim() !== '') {
+      actionUrl += '&college=' + encodeURIComponent(collegeId);
+    }
+    return actionUrl;
+  };
+
+  const syncAction = () => {
+    editForm.action = buildEditActionUrl();
+  };
+
+  const applyLock = () => {
+    if (!lockCollege || !selCol) {
+      if (selCol) {
+        selCol.removeAttribute('data-locked');
+        selCol.removeAttribute('aria-readonly');
+      }
+      return;
+    }
+
+    const targetValue = defaultCollege || selCol.value;
+    if (targetValue && selCol.value !== targetValue) {
+      selCol.value = targetValue;
+      selCol.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    selCol.setAttribute('data-locked', '1');
+    selCol.setAttribute('aria-readonly', 'true');
+  };
+
+  if (selCol && !lockCollege) {
+    selCol.removeAttribute('data-locked');
+    selCol.removeAttribute('aria-readonly');
+  }
+
+  syncAction();
+
+  if (selCol) {
+    selCol.addEventListener('change', () => {
+      if (lockCollege && defaultCollege) {
+        selCol.value = defaultCollege;
+        return;
+      }
+      syncAction();
+    });
+  }
+
+  if (editModalEl) {
+    editModalEl.addEventListener('show.bs.modal', () => {
+      applyLock();
+      syncAction();
+    });
+
+    editModalEl.addEventListener('shown.bs.modal', () => {
+      applyLock();
+      syncAction();
+    });
   }
 });
 </script>

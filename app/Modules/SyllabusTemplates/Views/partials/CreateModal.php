@@ -241,8 +241,11 @@ document.addEventListener('DOMContentLoaded', function(){
     if (lockCollege && defaultCollege) {
       selCol.value = defaultCollege;
       selCol.dispatchEvent(new Event('change'));
-      selCol.disabled = true;
-      selCol.setAttribute('aria-disabled','true');
+      selCol.setAttribute('data-locked', '1');
+      selCol.setAttribute('aria-readonly', 'true');
+    } else {
+      selCol.removeAttribute('data-locked');
+      selCol.removeAttribute('aria-readonly');
     }
     // default scope for locked states
     if (lockCollege) {
@@ -280,6 +283,10 @@ document.addEventListener('DOMContentLoaded', function(){
     // Update action URL when college changes
     if (selCol) {
       selCol.addEventListener('change', () => {
+        if (lockCollege && defaultCollege) {
+          selCol.value = defaultCollege;
+          return;
+        }
         createForm.action = buildCreateActionUrl();
       });
     }
