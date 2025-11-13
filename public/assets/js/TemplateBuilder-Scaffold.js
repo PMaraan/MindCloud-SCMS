@@ -183,9 +183,18 @@
       }
 
       if (btnDelete) {
-        // Show delete only when status is archived
-        const showDelete = (status === 'archived');
-        if (showDelete) {
+        const perms = window.TB_PERMS || {};
+        let canDelete = (status === 'archived');
+
+        if (scopeLower === 'global') {
+          canDelete = canDelete && !!perms.canEditGlobal;
+        } else if (scopeLower === 'college') {
+          canDelete = canDelete && !!perms.canEditCollege;
+        } else if (scopeLower === 'program' || scopeLower === 'course') {
+          canDelete = canDelete && !!perms.canEditProgram;
+        }
+
+        if (canDelete) {
           btnDelete.classList.remove('d-none');
         } else {
           btnDelete.classList.add('d-none');
