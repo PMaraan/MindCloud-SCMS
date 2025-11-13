@@ -184,9 +184,11 @@ $PAGE_KEY = 'syllabus-templates';
 
     // Role-based locking for college scope
     $roleSlug         = strtolower((string)($user['role_name'] ?? ''));
-    $isDean           = in_array($roleSlug, ['dean','college dean','dean/chair'], true);
+    $isDean           = $roleSlug === 'dean';
+    $isChair          = $roleSlug === 'chair';
     $defaultCollegeId = $isDean ? (int)($user['college_id'] ?? 0) : null;
     $lockCollege      = $isDean && $defaultCollegeId;
+    $allowGlobalScope = !($isDean || $isChair);
 
     include $partialsDir . '/CreateModal.php';
 
@@ -219,6 +221,7 @@ $PAGE_KEY = 'syllabus-templates';
         $progList,
         $defaultCollegeId,
         $lockCollege,
+        $allowGlobalScope,
         $esc
       );
     }

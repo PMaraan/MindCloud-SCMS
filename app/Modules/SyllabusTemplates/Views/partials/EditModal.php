@@ -7,7 +7,15 @@
  * Posts to ?action=edit (handled by SyllabusTemplatesController@edit).
  */
 if (!function_exists('renderEditModal')) {
-  function renderEditModal(string $ASSET_BASE, array $colleges, array $programsOfCollege, ?int $defaultCollegeId, bool $lockCollege, callable $esc): void {
+  function renderEditModal(
+    string $ASSET_BASE,
+    array $colleges,
+    array $programsOfCollege,
+    ?int $defaultCollegeId,
+    bool $lockCollege,
+    bool $allowGlobalScope,
+    callable $esc
+  ): void {
     $base = (defined('BASE_PATH') ? BASE_PATH : '');
     $pageKey = $GLOBALS['PAGE_KEY'] ?? 'syllabus-templates';
     ?>
@@ -35,8 +43,7 @@ if (!function_exists('renderEditModal')) {
         <div class="mb-3">
           <label class="form-label d-block">Scope <span class="text-danger">*</span></label>
           <div class="d-flex gap-3 flex-wrap">
-          <?php $roleName = (string)($GLOBALS['role'] ?? ''); ?>
-          <?php if (strtolower($roleName) !== 'dean' && strtolower($roleName) !== 'college dean'): ?>
+          <?php if ($allowGlobalScope): ?>
             <div class="form-check">
               <input class="form-check-input" type="radio" name="scope" id="tb-e-scope-global" value="global">
               <label class="form-check-label" for="tb-e-scope-global">Global</label>
