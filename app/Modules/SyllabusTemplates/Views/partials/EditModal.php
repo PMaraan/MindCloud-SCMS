@@ -201,6 +201,47 @@ document.addEventListener('DOMContentLoaded', function(){
 })();
 </script>
 
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const editForm = document.querySelector('#tbEditModal form');
+  const selCol = document.getElementById('tb-e-college');
+  
+  if (editForm) {
+    // Function to build action URL with college param
+    const buildEditActionUrl = () => {
+      let collegeId = null;
+      
+      // 1) Check if college select has a value
+      if (selCol && selCol.value && selCol.value.trim() !== '') {
+        collegeId = selCol.value;
+      }
+      // 2) Fall back to URL param
+      else {
+        const params = new URLSearchParams(window.location.search);
+        collegeId = params.get('college');
+      }
+      
+      let actionUrl = '<?= $esc($base) ?>/dashboard?page=<?= $esc($pageKey) ?>&action=edit';
+      if (collegeId && collegeId.trim() !== '') {
+        actionUrl += '&college=' + encodeURIComponent(collegeId);
+      }
+      
+      return actionUrl;
+    };
+    
+    // Set initial action URL
+    editForm.action = buildEditActionUrl();
+    
+    // Update action URL when college changes
+    if (selCol) {
+      selCol.addEventListener('change', () => {
+        editForm.action = buildEditActionUrl();
+      });
+    }
+  }
+});
+</script>
+
 <?php
   }
 }

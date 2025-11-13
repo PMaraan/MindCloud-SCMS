@@ -120,6 +120,7 @@ final class AppShellController
                 $action  = strtolower((string)($_GET['action'] ?? 'index'));
                 $allowed = [
                     'index', 'create', 'edit', 'delete',
+                    'archive',
                     'duplicate',          // <-- add
                     'savemeta', 'snapshot', 'opentemplate',
                     'programs',           // existing JSON (by department)
@@ -132,6 +133,7 @@ final class AppShellController
                     'create'       => 'create',
                     'edit'         => 'edit',
                     'delete'       => 'delete',
+                    'archive'      => 'archive',
                     'duplicate'    => 'duplicate',    // <-- add
                     'savemeta'     => 'saveMeta',
                     'snapshot'     => 'snapshot',

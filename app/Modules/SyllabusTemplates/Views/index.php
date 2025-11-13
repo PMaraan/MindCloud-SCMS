@@ -204,6 +204,7 @@ $PAGE_KEY = 'syllabus-templates';
     $progList = $programsOfCollege ?? [];
     include $partialsDir . '/EditModal.php';
     include $partialsDir . '/DeleteModal.php';
+    include $partialsDir . '/ArchiveModal.php';
     if (function_exists('renderEditModal')) {
       renderEditModal(
         $ASSET_BASE,

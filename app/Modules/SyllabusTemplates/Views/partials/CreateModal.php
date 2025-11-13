@@ -222,6 +222,46 @@ document.addEventListener('DOMContentLoaded', function(){
   updateVisibility();
 });
 </script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const createForm = document.querySelector('#tbCreateModal form');
+  const selCol = document.getElementById('tb-college');
+  
+  if (createForm) {
+    // Function to build action URL with college param
+    const buildCreateActionUrl = () => {
+      let collegeId = null;
+      
+      // 1) Check if college select has a value
+      if (selCol && selCol.value && selCol.value.trim() !== '') {
+        collegeId = selCol.value;
+      }
+      // 2) Fall back to URL param
+      else {
+        const params = new URLSearchParams(window.location.search);
+        collegeId = params.get('college');
+      }
+      
+      let actionUrl = '<?= $esc($base) ?>/dashboard?page=<?= $esc($pageKey) ?>&action=create';
+      if (collegeId && collegeId.trim() !== '') {
+        actionUrl += '&college=' + encodeURIComponent(collegeId);
+      }
+      
+      return actionUrl;
+    };
+    
+    // Set initial action URL
+    createForm.action = buildCreateActionUrl();
+    
+    // Update action URL when college changes
+    if (selCol) {
+      selCol.addEventListener('change', () => {
+        createForm.action = buildCreateActionUrl();
+      });
+    }
+  }
+});
+</script>
 <?php
   }
 }

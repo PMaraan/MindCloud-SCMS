@@ -288,7 +288,7 @@ final class SyllabusTemplatesModel
     {
         $pdo = $this->pdo;
 
-        // Load source template (content + version we’ll copy)
+        // Load source template (content + version we'll copy)
         $src = $pdo->prepare("SELECT content, version FROM public.syllabus_templates WHERE template_id = :id");
         $src->execute([':id' => $sourceId]);
         $row = $src->fetch(\PDO::FETCH_ASSOC);
@@ -302,29 +302,27 @@ final class SyllabusTemplatesModel
         // Insert new template
         $stmt = $pdo->prepare("
             INSERT INTO public.syllabus_templates
-                (scope, owner_department_id, program_id, course_id, title, version, status, content, source_template_id, created_by)
+                (scope, owner_department_id, program_id, course_id, title, version, status, content, created_by)
             VALUES
-                (:scope, :dept, :prog, :course, :title, :version, :status, :content, :src, :created_by)
+                (:scope, :dept, :prog, :course, :title, :version, :status, :content, :created_by)
             RETURNING template_id
         ");
 
         $stmt->execute([
-            ':scope'      => $meta['scope'],                         // 'global' | 'college' | 'program' | 'course'
+            ':scope'      => $meta['scope'],
             ':dept'       => $meta['owner_department_id'] ?? null,
             ':prog'       => $meta['program_id'] ?? null,
             ':course'     => $meta['course_id'] ?? null,
             ':title'      => $meta['title'],
-            ':version'    => $version,                               // keep same version; you can reset to 'v1.0' if preferred
+            ':version'    => $version,
             ':status'     => $meta['status'] ?? 'draft',
             ':content'    => $content,
-            ':src'        => $sourceId,
             ':created_by' => $meta['created_by'] ?? '',
         ]);
 
         $newId = (int)$stmt->fetchColumn();
         if ($newId <= 0) throw new \RuntimeException('Failed to insert duplicate.');
 
-        // Triggers (mc_trg_tpl_program_scope_autosync + mc_validate_template_scope) will maintain link tables/consistency.
         return $newId;
     }
 }

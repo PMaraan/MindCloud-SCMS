@@ -10,6 +10,45 @@
     })();
   }
   
+  function showFlashMessage(message = '', level = 'info') {
+    // Create container if missing
+    let container = document.getElementById('tb-toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'tb-toast-container';
+      container.style.position = 'fixed';
+      container.style.top = '1rem';
+      container.style.right = '1rem';
+      container.style.zIndex = 10800;
+      document.body.appendChild(container);
+    }
+
+    const id = 'tb-toast-' + Date.now();
+    const toast = document.createElement('div');
+    toast.className = 'toast align-items-center text-bg-' + (level === 'danger' ? 'danger' : (level === 'success' ? 'success' : 'secondary')) + ' border-0';
+    toast.id = id;
+    toast.setAttribute('role','alert');
+    toast.setAttribute('aria-live','assertive');
+    toast.setAttribute('aria-atomic','true');
+    toast.style.minWidth = '220px';
+    toast.innerHTML = `
+      <div class="d-flex">
+        <div class="toast-body">${String(message)}</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+    `;
+    container.appendChild(toast);
+    const bsToast = new bootstrap.Toast(toast, { delay: 5000 });
+    toast.addEventListener('hidden.bs.toast', () => toast.remove());
+    bsToast.show();
+  }
+
+  function capitalizeForDisplay(s) {
+    if (!s) return '';
+    s = String(s);
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+
   function selectTile(card) {
     document.querySelectorAll('.tb-tile.tb-card--active')
       .forEach(el => el.classList.remove('tb-card--active'));
@@ -21,16 +60,16 @@
       // Title
       document.getElementById('tb-i-title').textContent = card.dataset.title || '';
 
-      // Scope (human friendly) — map legacy 'system' to 'global' then Capitalize first letter
+      // Scope normalization: map legacy 'system' -> 'global' and use normalized value everywhere
       const scopeRaw = (card.dataset.scope || '').toString();
-      const scopeNorm = (scopeRaw === 'system' ? 'global' : scopeRaw || '');
+      const scopeNorm = (scopeRaw === 'system' ? 'global' : (scopeRaw || ''));
       const scopeLabel = scopeNorm ? (scopeNorm.charAt(0).toUpperCase() + scopeNorm.slice(1)) : '';
       const scopeEl = document.getElementById('tb-i-scope');
       if (scopeEl) scopeEl.textContent = scopeLabel;
 
-      // Status
-      const status = (card.dataset.status || '').toString();
-      document.getElementById('tb-i-status').textContent = status;
+      // Status (capitalize for display only)
+      const status = (card.dataset.status || '').toString().toLowerCase();
+      document.getElementById('tb-i-status').textContent = capitalizeForDisplay(status);
 
       // Updated -> show date + time (YYYY-MM-DD h:mm AM/PM)
       const updatedRaw = (card.dataset.updated || '').toString();
@@ -61,6 +100,7 @@
       if (updEl) updEl.textContent = updatedDisplay;
 
       // College / Program / Course — show only when explicit *name* attributes exist on the tile.
+      // Read the *name* attributes only (do NOT fallback to owner/scope)
       const collegeDt = document.getElementById('tb-i-college-dt');
       const collegeDd = document.getElementById('tb-i-college');
       const programDt = document.getElementById('tb-i-program-dt');
@@ -68,13 +108,12 @@
       const courseDt  = document.getElementById('tb-i-course-dt');
       const courseDd  = document.getElementById('tb-i-course');
 
-      // Read the *name* attributes only (do NOT fallback to owner/scope)
       const collegeName = (card.dataset.collegeName || '').toString().trim();
       const programName = (card.dataset.programName || '').toString().trim();
       const courseName  = (card.dataset.courseName  || '').toString().trim();
 
       // Show / hide college row: ONLY if scope requires a college AND we have a name
-      const scopeLower = (scopeRaw || '').toLowerCase();
+      const scopeLower = (scopeNorm || '').toLowerCase();
       const needsCollege = (scopeLower === 'college' || scopeLower === 'program' || scopeLower === 'course');
 
       if (needsCollege && collegeName) {
@@ -111,7 +150,7 @@
       if (btnEdit) {
         const P = (window.TB_PERMS || {});
         let can = false;
-        if (scopeLower === 'system' || scopeLower === 'global') can = !!P.canEditGlobal || !!P.canEditSystem;
+        if (scopeLower === 'global') can = !!P.canEditGlobal || !!P.canEditSystem;
         if (scopeLower === 'college') can = !!P.canEditCollege;
         if (scopeLower === 'program') can = !!P.canEditProgram;
         if (scopeLower === 'course')  can = !!P.canEditProgram;
@@ -126,7 +165,7 @@
         // Show archive button when user can edit that scope (reuse can computation)
         const P2 = (window.TB_PERMS || {});
         let allowArchive = false;
-        if (scopeLower === 'system' || scopeLower === 'global') allowArchive = !!P2.canEditGlobal || !!P2.canEditSystem;
+        if (scopeLower === 'global') allowArchive = !!P2.canEditGlobal || !!P2.canEditSystem;
         if (scopeLower === 'college') allowArchive = !!P2.canEditCollege;
         if (scopeLower === 'program' || scopeLower === 'course') allowArchive = !!P2.canEditProgram;
 
@@ -144,8 +183,8 @@
       }
 
       if (btnDelete) {
-        // Show delete only when status is archived (and user can archive — reuse allowArchive)
-        const showDelete = ((card.dataset.status || '').toString().toLowerCase() === 'archived');
+        // Show delete only when status is archived
+        const showDelete = (status === 'archived');
         if (showDelete) {
           btnDelete.classList.remove('d-none');
         } else {
@@ -153,11 +192,9 @@
         }
       }
 
-      // Update delete modal title (so the modal displays the proper template title)
+      // Update delete modal title
       const deleteTitleEl = document.getElementById('tb-delete-title');
       if (deleteTitleEl) deleteTitleEl.textContent = card.dataset.title || '—';
-
-      // done
     }
 
     window.__tb_selectedId = card.dataset.templateId || null;
@@ -837,42 +874,99 @@
     const deleteModalEl = document.getElementById('tbDeleteModal');
 
     if (btnArchive) {
-      btnArchive.addEventListener('click', () => {
-        const tile = __tb_getActiveTile();
-        if (!tile) return;
+      // Replace client-only archive toggle with modal-confirm + backend call
+      const archiveModalEl = document.getElementById('tbArchiveModal');
+      const archiveTitleEl = document.getElementById('tb-archive-title');
+      const archiveBodyEl  = document.getElementById('tb-archive-body');
+      const archiveConfirm = document.getElementById('tb-archive-confirm');
+      const csrfSpan = document.getElementById('tb-csrf');
 
-        // Toggle status
-        const cur = (tile.dataset.status || '').toString().toLowerCase();
-        const isArchived = (cur === 'archived' || cur === 'archive');
-        const newStatus = isArchived ? 'draft' : 'archived';
+      if (btnArchive && archiveModalEl && archiveConfirm) {
+        btnArchive.addEventListener('click', () => {
+          const tile = __tb_getActiveTile();
+          if (!tile) return;
+          const title = tile.dataset.title || tile.querySelector('.tb-tile-title')?.textContent?.trim() || '—';
+          const status = (tile.dataset.status || '').toString().toLowerCase();
+          const willUnarchive = (status === 'archived' || status === 'archive');
 
-        // Update tile dataset + UI
-        tile.dataset.status = newStatus;
-        // Update details pane status text
-        const statusEl = document.getElementById('tb-i-status');
-        if (statusEl) statusEl.textContent = newStatus;
+          archiveTitleEl.textContent = title;
+          archiveBodyEl.textContent = willUnarchive
+            ? 'This template is currently archived. Do you want to unarchive it:'
+            : 'Are you sure you want to archive this template:';
 
-        // Update archive button text
-        btnArchive.textContent = (newStatus === 'archived') ? 'Unarchive' : 'Archive';
+          // mark desired action on modal
+          archiveModalEl.dataset.templateId = tile.dataset.templateId || '';
+          archiveModalEl.dataset.targetStatus = willUnarchive ? 'draft' : 'archived';
 
-        // Show/hide delete button
-        if (btnDelete) {
-          if (newStatus === 'archived') btnDelete.classList.remove('d-none');
-          else btnDelete.classList.add('d-none');
-        }
+          // show modal
+          const bs = new bootstrap.Modal(archiveModalEl);
+          bs.show();
+        });
 
-        // Optional: visual marker on card (muted)
-        if (newStatus === 'archived') {
-          tile.classList.add('tb-card--archived');
-        } else {
-          tile.classList.remove('tb-card--archived');
-        }
-      });
+        archiveConfirm.addEventListener('click', async () => {
+          const tid = parseInt(String(archiveModalEl.dataset.templateId || ''), 10) || 0;
+          const target = String(archiveModalEl.dataset.targetStatus || 'archived');
+
+          if (!tid) {
+            alert('No template selected.');
+            return;
+          }
+          archiveConfirm.disabled = true;
+          archiveConfirm.textContent = target === 'archived' ? 'Archiving…' : 'Unarchiving…';
+
+          try {
+            const fd = new FormData();
+            fd.append('template_id', String(tid));
+            fd.append('target', target);
+            fd.append('csrf_token', csrfSpan ? (csrfSpan.dataset.token || '') : '');
+
+            const base = getBase();
+            const url = `${base}/dashboard?page=syllabus-templates&action=archive`;
+            const resp = await fetch(url, {
+              method: 'POST',
+              credentials: 'same-origin',
+              body: fd,
+              headers: { 'Accept': 'application/json' }
+            });
+            const json = await resp.json().catch(() => ({ success:false, message:'Invalid server response' }));
+
+            if (resp.ok && json && json.success) {
+              // update tile + details pane
+              const tile = document.querySelector(`.tb-tile[data-template-id="${CSS.escape(String(tid))}"]`);
+              if (tile) {
+                tile.dataset.status = json.status || target;
+                if (json.status === 'archived') tile.classList.add('tb-card--archived');
+                else tile.classList.remove('tb-card--archived');
+              }
+
+              // update details pane UI via selectTile flow (if active)
+              const active = document.querySelector('.tb-tile.tb-card--active');
+              if (active) selectTile(active);
+
+              // hide modal
+              const bs = bootstrap.Modal.getInstance(archiveModalEl);
+              if (bs) bs.hide();
+
+              if (typeof window.showFlashMessage === 'function') {
+                window.showFlashMessage(json.message || 'Template updated.', 'success');
+              }
+            } else {
+              alert(json.message || 'Archive failed.');
+            }
+          } catch (err) {
+            console.error(err);
+            alert('Server error while archiving.');
+          } finally {
+            archiveConfirm.disabled = false;
+            archiveConfirm.textContent = target === 'archived' ? 'Yes, archive' : 'Yes, unarchive';
+          }
+        });
+      }
     }
 
     // Delete confirm (wire to backend)
     if (deleteConfirm && deleteModalEl) {
-      deleteConfirm.addEventListener('click', async () => {
+      deleteConfirm.addEventListener('click', () => {
         // get selected tile / id
         const tile = __tb_getActiveTile();
         const id = tile ? (tile.dataset.templateId || '') : (window.__tb_selectedId || '');
@@ -886,64 +980,35 @@
         const csrfSpan = document.getElementById('tb-csrf');
         const csrfToken = csrfSpan ? (csrfSpan.dataset.token || '') : '';
 
-        // Disable button while request is in-flight
-        deleteConfirm.disabled = true;
-        deleteConfirm.textContent = 'Deleting…';
-
-        try {
-          // Build endpoint (uses same base path logic as other actions)
-          const base = getBase();
-          const url = `${base}/dashboard?page=syllabus-templates&action=delete`;
-
-          const fd = new FormData();
-          fd.append('template_id', String(tid));
-          fd.append('csrf_token', csrfToken);
-
-          const resp = await fetch(url, {
-            method: 'POST',
-            body: fd,
-            credentials: 'same-origin',
-            headers: {
-              'Accept': 'application/json'
-            }
-          });
-
-          let json = null;
-          try { json = await resp.json(); } catch (e) { json = { success: false, message: 'Invalid server response' }; }
-
-          if (resp.ok && json && json.success) {
-            // remove tile from DOM if present
-            if (tile) tile.remove();
-
-            // hide modal
-            try { const m = bootstrap.Modal.getInstance(deleteModalEl); if (m) m.hide(); } catch (e) { /* ignore */ }
-
-            // reset details pane
-            const info = document.getElementById('tb-info');
-            const empty = document.getElementById('tb-info-empty');
-            if (info && empty) {
-              info.classList.add('d-none');
-              empty.classList.remove('d-none');
-            }
-            window.__tb_selectedId = null;
-
-            // optional simple flash
-            if (typeof window.showFlashMessage === 'function') {
-              window.showFlashMessage('Template deleted.', 'success');
-            } else {
-              console.info('Template deleted:', tid);
-            }
-          } else {
-            const msg = (json && json.message) ? json.message : 'Delete failed.';
-            alert(msg);
-          }
-        } catch (err) {
-          console.error('Delete error', err);
-          alert('Server error while deleting template.');
-        } finally {
-          deleteConfirm.disabled = false;
-          deleteConfirm.textContent = 'Yes, delete';
+        // Build hidden form and submit it (lets server handle redirect + flash)
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.style.display = 'none';
+        
+        const base = (typeof window.BASE_PATH !== 'undefined' && window.BASE_PATH) ? window.BASE_PATH : '';
+        form.action = `${base}/dashboard?page=syllabus-templates&action=delete`;
+        
+        // Preserve college param in the form action
+        const params = new URLSearchParams(window.location.search);
+        const collegeId = params.get('college');
+        if (collegeId && collegeId.trim() !== '') {
+          form.action += `&college=${encodeURIComponent(collegeId)}`;
         }
+
+        const tidInput = document.createElement('input');
+        tidInput.type = 'hidden';
+        tidInput.name = 'template_id';
+        tidInput.value = String(tid);
+        form.appendChild(tidInput);
+
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+
+        document.body.appendChild(form);
+        form.submit();
       });
     }
     

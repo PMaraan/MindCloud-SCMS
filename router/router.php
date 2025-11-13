@@ -58,13 +58,12 @@
             '/api/syllabus-templates/programs' => [SyllabusTemplatesController::class, 'apiPrograms'],
             '/api/syllabus-templates/courses'  => [SyllabusTemplatesController::class, 'apiCourses'],
             '/api/programs/chairs' => [ProgramsController::class, 'apiChairs'],
-            // add more GET private routes here
         ],
         'POST' => [
             '/dashboard' => [AppShellController::class, 'render'],
             '/notifications/mark-read' => [NotificationsController::class, 'markReadJson'],
             '/api/settings/save' => [SettingsController::class, 'savePreference'],
-            // add POST private routes here
+            '/dashboard?action=delete&page=syllabus-templates' => [SyllabusTemplatesController::class, 'delete'],
         ],
     ];
     

@@ -11,6 +11,7 @@ use App\Models\UserModel;
 use App\Modules\SyllabusTemplates\Models\SyllabusTemplatesModel;
 use PDO;
 use Throwable;
+use App\Helpers\FlashHelper;
 
 final class SyllabusTemplatesController
 {
@@ -467,7 +468,7 @@ final class SyllabusTemplatesController
                 $tid = (int)$stmt->fetchColumn();
 
                 $pdo->prepare("INSERT INTO public.syllabus_template_programs (template_id, program_id) VALUES (:t,:p)")
-                    ->execute([':t'=>$tid, ':p'=>$progId]);
+                    ->execute([':t'=>$tid, ':p'=>$ProgId]);
                 $pdo->prepare("INSERT INTO public.syllabus_template_departments (template_id, department_id) VALUES (:t,:d)
                             ON CONFLICT DO NOTHING")->execute([':t'=>$tid, ':d'=>$deptId]);
 
@@ -486,7 +487,7 @@ final class SyllabusTemplatesController
                 $tid = (int)$stmt->fetchColumn();
 
                 $pdo->prepare("INSERT INTO public.syllabus_template_programs (template_id, program_id) VALUES (:t,:p)
-                            ON CONFLICT DO NOTHING")->execute([':t'=>$tid, ':p'=>$progId]);
+                            ON CONFLICT DO NOTHING")->execute([':t'=>$tid, ':p'=>$ProgId]);
                 $pdo->prepare("INSERT INTO public.syllabus_template_departments (template_id, department_id) VALUES (:t,:d)
                             ON CONFLICT DO NOTHING")->execute([':t'=>$tid, ':d'=>$deptId]);
 
@@ -500,13 +501,45 @@ final class SyllabusTemplatesController
             unset($_SESSION['st_cache'], $_SESSION['tb_cache']);
             $_SESSION['flash'] = ['type'=>'success','message'=>'Template created.'];
 
-            // new slug ?page=syllabus-templates; keep college param
-            header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates' . ($scope!=='global' && isset($colId) ? '&college='.$colId : ''));
+            // Redirect: preserve college param or use the college from the created template
+            $redirectUrl = (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates';
+            
+            // Determine which college to redirect to
+            $targetCollege = null;
+            
+            // 1) If college param exists in request, use it (user was in a college view)
+            if (isset($_GET['college']) && ctype_digit((string)$_GET['college'])) {
+                $targetCollege = (int)$_GET['college'];
+            }
+            // 2) Otherwise use the college from the created template
+            elseif ($scope !== 'global') {
+                if ($scope === 'college') {
+                    $targetCollege = $colId;
+                } elseif ($scope === 'program' || $scope === 'course') {
+                    $deptId = (int)$pdo->query("SELECT department_id FROM public.programs WHERE program_id = {$progId}")->fetchColumn();
+                    $targetCollege = $deptId ?: null;
+                }
+            }
+            
+            if ($targetCollege && $targetCollege > 0) {
+                $redirectUrl .= '&college=' . $targetCollege;
+            }
+
+            header('Location: ' . $redirectUrl);
             exit;
         } catch (Throwable $e) {
             $pdo->rollBack();
             $_SESSION['flash'] = ['type'=>'danger','message'=>'Create failed: '.$e->getMessage()];
-            header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates');
+            
+            // Preserve college param on error redirect too
+            $redirectUrl = (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates';
+            if (isset($_GET['college']) && ctype_digit((string)$_GET['college'])) {
+                $collegeParam = (int)$_GET['college'];
+                if ($collegeParam > 0) {
+                    $redirectUrl .= '&college=' . $collegeParam;
+                }
+            }
+            header('Location: ' . $redirectUrl);
             exit;
         }
     }
@@ -582,31 +615,30 @@ final class SyllabusTemplatesController
             );
 
             \App\Helpers\FlashHelper::set('success', 'Template duplicated.');
-            header('Location: ' . BASE_PATH . '/dashboard?page=syllabus-templates');
+            
+            // Preserve college param
+            $redirectUrl = (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates';
+            if (isset($_GET['college']) && ctype_digit((string)$_GET['college'])) {
+                $collegeParam = (int)$_GET['college'];
+                if ($collegeParam > 0) {
+                    $redirectUrl .= '&college=' . $collegeParam;
+                }
+            }
+            header('Location: ' . $redirectUrl);
             return;
         } catch (\Throwable $e) {
             \App\Helpers\FlashHelper::set('danger', 'Duplicate failed: ' . $e->getMessage());
         }
 
     dup_fail:
-        header('Location: ' . BASE_PATH . '/dashboard?page=syllabus-templates');
-    }
-
-    public function programs(): void
-    {
-        // Permissions: only users who can create templates may fetch programs here
-        (new RBAC($this->db))->require((string)$_SESSION['user_id'], Permissions::SYLLABUSTEMPLATES_CREATE);
-
-        $deptId = isset($_GET['department_id']) ? (int)$_GET['department_id'] : 0;
-        if ($deptId <= 0) {
-            header('Content-Type: application/json');
-            echo json_encode([]);
-            return;
+        $redirectUrl = (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates';
+        if (isset($_GET['college']) && ctype_digit((string)$_GET['college'])) {
+            $collegeParam = (int)$_GET['college'];
+            if ($collegeParam > 0) {
+                $redirectUrl .= '&college=' . $collegeParam;
+            }
         }
-
-        $list = $this->model->getProgramsByCollege($deptId); // already department-aware in your model
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode($list, JSON_UNESCAPED_UNICODE);
+        header('Location: ' . $redirectUrl);
     }
 
     public function edit(): void
@@ -688,7 +720,7 @@ final class SyllabusTemplatesController
             ");
             $stmt->execute([
                 ':title'  => $title,
-                ':scope'  => $scope,    // now accepts 'course' after enum migration
+                ':scope'  => $scope,
                 ':dept'   => $deptId,
                 ':prog'   => $progId,
                 ':course' => $courseId,
@@ -700,12 +732,40 @@ final class SyllabusTemplatesController
             unset($_SESSION['st_cache'], $_SESSION['tb_cache']);
             $_SESSION['flash'] = ['type'=>'success','message'=>'Template updated.'];
 
-            header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates');
+            // Redirect: preserve college param or use the college from the edited template
+            $redirectUrl = (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates';
+            
+            // Determine which college to redirect to
+            $targetCollege = null;
+            
+            // 1) If college param exists in request, use it (user was in a college view)
+            if (isset($_GET['college']) && ctype_digit((string)$_GET['college'])) {
+                $targetCollege = (int)$_GET['college'];
+            }
+            // 2) Otherwise use the college from the edited template
+            elseif ($scope !== 'global') {
+                $targetCollege = $deptId;
+            }
+            
+            if ($targetCollege && $targetCollege > 0) {
+                $redirectUrl .= '&college=' . $targetCollege;
+            }
+
+            header('Location: ' . $redirectUrl);
             exit;
         } catch (\Throwable $e) {
             $pdo->rollBack();
             $_SESSION['flash'] = ['type'=>'danger','message'=>'Update failed: '.$e->getMessage()];
-            header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates');
+            
+            // Preserve college param on error redirect too
+            $redirectUrl = (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates';
+            if (isset($_GET['college']) && ctype_digit((string)$_GET['college'])) {
+                $collegeParam = (int)$_GET['college'];
+                if ($collegeParam > 0) {
+                    $redirectUrl .= '&college=' . $collegeParam;
+                }
+            }
+            header('Location: ' . $redirectUrl);
             exit;
         }
     }
@@ -715,7 +775,8 @@ final class SyllabusTemplatesController
         // Accept only POST
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);
-            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+            FlashHelper::set('danger', 'Method not allowed.');
+            header('Location: ' . BASE_PATH . '/dashboard?page=syllabus-templates');
             exit;
         }
 
@@ -723,54 +784,164 @@ final class SyllabusTemplatesController
         $token = (string)($_POST['csrf_token'] ?? '');
         if ($token === '' || $token !== (string)($_SESSION['csrf_token'] ?? '')) {
             http_response_code(403);
-            echo json_encode(['success' => false, 'message' => 'Invalid CSRF token']);
+            FlashHelper::set('danger', 'Invalid CSRF token.');
+            header('Location: ' . BASE_PATH . '/dashboard?page=syllabus-templates');
             exit;
         }
 
-        // Permission: prefer explicit delete perm if defined, otherwise require edit perm
-        $permConst = 'App\\Config\\Permissions::SYLLABUSTEMPLATES_DELETE';
-        $requiredPerm = defined($permConst) ? constant($permConst) : Permissions::SYLLABUSTEMPLATES_EDIT;
-        (new RBAC($this->db))->require((string)$_SESSION['user_id'], $requiredPerm);
+        // Permission
+        $permDeleteConst = 'App\\Config\\Permissions::SYLLABUSTEMPLATES_DELETE';
+        $permEditConst   = 'App\\Config\\Permissions::SYLLABUSTEMPLATES_EDIT';
+        if (defined($permDeleteConst)) {
+            $requiredPerm = constant($permDeleteConst);
+        } elseif (defined($permEditConst)) {
+            $requiredPerm = constant($permEditConst);
+        } else {
+            $requiredPerm = 'SyllabusTemplateModification';
+        }
+
+        try {
+            (new RBAC($this->db))->require((string)$_SESSION['user_id'], $requiredPerm);
+        } catch (\Throwable $rbacErr) {
+            FlashHelper::set('danger', 'Permission denied.');
+            header('Location: ' . BASE_PATH . '/dashboard?page=syllabus-templates');
+            exit;
+        }
 
         $tplId = isset($_POST['template_id']) ? (int)$_POST['template_id'] : 0;
         if ($tplId <= 0) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Missing template id']);
+            FlashHelper::set('danger', 'Missing template id.');
+            header('Location: ' . BASE_PATH . '/dashboard?page=syllabus-templates');
             exit;
         }
 
         try {
             $pdo = $this->db->getConnection();
 
-            // Ensure template exists
-            $st = $pdo->prepare("SELECT template_id, status FROM public.syllabus_templates WHERE template_id = :tid");
+            // Lock and fetch
+            $st = $pdo->prepare("SELECT template_id, status FROM public.syllabus_templates WHERE template_id = :tid FOR UPDATE");
+            $st->execute([':tid' => $tplId]);
+            $row = $st->fetch(\PDO::FETCH_ASSOC);
+            if (!$row) {
+                FlashHelper::set('danger', 'Template not found.');
+                header('Location: ' . BASE_PATH . '/dashboard?page=syllabus-templates');
+                exit;
+            }
+
+            // Only archived templates can be deleted
+            if (strtolower((string)$row['status']) !== 'archived') {
+                FlashHelper::set('danger', 'Template must be archived before it can be deleted.');
+                header('Location: ' . BASE_PATH . '/dashboard?page=syllabus-templates');
+                exit;
+            }
+
+            // Delete
+            $pdo->beginTransaction();
+            try {
+                $delTpl = $pdo->prepare("DELETE FROM public.syllabus_templates WHERE template_id = :tid");
+                $delTpl->execute([':tid' => $tplId]);
+                $pdo->commit();
+            } catch (\Throwable $inner) {
+                $pdo->rollBack();
+                throw $inner;
+            }
+
+            // Bust caches
+            unset($_SESSION['st_cache'], $_SESSION['tb_cache']);
+
+            FlashHelper::set('success', 'Template deleted.');
+            
+            // Redirect: preserve college param like create/edit/duplicate do
+            $redirectUrl = (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates';
+            if (isset($_GET['college']) && ctype_digit((string)$_GET['college'])) {
+                $collegeParam = (int)$_GET['college'];
+                if ($collegeParam > 0) {
+                    $redirectUrl .= '&college=' . $collegeParam;
+                }
+            }
+            header('Location: ' . $redirectUrl);
+            exit;
+        } catch (Throwable $e) {
+            error_log('TB delete error: ' . $e->getMessage());
+            FlashHelper::set('danger', 'Server error while deleting template.');
+            
+            // Error redirect also preserves college
+            $redirectUrl = (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates';
+            if (isset($_GET['college']) && ctype_digit((string)$_GET['college'])) {
+                $collegeParam = (int)$_GET['college'];
+                if ($collegeParam > 0) {
+                    $redirectUrl .= '&college=' . $collegeParam;
+                }
+            }
+            header('Location: ' . $redirectUrl);
+            exit;
+        }
+    }
+
+    public function archive(): void
+    {
+        // Only POST
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+            exit;
+        }
+
+        // CSRF
+        $token = (string)($_POST['csrf_token'] ?? '');
+        if ($token === '' || $token !== (string)($_SESSION['csrf_token'] ?? '')) {
+            http_response_code(403);
+            FlashHelper::set('danger', 'Invalid CSRF token.');
+            echo json_encode(['success' => false, 'message' => 'Invalid CSRF token']);
+            exit;
+        }
+
+        // Permission: require edit permission for templates
+        (new RBAC($this->db))->require((string)$_SESSION['user_id'], Permissions::SYLLABUSTEMPLATES_EDIT);
+
+        $tplId = isset($_POST['template_id']) ? (int)$_POST['template_id'] : 0;
+        if ($tplId <= 0) {
+            http_response_code(400);
+            FlashHelper::set('danger', 'Missing template id.');
+            echo json_encode(['success' => false, 'message' => 'Missing template id']);
+            exit;
+        }
+
+        // target may be provided (archived|draft|active) or omitted -> toggle
+        $target = strtolower((string)($_POST['target'] ?? ''));
+
+        try {
+            $pdo = $this->db->getConnection();
+            $st = $pdo->prepare("SELECT status FROM public.syllabus_templates WHERE template_id = :tid");
             $st->execute([':tid' => $tplId]);
             $row = $st->fetch(\PDO::FETCH_ASSOC);
             if (!$row) {
                 http_response_code(404);
+                FlashHelper::set('danger', 'Template not found.');
                 echo json_encode(['success' => false, 'message' => 'Template not found']);
                 exit;
             }
 
-            // Enforce UI rule: only allow permanent delete for archived templates (delete button visible only when archived)
-            if (($row['status'] ?? '') !== 'archived') {
-                http_response_code(409);
-                echo json_encode(['success' => false, 'message' => 'Template must be archived before it can be deleted.']);
-                exit;
+            $cur = strtolower((string)($row['status'] ?? 'active'));
+            if ($target !== 'archived' && $target !== 'draft' && $target !== 'active') {
+                // toggle: archived <-> active (user requested unarchive -> active)
+                $target = ($cur === 'archived' || $cur === 'archive') ? 'active' : 'archived';
             }
 
-            // Soft-delete: mark as deleted (safer than hard DELETE)
-            $upd = $pdo->prepare("UPDATE public.syllabus_templates SET status = 'deleted', updated_at = NOW() WHERE template_id = :tid");
-            $upd->execute([':tid' => $tplId]);
+            $upd = $pdo->prepare("UPDATE public.syllabus_templates SET status = :status, updated_at = NOW() WHERE template_id = :tid");
+            $upd->execute([':status' => $target, ':tid' => $tplId]);
 
-            // Bust caches used by UI
+            // bust caches
             unset($_SESSION['st_cache'], $_SESSION['tb_cache']);
 
-            echo json_encode(['success' => true]);
+            $msg = ($target === 'archived') ? 'Template archived.' : 'Template unarchived.';
+            FlashHelper::set('success', $msg);
+            echo json_encode(['success' => true, 'status' => $target, 'message' => $msg]);
             exit;
         } catch (Throwable $e) {
             http_response_code(500);
-            error_log('TB delete error: ' . $e->getMessage());
+            error_log('TB archive error: ' . $e->getMessage());
+            FlashHelper::set('danger', 'Server error while archiving.');
             echo json_encode(['success' => false, 'message' => 'Server error']);
             exit;
         }

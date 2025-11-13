@@ -4177,3 +4177,158 @@ LINE 1: SELECT program_id, program_name, college_id FROM public.prog...
 [12-Nov-2025 04:54:50 Europe/Berlin] accounts.page rows=10 total=21 limit=10 offset=0
 [12-Nov-2025 04:54:50 Europe/Berlin] accounts.index total=21 rows=10
 [12-Nov-2025 04:54:50 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"department_id":null,"role_name":"Admin","department_short_name":"","college_short_name":""}
+[12-Nov-2025 11:02:45 Europe/Berlin] TB delete error: SQLSTATE[23514]: Check violation: 7 ERROR:  new row for relation "syllabus_templates" violates check constraint "chk_tpl_status"
+DETAIL:  Failing row contains (2, global, null, null, General Template, null, deleted, {"type": "doc", "content": [{"type": "paragraph", "attrs": {"mar..., null, 2025-01-20001, 2025-09-12 15:00:00.045451, 2025-11-12 18:02:45.576479, null, null).
+[12-Nov-2025 11:02:50 Europe/Berlin] TB delete error: SQLSTATE[23514]: Check violation: 7 ERROR:  new row for relation "syllabus_templates" violates check constraint "chk_tpl_status"
+DETAIL:  Failing row contains (2, global, null, null, General Template, null, deleted, {"type": "doc", "content": [{"type": "paragraph", "attrs": {"mar..., null, 2025-01-20001, 2025-09-12 15:00:00.045451, 2025-11-12 18:02:50.44398, null, null).
+[12-Nov-2025 11:03:31 Europe/Berlin] TB delete error: SQLSTATE[23514]: Check violation: 7 ERROR:  new row for relation "syllabus_templates" violates check constraint "chk_tpl_status"
+DETAIL:  Failing row contains (2, global, null, null, General Template, null, deleted, {"type": "doc", "content": [{"type": "paragraph", "attrs": {"mar..., null, 2025-01-20001, 2025-09-12 15:00:00.045451, 2025-11-12 18:03:31.572951, null, null).
+[12-Nov-2025 11:36:23 Europe/Berlin] TB delete error: SQLSTATE[23514]: Check violation: 7 ERROR:  new row for relation "syllabus_templates" violates check constraint "chk_tpl_status"
+DETAIL:  Failing row contains (2, global, null, null, General Template, null, deleted, {"type": "doc", "content": [{"type": "paragraph", "attrs": {"mar..., null, 2025-01-20001, 2025-09-12 15:00:00.045451, 2025-11-12 18:36:23.897001, null, null).
+[13-Nov-2025 03:31:37 Europe/Berlin] TB delete error: SQLSTATE[23514]: Check violation: 7 ERROR:  new row for relation "syllabus_templates" violates check constraint "chk_tpl_status"
+DETAIL:  Failing row contains (2, global, null, null, General Template, null, deleted, {"type": "doc", "content": [{"type": "paragraph", "attrs": {"mar..., null, 2025-01-20001, 2025-09-12 15:00:00.045451, 2025-11-13 10:31:37.563504, null, null).
+[13-Nov-2025 03:33:07 Europe/Berlin] TB delete error: SQLSTATE[23514]: Check violation: 7 ERROR:  new row for relation "syllabus_templates" violates check constraint "chk_tpl_status"
+DETAIL:  Failing row contains (2, global, null, null, General Template, null, deleted, {"type": "doc", "content": [{"type": "paragraph", "attrs": {"mar..., null, 2025-01-20001, 2025-09-12 15:00:00.045451, 2025-11-13 10:33:07.098072, null, null).
+[13-Nov-2025 03:39:04 Europe/Berlin] TB delete error: SQLSTATE[23514]: Check violation: 7 ERROR:  new row for relation "syllabus_templates" violates check constraint "chk_tpl_status"
+DETAIL:  Failing row contains (2, global, null, null, General Template, null, deleted, {"type": "doc", "content": [{"type": "paragraph", "attrs": {"mar..., null, 2025-01-20001, 2025-09-12 15:00:00.045451, 2025-11-13 10:39:04.814494, null, null).
+[13-Nov-2025 03:40:35 Europe/Berlin] TB delete error: SQLSTATE[23503]: Foreign key violation: 7 ERROR:  update or delete on table "syllabus_templates" violates foreign key constraint "fk_tpl_source" on table "syllabus_templates"
+DETAIL:  Key (template_id)=(2) is still referenced from table "syllabus_templates".
+[13-Nov-2025 03:42:38 Europe/Berlin] TB delete error: SQLSTATE[23503]: Foreign key violation: 7 ERROR:  update or delete on table "syllabus_templates" violates foreign key constraint "fk_tpl_source" on table "syllabus_templates"
+DETAIL:  Key (template_id)=(2) is still referenced from table "syllabus_templates".
+[13-Nov-2025 03:42:45 Europe/Berlin] TB delete error: SQLSTATE[23503]: Foreign key violation: 7 ERROR:  update or delete on table "syllabus_templates" violates foreign key constraint "fk_tpl_source" on table "syllabus_templates"
+DETAIL:  Key (template_id)=(2) is still referenced from table "syllabus_templates".
+[13-Nov-2025 03:45:48 Europe/Berlin] TB delete error: SQLSTATE[23503]: Foreign key violation: 7 ERROR:  update or delete on table "syllabus_templates" violates foreign key constraint "fk_tpl_source" on table "syllabus_templates"
+DETAIL:  Key (template_id)=(2) is still referenced from table "syllabus_templates".
+[13-Nov-2025 03:52:42 Europe/Berlin] [TB delete] Starting delete for user 2025-01-20001
+[13-Nov-2025 03:52:42 Europe/Berlin] [TB delete] Required perm: SyllabusTemplateDeletion
+[13-Nov-2025 03:52:42 Europe/Berlin] [TB delete] RBAC check passed
+[13-Nov-2025 03:52:42 Europe/Berlin] [TB delete] Template ID: 2
+[13-Nov-2025 03:52:42 Europe/Berlin] [TB delete] Got PDO connection
+[13-Nov-2025 03:52:42 Europe/Berlin] [TB delete] Prepared SELECT
+[13-Nov-2025 03:52:42 Europe/Berlin] [TB delete] Executed SELECT
+[13-Nov-2025 03:52:42 Europe/Berlin] [TB delete] Found template, status: archived
+[13-Nov-2025 03:52:42 Europe/Berlin] [TB delete] Status check passed, starting transaction
+[13-Nov-2025 03:52:42 Europe/Berlin] [TB delete] Prepared DELETE
+[13-Nov-2025 03:52:42 Europe/Berlin] [TB delete] Inner catch: SQLSTATE[23503]: Foreign key violation: 7 ERROR:  update or delete on table "syllabus_templates" violates foreign key constraint "fk_tpl_source" on table "syllabus_templates"
+DETAIL:  Key (template_id)=(2) is still referenced from table "syllabus_templates".
+[13-Nov-2025 03:52:42 Europe/Berlin] TB delete error [OUTER]: PDOException - SQLSTATE[23503]: Foreign key violation: 7 ERROR:  update or delete on table "syllabus_templates" violates foreign key constraint "fk_tpl_source" on table "syllabus_templates"
+DETAIL:  Key (template_id)=(2) is still referenced from table "syllabus_templates".
+[13-Nov-2025 03:52:42 Europe/Berlin] TB delete trace: #0 C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php(798): PDOStatement->execute(Array)
+#1 C:\xampp\htdocs\MindCloud-SCMS\app\Controllers\AppShellController.php(158): App\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController->delete()
+#2 C:\xampp\htdocs\MindCloud-SCMS\Router\router.php(105): App\Controllers\AppShellController->render('syllabus-templa...')
+#3 C:\xampp\htdocs\MindCloud-SCMS\app\bootstrap.php(116): route('/MindCloud-SCMS...', Object(App\Models\Postgres), 'POST')
+#4 C:\xampp\htdocs\MindCloud-SCMS\public\index.php(7): require_once('C:\\xampp\\htdocs...')
+#5 {main}
+[13-Nov-2025 03:54:06 Europe/Berlin] [TB delete] Starting delete for user 2025-01-20001
+[13-Nov-2025 03:54:06 Europe/Berlin] [TB delete] Required perm: SyllabusTemplateDeletion
+[13-Nov-2025 03:54:06 Europe/Berlin] [TB delete] RBAC check passed
+[13-Nov-2025 03:54:06 Europe/Berlin] [TB delete] Template ID: 2
+[13-Nov-2025 03:54:06 Europe/Berlin] [TB delete] Got PDO connection
+[13-Nov-2025 03:54:06 Europe/Berlin] [TB delete] Prepared SELECT
+[13-Nov-2025 03:54:06 Europe/Berlin] [TB delete] Executed SELECT
+[13-Nov-2025 03:54:06 Europe/Berlin] [TB delete] Found template, status: archived
+[13-Nov-2025 03:54:06 Europe/Berlin] [TB delete] Status check passed, starting transaction
+[13-Nov-2025 03:54:06 Europe/Berlin] [TB delete] Prepared DELETE
+[13-Nov-2025 03:54:06 Europe/Berlin] [TB delete] Inner catch: SQLSTATE[23503]: Foreign key violation: 7 ERROR:  update or delete on table "syllabus_templates" violates foreign key constraint "fk_tpl_source" on table "syllabus_templates"
+DETAIL:  Key (template_id)=(2) is still referenced from table "syllabus_templates".
+[13-Nov-2025 03:54:06 Europe/Berlin] TB delete error [OUTER]: PDOException - SQLSTATE[23503]: Foreign key violation: 7 ERROR:  update or delete on table "syllabus_templates" violates foreign key constraint "fk_tpl_source" on table "syllabus_templates"
+DETAIL:  Key (template_id)=(2) is still referenced from table "syllabus_templates".
+[13-Nov-2025 03:54:06 Europe/Berlin] TB delete trace: #0 C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php(798): PDOStatement->execute(Array)
+#1 C:\xampp\htdocs\MindCloud-SCMS\app\Controllers\AppShellController.php(158): App\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController->delete()
+#2 C:\xampp\htdocs\MindCloud-SCMS\Router\router.php(105): App\Controllers\AppShellController->render('syllabus-templa...')
+#3 C:\xampp\htdocs\MindCloud-SCMS\app\bootstrap.php(116): route('/MindCloud-SCMS...', Object(App\Models\Postgres), 'POST')
+#4 C:\xampp\htdocs\MindCloud-SCMS\public\index.php(7): require_once('C:\\xampp\\htdocs...')
+#5 {main}
+[13-Nov-2025 04:01:05 Europe/Berlin] [TB delete] Starting delete for user 2025-01-20001
+[13-Nov-2025 04:01:05 Europe/Berlin] [TB delete] Required perm: SyllabusTemplateDeletion
+[13-Nov-2025 04:01:05 Europe/Berlin] [TB delete] RBAC check passed
+[13-Nov-2025 04:01:05 Europe/Berlin] [TB delete] Template ID: 2
+[13-Nov-2025 04:01:05 Europe/Berlin] [TB delete] Got PDO connection
+[13-Nov-2025 04:01:05 Europe/Berlin] [TB delete] Prepared SELECT
+[13-Nov-2025 04:01:05 Europe/Berlin] [TB delete] Executed SELECT
+[13-Nov-2025 04:01:05 Europe/Berlin] [TB delete] Found template, status: archived
+[13-Nov-2025 04:01:05 Europe/Berlin] [TB delete] Status check passed, starting transaction
+[13-Nov-2025 04:01:05 Europe/Berlin] [TB delete] Prepared DELETE
+[13-Nov-2025 04:01:05 Europe/Berlin] [TB delete] Inner catch: SQLSTATE[23503]: Foreign key violation: 7 ERROR:  update or delete on table "syllabus_templates" violates foreign key constraint "fk_tpl_source" on table "syllabus_templates"
+DETAIL:  Key (template_id)=(2) is still referenced from table "syllabus_templates".
+[13-Nov-2025 04:01:05 Europe/Berlin] TB delete error [OUTER]: PDOException - SQLSTATE[23503]: Foreign key violation: 7 ERROR:  update or delete on table "syllabus_templates" violates foreign key constraint "fk_tpl_source" on table "syllabus_templates"
+DETAIL:  Key (template_id)=(2) is still referenced from table "syllabus_templates".
+[13-Nov-2025 04:01:05 Europe/Berlin] TB delete trace: #0 C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php(798): PDOStatement->execute(Array)
+#1 C:\xampp\htdocs\MindCloud-SCMS\app\Controllers\AppShellController.php(158): App\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController->delete()
+#2 C:\xampp\htdocs\MindCloud-SCMS\Router\router.php(105): App\Controllers\AppShellController->render('syllabus-templa...')
+#3 C:\xampp\htdocs\MindCloud-SCMS\app\bootstrap.php(116): route('/MindCloud-SCMS...', Object(App\Models\Postgres), 'POST')
+#4 C:\xampp\htdocs\MindCloud-SCMS\public\index.php(7): require_once('C:\\xampp\\htdocs...')
+#5 {main}
+[13-Nov-2025 04:04:37 Europe/Berlin] [TB delete] Starting delete for user 2025-01-20001
+[13-Nov-2025 04:04:37 Europe/Berlin] [TB delete] Required perm: SyllabusTemplateDeletion
+[13-Nov-2025 04:04:37 Europe/Berlin] [TB delete] RBAC check passed
+[13-Nov-2025 04:04:37 Europe/Berlin] [TB delete] Template ID: 2
+[13-Nov-2025 04:04:37 Europe/Berlin] [TB delete] Got PDO connection
+[13-Nov-2025 04:04:37 Europe/Berlin] [TB delete] Prepared SELECT
+[13-Nov-2025 04:04:37 Europe/Berlin] [TB delete] Executed SELECT
+[13-Nov-2025 04:04:37 Europe/Berlin] [TB delete] Found template, status: archived
+[13-Nov-2025 04:04:37 Europe/Berlin] [TB delete] Status check passed, starting transaction
+[13-Nov-2025 04:04:37 Europe/Berlin] [TB delete] Prepared DELETE
+[13-Nov-2025 04:04:37 Europe/Berlin] [TB delete] Inner catch: SQLSTATE[23503]: Foreign key violation: 7 ERROR:  update or delete on table "syllabus_templates" violates foreign key constraint "fk_tpl_source" on table "syllabus_templates"
+DETAIL:  Key (template_id)=(2) is still referenced from table "syllabus_templates".
+[13-Nov-2025 04:04:37 Europe/Berlin] TB delete error [OUTER]: PDOException - SQLSTATE[23503]: Foreign key violation: 7 ERROR:  update or delete on table "syllabus_templates" violates foreign key constraint "fk_tpl_source" on table "syllabus_templates"
+DETAIL:  Key (template_id)=(2) is still referenced from table "syllabus_templates".
+[13-Nov-2025 04:04:37 Europe/Berlin] TB delete trace: #0 C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php(798): PDOStatement->execute(Array)
+#1 C:\xampp\htdocs\MindCloud-SCMS\app\Controllers\AppShellController.php(158): App\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController->delete()
+#2 C:\xampp\htdocs\MindCloud-SCMS\Router\router.php(105): App\Controllers\AppShellController->render('syllabus-templa...')
+#3 C:\xampp\htdocs\MindCloud-SCMS\app\bootstrap.php(116): route('/MindCloud-SCMS...', Object(App\Models\Postgres), 'POST')
+#4 C:\xampp\htdocs\MindCloud-SCMS\public\index.php(7): require_once('C:\\xampp\\htdocs...')
+#5 {main}
+[13-Nov-2025 04:05:30 Europe/Berlin] [TB delete] Starting delete for user 2025-01-20001
+[13-Nov-2025 04:05:30 Europe/Berlin] [TB delete] Required perm: SyllabusTemplateDeletion
+[13-Nov-2025 04:05:30 Europe/Berlin] [TB delete] RBAC check passed
+[13-Nov-2025 04:05:30 Europe/Berlin] [TB delete] Template ID: 2
+[13-Nov-2025 04:05:30 Europe/Berlin] [TB delete] Got PDO connection
+[13-Nov-2025 04:05:30 Europe/Berlin] [TB delete] Prepared SELECT
+[13-Nov-2025 04:05:30 Europe/Berlin] [TB delete] Executed SELECT
+[13-Nov-2025 04:05:30 Europe/Berlin] [TB delete] Found template, status: archived
+[13-Nov-2025 04:05:30 Europe/Berlin] [TB delete] Status check passed, starting transaction
+[13-Nov-2025 04:05:30 Europe/Berlin] [TB delete] Prepared DELETE
+[13-Nov-2025 04:05:30 Europe/Berlin] [TB delete] Inner catch: SQLSTATE[23503]: Foreign key violation: 7 ERROR:  update or delete on table "syllabus_templates" violates foreign key constraint "fk_tpl_source" on table "syllabus_templates"
+DETAIL:  Key (template_id)=(2) is still referenced from table "syllabus_templates".
+[13-Nov-2025 04:05:30 Europe/Berlin] TB delete error [OUTER]: PDOException - SQLSTATE[23503]: Foreign key violation: 7 ERROR:  update or delete on table "syllabus_templates" violates foreign key constraint "fk_tpl_source" on table "syllabus_templates"
+DETAIL:  Key (template_id)=(2) is still referenced from table "syllabus_templates".
+[13-Nov-2025 04:05:30 Europe/Berlin] TB delete trace: #0 C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php(798): PDOStatement->execute(Array)
+#1 C:\xampp\htdocs\MindCloud-SCMS\app\Controllers\AppShellController.php(158): App\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController->delete()
+#2 C:\xampp\htdocs\MindCloud-SCMS\Router\router.php(105): App\Controllers\AppShellController->render('syllabus-templa...')
+#3 C:\xampp\htdocs\MindCloud-SCMS\app\bootstrap.php(116): route('/MindCloud-SCMS...', Object(App\Models\Postgres), 'POST')
+#4 C:\xampp\htdocs\MindCloud-SCMS\public\index.php(7): require_once('C:\\xampp\\htdocs...')
+#5 {main}
+[13-Nov-2025 04:05:41 Europe/Berlin] [TB delete] Starting delete for user 2025-01-20001
+[13-Nov-2025 04:05:41 Europe/Berlin] [TB delete] Required perm: SyllabusTemplateDeletion
+[13-Nov-2025 04:05:41 Europe/Berlin] [TB delete] RBAC check passed
+[13-Nov-2025 04:05:41 Europe/Berlin] [TB delete] Template ID: 2
+[13-Nov-2025 04:05:41 Europe/Berlin] [TB delete] Got PDO connection
+[13-Nov-2025 04:05:41 Europe/Berlin] [TB delete] Prepared SELECT
+[13-Nov-2025 04:05:41 Europe/Berlin] [TB delete] Executed SELECT
+[13-Nov-2025 04:05:41 Europe/Berlin] [TB delete] Found template, status: archived
+[13-Nov-2025 04:05:41 Europe/Berlin] [TB delete] Status check passed, starting transaction
+[13-Nov-2025 04:05:41 Europe/Berlin] [TB delete] Prepared DELETE
+[13-Nov-2025 04:05:41 Europe/Berlin] [TB delete] Inner catch: SQLSTATE[23503]: Foreign key violation: 7 ERROR:  update or delete on table "syllabus_templates" violates foreign key constraint "fk_tpl_source" on table "syllabus_templates"
+DETAIL:  Key (template_id)=(2) is still referenced from table "syllabus_templates".
+[13-Nov-2025 04:05:41 Europe/Berlin] TB delete error [OUTER]: PDOException - SQLSTATE[23503]: Foreign key violation: 7 ERROR:  update or delete on table "syllabus_templates" violates foreign key constraint "fk_tpl_source" on table "syllabus_templates"
+DETAIL:  Key (template_id)=(2) is still referenced from table "syllabus_templates".
+[13-Nov-2025 04:05:41 Europe/Berlin] TB delete trace: #0 C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php(798): PDOStatement->execute(Array)
+#1 C:\xampp\htdocs\MindCloud-SCMS\app\Controllers\AppShellController.php(158): App\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController->delete()
+#2 C:\xampp\htdocs\MindCloud-SCMS\Router\router.php(105): App\Controllers\AppShellController->render('syllabus-templa...')
+#3 C:\xampp\htdocs\MindCloud-SCMS\app\bootstrap.php(116): route('/MindCloud-SCMS...', Object(App\Models\Postgres), 'POST')
+#4 C:\xampp\htdocs\MindCloud-SCMS\public\index.php(7): require_once('C:\\xampp\\htdocs...')
+#5 {main}
+[13-Nov-2025 04:26:09 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 622
+[13-Nov-2025 04:28:37 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 622
+[13-Nov-2025 04:37:20 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 643
+[13-Nov-2025 04:37:57 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 643
+[13-Nov-2025 04:57:53 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 643
+[13-Nov-2025 04:59:22 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 643
+[13-Nov-2025 05:10:19 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 643
+[13-Nov-2025 05:29:40 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 653
+[13-Nov-2025 06:10:37 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 653
+[13-Nov-2025 06:11:53 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 415
+[13-Nov-2025 06:11:53 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 420
+[13-Nov-2025 06:12:41 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 415
+[13-Nov-2025 06:12:41 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 420
