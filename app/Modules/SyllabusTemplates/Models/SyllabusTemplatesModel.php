@@ -127,10 +127,11 @@ final class SyllabusTemplatesModel
         )
         SELECT v.*
         FROM visible v
-        WHERE NOT EXISTS (
+        WHERE v.program_id IS NULL
+          AND NOT EXISTS (
             SELECT 1 FROM public.syllabus_template_programs p
             WHERE p.template_id = v.template_id
-        )
+          )
         ORDER BY v.updated_at DESC, v.title ASC
         ");
         $stmt->execute([':did' => $departmentId]);
@@ -150,30 +151,35 @@ final class SyllabusTemplatesModel
             t.*,
             d.department_name AS college_name,
             d.short_name       AS college_short_name,
-            p.program_name     AS program_name,
+            lp.program_name    AS program_name,
             NULL::text         AS course_name
         FROM public.syllabus_templates t
-        LEFT JOIN public.departments d ON d.department_id = t.owner_department_id
-        LEFT JOIN public.programs p     ON p.program_id = t.program_id
+        LEFT JOIN public.departments d
+               ON d.department_id = t.owner_department_id
+        LEFT JOIN public.programs lp
+               ON lp.program_id = COALESCE(t.program_id, :pid)
         WHERE
-            EXISTS (
-              SELECT 1
-              FROM public.syllabus_template_departments td
-              WHERE td.template_id = t.template_id
-                AND td.department_id = :did
-            )
-            AND EXISTS (
-              SELECT 1
-              FROM public.syllabus_template_programs sp
-              WHERE sp.template_id = t.template_id
-                AND sp.program_id   = :pid
-            )
+            t.owner_department_id = :did
+            AND t.scope IN ('program','course')
+            AND (
+                  t.program_id = :pid
+                  OR EXISTS (
+                        SELECT 1
+                        FROM public.syllabus_template_programs sp
+                        WHERE sp.template_id = t.template_id
+                          AND sp.program_id   = :pid
+                  )
+                )
+            AND (
+                  t.program_id IS NULL
+                  OR t.program_id = :pid
+                )
             AND NOT EXISTS (
-              SELECT 1
-              FROM public.syllabus_template_programs sp2
-              WHERE sp2.template_id = t.template_id
-                AND sp2.program_id <> :pid
-            )
+                  SELECT 1
+                  FROM public.syllabus_template_programs sp2
+                  WHERE sp2.template_id = t.template_id
+                    AND sp2.program_id <> :pid
+                )
         ORDER BY t.updated_at DESC, t.title ASC
         ");
         $stmt->execute([':did' => $departmentId, ':pid' => $programId]);

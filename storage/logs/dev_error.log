@@ -4366,3 +4366,11 @@ PL/pgSQL function mc_trg_tprog_validate_scope() line 3 at PERFORM
 CONTEXT:  PL/pgSQL function mc_validate_template_scope(integer) line 14 at RAISE
 SQL statement "SELECT public.mc_validate_template_scope(COALESCE(NEW.template_id, OLD.template_id))"
 PL/pgSQL function mc_trg_tprog_validate_scope() line 3 at PERFORM
+[13-Nov-2025 16:13:59 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 615
+[13-Nov-2025 16:13:59 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 620
+[13-Nov-2025 16:25:09 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 615
+[13-Nov-2025 16:25:09 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 620
+[13-Nov-2025 16:25:20 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 615
+[13-Nov-2025 16:25:20 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 620
+[13-Nov-2025 16:25:45 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 615
+[13-Nov-2025 16:25:45 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 620
