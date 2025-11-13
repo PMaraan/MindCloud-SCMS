@@ -891,12 +891,14 @@
 
           archiveTitleEl.textContent = title;
           archiveBodyEl.textContent = willUnarchive
-            ? 'This template is currently archived. Do you want to unarchive it:'
-            : 'Are you sure you want to archive this template:';
+            ? 'This template is currently archived. Do you want to unarchive it?'
+            : 'Are you sure you want to archive this template?';
 
-          // mark desired action on modal
+          archiveConfirm.textContent = willUnarchive ? 'Yes, unarchive' : 'Yes, archive';
+          archiveConfirm.disabled = false;
+
           archiveModalEl.dataset.templateId = tile.dataset.templateId || '';
-          archiveModalEl.dataset.targetStatus = willUnarchive ? 'draft' : 'archived';
+          archiveModalEl.dataset.targetStatus = willUnarchive ? 'active' : 'archived';
 
           // show modal
           const bs = new bootstrap.Modal(archiveModalEl);
