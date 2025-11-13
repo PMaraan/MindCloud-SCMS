@@ -75,14 +75,21 @@ final class SyllabusTemplatesController
                         echo json_encode(['courses' => []], JSON_UNESCAPED_SLASHES);
                         return '';
                     }
-                    if (method_exists($this->model, 'getCoursesForProgram')) {
-                        $rows = $this->model->getCoursesForProgram($pid); // returns [ ['id'=>..,'label'=>..], ... ]
-                        echo json_encode(['courses' => $rows], JSON_UNESCAPED_SLASHES);
-                        exit;
-                    }
-                    // Fallback if helper not present yet
-                    echo json_encode(['courses' => []], JSON_UNESCAPED_SLASHES);
-                    return '';
+                    $rows = $this->model->getCoursesByProgram($pid);
+
+                    $courses = array_map(static function (array $row): array {
+                        $id   = (int)($row['course_id'] ?? $row['id'] ?? 0);
+                        $code = trim((string)($row['course_code'] ?? ''));
+                        $name = trim((string)($row['course_name'] ?? $row['name'] ?? $row['label'] ?? ''));
+                        $label = $code && $name ? "{$code} — {$name}" : ($code ?: $name);
+                        return [
+                            'id'    => $id,
+                            'label' => $label !== '' ? $label : 'Unnamed course',
+                        ];
+                    }, $rows ?? []);
+
+                    echo json_encode(['courses' => $courses], JSON_UNESCAPED_SLASHES);
+                    exit;
                 }
 
                 // Unknown ajax -> empty OK
@@ -395,7 +402,19 @@ final class SyllabusTemplatesController
 
         try {
             $rows = $this->model->getCoursesByProgram($programId);
-            echo json_encode($rows, JSON_UNESCAPED_SLASHES);
+
+            $courses = array_map(static function (array $row): array {
+                $id   = (int)($row['course_id'] ?? $row['id'] ?? 0);
+                $code = trim((string)($row['course_code'] ?? ''));
+                $name = trim((string)($row['course_name'] ?? $row['name'] ?? $row['label'] ?? ''));
+                $label = $code && $name ? "{$code} — {$name}" : ($code ?: $name);
+                return [
+                    'id'    => $id,
+                    'label' => $label !== '' ? $label : 'Unnamed course',
+                ];
+            }, $rows ?? []);
+
+            echo json_encode($courses, JSON_UNESCAPED_SLASHES);
         } catch (\Throwable $e) {
             http_response_code(500);
             echo json_encode(['error' => 'Server error'], JSON_UNESCAPED_SLASHES);
