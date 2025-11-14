@@ -3,7 +3,20 @@
  * /app/Modules/SyllabusTemplates/Views/partials/CreateModal.php
  * “New Template” modal (scope: system/college/program).
  */
-// /app/Modules/SyllabusTemplates/Views/partials/CreateModal.php
+/**
+ * Render the “New Template” modal.
+ *
+ * @param string   $assetBase        Base path for assets (unused placeholder for parity with other partials).
+ * @param bool     $allowGlobal      True when the Global scope radio must be shown.
+ * @param bool     $allowCollege     True when the College scope radio must be shown.
+ * @param bool     $allowProgram     True when the Program scope radio must be shown.
+ * @param bool     $allowCourse      True when the Course scope radio must be shown.
+ * @param array    $colleges         List of colleges for the college select.
+ * @param array    $programs         Programs tied to the current college.
+ * @param ?int     $defaultCollegeId College that should pre-select in the form (null = none).
+ * @param bool     $lockCollege      True when the college select must be readonly/locked.
+ * @param callable $esc              Escaper helper.
+ */
 if (!function_exists('renderCreateModal')) {
   function renderCreateModal(
     string $assetBase,

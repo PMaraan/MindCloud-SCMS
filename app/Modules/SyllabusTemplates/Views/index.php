@@ -174,21 +174,28 @@ $PAGE_KEY = 'syllabus-templates';
 
     // CREATE MODAL (optional)
     if (!empty($canCreateGlobal) || !empty($canCreateCollege) || !empty($canCreateProgram)) {
-    $globalAllowed   = !empty($canCreateGlobal);
-    $collegeAllowed  = !empty($canCreateCollege);
-    $programAllowed  = !empty($canCreateProgram);
-    $courseAllowed   = !empty($canCreateCourse); // may be undefined; defaults false
-    $colList         = $allColleges       ?? [];
-    $progList        = $programsOfCollege ?? [];
-    $defaultCollegeId= $defaultCollegeId  ?? null;
+      $globalAllowed    = !empty($canCreateGlobal);
+      $collegeAllowed   = !empty($canCreateCollege);
+      $programAllowed   = !empty($canCreateProgram);
+      $courseAllowed    = !empty($canCreateCourse);
+      $colList          = $allColleges       ?? [];
+      $progList         = $programsOfCollege ?? [];
+      $defaultCollegeId = isset($defaultCollegeId) ? (int)$defaultCollegeId : null;
+      $lockCollege      = isset($lockCollege) ? (bool)$lockCollege : false;
 
-    // Role-based locking for college scope
-    $roleSlug         = strtolower((string)($user['role_name'] ?? ''));
-    $isDean           = $roleSlug === 'dean';
-    $isChair          = $roleSlug === 'chair';
-    $defaultCollegeId = $isDean ? (int)($user['college_id'] ?? 0) : null;
-    $lockCollege      = $isDean && $defaultCollegeId;
-    $allowGlobalScope = !($isDean || $isChair);
+      $roleSlug = strtolower((string)($user['role_name'] ?? ''));
+      $isDean   = $roleSlug === 'dean';
+      $isChair  = $roleSlug === 'chair';
+
+      if ($defaultCollegeId === null && ($isDean || $isChair)) {
+        $defaultCollegeId = (int)($user['college_id'] ?? 0) ?: null;
+      }
+
+      if (($isDean || $isChair) && $defaultCollegeId) {
+        $lockCollege = true;
+      }
+
+      $allowGlobalScope = !($isDean || $isChair);
 
     include $partialsDir . '/CreateModal.php';
 
@@ -211,6 +218,10 @@ $PAGE_KEY = 'syllabus-templates';
     // EDIT MODAL (always render so the button works on any mode)
     $colList  = $allColleges       ?? [];
     $progList = $programsOfCollege ?? [];
+    $defaultCollegeId = isset($defaultCollegeId) ? (int)$defaultCollegeId : null;
+    $lockCollege      = isset($lockCollege) ? (bool)$lockCollege : false;
+    $allowGlobalScope = !empty($canEditGlobal);
+
     include $partialsDir . '/EditModal.php';
     include $partialsDir . '/DeleteModal.php';
     include $partialsDir . '/ArchiveModal.php';

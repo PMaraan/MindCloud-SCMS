@@ -16,7 +16,7 @@ if (!function_exists('renderEditModal')) {
     bool $allowGlobalScope,
     callable $esc
   ): void {
-    $base = (defined('BASE_PATH') ? BASE_PATH : '');
+    $base    = defined('BASE_PATH') ? BASE_PATH : '';
     $pageKey = $GLOBALS['PAGE_KEY'] ?? 'syllabus-templates';
     ?>
 <div class="modal fade" id="tbEditModal" tabindex="-1" aria-hidden="true" aria-labelledby="tbEditLabel" data-no-reset>
@@ -64,42 +64,37 @@ if (!function_exists('renderEditModal')) {
           </div>
         </div>
 
-        <!-- College Select (shown if scope is College/Program/Course) -->
         <div class="mb-3" id="tb-e-college-wrap">
-            <label class="form-label" for="tb-e-college">College</label>
-            <select name="college_id" id="tb-e-college" class="form-select" aria-label="College" title="College">
-                <option value="">— Select college —</option>
-                <?php foreach ($colleges as $c): ?>
-                <option value="<?= (int)($c['college_id'] ?? 0) ?>">
-                    <?= $esc(($c['short_name'] ?? '').' — '.($c['college_name'] ?? '')) ?>
-                </option>
-                <?php endforeach; ?>
-            </select>
+          <label class="form-label" for="tb-e-college">College</label>
+          <select name="college_id" id="tb-e-college" class="form-select" aria-label="College" title="College">
+            <option value="">— Select college —</option>
+            <?php foreach ($colleges as $c): ?>
+            <option value="<?= (int)($c['college_id'] ?? 0) ?>">
+              <?= $esc(($c['short_name'] ?? '').' — '.($c['college_name'] ?? '')) ?>
+            </option>
+            <?php endforeach; ?>
+          </select>
         </div>
 
-        <!-- Program Select (shown if scope is Program/Course) -->
         <div class="mb-3" id="tb-e-program-wrap">
-            <label class="form-label" for="tb-e-program">Program</label>
-            <select name="program_id" id="tb-e-program" class="form-select" aria-label="Program" title="Program">
-                <option value="">— Select program —</option>
-                <?php foreach ($programsOfCollege as $p): ?>
-                <option value="<?= (int)($p['program_id'] ?? 0) ?>">
-                    <?= $esc(($p['program_name'] ?? '')) ?>
-                </option>
-                <?php endforeach; ?>
-            </select>
+          <label class="form-label" for="tb-e-program">Program</label>
+          <select name="program_id" id="tb-e-program" class="form-select" aria-label="Program" title="Program">
+            <option value="">— Select program —</option>
+            <?php foreach ($programsOfCollege as $p): ?>
+            <option value="<?= (int)($p['program_id'] ?? 0) ?>">
+              <?= $esc($p['program_name'] ?? '') ?>
+            </option>
+            <?php endforeach; ?>
+          </select>
         </div>
 
-        <!-- Course Select (shown if scope is Course) -->
         <div class="mb-3 d-none" id="tb-e-course-wrap">
           <label class="form-label" for="tb-e-course">Course</label>
           <select name="course_id" id="tb-e-course" class="form-select" aria-label="Course" title="Course">
             <option value="">— Select course —</option>
-            <!-- Options are loaded dynamically based on selected Program -->
           </select>
         </div>
 
-        <!-- Keep server happy if it still reads owner_program_id; send blank -->
         <input type="hidden" name="owner_program_id" value="">
 
         <div class="row g-3 mt-1">
@@ -300,3 +295,4 @@ document.addEventListener('DOMContentLoaded', function () {
 <?php
   }
 }
+?>

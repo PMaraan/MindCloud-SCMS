@@ -1,5 +1,5 @@
 import { fetchPrograms, fetchCourses } from './dataLoaders.js';
-import { fillSelect, getCurrentCollegeParam } from './utils.js';
+import { fillSelect, getCurrentCollegeParam, lockSelectElement } from './utils.js';
 import { getActiveTile } from './state.js';
 
 function fillFromTile(tile) {
@@ -59,6 +59,10 @@ export default function initEditModal() {
   if (!modal) return;
 
   const form = modal.querySelector('form');
+  const scopeRadios = form?.querySelectorAll('input[name="scope"]');
+  const deptWrap = document.getElementById('tb-e-college-wrap');
+  const programWrap = document.getElementById('tb-e-program-wrap');
+  const courseWrap = document.getElementById('tb-e-course-wrap');
   const deptSelect = document.getElementById('tb-e-college');
   const programSelect = document.getElementById('tb-e-program');
   const courseSelect = document.getElementById('tb-e-course');
@@ -75,35 +79,98 @@ export default function initEditModal() {
     form.setAttribute('action', action);
   };
 
-  modal.addEventListener('show.bs.modal', () => {
-    if (form && !form.dataset.baseAction) form.dataset.baseAction = form.getAttribute('action') || '';
-    const tile = getActiveTile();
-    fillFromTile(tile);
-    syncAction(tile);
-  });
+  const updateVisibility = () => {
+    if (!form) return;
+    const scope = form.querySelector('input[name="scope"]:checked')?.value || 'global';
+    const showCollege = ['college', 'program', 'course'].includes(scope);
+    const showProgram = ['program', 'course'].includes(scope);
+    const showCourse = scope === 'course';
 
-  modal.addEventListener('shown.bs.modal', async () => {
-    const tile = getActiveTile();
-    await populateDependentSelects(tile);
-    syncAction(tile);
+    deptWrap?.classList.toggle('d-none', !showCollege);
+    programWrap?.classList.toggle('d-none', !showProgram);
+    courseWrap?.classList.toggle('d-none', !showCourse);
+
+    if (deptSelect) deptSelect.required = showCollege;
+    if (programSelect) programSelect.required = showProgram;
+    if (courseSelect) courseSelect.required = showCourse;
+
+    if (!showProgram) fillSelect(programSelect, [], '— Select program —');
+    if (!showCourse) fillSelect(courseSelect, [], '— Select course —');
+  };
+
+  const applyLock = () => {
+    if (!form || !deptSelect) return;
+    const shouldLock = form.dataset.lockCollege === '1';
+    const defaultValue = form.dataset.defaultCollege || deptSelect.value;
+    lockSelectElement(deptSelect, shouldLock, defaultValue || null, '(Your College)');
+  };
+
+  const resetCourseSelect = () => {
+    fillSelect(courseSelect, [], '— Select course —');
+  };
+
+  const resetProgramSelect = () => {
+    fillSelect(programSelect, [], '— Select program —');
+    resetCourseSelect();
+  };
+
+  scopeRadios?.forEach((radio) => {
+    radio.addEventListener('change', () => {
+      updateVisibility();
+      applyLock();
+    });
   });
 
   deptSelect?.addEventListener('change', async (event) => {
+    if (deptSelect.dataset.locked === '1') {
+      const lockedValue = deptSelect.dataset.lockedValue || deptSelect.dataset.default || '';
+      if (lockedValue) deptSelect.value = lockedValue;
+      syncAction(getActiveTile());
+      return;
+    }
     const depId = event.target.value || '';
-    fillSelect(programSelect, [], '— Select program —');
-    fillSelect(courseSelect, [], '— Select course —');
-    if (!depId) return;
+    resetProgramSelect();
+    if (!depId) {
+      syncAction(getActiveTile());
+      return;
+    }
     const programs = await fetchPrograms(depId);
     fillSelect(programSelect, programs, '— Select program —');
     syncAction(getActiveTile());
   });
 
   programSelect?.addEventListener('change', async (event) => {
+    if (programSelect.dataset.locked === '1') {
+      const lockedValue = programSelect.dataset.lockedValue || programSelect.dataset.default || '';
+      if (lockedValue) programSelect.value = lockedValue;
+      syncAction(getActiveTile());
+      return;
+    }
     const programId = event.target.value || '';
-    fillSelect(courseSelect, [], '— Select course —');
-    if (!programId) return;
+    resetCourseSelect();
+    if (!programId) {
+      syncAction(getActiveTile());
+      return;
+    }
     const courses = await fetchCourses(programId);
     fillSelect(courseSelect, courses, '— Select course —');
     syncAction(getActiveTile());
+  });
+
+  modal.addEventListener('show.bs.modal', () => {
+    if (form && !form.dataset.baseAction) form.dataset.baseAction = form.getAttribute('action') || '';
+    const tile = getActiveTile();
+    fillFromTile(tile);
+    updateVisibility();
+    applyLock();
+    syncAction(tile);
+  });
+
+  modal.addEventListener('shown.bs.modal', async () => {
+    const tile = getActiveTile();
+    await populateDependentSelects(tile);
+    updateVisibility();
+    applyLock();
+    syncAction(tile);
   });
 }

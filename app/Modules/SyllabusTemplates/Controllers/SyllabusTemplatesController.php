@@ -292,6 +292,7 @@ final class SyllabusTemplatesController
             $viewData['canCreateGlobal']   = false;
             $viewData['canCreateCollege']  = false;
             $viewData['canCreateProgram']  = true;
+            $viewData['canCreateCourse']  = true;
 
             // For selects in modals
             $viewData['allColleges']       = [[
@@ -339,6 +340,8 @@ final class SyllabusTemplatesController
                 exit;
             }
 
+            // Pass default college for preselect
+            $viewData['defaultCollegeId']  = $collegeId;
 
             return $this->render('index', $viewData);
         }
