@@ -14,7 +14,7 @@
     transition: transform 1s ease;
 }
 
-/* Individual slide */
+/* Individual slide with blur transition */
 .slide {
     min-width: 100%;
     height: 100%;
@@ -27,6 +27,14 @@
     justify-content: center;
     align-items: center;
     padding: 20px;
+
+    transition: transform 1s ease, filter 0.5s ease;
+    filter: blur(0px);
+}
+
+/* Blur when sliding */
+.slide.sliding {
+    filter: blur(5px);
 }
 
 /* Gradient overlay for readability */
@@ -35,7 +43,7 @@
     position: absolute;
     top: 0; left: 0;
     width: 100%; height: 100%;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0.4));
+    background: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(0,0,0,0.6));
     z-index: 1;
 }
 
@@ -47,21 +55,22 @@
 
 /* Text styling */
 .slide h1 {
-    font-size: 3rem;
+    font-size: 4rem;
     text-shadow: 0 4px 12px rgba(0,0,0,0.7);
     margin-bottom: 1rem;
 }
 
 .slide p {
-    max-width: 700px;
+    font-size: 20px;
+    max-width: 1000px;
     text-shadow: 0 3px 8px rgba(0,0,0,0.6);
     margin-bottom: 2rem;
 }
 
-/* Fixed button stays slightly above bottom */
+/* Fixed button stays above indicators */
 .fixed-btn {
     position: absolute;
-    bottom: 250px;  /* slightly higher than indicator */
+    bottom: 60px;
     z-index: 5;
     left: 50%;
     transform: translateX(-50%);
@@ -93,7 +102,7 @@
 /* Slide indicators moved below button */
 .slide-indicators {
     position: absolute;
-    bottom: 20px;  /* below button */
+    bottom: 20px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;

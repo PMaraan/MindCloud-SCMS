@@ -13,18 +13,26 @@ slides.forEach((_, i) => {
     indicatorContainer.appendChild(dot);
 });
 
+// Update indicators
 function updateIndicators() {
     document.querySelectorAll(".slide-dot").forEach((dot, i) => {
         dot.classList.toggle("active", i === index);
     });
 }
 
+// Go to a specific slide with blur
 function goToSlide(i) {
-    index = i;
-    slidesWrapper.style.transform = `translateX(-${index * 100}%)`;
-    updateIndicators();
+    slides.forEach(slide => slide.classList.add("sliding")); // blur
+
+    setTimeout(() => {
+        index = i;
+        slidesWrapper.style.transform = `translateX(-${index * 100}%)`;
+        updateIndicators();
+        slides.forEach(slide => slide.classList.remove("sliding")); // remove blur
+    }, 50);
 }
 
+// Navigation
 function nextSlide() {
     index = (index + 1) % slides.length;
     goToSlide(index);
@@ -35,6 +43,7 @@ function prevSlide() {
     goToSlide(index);
 }
 
+// Autoplay
 function startAutoSlide() {
     autoSlide = setInterval(nextSlide, 5000);
 }
@@ -43,7 +52,7 @@ function stopAutoSlide() {
     clearInterval(autoSlide);
 }
 
-// Arrow click events
+// Arrow events
 document.getElementById("nextSlide").addEventListener("click", () => { stopAutoSlide(); nextSlide(); startAutoSlide(); });
 document.getElementById("prevSlide").addEventListener("click", () => { stopAutoSlide(); prevSlide(); startAutoSlide(); });
 

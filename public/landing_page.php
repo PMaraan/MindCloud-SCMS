@@ -17,21 +17,21 @@
 
     <!-- Slides wrapper -->
     <div class="slides" id="slidesWrapper">
-        <div class="slide" style="background-image: url('images/lpu1.jpg');">
+        <div class="slide" style="background-image: url('assets/images/lpu-building-2.jpg');">
             <h1>LPU-SCMS</h1>
             <p>The Lyceum of the Philippines University – Syllabus Content Management System streamlines the creation, review, and approval of academic syllabi.</p>
         </div>
-        <div class="slide" style="background-image: url('images/lpu2.jpg');">
+        <div class="slide" style="background-image: url('assets/images/coecsa-building.jpg');">
             <h1>Efficient. Centralized. Collaborative.</h1>
             <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer sit amet dapibus justo. Sed dignissim.</p>
         </div>
-        <div class="slide" style="background-image: url('images/lpu3.jpg');">
+        <div class="slide" style="background-image: url('assets/images/lpu-building.jpg');">
             <h1>Redefining Syllabus Management.</h1>
             <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi auctor nulla urna, at pulvinar est porttitor non.</p>
         </div>
     </div>
 
-    <!-- BUTTON STAYS FIXED -->
+    <!-- Fixed button -->
     <a href="https://your-lpu-scms-link.com" class="btn btn-danger btn-lg shadow-lg px-4 py-2 fixed-btn">Enter LPU-SCMS</a>
 
     <!-- Arrows -->
@@ -42,13 +42,9 @@
     <div class="slide-indicators" id="indicatorContainer"></div>
 </div>
 
-
-
-
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-    <!-- Custom JS -->
-    <script src="landing_page.js"></script>
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Custom JS -->
+<script src="landing_page.js"></script>
 </body>
 </html>
