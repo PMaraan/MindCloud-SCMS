@@ -3,7 +3,7 @@
 /** vars:
  * $mode: 'global-folders' | 'college' | 'program'
  * $ASSET_BASE, $esc, $user, $role
- * when $mode==='system-folders': $colleges
+ * when $mode==='global-folders': $colleges
  * when $mode==='college': $college, $general, $programs, optional: $showBackToFolders, $canCreateGlobal, $canCreateCollege, $allColleges, $programsOfCollege
  * when $mode==='program': $college, $general, $program, $program_templates, $canCreateProgram
  */
@@ -17,7 +17,7 @@ $PAGE_KEY = 'syllabus-templates';
   window.BASE_PATH = "<?= $esc($base) ?>";
 </script>
 
-<script defer src="<?= $ASSET_BASE ?>/assets/js/TemplateBuilder-Scaffold.js"></script>
+<script type="module" src="<?= $ASSET_BASE ?>/assets/js/syllabustemplates/TemplateBuilder-Scaffold.js"></script>
 
 <div ><!-- CONTAINER OPEN -->
 

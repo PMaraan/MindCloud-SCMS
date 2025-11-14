@@ -4374,3 +4374,7 @@ PL/pgSQL function mc_trg_tprog_validate_scope() line 3 at PERFORM
 [13-Nov-2025 16:25:20 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 620
 [13-Nov-2025 16:25:45 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 615
 [13-Nov-2025 16:25:45 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 620
+[14-Nov-2025 03:32:36 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 615
+[14-Nov-2025 03:32:44 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 615
+[14-Nov-2025 03:45:22 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 615
+[14-Nov-2025 03:45:38 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 615
