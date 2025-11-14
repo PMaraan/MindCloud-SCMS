@@ -6,21 +6,20 @@
 // /app/Modules/SyllabusTemplates/Views/partials/CreateModal.php
 if (!function_exists('renderCreateModal')) {
   function renderCreateModal(
-    string $ASSET_BASE,
-    bool $allowSystem,
+    string $assetBase,
+    bool $allowGlobal,
     bool $allowCollege,
     bool $allowProgram,
     bool $allowCourse,
     array $colleges,
-    array $programsOfCollege,
+    array $programs,
     ?int $defaultCollegeId,
     bool $lockCollege,
     callable $esc
   ): void {
-    // Page key comes from parent view; fall back to default if not set
     $pageKey = $GLOBALS['PAGE_KEY'] ?? 'syllabus-templates';
-    $base = (defined('BASE_PATH') ? BASE_PATH : '');
-    ?>
+    $base    = defined('BASE_PATH') ? BASE_PATH : '';
+?>
 <div class="modal fade" id="tbCreateModal" tabindex="-1" aria-hidden="true" aria-labelledby="tbCreateLabel">
   <div class="modal-dialog">
     <form method="post"
@@ -43,7 +42,8 @@ if (!function_exists('renderCreateModal')) {
 
         <div class="mb-3">
           <label class="form-label d-block">Scope <span class="text-danger">*</span></label>
-          <?php if ($allowSystem): ?>
+
+          <?php if ($allowGlobal): ?>
             <div class="form-check">
               <input class="form-check-input" type="radio" name="scope" id="tb-scope-global" value="global" checked>
               <label class="form-check-label" for="tb-scope-global">Global</label>
@@ -52,15 +52,14 @@ if (!function_exists('renderCreateModal')) {
 
           <?php if ($allowCollege): ?>
             <div class="form-check">
-              <input class="form-check-input" type="radio" name="scope" id="tb-scope-college" value="college" <?= $allowSystem ? '' : 'checked' ?>>
+              <input class="form-check-input" type="radio" name="scope" id="tb-scope-college" value="college" <?= $allowGlobal ? '' : 'checked' ?>>
               <label class="form-check-label" for="tb-scope-college">College</label>
             </div>
           <?php endif; ?>
 
           <?php if ($allowProgram): ?>
             <div class="form-check">
-              <input class="form-check-input" type="radio" name="scope" id="tb-scope-program" value="program"
-                    <?= (!$allowSystem && !$allowCollege) ? 'checked' : '' ?>>
+              <input class="form-check-input" type="radio" name="scope" id="tb-scope-program" value="program" <?= (!$allowGlobal && !$allowCollege) ? 'checked' : '' ?>>
               <label class="form-check-label" for="tb-scope-program">Program</label>
             </div>
           <?php endif; ?>
@@ -73,44 +72,42 @@ if (!function_exists('renderCreateModal')) {
           <?php endif; ?>
         </div>
 
-        <!-- College Select (shown if scope is College/Program/Course) -->
         <div class="mb-3 d-none" id="tb-college-wrap">
           <label class="form-label" for="tb-college">College <span class="text-danger">*</span></label>
-          <select name="college_id" id="tb-college" class="form-select" aria-label="College" title="College">
+          <select name="college_id"
+                  id="tb-college"
+                  class="form-select"
+                  data-default="<?= (int)($defaultCollegeId ?? 0) ?>"
+                  data-lock="<?= $lockCollege ? '1' : '0' ?>">
             <option value="">— Select college —</option>
-            <?php foreach ($colleges as $c): 
-                  $cid = (int)($c['college_id'] ?? 0);
-                  $sel = ($defaultCollegeId && $cid === (int)$defaultCollegeId) ? 'selected' : '';
-            ?>
-              <option value="<?= $cid ?>" <?= $sel ?>>
-                <?= $esc(($c['short_name'] ?? '').' — '.($c['college_name'] ?? '')) ?>
+            <?php foreach ($colleges as $college): ?>
+              <?php $cid = (int)($college['college_id'] ?? 0); ?>
+              <option value="<?= $cid ?>" <?= $defaultCollegeId === $cid ? 'selected' : '' ?>>
+                <?= $esc(($college['short_name'] ?? '').' — '.($college['college_name'] ?? '')) ?>
               </option>
             <?php endforeach; ?>
           </select>
         </div>
 
-        <!-- Program Select (shown if scope is Program/Course) -->
         <div class="mb-3 d-none" id="tb-program-wrap">
           <label class="form-label" for="tb-program">Program <span class="text-danger">*</span></label>
-          <select name="program_id" id="tb-program" class="form-select" aria-label="Program" title="Program">
+          <select name="program_id" id="tb-program" class="form-select">
             <option value="">— Select program —</option>
-            <?php foreach ($programsOfCollege as $p): ?>
-              <option value="<?= (int)($p['program_id'] ?? 0) ?>">
-                <?= $esc(($p['program_name'] ?? '')) ?>
+            <?php foreach ($programs as $program): ?>
+              <option value="<?= (int)($program['program_id'] ?? 0) ?>">
+                <?= $esc($program['program_name'] ?? '') ?>
               </option>
             <?php endforeach; ?>
           </select>
-          <div class="form-text">Programs list auto-filters based on the selected college when available.</div>
+          <div class="form-text">Programs list auto-filters based on the selected college.</div>
         </div>
 
         <div class="mb-3 d-none" id="tb-course-wrap">
           <label class="form-label" for="tb-course">Course <span class="text-danger">*</span></label>
-          <select name="course_id" id="tb-course" class="form-select" aria-label="Course" title="Course">
+          <select name="course_id" id="tb-course" class="form-select">
             <option value="">— Select course —</option>
-            <!-- options loaded dynamically based on Program -->
           </select>
         </div>
-
       </div>
 
       <div class="modal-footer">
@@ -120,172 +117,7 @@ if (!function_exists('renderCreateModal')) {
     </form>
   </div>
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function(){
-  const scopeSys = document.getElementById('tb-scope-system');
-  const scopeCol = document.getElementById('tb-scope-college');
-  const scopePrg = document.getElementById('tb-scope-program');
-  const scopeCrs = document.getElementById('tb-scope-course');
-
-  const wrapCol  = document.getElementById('tb-college-wrap');
-  const wrapPrg  = document.getElementById('tb-program-wrap');
-  const wrapCrs  = document.getElementById('tb-course-wrap');
-
-  const selCol   = document.getElementById('tb-college');
-  const selPrg   = document.getElementById('tb-program');
-  const selCrs   = document.getElementById('tb-course');
-
-  function updateVisibility() {
-    const vSys = scopeSys && scopeSys.checked;
-    const vCol = scopeCol && scopeCol.checked;
-    const vPrg = scopePrg && scopePrg.checked;
-    const vCrs = scopeCrs && scopeCrs.checked;
-
-    if (wrapCol) wrapCol.classList.toggle('d-none', !(vCol || vPrg || vCrs));
-    if (wrapPrg) wrapPrg.classList.toggle('d-none', !(vPrg || vCrs));
-    if (wrapCrs) wrapCrs.classList.toggle('d-none', !vCrs);
-
-    // required flags by scope
-    if (selCol) selCol.toggleAttribute('required', (vCol || vPrg || vCrs));
-    if (selPrg) selPrg.toggleAttribute('required', (vPrg || vCrs));
-    if (selCrs) selCrs.toggleAttribute('required', vCrs);
-  }
-
-  // College → Program dynamic load (existing)
-  if (selCol && selPrg) {
-    selCol.addEventListener('change', async function(){
-      const cid = this.value;
-      selPrg.innerHTML = '<option value="">— Select program —</option>';
-      if (selCrs) selCrs.innerHTML = '<option value="">— Select course —</option>';
-      if (!cid) return;
-      try {
-        const base = (typeof window.BASE_PATH === 'string') ? window.BASE_PATH : '';
-        const url  = `${base}/dashboard?page=<?= rawurlencode($pageKey) ?>&ajax=programs&department_id=${encodeURIComponent(cid)}`;
-        const res  = await fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' });
-        if (!res.ok) return;
-        const payload = await res.json();
-        const programs = Array.isArray(payload)
-          ? payload
-          : (Array.isArray(payload?.programs) ? payload.programs : []);
-        for (const p of programs) {
-          const opt = document.createElement('option');
-          opt.value = p.id ?? '';
-          opt.textContent = p.label ?? '';
-          selPrg.appendChild(opt);
-        }
-      } catch (err) {
-        console.error('Failed to load programs', err);
-      }
-    });
-  }
-
-  if (selPrg && selCrs) {
-    selPrg.addEventListener('change', async function(){
-      const pid = this.value;
-      selCrs.innerHTML = '<option value="">— Select course —</option>';
-      if (!pid) return;
-      try {
-        const base = (typeof window.BASE_PATH === 'string') ? window.BASE_PATH : '';
-        const url  = `${base}/dashboard?page=<?= rawurlencode($pageKey) ?>&ajax=courses&program_id=${encodeURIComponent(pid)}`;
-        const res  = await fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' });
-        if (!res.ok) return;
-        const payload = await res.json();
-        const courses = Array.isArray(payload)
-          ? payload
-          : (Array.isArray(payload?.courses) ? payload.courses : []);
-        for (const c of courses) {
-          const opt = document.createElement('option');
-          opt.value = c.id ?? '';
-          opt.textContent = c.label ?? '';
-          selCrs.appendChild(opt);
-        }
-      } catch (err) {
-        console.error('Failed to load courses', err);
-      }
-    });
-  }
-
-  // If default college is present, preselect it and trigger program load (for deans)
-  <?php if (!empty($defaultCollegeId)): ?>
-    if (selCol) {
-      selCol.value = "<?= (int)$defaultCollegeId ?>";
-      selCol.dispatchEvent(new Event('change'));
-    }
-    // default scope for deans is College; check it if system is not allowed
-    <?php if (!$allowSystem && $allowCollege): ?>
-      const r = document.getElementById('tb-scope-college');
-      if (r) { r.checked = true; }
-    <?php endif; ?>
-  <?php endif; ?>
-
-  [scopeSys, scopeCol, scopePrg, scopeCrs].forEach(el => el && el.addEventListener('change', updateVisibility));
-  updateVisibility();
-});
-</script>
-<script>
-document.addEventListener('DOMContentLoaded', function(){
-  const createForm = document.querySelector('#tbCreateModal form');
-  const selCol = document.getElementById('tb-college');
-  const lockCollege = createForm?.dataset.lockCollege === '1';
-  const defaultCollege = createForm?.dataset.defaultCollege || '';
-  // lock + default selection
-  if (createForm && selCol) {
-    if (lockCollege && defaultCollege) {
-      selCol.value = defaultCollege;
-      selCol.dispatchEvent(new Event('change'));
-      selCol.setAttribute('data-locked', '1');
-      selCol.setAttribute('aria-readonly', 'true');
-    } else {
-      selCol.removeAttribute('data-locked');
-      selCol.removeAttribute('aria-readonly');
-    }
-    // default scope for locked states
-    if (lockCollege) {
-      const scopeCollege = document.getElementById('tb-scope-college');
-      if (scopeCollege) scopeCollege.checked = true;
-    }
-  }
-
-  if (createForm) {
-    // Function to build action URL with college param
-    const buildCreateActionUrl = () => {
-      let collegeId = null;
-      
-      // 1) Check if college select has a value
-      if (selCol && selCol.value && selCol.value.trim() !== '') {
-        collegeId = selCol.value;
-      }
-      // 2) Fall back to URL param
-      else {
-        const params = new URLSearchParams(window.location.search);
-        collegeId = params.get('college');
-      }
-      
-      let actionUrl = '<?= $esc($base) ?>/dashboard?page=<?= $esc($pageKey) ?>&action=create';
-      if (collegeId && collegeId.trim() !== '') {
-        actionUrl += '&college=' + encodeURIComponent(collegeId);
-      }
-      
-      return actionUrl;
-    };
-    
-    // Set initial action URL
-    createForm.action = buildCreateActionUrl();
-    
-    // Update action URL when college changes
-    if (selCol) {
-      selCol.addEventListener('change', () => {
-        if (lockCollege && defaultCollege) {
-          selCol.value = defaultCollege;
-          return;
-        }
-        createForm.action = buildCreateActionUrl();
-      });
-    }
-  }
-});
-</script>
 <?php
   }
 }
+?>
