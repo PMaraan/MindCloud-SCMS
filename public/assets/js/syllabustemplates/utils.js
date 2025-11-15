@@ -1,3 +1,9 @@
+/**
+ * installCssEscapeFallback()
+ * - Ensures CSS.escape exists on older browsers.
+ * - Called once from TemplateBuilder-Scaffold.js during bootstrap.
+ * - No inbound arguments and no return value; mutates window.CSS.escape.
+ */
 export function installCssEscapeFallback() {
   if (!window.CSS || typeof window.CSS.escape !== 'function') {
     const pattern = /[{}|\\^~\[\]`"<>#%]/g;
@@ -6,6 +12,13 @@ export function installCssEscapeFallback() {
   }
 }
 
+/**
+ * showFlashMessage(message, level)
+ * - Renders a Bootstrap toast to inform the user about CRUD outcomes.
+ * - Invoked by archiveDelete.js and any other module via window.showFlashMessage.
+ * - message: string to display, level: 'info'|'success'|'danger'.
+ * - Creates DOM nodes and returns void.
+ */
 export function showFlashMessage(message = '', level = 'info') {
   let container = document.getElementById('tb-toast-container');
   if (!container) {
@@ -38,12 +51,24 @@ export function showFlashMessage(message = '', level = 'info') {
   instance.show();
 }
 
+/**
+ * capitalizeForDisplay(value)
+ * - Normalizes labels (e.g., status text) for UI display.
+ * - Used by tiles.js when populating the details pane.
+ * - Expects any value; returns a capitalized string.
+ */
 export function capitalizeForDisplay(value) {
   if (!value) return '';
   const str = String(value);
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+/**
+ * getBase()
+ * - Resolves the BASE_PATH used for fetch/request URLs.
+ * - Called by multiple modules (dataLoaders.js, archiveDelete.js).
+ * - Looks at window.BASE_PATH or trims the current location; returns a string.
+ */
 export function getBase() {
   if (typeof window.BASE_PATH === 'string' && window.BASE_PATH) return window.BASE_PATH;
   const path = window.location.pathname;
@@ -51,6 +76,12 @@ export function getBase() {
   return cut > -1 ? path.slice(0, cut) : '';
 }
 
+/**
+ * fetchJSON(url)
+ * - Thin wrapper around fetch() that enforces JSON responses.
+ * - Consumed by dataLoaders.js (which powers modal cascading selects) and archive/delete flows.
+ * - url: absolute or base-relative endpoint; returns parsed JSON or throws.
+ */
 export async function fetchJSON(url) {
   const response = await fetch(url, {
     credentials: 'same-origin',
@@ -69,6 +100,12 @@ export async function fetchJSON(url) {
   return response.json();
 }
 
+/**
+ * fillSelect(select, items, placeholder)
+ * - Populates a <select> with id/label pairs.
+ * - Used by createModal.js, editModal.js, duplicateModal.js when injecting fetched data.
+ * - select: DOM node, items: [{id,label}], placeholder: optional string.
+ */
 export function fillSelect(select, items, placeholder = '— Select —') {
   if (!select) return;
   select.innerHTML = '';
@@ -85,6 +122,13 @@ export function fillSelect(select, items, placeholder = '— Select —') {
   });
 }
 
+/**
+ * robustSelect(select, value, options)
+ * - Attempts to select a value, retrying across microtasks/frames for late-populated lists.
+ * - Called by duplicateModal.js when pre-selecting college/program.
+ * - select: DOM node, value: string|number, options: {injectIfMissing,labelIfInjected}.
+ * - Returns true if value gets selected.
+ */
 export async function robustSelect(select, value, { injectIfMissing = false, labelIfInjected = '(Selected)' } = {}) {
   if (!select) return false;
   const target = String(value ?? '');
@@ -119,15 +163,31 @@ export async function robustSelect(select, value, { injectIfMissing = false, lab
   return false;
 }
 
+/**
+ * ensureOptionAndSelect(select, value)
+ * - Convenience wrapper around robustSelect() that always injects if missing.
+ * - Used by duplicateModal.js when enforcing college locks.
+ */
 export function ensureOptionAndSelect(select, value) {
   return robustSelect(select, value, { injectIfMissing: true, labelIfInjected: '(Your College)' });
 }
 
+/**
+ * getCurrentCollegeParam()
+ * - Reads the current ?college= query from the dashboard URL.
+ * - Shared by create/edit/duplicate modals and archive/delete to keep redirection scoped.
+ */
 export function getCurrentCollegeParam() {
   const params = new URLSearchParams(window.location.search);
   return params.get('college') || '';
 }
 
+/**
+ * lockSelectElement(select, locked, value, injectLabel)
+ * - Applies a read-only UX to <select> when the role restricts scope changes.
+ * - Used by all modals (create/edit/duplicate) during initialization.
+ * - select: DOM node, locked: boolean flag, value: target option, injectLabel: text for inserted options.
+ */
 export function lockSelectElement(select, locked, value, injectLabel = '(Your College)') {
   if (!select) return;
 
