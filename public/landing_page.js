@@ -5,7 +5,7 @@ const indicatorContainer = document.getElementById("indicatorContainer");
 let index = 0;
 let autoSlide;
 
-// Create indicators
+// --- Slideshow setup ---
 slides.forEach((_, i) => {
     const dot = document.createElement("div");
     dot.classList.add("slide-dot");
@@ -13,26 +13,23 @@ slides.forEach((_, i) => {
     indicatorContainer.appendChild(dot);
 });
 
-// Update indicators
 function updateIndicators() {
     document.querySelectorAll(".slide-dot").forEach((dot, i) => {
         dot.classList.toggle("active", i === index);
     });
 }
 
-// Go to a specific slide with blur
 function goToSlide(i) {
-    slides.forEach(slide => slide.classList.add("sliding")); // blur
+    slides.forEach(slide => slide.classList.add("sliding"));
 
     setTimeout(() => {
         index = i;
         slidesWrapper.style.transform = `translateX(-${index * 100}%)`;
         updateIndicators();
-        slides.forEach(slide => slide.classList.remove("sliding")); // remove blur
+        slides.forEach(slide => slide.classList.remove("sliding"));
     }, 50);
 }
 
-// Navigation
 function nextSlide() {
     index = (index + 1) % slides.length;
     goToSlide(index);
@@ -43,7 +40,6 @@ function prevSlide() {
     goToSlide(index);
 }
 
-// Autoplay
 function startAutoSlide() {
     autoSlide = setInterval(nextSlide, 5000);
 }
@@ -52,10 +48,22 @@ function stopAutoSlide() {
     clearInterval(autoSlide);
 }
 
-// Arrow events
-document.getElementById("nextSlide").addEventListener("click", () => { stopAutoSlide(); nextSlide(); startAutoSlide(); });
-document.getElementById("prevSlide").addEventListener("click", () => { stopAutoSlide(); prevSlide(); startAutoSlide(); });
+const nextBtn = document.getElementById("nextSlide");
+const prevBtn = document.getElementById("prevSlide");
 
-// Initialize
+if (nextBtn && prevBtn) {
+    nextBtn.addEventListener("click", () => {
+        stopAutoSlide();
+        nextSlide();
+        startAutoSlide();
+    });
+
+    prevBtn.addEventListener("click", () => {
+        stopAutoSlide();
+        prevSlide();
+        startAutoSlide();
+    });
+}
+
 goToSlide(0);
 startAutoSlide();
