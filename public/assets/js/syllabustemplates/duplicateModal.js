@@ -2,6 +2,11 @@ import { fetchPrograms, fetchCourses } from './dataLoaders.js';
 import { fillSelect, ensureOptionAndSelect, lockSelectElement, robustSelect, getCurrentCollegeParam } from './utils.js';
 import { getActiveTile } from './state.js';
 
+/**
+ * getScope()
+ * - Returns the currently checked scope radio within the duplicate modal.
+ * - Used by visibility/locking helpers to decide which dependent controls should appear.
+ */
 function getScope() {
   const ids = ['tb-d-scope-global', 'tb-d-scope-college', 'tb-d-scope-program', 'tb-d-scope-course'];
   for (const id of ids) {
@@ -11,10 +16,20 @@ function getScope() {
   return '';
 }
 
+/**
+ * needsCollege(scope)
+ * - Utility checker to determine whether the provided scope requires college-level context.
+ * - Called by visibility controls and data loaders; expects a scope string.
+ */
 function needsCollege(scope) {
   return ['college', 'program', 'course'].includes(scope);
 }
 
+/**
+ * updateVisibilityAndRequirements()
+ * - Shows/hides the college/program/course wrappers and adjusts required flags.
+ * - Triggered when the scope changes or after initial modal setup.
+ */
 function updateVisibilityAndRequirements() {
   const scope = getScope();
   const collegeWrap = document.getElementById('tb-d-college-wrap');
@@ -44,6 +59,12 @@ function updateVisibilityAndRequirements() {
   }
 }
 
+/**
+ * fillFromTile(tile)
+ * - Prefills duplicate-modal inputs using the active template tile’s dataset.
+ * - Called when the modal opens; also hydrates program/course selects via fetches.
+ * - Returns the resolved department/program/course IDs for downstream use.
+ */
 async function fillFromTile(tile) {
   if (!tile) {
     fillSelect(document.getElementById('tb-d-program'), [], '— Select program —');
@@ -104,6 +125,12 @@ async function fillFromTile(tile) {
   return { depId, programId, courseId };
 }
 
+/**
+ * refreshProgramCourse(selectIds, defaults)
+ * - Regenerates program/course lists when scope or college changes.
+ * - selectIds: element id map; defaults: optional { programId, courseId } for pre-selection.
+ * - Uses fetchPrograms/fetchCourses underneath; updates the DOM selects directly.
+ */
 async function refreshProgramCourse(selectIds, defaults) {
   const { collegeSelectId, programSelectId, courseSelectId } = selectIds;
   const collegeSelect = document.getElementById(collegeSelectId);
@@ -132,6 +159,11 @@ async function refreshProgramCourse(selectIds, defaults) {
   }
 }
 
+/**
+ * initDuplicateModal()
+ * - Primary initializer invoked from TemplateBuilder-Scaffold.js during DOMContentLoaded.
+ * - Sets up event listeners (show/shown/change) so the duplicate modal stays in sync with the selected tile and role rules.
+ */
 export default function initDuplicateModal() {
   const modal = document.getElementById('tbDuplicateModal');
   if (!modal) return;
@@ -141,6 +173,11 @@ export default function initDuplicateModal() {
   const programSelect = document.getElementById('tb-d-program');
   const scopeRadios = modal.querySelectorAll('input[name="scope"]');
 
+  /**
+   * syncAction()
+   * - Adjusts the form action URL with the resolved college parameter for post-duplicate redirect.
+   * - Pulls from locked/default values when necessary.
+   */
   const syncAction = () => {
     if (!form) return;
     if (!form.dataset.baseAction) form.dataset.baseAction = form.getAttribute('action') || '';

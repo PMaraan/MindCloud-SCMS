@@ -2,6 +2,12 @@ import { fetchPrograms, fetchCourses } from './dataLoaders.js';
 import { fillSelect, getCurrentCollegeParam, lockSelectElement } from './utils.js';
 import { getActiveTile } from './state.js';
 
+/**
+ * fillFromTile(tile)
+ * - Copies dataset values from the currently selected template tile into the edit modal form controls.
+ * - tile comes from tiles.js via getActiveTile(); it exposes attributes like data-template-id, data-scope, etc.
+ * - Has no return value; it mutates the DOM inputs so the modal shows the tile’s current details.
+ */
 function fillFromTile(tile) {
   if (!tile) return;
 
@@ -28,6 +34,12 @@ function fillFromTile(tile) {
   document.getElementById('tb-e-course').value = get('courseId', '');
 }
 
+/**
+ * populateDependentSelects(tile)
+ * - Refreshes the program/course dropdowns in the modal based on the tile’s current college/program.
+ * - tile is the same source as in fillFromTile(); used here to preselect existing relationships when the modal opens.
+ * - Uses fetchPrograms/fetchCourses to pull JSON data; the results are injected into the selects via fillSelect().
+ */
 async function populateDependentSelects(tile) {
   const deptSelect = document.getElementById('tb-e-college');
   const programSelect = document.getElementById('tb-e-program');
@@ -54,6 +66,12 @@ async function populateDependentSelects(tile) {
   }
 }
 
+/**
+ * initEditModal()
+ * - Called once from TemplateBuilder-Scaffold.js after DOMContentLoaded.
+ * - Wires all interactions for the edit modal: fills inputs, locks college dropdowns for dean/chair, and keeps the form action scoped.
+ * - No return; the side effects are event listeners and initial state sync.
+ */
 export default function initEditModal() {
   const modal = document.getElementById('tbEditModal');
   if (!modal) return;
@@ -67,6 +85,11 @@ export default function initEditModal() {
   const programSelect = document.getElementById('tb-e-program');
   const courseSelect = document.getElementById('tb-e-course');
 
+  /**
+   * syncAction(tile)
+   * - Keeps the form’s POST target aligned with the currently selected college (ensures redirect stays scoped).
+   * - tile is the active template card supplying fallback college info when the select is empty.
+   */
   const syncAction = (tile) => {
     if (!form) return;
     if (!form.dataset.baseAction) form.dataset.baseAction = form.getAttribute('action') || '';
@@ -79,6 +102,11 @@ export default function initEditModal() {
     form.setAttribute('action', action);
   };
 
+  /**
+   * updateVisibility()
+   * - Shows or hides the college/program/course selectors depending on the chosen scope radio button.
+   * - Also toggles the required attribute and resets downstream selects when the scope changes.
+   */
   const updateVisibility = () => {
     if (!form) return;
     const scope = form.querySelector('input[name="scope"]:checked')?.value || 'global';
@@ -98,6 +126,11 @@ export default function initEditModal() {
     if (!showCourse) fillSelect(courseSelect, [], '— Select course —');
   };
 
+  /**
+   * applyLock()
+   * - Applies readonly/lock state to the college select based on the PHP-rendered data attributes.
+   * - lockSelectElement() ensures the user can’t change the college when their role is restricted.
+   */
   const applyLock = () => {
     if (!form || !deptSelect) return;
     const shouldLock = form.dataset.lockCollege === '1';
@@ -105,10 +138,18 @@ export default function initEditModal() {
     lockSelectElement(deptSelect, shouldLock, defaultValue || null, '(Your College)');
   };
 
+  /**
+   * resetCourseSelect()
+   * - Clears the course dropdown; used when program changes or visibility toggles off.
+   */
   const resetCourseSelect = () => {
     fillSelect(courseSelect, [], '— Select course —');
   };
 
+  /**
+   * resetProgramSelect()
+   * - Clears the program dropdown and cascades to reset the course list.
+   */
   const resetProgramSelect = () => {
     fillSelect(programSelect, [], '— Select program —');
     resetCourseSelect();

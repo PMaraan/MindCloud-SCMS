@@ -2,6 +2,12 @@ import { getActiveTile } from './state.js';
 import { getBase, getCurrentCollegeParam } from './utils.js';
 import { selectTile } from './tiles.js';
 
+/**
+ * initArchiveDelete()
+ * - Bootstraps archive/unarchive and delete interactions for the template tiles.
+ * - Called once from TemplateBuilder-Scaffold.js during DOMContentLoaded.
+ * - Wires modal open/confirm handlers and ensures actions stay scoped to the current college.
+ */
 export default function initArchiveDelete() {
   const archiveButton = document.getElementById('tb-archive');
   const archiveModal = document.getElementById('tbArchiveModal');
@@ -34,6 +40,11 @@ export default function initArchiveDelete() {
       instance.show();
     });
 
+    /** 
+     * Handles the POST request to archive/unarchive.
+     * - templateId/targetStatus come from modal dataset populated when the archive modal opens.
+     * - Sends FormData to the dashboard endpoint and updates the tile + toast on success.
+     */
     archiveConfirm.addEventListener('click', async () => {
       const templateId = parseInt(String(archiveModal.dataset.templateId || ''), 10) || 0;
       const targetStatus = String(archiveModal.dataset.targetStatus || 'archived');
@@ -96,6 +107,11 @@ export default function initArchiveDelete() {
   const deleteConfirm = document.getElementById('tb-delete-confirm');
 
   if (deleteButton && deleteConfirm) {
+    /**
+     * Submits a hidden form to delete the active template.
+     * - Uses the currently selected tile’s dataset for template_id and ownerDepartmentId.
+     * - Appends ?college= so redirect remains scoped after deletion.
+     */
     deleteConfirm.addEventListener('click', () => {
       const tile = getActiveTile();
       const id = tile?.dataset.templateId;

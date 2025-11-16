@@ -1,6 +1,12 @@
 import { capitalizeForDisplay, getBase } from './utils.js';
 import { setSelectedTileId, getSelectedTileId, getActiveTile } from './state.js';
 
+/**
+ * updateDetailsPane(card)
+ * - Populates the sidebar detail panel with the active tile’s metadata.
+ * - Called by selectTile() whenever the highlighted card changes.
+ * - Reads dataset attributes (scope, status, timestamps, etc.) and toggles UI controls (edit/archive/delete buttons).
+ */
 function updateDetailsPane(card) {
   const info = document.getElementById('tb-info');
   const empty = document.getElementById('tb-info-empty');
@@ -137,6 +143,11 @@ function updateDetailsPane(card) {
   if (deleteTitleEl) deleteTitleEl.textContent = card.dataset.title || '—';
 }
 
+/**
+ * selectTile(card)
+ * - Central tile-selection handler used by click/keyboard interactions.
+ * - Saves the selected template ID in shared state and refreshes the sidebar panel.
+ */
 export function selectTile(card) {
   if (!card) return;
   document.querySelectorAll('.tb-tile.tb-card--active').forEach((el) => el.classList.remove('tb-card--active'));
@@ -145,6 +156,11 @@ export function selectTile(card) {
   updateDetailsPane(card);
 }
 
+/**
+ * initTileClicks()
+ * - Delegated click listener that activates tiles on single-click.
+ * - Bound once during initTileInteractions().
+ */
 function initTileClicks() {
   document.body.addEventListener('click', (event) => {
     const card = event.target.closest('.tb-tile');
@@ -152,6 +168,11 @@ function initTileClicks() {
   });
 }
 
+/**
+ * initArrowNavigation()
+ * - Enables arrow-key navigation across tiles.
+ * - Keeps focus and selection in sync with ListView accessibility.
+ */
 function initArrowNavigation() {
   document.addEventListener('keydown', (event) => {
     if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
@@ -170,6 +191,11 @@ function initArrowNavigation() {
   });
 }
 
+/**
+ * initOpenHandlers()
+ * - Wires double-click, Enter key, and “Open” button to launch the template builder.
+ * - Uses getBase() to compose the target URL.
+ */
 function initOpenHandlers() {
   const openBtn = document.getElementById('tb-open');
   if (openBtn) {
@@ -205,6 +231,11 @@ function initOpenHandlers() {
   });
 }
 
+/**
+ * initTileInteractions()
+ * - Entry point invoked from TemplateBuilder-Scaffold.js on DOMContentLoaded.
+ * - Registers click, keyboard, and open handlers for the tiles grid.
+ */
 export default function initTileInteractions() {
   initTileClicks();
   initArrowNavigation();

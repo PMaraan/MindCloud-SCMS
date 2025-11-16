@@ -1,5 +1,12 @@
 import { fetchJSON, getBase } from './utils.js';
 
+/**
+ * fetchPrograms(departmentId)
+ * - Retrieves all programs belonging to a given college/department.
+ * - Called by createModal.js, editModal.js, duplicateModal.js whenever the user selects (or reopens with) a college.
+ * - departmentId: numeric or string value read from the college select.
+ * - Returns an array of `{ id, label }` objects consumed by fillSelect() to populate the program dropdown.
+ */
 export async function fetchPrograms(departmentId) {
   const depId = Number(departmentId);
   if (!Number.isFinite(depId) || depId <= 0) return [];
@@ -10,6 +17,13 @@ export async function fetchPrograms(departmentId) {
   return [];
 }
 
+/**
+ * fetchCourses(programId)
+ * - Loads courses for the selected program so course-level templates can be scoped accurately.
+ * - Triggered by the same modal scripts after the program select changes or when a modal is prefilled.
+ * - programId: value taken from the program select.
+ * - Returns an array of `{ id, label }` entries formatted for fillSelect(); defaults to empty array on invalid input.
+ */
 export async function fetchCourses(programId) {
   const progId = Number(programId);
   if (!Number.isFinite(progId) || progId <= 0) return [];
