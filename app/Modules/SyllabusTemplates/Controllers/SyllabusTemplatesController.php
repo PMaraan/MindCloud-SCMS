@@ -363,6 +363,15 @@ final class SyllabusTemplatesController
             exit;
         }
 
+        // Authorization: ensure user can view syllabus templates (consistent with the module)
+        try {
+            (new \App\Security\RBAC($this->db))->require((string)$_SESSION['user_id'], \App\Config\Permissions::SYLLABUSTEMPLATES_VIEW);
+        } catch (\Throwable $e) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Forbidden'], JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
         $deptId = isset($_GET['department_id']) ? (int)$_GET['department_id'] : 0;
         if ($deptId <= 0) {
             http_response_code(400);
@@ -393,6 +402,15 @@ final class SyllabusTemplatesController
         if (empty($_SESSION['user_id'])) {
             http_response_code(401);
             echo json_encode(['error' => 'Unauthorized'], JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+
+        // Authorization: require view permission for syllabus templates (keeps behaviour consistent)
+        try {
+            (new \App\Security\RBAC($this->db))->require((string)$_SESSION['user_id'], \App\Config\Permissions::SYLLABUSTEMPLATES_VIEW);
+        } catch (\Throwable $e) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Forbidden'], JSON_UNESCAPED_SLASHES);
             exit;
         }
 
