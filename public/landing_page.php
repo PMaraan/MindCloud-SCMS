@@ -17,16 +17,32 @@
 <div class="slide-container">
     <div class="slides" id="slidesWrapper">
         <div class="slide" style="background-image: url('assets/images/lpu-building-2.jpg');">
-            <h1>LPU-SCMS</h1>
-            <p>The Lyceum of the Philippines University – Syllabus Content Management System streamlines the creation, review, and approval of academic syllabi.</p>
+            <h1>Welcome to the LPU-SCMS</h1>
+            <p>The Lyceum of the Philippines University's Syllabus Content Management System</p>
         </div>
-        <div class="slide" style="background-image: url('assets/images/coecsa-building.jpg');">
-            <h1>Efficient. Centralized. Collaborative.</h1>
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer sit amet dapibus justo. Sed dignissim.</p>
+        <div class="slide" style="background-image: url('assets/images/lpu-1.jpg');">
+            <h1>Centralize.</h1>
+            <p>Manage and create all syllabi seamlessly in one unified system.</p>
         </div>
-        <div class="slide" style="background-image: url('assets/images/lpu-building.jpg');">
-            <h1>Redefining Syllabus Management.</h1>
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi auctor nulla urna, at pulvinar est porttitor non.</p>
+        <div class="slide" style="background-image: url('assets/images/lpu-2.jpg');">
+            <h1>Standardize.</h1>
+            <p>Ensure consistency across all courses with ready-to-use, university-approved syllabus templates.</p>
+        </div>
+        <div class="slide" style="background-image: url('assets/images/lpu-3.jpg');">
+            <h1>Create.</h1>
+            <p>Easily build syllabi for your courses using an intuitive, guided interface.</p>
+        </div>
+        <div class="slide" style="background-image: url('assets/images/lpu-4.jpg');">
+            <h1>Review and Annotate.</h1>
+            <p>Collaborate with faculty and provide feedback directly on the syllabus for improved accuracy and quality.</p>
+        </div>
+        <div class="slide" style="background-image: url('assets/images/lpu-5.jpg');">
+            <h1>Automate Approvals.</h1>
+            <p>Each step moves the syllabus along the approval chain, ensuring timely completion.</p>
+        </div>
+        <div class="slide" style="background-image: url('assets/images/lpu-6.jpg');">
+            <h1>Monitor and Track.</h1>
+            <p>Stay informed with real-time status updates and generate reports on all syllabi across the university.</p>
         </div>
     </div>
 
@@ -41,24 +57,45 @@
     <div class="slide-indicators" id="indicatorContainer"></div>
 </div>
 
-<!-- Four Full-Screen Sections -->
+<!-- Alternating Text Full-Screen Sections -->
 <div class="screens">
-    <section class="screen" style="background-color: #f4a261;">
-        <h2>Screen 1</h2>
-        <p>This is the first full-screen section.</p>
+
+    <section class="screen" style="background-image: url(assets/images/type.png);">
+        <div class="content-wrapper">
+            <div class="text-block">
+                <h2>Academic Affairs Office</h2>
+                <p>Create templates and issue them to the colleges.</p>
+            </div>
+        </div>
     </section>
-    <section class="screen" style="background-color: #2a9d8f;">
-        <h2>Screen 2</h2>
-        <p>This is the second full-screen section.</p>
+
+    <section class="screen" style="background-image: url(assets/images/collaboration.png);">
+        <div class="content-wrapper">
+            <div class="text-block">
+                <h2>Colleges</h2>
+                <p>Work with the syllabus collaborators and create high-quality standardized syllabus.</p>
+            </div>
+        </div>
     </section>
-    <section class="screen" style="background-color: #e9c46a;">
-        <h2>Screen 3</h2>
-        <p>This is the third full-screen section.</p>
+
+    <section class="screen" style="background-image: url(assets/images/review-1.png);">
+        <div class="content-wrapper">
+            <div class="text-block">
+                <h2>Academic Resource Center</h2>
+                <p>Review the Syllabus References.</p>
+            </div>
+        </div>
     </section>
-    <section class="screen" style="background-color: #264653; color: white;">
-        <h2>Screen 4</h2>
-        <p>This is the fourth full-screen section.</p>
+
+    <section class="screen" style="background-image: url(assets/images/review-2.png);">
+        <div class="content-wrapper">
+            <div class="text-block">
+                <h2>Industry Advisory Board</h2>
+                <p>Review to ensure that all syllabus are up to industry standards.</p>
+            </div>
+        </div>
     </section>
+
 </div>
 
 <!-- Bootstrap JS -->

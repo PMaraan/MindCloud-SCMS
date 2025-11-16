@@ -1,16 +1,16 @@
 html {
     scroll-behavior: smooth;
     scroll-snap-type: y mandatory;
-    overscroll-behavior: contain; /* prevents abrupt scroll jumps */
+    overscroll-behavior: contain;
 }
 
-
+/* Snap */
 .slide-container,
 .screen {
-    scroll-snap-align: start; /* each section snaps */
+    scroll-snap-align: start;
 }
 
-/* Fullscreen slideshow container */
+/* Fullscreen slideshow */
 .slide-container {
     height: 100vh;
     width: 100vw;
@@ -19,28 +19,28 @@ html {
     color: white;
 }
 
-/* Slides wrapper for sliding animation */
+/* Slide wrapper */
 .slides {
     display: flex;
     height: 100%;
     transition: transform 1s ease;
 }
 
-/* Individual slide with blur transition */
+/* Individual slide */
 .slide {
     min-width: 100%;
     height: 100%;
     background-size: cover;
     background-position: center;
-    background-repeat: no-repeat;
     position: relative;
+
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 20px;
 
-    transition: transform 1s ease, filter 0.5s ease;
+    padding: 20px;
+    transition: transform 1s ease, filter 0.6s ease;
     filter: blur(0px);
 }
 
@@ -49,7 +49,7 @@ html {
     filter: blur(5px);
 }
 
-/* Gradient overlay for readability */
+/* Gradient overlay */
 .slide::before {
     content: "";
     position: absolute;
@@ -65,7 +65,7 @@ html {
     text-align: center;
 }
 
-/* Text styling */
+/* Slide text */
 .slide h1 {
     font-size: 4rem;
     text-shadow: 0 4px 12px rgba(0,0,0,0.7);
@@ -73,20 +73,20 @@ html {
 }
 
 .slide p {
-    font-size: 20px;
+    font-size: 1.5rem;
     max-width: 1000px;
     text-shadow: 0 3px 8px rgba(0,0,0,0.6);
-    margin-bottom: 2rem;
 }
 
-/* Fixed button stays above indicators */
+/* Fixed button */
 .fixed-btn {
-    position: absolute;
+    position: fixed;        /* changed from absolute */
     bottom: 60px;
-    z-index: 5;
     left: 50%;
     transform: translateX(-50%);
+    z-index: 9999;          /* stays on top of everything */
 }
+
 
 /* Arrows */
 .slide-arrow {
@@ -111,7 +111,7 @@ html {
 .slide-arrow.left { left: 20px; }
 .slide-arrow.right { right: 20px; }
 
-/* Slide indicators */
+/* Indicators */
 .slide-indicators {
     position: absolute;
     bottom: 20px;
@@ -135,7 +135,10 @@ html {
     background: #ffcccb;
 }
 
-/* Fullscreen sections below slideshow */
+/* ============================= */
+/*     FULLSCREEN SECTIONS       */
+/* ============================= */
+
 .screens {
     display: flex;
     flex-direction: column;
@@ -144,10 +147,51 @@ html {
 .screen {
     height: 100vh;
     width: 100%;
+    position: relative;
+
     display: flex;
-    flex-direction: column;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
+
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+/* Gradient overlay */
+.screen::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.45);
+    z-index: 1;
+}
+
+/* Content container */
+.content-wrapper {
+    width: 80%;
+    max-width: 1400px;
+    display: flex;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+}
+
+/* Text block */
+.text-block {
+    max-width: 600px;
+    color: white;
     font-size: 2rem;
-    text-align: center;
+}
+
+/* Alternating positions */
+.screen:nth-of-type(odd) .content-wrapper {
+    justify-content: flex-start;
+    text-align: left;
+}
+
+.screen:nth-of-type(even) .content-wrapper {
+    justify-content: flex-end;
+    text-align: right;
 }

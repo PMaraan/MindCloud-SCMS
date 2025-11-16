@@ -5,7 +5,7 @@ const indicatorContainer = document.getElementById("indicatorContainer");
 let index = 0;
 let autoSlide;
 
-// --- Slideshow setup ---
+// Create indicators
 slides.forEach((_, i) => {
     const dot = document.createElement("div");
     dot.classList.add("slide-dot");
@@ -48,22 +48,19 @@ function stopAutoSlide() {
     clearInterval(autoSlide);
 }
 
-const nextBtn = document.getElementById("nextSlide");
-const prevBtn = document.getElementById("prevSlide");
+// Buttons
+document.getElementById("nextSlide").addEventListener("click", () => {
+    stopAutoSlide();
+    nextSlide();
+    startAutoSlide();
+});
 
-if (nextBtn && prevBtn) {
-    nextBtn.addEventListener("click", () => {
-        stopAutoSlide();
-        nextSlide();
-        startAutoSlide();
-    });
+document.getElementById("prevSlide").addEventListener("click", () => {
+    stopAutoSlide();
+    prevSlide();
+    startAutoSlide();
+});
 
-    prevBtn.addEventListener("click", () => {
-        stopAutoSlide();
-        prevSlide();
-        startAutoSlide();
-    });
-}
-
+// Initialize
 goToSlide(0);
 startAutoSlide();
