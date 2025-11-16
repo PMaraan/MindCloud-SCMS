@@ -13,9 +13,8 @@
 </head>
 <body>
 
+<!-- Slideshow Container -->
 <div class="slide-container">
-
-    <!-- Slides wrapper -->
     <div class="slides" id="slidesWrapper">
         <div class="slide" style="background-image: url('assets/images/lpu-building-2.jpg');">
             <h1>LPU-SCMS</h1>
@@ -40,6 +39,26 @@
 
     <!-- Indicators -->
     <div class="slide-indicators" id="indicatorContainer"></div>
+</div>
+
+<!-- Four Full-Screen Sections -->
+<div class="screens">
+    <section class="screen" style="background-color: #f4a261;">
+        <h2>Screen 1</h2>
+        <p>This is the first full-screen section.</p>
+    </section>
+    <section class="screen" style="background-color: #2a9d8f;">
+        <h2>Screen 2</h2>
+        <p>This is the second full-screen section.</p>
+    </section>
+    <section class="screen" style="background-color: #e9c46a;">
+        <h2>Screen 3</h2>
+        <p>This is the third full-screen section.</p>
+    </section>
+    <section class="screen" style="background-color: #264653; color: white;">
+        <h2>Screen 4</h2>
+        <p>This is the fourth full-screen section.</p>
+    </section>
 </div>
 
 <!-- Bootstrap JS -->

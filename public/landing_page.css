@@ -1,3 +1,15 @@
+html {
+    scroll-behavior: smooth;
+    scroll-snap-type: y mandatory;
+    overscroll-behavior: contain; /* prevents abrupt scroll jumps */
+}
+
+
+.slide-container,
+.screen {
+    scroll-snap-align: start; /* each section snaps */
+}
+
 /* Fullscreen slideshow container */
 .slide-container {
     height: 100vh;
@@ -99,7 +111,7 @@
 .slide-arrow.left { left: 20px; }
 .slide-arrow.right { right: 20px; }
 
-/* Slide indicators moved below button */
+/* Slide indicators */
 .slide-indicators {
     position: absolute;
     bottom: 20px;
@@ -121,4 +133,21 @@
 
 .slide-dot.active {
     background: #ffcccb;
+}
+
+/* Fullscreen sections below slideshow */
+.screens {
+    display: flex;
+    flex-direction: column;
+}
+
+.screen {
+    height: 100vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: 2rem;
+    text-align: center;
 }
