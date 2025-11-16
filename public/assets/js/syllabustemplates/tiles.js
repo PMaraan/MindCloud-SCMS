@@ -1,6 +1,19 @@
 import { capitalizeForDisplay, getBase } from './utils.js';
 import { setSelectedTileId, getSelectedTileId, getActiveTile } from './state.js';
 
+/** 
+ * robustData(el, key)
+ * - key = 'templateId' (camelCase) -> attribute 'data-template-id'
+ * - returns string or ''
+ */
+function robustData(el, key) {
+  if (!el) return '';
+  if (el.dataset && (key in el.dataset)) return el.dataset[key] ?? '';
+  // convert camelCase like 'templateId' -> 'template-id'
+  const kebab = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+  return el.getAttribute('data-' + kebab) || '';
+}
+
 /**
  * updateDetailsPane(card)
  * - Populates the sidebar detail panel with the active tile’s metadata.
@@ -12,20 +25,20 @@ function updateDetailsPane(card) {
   const empty = document.getElementById('tb-info-empty');
   if (!info || !empty) return;
 
-  document.getElementById('tb-i-title').textContent = card.dataset.title || '';
+  document.getElementById('tb-i-title').textContent = robustData(card, 'title') || '';
 
-  const scopeRaw = (card.dataset.scope || '').toString();
+  const scopeRaw = robustData(card, 'scope') || '';
   const scopeNorm = scopeRaw === 'system' ? 'global' : scopeRaw;
   const scopeLower = scopeNorm.toLowerCase();
   const scopeLabel = scopeNorm ? `${scopeNorm.charAt(0).toUpperCase()}${scopeNorm.slice(1)}` : '';
   const scopeEl = document.getElementById('tb-i-scope');
   if (scopeEl) scopeEl.textContent = scopeLabel;
 
-  const status = (card.dataset.status || '').toString().toLowerCase();
+  const status = (robustData(card, 'status') || '').toString().toLowerCase();
   const statusEl = document.getElementById('tb-i-status');
   if (statusEl) statusEl.textContent = capitalizeForDisplay(status);
 
-  const updatedRaw = (card.dataset.updated || '').toString();
+  const updatedRaw = robustData(card, 'updated') || '';
   let updatedDisplay = updatedRaw;
   if (updatedRaw) {
     try {
@@ -49,9 +62,9 @@ function updateDetailsPane(card) {
   const updatedEl = document.getElementById('tb-i-updated');
   if (updatedEl) updatedEl.textContent = updatedDisplay;
 
-  const collegeName = (card.dataset.collegeName || '').trim();
-  const programName = (card.dataset.programName || '').trim();
-  const courseName = (card.dataset.courseName || '').trim();
+  const collegeName = (robustData(card, 'collegeName') || '').trim();
+  const programName = (robustData(card, 'programName') || '').trim();
+  const courseName = (robustData(card, 'courseName') || '').trim();
   const needsCollege = ['college', 'program', 'course'].includes(scopeLower);
 
   const collegeDt = document.getElementById('tb-i-college-dt');
@@ -140,7 +153,7 @@ function updateDetailsPane(card) {
   }
 
   const deleteTitleEl = document.getElementById('tb-delete-title');
-  if (deleteTitleEl) deleteTitleEl.textContent = card.dataset.title || '—';
+  if (deleteTitleEl) deleteTitleEl.textContent = robustData(card, 'title') || '—';
 }
 
 /**
@@ -152,7 +165,7 @@ export function selectTile(card) {
   if (!card) return;
   document.querySelectorAll('.tb-tile.tb-card--active').forEach((el) => el.classList.remove('tb-card--active'));
   card.classList.add('tb-card--active');
-  setSelectedTileId(card.dataset.templateId || null);
+  setSelectedTileId(robustData(card, 'templateId') || null);
   updateDetailsPane(card);
 }
 
@@ -181,7 +194,7 @@ function initArrowNavigation() {
     if (!tiles.length) return;
 
     let index = tiles.findIndex((tile) => tile.classList.contains('tb-card--active'));
-    if (index < 0) index = Math.max(tiles.findIndex((tile) => tile.dataset.templateId === getSelectedTileId()), 0);
+    if (index < 0) index = Math.max(tiles.findIndex((tile) => robustData(tile, 'templateId') === getSelectedTileId()), 0);
 
     if (event.key === 'ArrowRight' || event.key === 'ArrowDown') index = Math.min(index + 1, tiles.length - 1);
     if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') index = Math.max(index - 1, 0);
@@ -201,7 +214,7 @@ function initOpenHandlers() {
   if (openBtn) {
     openBtn.addEventListener('click', () => {
       const tile = getActiveTile();
-      const id = tile?.dataset.templateId;
+      const id = robustData(tile, 'templateId');
       if (!id) {
         alert('Select a template first.');
         return;
@@ -214,7 +227,7 @@ function initOpenHandlers() {
   document.body.addEventListener('dblclick', (event) => {
     const tile = event.target.closest('.tb-tile');
     if (!tile) return;
-    const id = tile.dataset.templateId;
+    const id = robustData(tile, 'templateId');
     if (!id) return;
     const url = `${getBase()}/dashboard?page=rteditor&action=openTemplate&id=${encodeURIComponent(id)}`;
     window.open(url, '_blank', 'noopener');
@@ -224,7 +237,7 @@ function initOpenHandlers() {
     if (event.key !== 'Enter') return;
     const tile = document.activeElement?.closest?.('.tb-tile');
     if (!tile) return;
-    const id = tile.dataset.templateId;
+    const id = robustData(tile, 'templateId');
     if (!id) return;
     const url = `${getBase()}/dashboard?page=rteditor&action=openTemplate&id=${encodeURIComponent(id)}`;
     window.open(url, '_blank', 'noopener');
