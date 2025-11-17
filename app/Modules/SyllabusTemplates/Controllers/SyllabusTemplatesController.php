@@ -48,6 +48,8 @@ final class SyllabusTemplatesController
         $role      = (string)($user['role_name'] ?? '');
 
         // ---- JSON gates for dependent selects (no router change needed) ----
+        /* deprecated; moved to apiPrograms() and apiCourses()
+        // kept temporarily for backward compatibility
         if (isset($_GET['ajax'])) {
             header('Content-Type: application/json; charset=utf-8');
             $ajax = (string)$_GET['ajax'];
@@ -102,7 +104,7 @@ final class SyllabusTemplatesController
                 exit;
             }
         }
-
+        */
         $collegeId = isset($user['college_id']) ? (int)$user['college_id'] : null;
         $programId = isset($user['program_id']) ? (int)$user['program_id'] : null;
 

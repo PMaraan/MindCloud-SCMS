@@ -1,3 +1,5 @@
+// /public/assets/js/TemplateBuilder-Scaffold(deprecated).js
+// deprecated: use public/assets/js/syllabustemplates/tiles.js instead
 (function () {
   // Fallback for CSS.escape on older browsers
   if (!window.CSS || typeof window.CSS.escape !== 'function') {

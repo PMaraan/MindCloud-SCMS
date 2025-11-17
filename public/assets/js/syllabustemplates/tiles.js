@@ -1,3 +1,4 @@
+// /public/assets/js/syllabustemplates/tiles.js
 import { capitalizeForDisplay, getBase } from './utils.js';
 import { setSelectedTileId, getSelectedTileId, getActiveTile } from './state.js';
 
@@ -8,10 +9,20 @@ import { setSelectedTileId, getSelectedTileId, getActiveTile } from './state.js'
  */
 function robustData(el, key) {
   if (!el) return '';
-  if (el.dataset && (key in el.dataset)) return el.dataset[key] ?? '';
+  // prefer dataset when present; check undefined explicitly (safer than 'in')
+  try {
+    if (el.dataset && typeof el.dataset[key] !== 'undefined') {
+      const v = el.dataset[key];
+      return (v === null || typeof v === 'undefined') ? '' : String(v).trim();
+    }
+  } catch (e) {
+    // ignore and fall back to getAttribute
+  }
+
   // convert camelCase like 'templateId' -> 'template-id'
   const kebab = key.replace(/([A-Z])/g, '-$1').toLowerCase();
-  return el.getAttribute('data-' + kebab) || '';
+  const attr = el.getAttribute('data-' + kebab);
+  return (attr === null || typeof attr === 'undefined') ? '' : String(attr).trim();
 }
 
 /**

@@ -1,3 +1,4 @@
+// /public/assets/js/syllabustemplates/dataLoaders.js
 import { fetchJSON, getBase } from './utils.js';
 
 /**
@@ -10,7 +11,7 @@ import { fetchJSON, getBase } from './utils.js';
 export async function fetchPrograms(departmentId) {
   const depId = Number(departmentId);
   if (!Number.isFinite(depId) || depId <= 0) return [];
-  const url = `${getBase()}/dashboard?page=syllabus-templates&ajax=programs&department_id=${encodeURIComponent(depId)}`;
+  const url = `${getBase()}/dashboard?page=syllabus-templates&action=apiprograms&department_id=${encodeURIComponent(depId)}`;
   const payload = await fetchJSON(url);
   if (Array.isArray(payload?.programs)) return payload.programs;
   if (Array.isArray(payload)) return payload;
@@ -27,7 +28,7 @@ export async function fetchPrograms(departmentId) {
 export async function fetchCourses(programId) {
   const progId = Number(programId);
   if (!Number.isFinite(progId) || progId <= 0) return [];
-  const url = `${getBase()}/api/syllabus-templates/courses?program_id=${encodeURIComponent(progId)}`;
+  const url = `${getBase()}/dashboard?page=syllabus-templates&action=apicourses&program_id=${encodeURIComponent(progId)}`;
   const payload = await fetchJSON(url);
 
   const rows = Array.isArray(payload?.courses) ? payload.courses : Array.isArray(payload) ? payload : [];

@@ -1,6 +1,9 @@
+// /public/assets/js/syllabustemplates/editModal.js
 import { fetchPrograms, fetchCourses } from './dataLoaders.js';
 import { fillSelect, getCurrentCollegeParam, lockSelectElement } from './utils.js';
 import { getActiveTile } from './state.js';
+
+console.debug('[editModal] module loaded');
 
 /**
  * fillFromTile(tile)
@@ -73,6 +76,7 @@ async function populateDependentSelects(tile) {
  * - No return; the side effects are event listeners and initial state sync.
  */
 export default function initEditModal() {
+  console.debug('[editModal] initEditModal() running');
   const modal = document.getElementById('tbEditModal');
   if (!modal) return;
 
@@ -155,10 +159,100 @@ export default function initEditModal() {
     resetCourseSelect();
   };
 
+  /**
+   * Event Listeners
+   * - scopeRadios: on change, update visibility and apply lock
+   * - deptSelect: on change, fetch programs unless locked, then sync action
+   * - programSelect: on change, fetch courses unless locked, then sync action
+   * - modal show: fill inputs from tile, update visibility, apply lock, sync action
+   * - modal shown: populate dependent selects, update visibility, apply lock, sync action
+   */
+  // Scope change: update visibility/lock and (when needed) populate programs & courses.
   scopeRadios?.forEach((radio) => {
-    radio.addEventListener('change', () => {
+    radio.addEventListener('change', async () => {
       updateVisibility();
       applyLock();
+
+      try {
+        const scope = form.querySelector('input[name="scope"]:checked')?.value || 'global';
+        const needsPrograms = scope === 'program' || scope === 'course';
+
+        // If we don't need programs, clear downstream selects and return
+        if (!needsPrograms) {
+          // When switching away from program/course scope, clear program/course selects
+          fillSelect(programSelect, [], '— Select program —');
+          fillSelect(courseSelect, [], '— Select course —');
+          syncAction(getActiveTile());
+          return;
+        }
+
+        // Resolve department id (respect locked state and current select value)
+        let deptId = '';
+        if (deptSelect) {
+          // if locked, prefer lockedValue (already applied by applyLock())
+          if (deptSelect.dataset.locked === '1') {
+            deptId = deptSelect.dataset.lockedValue || deptSelect.dataset.default || deptSelect.value || '';
+          } else {
+            deptId = deptSelect.value || '';
+          }
+        }
+
+        // If no dept id in select, try falling back to active tile or current ?college param
+        if (!deptId) {
+          const tile = getActiveTile();
+          if (tile && tile.dataset.ownerDepartmentId) deptId = tile.dataset.ownerDepartmentId;
+        }
+        if (!deptId) {
+          const qs = getCurrentCollegeParam ? getCurrentCollegeParam() : null;
+          if (qs) deptId = qs;
+        }
+
+        // If still no deptId, bail but keep UI sane (user must pick a college)
+        if (!deptId) {
+          console.debug('[EditModal] scope change to program/course but no college chosen yet — programs left empty');
+          fillSelect(programSelect, [], '— Select program —');
+          fillSelect(courseSelect, [], '— Select course —');
+          syncAction(getActiveTile());
+          return;
+        }
+
+        // Fetch programs and populate
+        console.debug('[EditModal] scope change -> fetching programs for deptId=', deptId);
+        const programs = await fetchPrograms(deptId);
+        console.debug('[EditModal] scope change -> programs payload:', programs);
+        fillSelect(programSelect, programs, '— Select program —');
+
+        // If the active tile has a program preselected, try to apply it
+        const tile = getActiveTile();
+        const preProgram = tile?.dataset.programId || '';
+        if (preProgram) {
+          // robust select by value if present; otherwise set value if option was injected by fetch result
+          programSelect.value = preProgram;
+          // If a program is selected now, fetch courses for it
+          const selectedPid = programSelect.value || '';
+          if (selectedPid) {
+            const courses = await fetchCourses(selectedPid);
+            fillSelect(courseSelect, courses, '— Select course —');
+            // preselect tile's course if present
+            const preCourse = tile?.dataset.courseId || '';
+            if (preCourse) courseSelect.value = preCourse;
+          } else {
+            fillSelect(courseSelect, [], '— Select course —');
+          }
+        } else {
+          // no pre-program; clear courses
+          programSelect.value = '';
+          fillSelect(courseSelect, [], '— Select course —');
+        }
+
+        syncAction(getActiveTile());
+      } catch (err) {
+        console.error('[EditModal] scope change populate error:', err);
+        // keep UI usable by leaving selects empty
+        fillSelect(programSelect, [], '— Select program —');
+        fillSelect(courseSelect, [], '— Select course —');
+        syncAction(getActiveTile());
+      }
     });
   });
 
@@ -175,8 +269,17 @@ export default function initEditModal() {
       syncAction(getActiveTile());
       return;
     }
-    const programs = await fetchPrograms(depId);
-    fillSelect(programSelect, programs, '— Select program —');
+
+    console.debug('[EditModal] fetchPrograms -> deptId=', depId);
+    try {
+      const programs = await fetchPrograms(depId);
+      console.debug('[EditModal] programs payload:', programs);
+      fillSelect(programSelect, programs, '— Select program —');
+    } catch (err) {
+      console.error('[EditModal] fetchPrograms error:', err);
+      // keep UI usable by leaving program select empty
+      fillSelect(programSelect, [], '— Select program —');
+    }
     syncAction(getActiveTile());
   });
 

@@ -1,3 +1,4 @@
+// /public/assets/js/syllabustemplates/state.js
 let selectedTileId = null;
 
 /**

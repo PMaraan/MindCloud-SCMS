@@ -55,8 +55,6 @@
             '/notifications/latest' => [NotificationsController::class, 'latestJson'],
             '/notifications/unread-count' => [NotificationsController::class, 'unreadCountJson'],
             '/api/settings/get'  => [SettingsController::class, 'getPreference'],
-            '/api/syllabus-templates/programs' => [SyllabusTemplatesController::class, 'apiPrograms'],
-            '/api/syllabus-templates/courses'  => [SyllabusTemplatesController::class, 'apiCourses'],
             '/api/programs/chairs' => [ProgramsController::class, 'apiChairs'],
         ],
         'POST' => [

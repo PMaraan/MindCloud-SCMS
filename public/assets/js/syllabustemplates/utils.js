@@ -1,3 +1,4 @@
+// /public/assets/js/syllabustemplates/utils.js
 /**
  * installCssEscapeFallback()
  * - Ensures CSS.escape exists on older browsers.
@@ -80,6 +81,7 @@ export function getBase() {
  * fetchJSON(url)
  * - Thin wrapper around fetch() that enforces JSON responses.
  * - Consumed by dataLoaders.js (which powers modal cascading selects) and archive/delete flows.
+ * - More tolerant: will attempt to parse JSON even if Content-Type header is missing/mis-set.
  * - url: absolute or base-relative endpoint; returns parsed JSON or throws.
  */
 export async function fetchJSON(url) {
@@ -91,13 +93,26 @@ export async function fetchJSON(url) {
 
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
+  // Prefer correct header but be tolerant: try response.json() anyway and fallback to text->JSON.parse
   const contentType = (response.headers.get('content-type') || '').toLowerCase();
-  if (!contentType.includes('application/json')) {
-    await response.text();
-    throw new Error('Non-JSON response');
-  }
 
-  return response.json();
+  try {
+    // First attempt: native json parser (works even if content-type is wrong but body is valid JSON)
+    const data = await response.json();
+    return data;
+  } catch (firstErr) {
+    // If response.json() failed, try to read text and parse explicitly (gives better error messages)
+    try {
+      const txt = await response.text();
+      // If body is empty, return empty array/object to avoid crashes
+      if (!txt || !txt.trim()) throw firstErr;
+      return JSON.parse(txt);
+    } catch (secondErr) {
+      // For debugging, include header info in the thrown error
+      const headerInfo = contentType ? ` (content-type: ${contentType})` : ' (no content-type header)';
+      throw new Error(`Invalid JSON response${headerInfo} — ${secondErr.message}`);
+    }
+  }
 }
 
 /**

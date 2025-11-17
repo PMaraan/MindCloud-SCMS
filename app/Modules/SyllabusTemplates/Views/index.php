@@ -109,7 +109,7 @@ $PAGE_KEY = 'syllabus-templates';
                 <dt class="col-4">Actions</dt>
                 <dd class="col-8">
                   <div class="d-flex gap-2">
-                    <button class="btn btn-sm btn-primary" id="tb-open">Open</button>
+                    <button class="btn btn-sm btn-primary" id="tb-open">Open in Editor</button>
 
                     <!-- Use Template (formerly Duplicate) — same behavior, kept as outline secondary -->
                     <button class="btn btn-sm btn-outline-secondary"
@@ -127,7 +127,7 @@ $PAGE_KEY = 'syllabus-templates';
                             data-bs-toggle="modal"
                             data-bs-target="#tbEditModal"
                             style="display:none">
-                      Edit
+                      Edit Details
                     </button>
 
                     <!-- Archive / Unarchive: same color as previous edit (yellowish) -->
