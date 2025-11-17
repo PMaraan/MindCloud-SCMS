@@ -151,26 +151,72 @@ window.__RT_editor = editor;
 bindBasicToolbar(editor, document);
 
 // ======================================================================
-// [HYDRATE FROM EMBEDDED JSON] — Read the raw JSON from the payload tag.
-// What it does:
-//   - Reads the JSON payload from the tag with id="rt-initial-json" (type="application/json")
-//   - Parses it and sets TipTap content to that JSON
-//   - Also reads #rt-meta for scope/id as a fallback sync
+// [HYDRATE FROM EMBEDDED JSON — GUARDED]
+// Purpose:
+//  - Keep the view-level hydration as a harmless redundancy, BUT do not
+//    overwrite a non-trivial editor state that the constructor already set.
+//  - Only call setContent(...) if the editor currently appears trivial/empty
+//    (a single empty paragraph) or missing.
 // ======================================================================
-(function hydrateInitialContent() {
+(function hydrateInitialContentGuarded() {
+  // --- helper: determine whether an editor doc is "trivial" (empty/fallback)
+  function isTrivialDoc(doc) {
+    if (!doc || !Array.isArray(doc.content)) return true;
+    // Empty content
+    if (doc.content.length === 0) return true;
+    // Single empty paragraph
+    if (doc.content.length === 1) {
+      const first = doc.content[0];
+      if (first && first.type === 'paragraph') {
+        // If paragraph has no content or its content is empty, treat as trivial.
+        const fc = first.content;
+        if (!fc || (Array.isArray(fc) && fc.length === 0)) return true;
+      }
+    }
+    return false;
+  }
+
   // --- read JSON payload
   const tag = document.getElementById('rt-initial-json');
   if (tag) {
-    const raw = tag.textContent || '';
-    if (raw.trim()) {
+    const raw = (tag.textContent || '').replace(/^\uFEFF/, '').trim();
+    if (raw) {
       try {
-        const j = JSON.parse(raw);
-        editor.commands.setContent(j);
+        const parsed = JSON.parse(raw);
+        // support envelope { json: { ... } } or direct doc
+        const serverDoc = (parsed && typeof parsed === 'object' && parsed.json && typeof parsed.json === 'object')
+          ? parsed.json
+          : parsed;
+
+        // If editor is not present yet, bail (constructor will handle it).
+        if (typeof window.editor === 'undefined' || !window.editor || typeof window.editor.getJSON !== 'function') {
+          // nothing to do here — constructor hydration is canonical
+          // keep redundant IIFE in place for later loads
+        } else {
+          // Decide whether to set content:
+          // Only set when the current editor state looks trivial/empty.
+          const existing = window.editor.getJSON && window.editor.getJSON();
+          const existingTrivial = isTrivialDoc(existing);
+
+          if (existingTrivial) {
+            try {
+              window.editor.commands.setContent(serverDoc);
+              console.debug('[RTEditor] view-hydration applied (editor was trivial).');
+            } catch (e) {
+              console.warn('[RTEditor] view-hydration failed to set content:', e);
+            }
+          } else {
+            // Editor already had meaningful content (likely constructor hydration).
+            // Do NOT overwrite — leave constructor as canonical.
+            console.debug('[RTEditor] view-hydration skipped: editor already initialized.');
+          }
+        }
       } catch (e) {
-        console.warn('[RTEditor] invalid initial JSON payload; using fallback.', e);
+        console.warn('[RTEditor] invalid initial JSON payload; skipping view-hydration.', e);
       }
     }
   }
+
   // --- sync scope/id from meta (fallback if URL params are missing)
   const metaEl = document.getElementById('rt-meta');
   if (metaEl) {
