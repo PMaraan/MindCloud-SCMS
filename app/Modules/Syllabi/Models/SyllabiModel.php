@@ -56,10 +56,27 @@ final class SyllabiModel
         return $row ?: null;
     }
 
-    /** Programs for a college. */
+    /** Programs for a college.
+     *
+     * NOTE: the programs table uses `department_id` (departments table) rather than
+     * `college_id`. For compatibility with callers that expect `college_id` we
+     * select `department_id AS college_id` so the returned rows keep the same key.
+     *
+     * @param int $collegeId department_id (college) to filter programs by
+     * @return array<int,array<string,mixed>>
+     */
     public function getProgramsByCollege(int $collegeId): array
     {
-        $stmt = $this->pdo->prepare("SELECT program_id, program_name, college_id FROM public.programs WHERE college_id = :cid ORDER BY program_name");
+        $sql = "
+            SELECT
+                program_id,
+                program_name,
+                department_id AS college_id
+            FROM public.programs
+            WHERE department_id = :cid
+            ORDER BY program_name
+        ";
+        $stmt = $this->pdo->prepare($sql);
         $stmt->execute([':cid' => $collegeId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
