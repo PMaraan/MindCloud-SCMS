@@ -248,15 +248,18 @@ final class AssignmentsService
 
     /**
      * Assign / clear the Chair of a Program.
-     * Behavior mirrors setDepartmentDean:
-     * - Target user must already have the "Chair" role.
-     * - Syncs user_roles.department_id for the Chair role to the program's college department_id.
-     * - Ensures one chair per program and one program per chair.
-     * - Clearing sets program_chairs mapping to none and user_roles.department_id (Chair role row) to NULL.
      *
-     * @param int         $programId     The program to affect
-     * @param string|null $newChairIdNo  The user's id_no to assign, or null/'' to clear
-     * @throws \DomainException|\RuntimeException|\Throwable
+     * New behaviour (2025-11-17): a single user (chair) may be assigned to
+     * multiple programs. We therefore removed the uniqueness constraint on
+     * chair_id and no longer forcibly free a chair from other programs.
+     *
+     * - Target user must already have the "Chair" role.
+     * - Syncs user_roles.department_id for the Chair role (to the program's dept).
+     * - Ensures one chair per program (program_chairs.program_id remains UNIQUE).
+     * - Clearing sets program_chairs mapping for that program to none.
+     *
+     * @param int         $programId
+     * @param string|null $newChairIdNo
      */
     public function setProgramChair(int $programId, ?string $newChairIdNo): void
     {
@@ -316,13 +319,6 @@ final class AssignmentsService
             if (!$this->hasChairRole($newChairIdNo, $rid)) {
                 throw new \DomainException("Selected user does not have the Chair role.");
             }
-
-            // A chair can only map to one program → free the new chair elsewhere
-            $free = $this->pdo->prepare("
-                DELETE FROM program_chairs
-                 WHERE chair_id = :id AND program_id <> :pid
-            ");
-            $free->execute([':id' => $newChairIdNo, ':pid' => $programId]);
 
             // Sync user_roles.department_id for the Chair role (to program's department)
             $upd = $this->pdo->prepare("

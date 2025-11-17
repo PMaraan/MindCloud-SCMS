@@ -4413,3 +4413,11 @@ PL/pgSQL function mc_trg_tprog_validate_scope() line 3 at PERFORM
 [14-Nov-2025 05:48:03 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 618
 [16-Nov-2025 14:05:18 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 636
 [17-Nov-2025 02:57:24 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 638
+[17-Nov-2025 07:38:56 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[17-Nov-2025 07:38:56 Europe/Berlin] accounts.page rows=10 total=21 limit=10 offset=0
+[17-Nov-2025 07:38:56 Europe/Berlin] accounts.index total=21 rows=10
+[17-Nov-2025 07:38:56 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"department_id":null,"role_name":"Admin","department_short_name":"","college_short_name":""}
+[17-Nov-2025 07:39:01 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[17-Nov-2025 07:39:01 Europe/Berlin] accounts.page rows=5 total=5 limit=10 offset=0
+[17-Nov-2025 07:39:01 Europe/Berlin] accounts.index total=5 rows=5
+[17-Nov-2025 07:39:01 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-50003","fname":"Jack","mname":"","lname":"Black","email":"jackblack@lpunetwork.edu.ph","role_id":6,"department_id":1,"role_name":"Chair","department_short_name":"CCS","college_short_name":"CCS"}
