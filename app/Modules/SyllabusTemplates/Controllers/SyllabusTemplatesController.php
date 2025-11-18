@@ -18,6 +18,7 @@ final class SyllabusTemplatesController
     private StorageInterface $db;
     private UserModel $userModel;
     private SyllabusTemplatesModel $model;
+    private RBAC $rbac;
 
     // Keep same role groupings
     private array $GLOBAL_ROLES  = ['VPAA','VPAA Secretary'];
@@ -30,7 +31,7 @@ final class SyllabusTemplatesController
         if (session_status() !== \PHP_SESSION_ACTIVE) session_start();
         $this->userModel = new UserModel($db);
         $this->model     = new SyllabusTemplatesModel($db);
-
+        $this->rbac      = new RBAC($db);
         // Use new cache bucket, but gracefully carry over the old one if it exists
         if (!isset($_SESSION['st_cache'])) {
             $_SESSION['st_cache'] = isset($_SESSION['tb_cache']) && is_array($_SESSION['tb_cache'])
@@ -42,7 +43,7 @@ final class SyllabusTemplatesController
     public function index(): string
     {
         // Same permission, now referenced via alias constant
-        (new RBAC($this->db))->require((string)$_SESSION['user_id'], Permissions::SYLLABUSTEMPLATES_VIEW);
+        $this->rbac->require((string)$_SESSION['user_id'], Permissions::SYLLABUSTEMPLATES_VIEW);
 
         $user      = $this->userModel->getUserProfile((string)$_SESSION['user_id']);
         $role      = (string)($user['role_name'] ?? '');
@@ -150,7 +151,7 @@ final class SyllabusTemplatesController
 
         // Convert simple GET flag into a flash (so JS can trigger a nice message without alert())
         if (isset($_GET['flash']) && $_GET['flash'] === 'missing-id') {
-            \App\Helpers\FlashHelper::set('danger', 'Missing or invalid document id.');
+            FlashHelper::set('danger', 'Missing or invalid document id.');
         }
 
         // FOLDER-FIRST for non-college-bound roles (global roles)
@@ -252,10 +253,9 @@ final class SyllabusTemplatesController
             $viewData['programs']= $progSecs;
 
             // Create permissions for deans:
-            $viewData['canCreateCollege']  = true;
-            $viewData['canCreateProgram']  = true; // <— allow Program-scope creation
-            // if you also want Course scope creation for deans, set a flag your modal can read
-            $viewData['canCreateCourse']   = true; // optional: toggle to false if you don't want it yet
+            $viewData['canCreateCollege']  = true; // college-level scope
+            $viewData['canCreateProgram']  = true; // program-level scope
+            $viewData['canCreateCourse']   = true; // course-level scope
 
             // Lists used by the Create modal
             $viewData['allColleges']       = [['college_id'=>$collegeId,'short_name'=>$user['college_short_name'] ?? '','college_name'=>$user['college_name'] ?? '']];
@@ -367,7 +367,7 @@ final class SyllabusTemplatesController
 
         // Authorization: ensure user can view syllabus templates (consistent with the module)
         try {
-            (new \App\Security\RBAC($this->db))->require((string)$_SESSION['user_id'], \App\Config\Permissions::SYLLABUSTEMPLATES_VIEW);
+            $this->rbac->require((string)$_SESSION['user_id'], \App\Config\Permissions::SYLLABUSTEMPLATES_VIEW);
         } catch (\Throwable $e) {
             http_response_code(403);
             echo json_encode(['error' => 'Forbidden'], JSON_UNESCAPED_SLASHES);
@@ -409,7 +409,7 @@ final class SyllabusTemplatesController
 
         // Authorization: require view permission for syllabus templates (keeps behaviour consistent)
         try {
-            (new \App\Security\RBAC($this->db))->require((string)$_SESSION['user_id'], \App\Config\Permissions::SYLLABUSTEMPLATES_VIEW);
+            $this->rbac->require((string)$_SESSION['user_id'], Permissions::SYLLABUSTEMPLATES_VIEW);
         } catch (\Throwable $e) {
             http_response_code(403);
             echo json_encode(['error' => 'Forbidden'], JSON_UNESCAPED_SLASHES);
@@ -447,7 +447,7 @@ final class SyllabusTemplatesController
 
     public function create(): void
     {
-        (new RBAC($this->db))->require((string)$_SESSION['user_id'], Permissions::SYLLABUSTEMPLATES_CREATE);
+        $this->rbac->require((string)$_SESSION['user_id'], Permissions::SYLLABUSTEMPLATES_CREATE);
         $user = $this->userModel->getUserProfile((string)$_SESSION['user_id']);
         $idno = (string)($user['id_no'] ?? 'SYS-UNKNOWN');
         $roleName  = strtolower((string)($user['role_name'] ?? ''));
@@ -628,7 +628,7 @@ final class SyllabusTemplatesController
 
     public function edit(): void
     {
-        (new \App\Security\RBAC($this->db))->require((string)$_SESSION['user_id'], \App\Config\Permissions::SYLLABUSTEMPLATES_EDIT);
+        $this->rbac->require((string)$_SESSION['user_id'], Permissions::SYLLABUSTEMPLATES_EDIT);
         $user = $this->userModel->getUserProfile((string)$_SESSION['user_id']);
         $roleName  = strtolower((string)($user['role_name'] ?? ''));
         $userColId = isset($user['college_id']) ? (int)$user['college_id'] : null;
@@ -786,7 +786,7 @@ final class SyllabusTemplatesController
         }
 
         try {
-            (new RBAC($this->db))->require((string)$_SESSION['user_id'], $requiredPerm);
+            $this->rbac->require((string)$_SESSION['user_id'], $requiredPerm);
         } catch (\Throwable $rbacErr) {
             FlashHelper::set('danger', 'Permission denied.');
             header('Location: ' . BASE_PATH . '/dashboard?page=syllabus-templates');
@@ -882,7 +882,7 @@ final class SyllabusTemplatesController
         }
 
         // Permission: require edit permission for templates
-        (new RBAC($this->db))->require((string)$_SESSION['user_id'], Permissions::SYLLABUSTEMPLATES_EDIT);
+        $this->rbac->require((string)$_SESSION['user_id'], Permissions::SYLLABUSTEMPLATES_EDIT);
 
         $tplId = isset($_POST['template_id']) ? (int)$_POST['template_id'] : 0;
         if ($tplId <= 0) {
