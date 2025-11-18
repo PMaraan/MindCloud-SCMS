@@ -267,19 +267,75 @@ final class SyllabusTemplatesController
             return $this->render('index', $viewData);
         }
 
-        // CHAIRS: show their college (general) + ONLY their own program section
-        if ($collegeId && $programId && in_array($role, $this->CHAIR_ROLES, true)) {
-            $general   = $this->model->getCollegeGeneralTemplates($collegeId);
+        // CHAIRS: show their college (general) + one or more program sections (chairs may now handle multiple programs)
+        if ($collegeId && in_array($role, $this->CHAIR_ROLES, true)) {
+            $general = $this->model->getCollegeGeneralTemplates($collegeId);
 
-            // Only the chair's program section (view & duplicate allowed; edit only for their program)
-            $programRow = [
-                'program_id'   => $programId,
-                'program_name' => (string)($user['program_name'] ?? 'My Program'),
-            ];
-            $progSection = [
-                'program'   => $programRow,
-                'templates' => $this->model->getProgramExclusiveTemplates($collegeId, $programId),
-            ];
+            // Attempt to load programs assigned to this chair via model helper
+            $chairPrograms = [];
+            try {
+                $chairPrograms = $this->model->getProgramsForChair((string)($_SESSION['user_id'] ?? ''));
+            } catch (\Throwable $e) {
+                // swallow and fallback to profile-based detection below
+                $chairPrograms = [];
+            }
+
+            // Fallback(s) if model returned nothing:
+            //  - If user profile offers multiple programs (e.g. 'programs' array), use those.
+            //  - If user profile contains comma-separated program_id string, split it.
+            if (empty($chairPrograms)) {
+                // if user['programs'] exists and is array-like, accept it directly
+                if (!empty($user['programs']) && is_array($user['programs'])) {
+                    foreach ($user['programs'] as $p) {
+                        $pid = isset($p['program_id']) ? (int)$p['program_id'] : (int)($p['id'] ?? 0);
+                        $pname = (string)($p['program_name'] ?? $p['name'] ?? ($p['label'] ?? ''));
+                        if ($pid > 0) $chairPrograms[] = ['program_id' => $pid, 'program_name' => $pname];
+                    }
+                }
+
+                // if user['program_id'] is a comma-list (legacy), split and fetch names via getProgramsByIds
+                if (empty($chairPrograms) && !empty($user['program_id']) && is_string($user['program_id']) && strpos($user['program_id'], ',') !== false) {
+                    $ids = array_filter(array_map('trim', explode(',', (string)$user['program_id'])));
+                    $ids = array_map('intval', $ids);
+                    $ids = array_filter($ids);
+                    if (!empty($ids)) {
+                        $chairPrograms = $this->model->getProgramsByIds($ids);
+                    }
+                }
+
+                // if still empty but a single program_id exists in profile, use it
+                if (empty($chairPrograms) && isset($user['program_id']) && (int)$user['program_id'] > 0) {
+                    $chairPrograms[] = [
+                        'program_id'   => (int)$user['program_id'],
+                        'program_name' => (string)($user['program_name'] ?? 'My Program'),
+                    ];
+                }
+            }
+
+            // Build program sections (program + templates) for each program found
+            $progSecs = [];
+            foreach ($chairPrograms as $p) {
+                $pid = (int)($p['program_id'] ?? $p['id'] ?? 0);
+                $pname = (string)($p['program_name'] ?? $p['name'] ?? 'Program');
+                if ($pid <= 0) continue;
+                $progRow = ['program_id' => $pid, 'program_name' => $pname];
+                $progSecs[] = [
+                    'program'   => $progRow,
+                    'templates' => $this->model->getProgramExclusiveTemplates($collegeId, $pid),
+                ];
+            }
+
+            // If nothing resolved (defensive), fall back to single programId behavior (if present)
+            if (empty($progSecs) && $programId) {
+                $progRow = [
+                    'program_id' => $programId,
+                    'program_name' => (string)($user['program_name'] ?? 'My Program'),
+                ];
+                $progSecs[] = [
+                    'program' => $progRow,
+                    'templates' => $this->model->getProgramExclusiveTemplates($collegeId, $programId),
+                ];
+            }
 
             $viewData['mode']    = 'college';
             $viewData['college'] = [
@@ -288,70 +344,36 @@ final class SyllabusTemplatesController
                 'college_name' => (string)($user['college_name'] ?? ''),
             ];
             $viewData['general']  = $general;
-            $viewData['programs'] = [$progSection];
+            $viewData['programs'] = $progSecs;
 
             // Creation capabilities for Chair: program/course only; never global/college
             $viewData['canCreateGlobal']   = false;
             $viewData['canCreateCollege']  = false;
             $viewData['canCreateProgram']  = true;
-            $viewData['canCreateCourse']  = true;
+            $viewData['canCreateCourse']   = true;
 
-            // For selects in modals
-            $viewData['allColleges']       = [[
+            // For selects in modals: expose the college and the programs list (flattened)
+            $viewData['allColleges'] = [[
                 'college_id'   => $collegeId,
                 'short_name'   => (string)($user['college_short_name'] ?? ''),
                 'college_name' => (string)($user['college_name'] ?? ''),
             ]];
-            $viewData['programsOfCollege'] = [[
-                'program_id'   => $programId,
-                'program_name' => (string)($user['program_name'] ?? 'My Program'),
-            ]];
+
+            // programsOfCollege expected by modals: produce simple [ {program_id, program_name}, ... ]
+            $pf = [];
+            foreach ($progSecs as $ps) {
+                $pp = $ps['program'] ?? [];
+                if (!empty($pp)) $pf[] = $pp;
+            }
+            $viewData['programsOfCollege'] = $pf;
 
             // No "Back to folders" for chairs
             $viewData['showBackToFolders'] = false;
-
-
-
-            // --- DEBUG DUMP (developer only) ----------------------------------
-            // Temporarily print what the model returned so we can inspect
-            if (isset($_GET['devdump']) && $_GET['devdump'] === '1') {
-                echo '<pre style="background:#111;color:#0f0;padding:8px;">';
-                echo "DEBUG: SyllabusTemplatesController@index debug dump\n\n";
-
-                // Global / general / programs depending on mode
-                try {
-                    $glo = method_exists($this->model, 'getGlobalTemplates') ? $this->model->getGlobalTemplates() : null;
-                    $gen = isset($general) ? $general : (method_exists($this->model,'getCollegeGeneralTemplates') ? $this->model->getCollegeGeneralTemplates($openCollegeId ?? $collegeId ?? 0) : null);
-                    $progs = isset($programs) ? $programs : (method_exists($this->model,'getProgramsByCollege') ? $this->model->getProgramsByCollege($openCollegeId ?? $collegeId ?? 0) : null);
-
-                    echo "getGlobalTemplates(): " . (is_array($glo) ? count($glo) . " rows" : var_export($glo, true)) . "\n";
-                    echo "getCollegeGeneralTemplates(): " . (is_array($gen) ? count($gen) . " rows" : var_export($gen, true)) . "\n";
-                    echo "getProgramsByCollege(): " . (is_array($progs) ? count($progs) . " rows" : var_export($progs, true)) . "\n\n";
-
-                    // show first 5 rows of each, if arrays
-                    if (is_array($glo)) { echo "GLOBAL sample:\n" . print_r(array_slice($glo,0,5), true) . "\n"; }
-                    if (is_array($gen)) { echo "GENERAL sample:\n" . print_r(array_slice($gen,0,5), true) . "\n"; }
-                    if (is_array($progs)) { echo "PROGRAMS sample:\n" . print_r(array_slice($progs,0,5), true) . "\n"; }
-
-                } catch (\Throwable $e) {
-                    echo "Model exception: " . get_class($e) . " - " . $e->getMessage() . "\n" . $e->getTraceAsString();
-                }
-
-                echo '</pre>';
-                // stop so you see only debug info
-                exit;
-            }
-
             // Pass default college for preselect
             $viewData['defaultCollegeId']  = $collegeId;
 
             return $this->render('index', $viewData);
         }
-
-        // fallback: show folders first
-        $viewData['mode']   = 'global-folders';
-         $viewData['colleges'] = $this->model->getAllColleges();
-         return $this->render('index', $viewData);
     }
 
     public function apiPrograms(): void

@@ -46,6 +46,47 @@ final class SyllabusTemplatesModel
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
+    /**
+     * Return programs assigned to a Chair (by user id).
+     * Expected to read from a programs <-> chairs join table (program_chairs).
+     * Returns an array of ['program_id'=>int, 'program_name'=>string].
+     * If the underlying join table is missing or query fails, returns [] (caller should fallback).
+     */
+    public function getProgramsForChair(string $userId): array
+    {
+        try {
+            $stmt = $this->pdo->prepare(
+                "SELECT p.program_id, p.program_name
+                 FROM public.programs p
+                 JOIN public.program_chairs pc ON pc.program_id = p.program_id
+                 WHERE pc.chair_id = :uid
+                 ORDER BY p.program_name ASC"
+            );
+            $stmt->execute([':uid' => $userId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } catch (\Throwable $e) {
+            // Defensive: some schemas may not have program_chairs — let controller fallback gracefully
+            return [];
+        }
+    }
+
+    /**
+     * Fetch programs by an array of program_ids (used for profile-based fallbacks).
+     * Input: array of ints (ids). Returns array of ['program_id', 'program_name'].
+     */
+    public function getProgramsByIds(array $ids): array
+    {
+        $ids = array_values(array_filter(array_map('intval', $ids), fn($v) => $v > 0));
+        if (empty($ids)) return [];
+
+        // Build positional placeholders safely
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $sql = "SELECT program_id, program_name FROM public.programs WHERE program_id IN ($placeholders) ORDER BY program_name ASC";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($ids);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
     /** Courses of a program (name-based labels).
      *  Uses program's department_id to fetch courses with matching courses.college_id.
      *  Returns: [{ id: int, label: string }, ...]
@@ -397,4 +438,6 @@ final class SyllabusTemplatesModel
             throw $e;
         }
     }
+
+    
 }
