@@ -9,7 +9,6 @@ use App\Security\RBAC;
 use App\Config\Permissions;
 use App\Models\UserModel;
 use App\Modules\SyllabusTemplates\Models\SyllabusTemplatesModel;
-use PDO;
 use Throwable;
 use App\Helpers\FlashHelper;
 
@@ -523,8 +522,8 @@ final class SyllabusTemplatesController
                 if ($scope === 'college') {
                     $targetCollege = $colId;
                 } elseif ($scope === 'program' || $scope === 'course') {
-                    $pdo = $this->db->getConnection();
-                    $deptId = (int)$pdo->query("SELECT department_id FROM public.programs WHERE program_id = {$progId}")->fetchColumn();
+                    // Use model helper instead of inline query
+                    $deptId = $this->model->getDepartmentIdByProgram((int)$progId);
                     $targetCollege = $deptId ?: null;
                 }
             }
@@ -607,8 +606,7 @@ final class SyllabusTemplatesController
         }
 
         try {
-            $model = new \App\Modules\SyllabusTemplates\Models\SyllabusTemplatesModel($this->db);
-            $newId = $model->cloneTemplateWithMeta(
+            $newId = $this->model->cloneTemplateWithMeta(
                 $srcId,
                 [
                     'title'                  => $title,
@@ -661,17 +659,6 @@ final class SyllabusTemplatesController
             throw new \RuntimeException('Not allowed: only VPAA or VPAA Secretary can edit Global templates.');
         }
 
-        // If dean saving as college/program/course, force college to their own
-        if (in_array($roleName, ['dean'], true) && in_array($scope, ['college','program','course'], true)) {
-            if ($userColId) {
-                $deptId = $userColId; // override
-            } else {
-                throw new \RuntimeException('Your profile is missing a college.');
-            }
-        }
-        $pdo = $this->db->getConnection();
-        $pdo->beginTransaction();
-
         try {
             $tid   = (int)($_POST['template_id'] ?? 0);
             $title = trim((string)($_POST['title'] ?? ''));
@@ -713,29 +700,32 @@ final class SyllabusTemplatesController
                 throw new \RuntimeException('Invalid scope.');
             }
 
-            // Update row
-            $stmt = $pdo->prepare("
-                UPDATE public.syllabus_templates
-                SET title = :title,
-                    scope = :scope,
-                    owner_department_id = :dept,
-                    program_id = :prog,
-                    course_id = :course,
-                    status = :status,
-                    updated_at = NOW()
-                WHERE template_id = :tid
-            ");
-            $stmt->execute([
-                ':title'  => $title,
-                ':scope'  => $scope,
-                ':dept'   => $deptId,
-                ':prog'   => $progId,
-                ':course' => $courseId,
-                ':status' => $status,
-                ':tid'    => $tid,
+            // Role restrictions that depend on the resolved scope
+            $allowedGlobalEditors = ['vpaa', 'vpaa secretary'];
+            if ($scope === 'global' && !in_array($roleName, $allowedGlobalEditors, true)) {
+                throw new \RuntimeException('Not allowed: only VPAA or VPAA Secretary can edit Global templates.');
+            }
+
+            // If dean saving as college/program/course, force college to their own
+            if (in_array($roleName, ['dean'], true) && in_array($scope, ['college','program','course'], true)) {
+                if ($userColId) {
+                    $deptId = $userColId; // override
+                } else {
+                    throw new \RuntimeException('Your profile is missing a college.');
+                }
+            }
+
+            // Delegate update to model (transaction handled there)
+            $this->model->updateTemplate($tid, [
+                'title'               => $title,
+                'scope'               => $scope,
+                'owner_department_id' => $deptId,
+                'program_id'          => $progId,
+                'course_id'           => $courseId,
+                'status'              => $status,
             ]);
 
-            $pdo->commit();
+            // cache bust + flash
             unset($_SESSION['st_cache'], $_SESSION['tb_cache']);
             $_SESSION['flash'] = ['type'=>'success','message'=>'Template updated.'];
 
@@ -761,7 +751,6 @@ final class SyllabusTemplatesController
             header('Location: ' . $redirectUrl);
             exit;
         } catch (\Throwable $e) {
-            $pdo->rollBack();
             $_SESSION['flash'] = ['type'=>'danger','message'=>'Update failed: '.$e->getMessage()];
             
             // Preserve college param on error redirect too
@@ -823,41 +812,28 @@ final class SyllabusTemplatesController
         }
 
         try {
-            $pdo = $this->db->getConnection();
-
-            // Lock and fetch
-            $st = $pdo->prepare("SELECT template_id, status FROM public.syllabus_templates WHERE template_id = :tid FOR UPDATE");
-            $st->execute([':tid' => $tplId]);
-            $row = $st->fetch(\PDO::FETCH_ASSOC);
+            // Delegate locking + deletion to the model (connection handled in model)
+            $row = $this->model->fetchTemplateForLock($tplId);
             if (!$row) {
                 FlashHelper::set('danger', 'Template not found.');
                 header('Location: ' . BASE_PATH . '/dashboard?page=syllabus-templates');
                 exit;
             }
 
-            // Only archived templates can be deleted
             if (strtolower((string)$row['status']) !== 'archived') {
                 FlashHelper::set('danger', 'Template must be archived before it can be deleted.');
                 header('Location: ' . BASE_PATH . '/dashboard?page=syllabus-templates');
                 exit;
             }
 
-            // Delete
-            $pdo->beginTransaction();
-            try {
-                $delTpl = $pdo->prepare("DELETE FROM public.syllabus_templates WHERE template_id = :tid");
-                $delTpl->execute([':tid' => $tplId]);
-                $pdo->commit();
-            } catch (\Throwable $inner) {
-                $pdo->rollBack();
-                throw $inner;
-            }
+            // delete via model (transaction handled there)
+            $this->model->deleteTemplate($tplId);
 
             // Bust caches
             unset($_SESSION['st_cache'], $_SESSION['tb_cache']);
 
             FlashHelper::set('success', 'Template deleted.');
-            
+
             // Redirect: preserve college param like create/edit/duplicate do
             $redirectUrl = (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabus-templates';
             if (isset($_GET['college']) && ctype_digit((string)$_GET['college'])) {
@@ -918,25 +894,22 @@ final class SyllabusTemplatesController
         $target = strtolower((string)($_POST['target'] ?? ''));
 
         try {
-            $pdo = $this->db->getConnection();
-            $st = $pdo->prepare("SELECT status FROM public.syllabus_templates WHERE template_id = :tid");
-            $st->execute([':tid' => $tplId]);
-            $row = $st->fetch(\PDO::FETCH_ASSOC);
-            if (!$row) {
+            // Use model helpers for status read/write
+            $cur = $this->model->getTemplateStatus($tplId);
+            if ($cur === null) {
                 http_response_code(404);
                 FlashHelper::set('danger', 'Template not found.');
                 echo json_encode(['success' => false, 'message' => 'Template not found']);
                 exit;
             }
+            $cur = strtolower((string)$cur);
 
-            $cur = strtolower((string)($row['status'] ?? 'active'));
             if ($target !== 'archived' && $target !== 'draft' && $target !== 'active') {
-                // toggle: archived <-> active (user requested unarchive -> active)
+                // toggle archived <-> active (user requested unarchive -> active)
                 $target = ($cur === 'archived' || $cur === 'archive') ? 'active' : 'archived';
             }
 
-            $upd = $pdo->prepare("UPDATE public.syllabus_templates SET status = :status, updated_at = NOW() WHERE template_id = :tid");
-            $upd->execute([':status' => $target, ':tid' => $tplId]);
+            $this->model->setTemplateStatus($tplId, $target);
 
             // bust caches
             unset($_SESSION['st_cache'], $_SESSION['tb_cache']);

@@ -439,5 +439,128 @@ final class SyllabusTemplatesModel
         }
     }
 
-    
+    /**
+     * Return department_id for a program, or null when not found.
+     */
+    public function getDepartmentIdByProgram(int $programId): ?int
+    {
+        if ($programId <= 0) return null;
+        $st = $this->pdo->prepare("SELECT department_id FROM public.programs WHERE program_id = :pid");
+        $st->execute([':pid' => $programId]);
+        $val = $st->fetchColumn();
+        return $val !== false ? (int)$val : null;
+    }
+
+    /**
+     * Update template metadata fields (title, scope, owner_department_id, program_id, course_id, status).
+     * Expects keys in $data: title, scope, owner_department_id, program_id, course_id, status
+     * Uses a transaction.
+     */
+    public function updateTemplate(int $templateId, array $data): void
+    {
+        if ($templateId <= 0) throw new \InvalidArgumentException('Invalid template id.');
+        $pdo = $this->pdo;
+        $pdo->beginTransaction();
+        try {
+            $stmt = $pdo->prepare("
+                UPDATE public.syllabus_templates
+                SET title = :title,
+                    scope = :scope,
+                    owner_department_id = :dept,
+                    program_id = :prog,
+                    course_id = :course,
+                    status = :status,
+                    updated_at = NOW()
+                WHERE template_id = :tid
+            ");
+            $stmt->execute([
+                ':title'  => $data['title'] ?? '',
+                ':scope'  => $data['scope'] ?? 'global',
+                ':dept'   => $data['owner_department_id'] ?? null,
+                ':prog'   => $data['program_id'] ?? null,
+                ':course' => $data['course_id'] ?? null,
+                ':status' => $data['status'] ?? 'draft',
+                ':tid'    => $templateId,
+            ]);
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * Fetch template locked row for delete (SELECT ... FOR UPDATE).
+     * Returns associative row or null.
+     */
+    public function fetchTemplateForLock(int $templateId): ?array
+    {
+        if ($templateId <= 0) return null;
+        $st = $this->pdo->prepare("SELECT template_id, status FROM public.syllabus_templates WHERE template_id = :tid FOR UPDATE");
+        $st->execute([':tid' => $templateId]);
+        $row = $st->fetch(\PDO::FETCH_ASSOC);
+        return $row ?: null;
+    }
+
+    /**
+     * Delete template row by id. Uses transaction internally.
+     */
+    public function deleteTemplate(int $templateId): void
+    {
+        if ($templateId <= 0) throw new \InvalidArgumentException('Invalid template id.');
+        $pdo = $this->pdo;
+        $pdo->beginTransaction();
+        try {
+            $del = $pdo->prepare("DELETE FROM public.syllabus_templates WHERE template_id = :tid");
+            $del->execute([':tid' => $templateId]);
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * Read-only helper: return status string for a template, or null when not found.
+     */
+    public function getTemplateStatus(int $templateId): ?string
+    {
+        if ($templateId <= 0) return null;
+        $st = $this->pdo->prepare("SELECT status FROM public.syllabus_templates WHERE template_id = :tid");
+        $st->execute([':tid' => $templateId]);
+        $val = $st->fetchColumn();
+        return $val !== false ? (string)$val : null;
+    }
+
+    /**
+     * Update status for template (no other fields). Uses updated_at and a transaction.
+     */
+    public function setTemplateStatus(int $templateId, string $status): void
+    {
+        if ($templateId <= 0) throw new \InvalidArgumentException('Invalid template id.');
+        $pdo = $this->pdo;
+        $pdo->beginTransaction();
+        try {
+            $upd = $pdo->prepare("UPDATE public.syllabus_templates SET status = :status, updated_at = NOW() WHERE template_id = :tid");
+            $upd->execute([':status' => $status, ':tid' => $templateId]);
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * Lookup a set of program ids and return rows { program_id, program_name } — used by controller fallback.
+     */
+    public function getProgramsByIds(array $ids): array
+    {
+        $ids = array_values(array_filter(array_map('intval', $ids)));
+        if (empty($ids)) return [];
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $sql = "SELECT program_id, program_name FROM public.programs WHERE program_id IN ({$placeholders}) ORDER BY program_name ASC";
+        $st = $this->pdo->prepare($sql);
+        $st->execute($ids);
+        return $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
 }
