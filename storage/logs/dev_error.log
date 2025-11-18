@@ -4436,3 +4436,9 @@ LINE 1: SELECT program_id, program_name, college_id FROM public.prog...
 [18-Nov-2025 00:58:35 Europe/Berlin] accounts.page rows=10 total=21 limit=10 offset=0
 [18-Nov-2025 00:58:35 Europe/Berlin] accounts.index total=21 rows=10
 [18-Nov-2025 00:58:35 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"department_id":null,"role_name":"Admin","department_short_name":"","college_short_name":""}
+[18-Nov-2025 03:30:11 Europe/Berlin] PHP Fatal error:  Cannot redeclare App\Modules\SyllabusTemplates\Models\SyllabusTemplatesModel::getProgramsByIds() in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Models\SyllabusTemplatesModel.php on line 556
+[2025-11-18T03:30:11+01:00] dev.EMERGENCY [req:40aa88a9b5914b3b] Cannot redeclare App\Modules\SyllabusTemplates\Models\SyllabusTemplatesModel::getProgramsByIds() | {"file":"C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\SyllabusTemplates\\Models\\SyllabusTemplatesModel.php","line":556,"type":64}
+[18-Nov-2025 03:33:24 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 658
+[18-Nov-2025 03:57:14 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 658
+[18-Nov-2025 04:42:19 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 658
+[18-Nov-2025 05:30:33 Europe/Berlin] PHP Warning:  Undefined variable $scope in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\SyllabusTemplates\Controllers\SyllabusTemplatesController.php on line 658

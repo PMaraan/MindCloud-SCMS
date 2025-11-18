@@ -19,7 +19,8 @@ final class SyllabusTemplatesModel
         $this->pdo = $db->getConnection();
     }
 
-    /** Return all colleges (used by VPAA/Admin global view) */
+    /** Return all colleges (returns college_id, short_name, college_name) 
+     * (used by VPAA/Admin global view) */
     public function getAllColleges(): array
     {
         $sql = "
@@ -482,6 +483,20 @@ final class SyllabusTemplatesModel
                 ':status' => $data['status'] ?? 'draft',
                 ':tid'    => $templateId,
             ]);
+
+            $clear = $pdo->prepare("DELETE FROM public.syllabus_template_programs WHERE template_id = :tid");
+            $clear->execute([':tid' => $templateId]);
+
+            $programId = isset($data['program_id']) ? (int)$data['program_id'] : 0;
+            if ($programId > 0) {
+                $link = $pdo->prepare("
+                    INSERT INTO public.syllabus_template_programs (template_id, program_id)
+                    VALUES (:tid, :pid)
+                    ON CONFLICT (template_id, program_id) DO NOTHING
+                ");
+                $link->execute([':tid' => $templateId, ':pid' => $programId]);
+            }
+
             $pdo->commit();
         } catch (\Throwable $e) {
             $pdo->rollBack();
@@ -550,17 +565,4 @@ final class SyllabusTemplatesModel
         }
     }
 
-    /**
-     * Lookup a set of program ids and return rows { program_id, program_name } — used by controller fallback.
-     */
-    public function getProgramsByIds(array $ids): array
-    {
-        $ids = array_values(array_filter(array_map('intval', $ids)));
-        if (empty($ids)) return [];
-        $placeholders = implode(',', array_fill(0, count($ids), '?'));
-        $sql = "SELECT program_id, program_name FROM public.programs WHERE program_id IN ({$placeholders}) ORDER BY program_name ASC";
-        $st = $this->pdo->prepare($sql);
-        $st->execute($ids);
-        return $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
-    }
 }
