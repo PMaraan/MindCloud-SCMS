@@ -54,10 +54,11 @@ body.editor-page .rt-sticky-header {
   padding-right: 1rem;
 }
 
-/* Ensure dropdowns/popovers from toolbar can escape and are above the navbar/backdrop */
+/* Constrain high z-index to toolbar/popovers inside the editor header only */
 body.editor-page .rt-sticky-header .dropdown-menu,
-body.editor-page .rt-sticky-header .popover {
-  z-index: 2000;
+body.editor-page .rt-sticky-header .popover,
+body.editor-page .rt-sticky-header .tooltip {
+  z-index: 2200 !important;
 }
 
 /* ensure title row and toolbar stack vertically with proper spacing */
@@ -72,10 +73,11 @@ body.editor-page .rt-sticky-header .popover {
   display: flex;
   align-items: center;
   gap: .5rem;
-  padding: .25rem 0;     /* horizontal spacing handled by container padding */
+  padding: .25rem 0;
   background: transparent;
   margin: 0;
   width: 100%;
+  flex-wrap: wrap; /* allow buttons to flow to next row on narrow screens */
 }
 
 /* Push down the immediate canvas container that follows the sticky header

@@ -4,7 +4,12 @@
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1) !important;
   min-height: 64px !important;
   max-height: 64px !important;
-  z-index: 1020; /* keep navbar above the fixed editor toolbar */
+  z-index: 4200; /* navbar needs to be above editor toolbars/menus on editor page */
+}
+
+/* Navbar dropdowns must appear above the editor toolbar (when editor-page active) */
+.navbar .dropdown-menu {
+  z-index: 4300 !important;
 }
 
 .navbar-brand {
