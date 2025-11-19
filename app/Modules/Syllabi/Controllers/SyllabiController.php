@@ -28,11 +28,12 @@ final class SyllabiController
     private StorageInterface $db;
     private UserModel $userModel;
     private SyllabiModel $model;
+    private RBAC $rbac;
 
     /** Keep role groupings parallel with Syllabus Templates */
-    private array $SYSTEM_ROLES  = ['VPAA','Admin','Librarian','QA','Registrar'];
-    private array $DEAN_ROLES    = ['Dean','College Dean'];
-    private array $CHAIR_ROLES   = ['Program Chair','Department Chair','Coordinator'];
+    private array $GLOBAL_ROLES  = ['VPAA','VPAA Secretary'];
+    private array $DEAN_ROLES    = ['Dean'];
+    private array $CHAIR_ROLES   = ['Chair'];
 
     public function __construct(StorageInterface $db)
     {
@@ -40,6 +41,7 @@ final class SyllabiController
         if (session_status() !== \PHP_SESSION_ACTIVE) session_start();
         $this->userModel = new UserModel($db);
         $this->model     = new SyllabiModel($db);
+        $this->rbac      = new RBAC($db);
     }
 
     /**
@@ -50,9 +52,9 @@ final class SyllabiController
      */
     public function index(): string
     {
-        (new RBAC($this->db))->require((string)$_SESSION['user_id'], Permissions::SYLLABI_VIEW);
+        $this->rbac->require((string)$_SESSION['user_id'], Permissions::SYLLABI_VIEW);
 
-        $user      = (new \App\Models\UserModel($this->db))->getUserProfile((string)$_SESSION['user_id']);
+        $user      = ($this->userModel)->getUserProfile((string)$_SESSION['user_id']);
         $role      = (string)($user['role_name'] ?? '');
         $collegeId = isset($user['college_id']) ? (int)$user['college_id'] : null;
         $programId = isset($user['program_id']) ? (int)$user['program_id'] : null;
@@ -61,8 +63,8 @@ final class SyllabiController
         $esc = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
         $PAGE_KEY = 'syllabi';
 
-        $qCollege = isset($_GET['college']) ? (int)$_GET['college'] : 0;
-        $qProgram = isset($_GET['program']) ? (int)$_GET['program'] : 0;
+        $qCollege = isset($_GET['college']) ? (int)$_GET['college'] : null;
+        $qProgram = isset($_GET['program']) ? (int)$_GET['program'] : null;
 
         // Defaults for view
         $view = [
@@ -76,13 +78,40 @@ final class SyllabiController
             'canDelete'  => true,
         ];
 
-        // System folders mode (no college param)
-        if ($qCollege <= 0) {
+        // AAO Roles: Global folders mode (no college param)
+        if(in_array($role, $this->GLOBAL_ROLES, true)) {
             $colleges = $this->model->getCollegesForFolders();
-            $view += [
-                'mode'     => 'system-folders',
-                'colleges' => $colleges,
-            ];
+            
+            // If college param not provided, render global-folders mode
+            if ($qCollege === null) {
+                $colleges = $this->model->getCollegesForFolders();
+                $view['mode']     = 'global-folders';
+                $view['colleges'] = $colleges;
+                $view['canCreate'] = $this->canCreate($role, $collegeId, $programId);
+                return $this->render('index', $view);
+            }
+
+            // If college param provided, render college mode
+
+            // programs should be an array[
+            //  'program' => [...],
+            //  'syllabi' => [...],
+            // ]
+            $collegePrograms = $this->model->getProgramsByCollege($qCollege);
+            $programs = [];
+            foreach ($collegePrograms as $p) {
+                $pid = (int)($p['program_id'] ?? 0);
+                $programs[] = [
+                    'program' => $p,
+                    'syllabi' => $this->model->getProgramSyllabi($pid),
+                ];
+            }
+            
+            $view['mode'] = 'college';
+            $view['college'] = $this->model->getCollege($qCollege);
+            $view['programs'] = $programs;
+            $view['canCreate'] = $this->canCreate($role, $collegeId, $programId);
+            $view['showBackToFolders'] = true;
             return $this->render('index', $view);
         }
 
@@ -97,9 +126,7 @@ final class SyllabiController
         // Lists for Create modal
         $allColleges      = $this->model->getCollegesForFolders();
         $programsOfCollege= $this->model->getProgramsByCollege($qCollege);
-        $coursesOfProgram = $qProgram > 0
-            ? $this->model->getCoursesByProgramApprox($qProgram) // see model note
-            : []; // filled on demand client-side if needed
+        $coursesOfCollege = $this->model->getCoursesOfCollege($qCollege);
 
         if ($qProgram > 0) {
             // PROGRAM mode
@@ -108,7 +135,7 @@ final class SyllabiController
                 $_SESSION['flash'] = ['type'=>'danger','message'=>'Program not found for this college.'];
                 header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabi&college=' . $qCollege);
                 exit;
-            }
+            } // current
 
             $general = $this->model->getCollegeSyllabi($qCollege);
             $programSyllabi = $this->model->getProgramSyllabi($qProgram);
@@ -222,6 +249,10 @@ final class SyllabiController
     // ---- RBAC helpers (adjust later if needed) ----
     private function canCreate(string $role, ?int $collegeId, ?int $programId): bool
     {
+        // AAO roles can't create syllabus in any mode; only allow viewing
+        if (in_array($role, $this->GLOBAL_ROLES, true)) {
+            return false;
+        }
         return true; // mirror templates UX; refine later with your exact policy
     }
     private function canEdit(string $role, ?int $collegeId, ?int $programId): bool

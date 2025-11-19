@@ -73,11 +73,11 @@ final class SyllabiModel
                 program_name,
                 department_id AS college_id
             FROM public.programs
-            WHERE department_id = :cid
+            WHERE department_id = :did
             ORDER BY program_name
         ";
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([':cid' => $collegeId]);
+        $stmt->execute([':did' => $collegeId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
@@ -91,15 +91,14 @@ final class SyllabiModel
     }
 
     /**
-     * Courses “by program” (approx): filter courses by the program’s college_id.
-     * We don’t assume a program↔course mapping table; this keeps the modal useful
-     * without schema changes.
+     * Get a list of all courses of the college
      */
-    public function getCoursesByProgramApprox(int $programId): array
+    public function getCoursesOfCollege(int $collegeId): array
     {
-        $prog = $this->getProgram($programId);
-        if (!$prog) return [];
-        $cid = (int)$prog['college_id'];
+        $college = $this->getCollege($collegeId); // college_id, short_name, college_name
+        if (!$college) return [];
+        $cid = (int)$college['college_id'];
+        // course_id, course_code, course_name, college_id
         $stmt = $this->pdo->prepare("
             SELECT course_id, course_code, course_name
             FROM public.courses
@@ -107,10 +106,7 @@ final class SyllabiModel
             ORDER BY course_code, course_name
         ");
         $stmt->execute([':cid' => $cid]);
-        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
-        // For client-side filter UX, add data-program-id attribute support (same pid)
-        foreach ($rows as &$r) { $r['program_id'] = $programId; }
-        return $rows;
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
     /** College-wide syllabi (no per-program split). */

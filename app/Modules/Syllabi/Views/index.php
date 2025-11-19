@@ -4,7 +4,7 @@
  * View: Syllabi – aligned with Syllabus Templates UX
  *
  * Modes:
- *  - system-folders : show colleges list (FoldersList)
+ *  - global-folders : show colleges list (FoldersList)
  *  - college        : show college-wide + per-program sections
  *  - program        : show one program under a college
  *
@@ -12,7 +12,7 @@
  *  $mode
  *  $ASSET_BASE, $esc, $user, $role
  *  $PAGE_KEY='syllabi'
- *  When $mode==='system-folders': $colleges
+ *  When $mode==='global-folders': $colleges
  *  When $mode==='college': $college, $general, $programs, $showBackToFolders?, $allColleges, $programsOfCollege, $coursesOfProgram
  *  When $mode==='program': $college, $general, $program, $program_syllabi
  *
@@ -38,7 +38,7 @@ $PAGE_KEY = 'syllabi';
       <h2 class="mb-0">Syllabi</h2>
       <div class="text-muted small">
         <?= $esc(
-          $mode === 'system-folders' ? 'Select a college folder to browse syllabi.'
+          $mode === 'global-folders' ? 'Select a college folder to browse syllabi.'
           : ($mode === 'college' ? 'All college syllabi + per-program sections.'
           : 'College syllabi + selected program syllabi.')
         ) ?>
@@ -64,7 +64,7 @@ $PAGE_KEY = 'syllabi';
   <?php
     $partialsDir = __DIR__ . '/partials';
 
-    if ($mode === 'system-folders') {
+    if ($mode === 'global-folders') {
       include $partialsDir . '/FoldersList.php';
 
     } else {
@@ -118,7 +118,7 @@ $PAGE_KEY = 'syllabi';
 
     // CREATE / EDIT / DELETE MODALS
     // We’ll show Create modal on college/program modes (it needs lists).
-    if ($mode !== 'system-folders') {
+    if ($mode !== 'global-folders') {
       $colList  = $allColleges      ?? [];
       $progList = $programsOfCollege?? [];
       $courseList = $coursesOfProgram?? [];
