@@ -2,6 +2,11 @@ body {
   background-color: #f8f4f4;
 }
 
+:root {
+  --app-topbar-h: 64px;  /* header height */
+  --sidebar-w: 250px;    /* sidebar width */
+}
+
 /* Global: add a small gap between adjacent buttons inside tables */
 .table .btn + .btn { margin-left: .5rem; }
 
@@ -248,3 +253,68 @@ html.dark-mode .pagination .page-item.disabled .page-link {
   color: #7a7a7a;
   border-color: #232323;
 }
+
+/* App-specific: make .main-content the single scroll container
+   Enabled only when <body class="use-main-scroll"> is present */
+body.use-main-scroll {
+  --app-navbar-h: 64px;  /* adjust to match HeaderComponent.css min/max-height */
+  --sidebar-w: 250px;    /* keep in sync with SidebarComponent.css */
+}
+
+/* Turn off page-level scrolling and stretch layout to full viewport */
+body.use-main-scroll, body.use-main-scroll html, body.use-main-scroll body {
+  height: 100%;
+}
+
+/* Hide outer scrollbars so only .main-content scrolls.
+   We keep this scoped under body.use-main-scroll so other pages are unaffected. */
+body.use-main-scroll, body.use-main-scroll html {
+  overflow: hidden;
+}
+
+/* Ensure .wrapper stretches to the full height */
+body.use-main-scroll .wrapper {
+  height: 100%;
+  display: flex;
+  flex-direction: row;
+}
+
+/* Make main-content the scroll container that fills the remaining area.
+   Height = viewport - navbar height. If your navbar is sticky and sits above
+   the .main-content, use the same navbar height here for accurate sizing. */
+body.use-main-scroll .main-content {
+  box-sizing: border-box;
+  height: calc(100vh - var(--app-navbar-h, 64px));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* smooth scrolling on iOS */
+  padding-left: 1rem;  /* preserve left/right breathing inside main content */
+  padding-right: 1rem;
+}
+
+/* If the .sidebar is fixed (it is), keep main-content offset as before */
+body.use-main-scroll .main-content {
+  margin-left: 250px; /* keep same as SidebarComponent.css if required */
+  width: calc(100% - 250px);
+}
+
+/* Make the sticky header (the container that includes title + toolbar)
+   stick to the top of the main-content scroll container (not the viewport).
+   top:0 ensures it hugs the main-content top edge (which sits under the navbar). */
+body.use-main-scroll .rt-sticky-header {
+  position: sticky;
+  top: 0;          /* local to main-content scrolling box */
+  z-index: 1031;
+  background: #fff;
+  /* horizontal padding kept by .rt-sticky-header (collab-editor.css) */
+}
+
+/* Make sure toolbar dropdowns still float above everything */
+body.use-main-scroll .rt-sticky-header .dropdown-menu,
+body.use-main-scroll .rt-sticky-header .popover,
+body.use-main-scroll .rt-sticky-header .tooltip {
+  z-index: 1080;
+}
+
+/* Safety: if any page-level layout previously forced overflow on .main-content,
+   this rule wins because it's more specific when body.use-main-scroll present. */
+body.use-main-scroll .main-content[style] { overflow-y: auto !important; }

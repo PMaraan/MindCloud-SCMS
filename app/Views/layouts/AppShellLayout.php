@@ -64,7 +64,7 @@ $basePath = rtrim(BASE_PATH, '/'); // BASE_PATH is from config.php
    endif; 
   */ ?>
 </head>
-<body>
+<body class="use-main-scroll">
 
 <!-- Topbar -->
 <?php include __DIR__ . '/components/Topbar.php'; ?>

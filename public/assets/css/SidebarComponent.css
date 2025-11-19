@@ -1,4 +1,5 @@
-/* Layout */
+/* === Sidebar Component Stylesheet ========================================= 
+/public/assets/css/SidebarComponent.css */
 .wrapper {
   display: flex;
   height: 100vh;
@@ -6,13 +7,13 @@
   position: relative;
 }
 
-/* Fixed Sidebar */
+/* Fixed Sidebar (uses shared variables) */
 .sidebar {
   position: fixed;
-  top: 64px; /* match your header height */
+  top: var(--app-topbar-h, 64px);               /* use header height var (fallback 64px) */
   left: 0;
-  height: calc(100vh - 64px); /* subtract header height */
-  width: 250px;
+  height: calc(100vh - var(--app-topbar-h, 64px));
+  width: var(--sidebar-w, 250px);               /* use sidebar width var (fallback 250px) */
   background-color: white;
   transition: width 0.3s ease, transform 0.3s ease;
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
@@ -27,17 +28,24 @@
   overflow: hidden;
 }
 
-/* Main content */
+/* Main content (also uses the same sidebar width var) */
 .main-content {
   flex: 1;
   min-width: 0;
-  margin-left: 250px; /* space for sidebar */
+  margin-left: var(--sidebar-w, 250px);         /* reserve space for sidebar */
   padding: 0 8px;
-  width: calc(100% - 250px); /* prevent overflow */
-  height: calc(100vh - 64px); /* fill remaining vertical space */
+  width: calc(100% - var(--sidebar-w, 250px));
+  height: calc(100vh - var(--app-topbar-h, 64px)); /* fill remaining vertical space */
   overflow-y: auto;
   overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
   transition: margin-left 0.3s ease, width 0.3s ease;
+}
+
+/* When sidebar is collapsed */
+body.sidebar-collapsed .main-content {
+  margin-left: 0 !important;
+  width: 100% !important;
 }
 
 /* When sidebar is collapsed */

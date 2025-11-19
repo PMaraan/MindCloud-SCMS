@@ -8,8 +8,9 @@
  */
 $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
 ?>
+<script>document.body.classList.add('editor-page');</script>
 <!-- FIXED ribbon just below navbar, aligned to the right of the sidebar -->
-<div class="container py-3" style="padding-top:8rem !important;">
+<div class="container-fluid py-3 rt-sticky-header" style="--app-topbar-h:0px; --rt-toolbar-h:52px;">
   <!-- Page title and editability badge -->
   <div class="d-flex align-items-center justify-content-between mb-3">
     <h5 class="mb-0"><?= htmlspecialchars($pageTitle) ?></h5>
@@ -19,9 +20,8 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
   </div>
 
   <!-- Toolbar area fixed to top-right below navbar -->
-  <div id="rt-toolbar-bar" class="rt-fixed-toolbar">
-    <?php include __DIR__ . '/partials/Toolbar.php'; ?>
-  </div>
+  <?php include __DIR__ . '/partials/Toolbar.php'; ?>
+  
   <!-- Hidden JSON payload for initial content hydration -->
   <?php
   /**
