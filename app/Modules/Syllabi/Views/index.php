@@ -28,7 +28,7 @@ $PAGE_KEY = 'syllabi';
   window.BASE_PATH = "<?= $esc($base) ?>";
 </script>
 
-<script defer src="<?= $ASSET_BASE ?>/assets/js/Syllabi-Scaffold.js"></script>
+<script defer src="<?= $ASSET_BASE ?>/assets/js/syllabi/Syllabi-Scaffold.js"></script>
 
 <div><!-- CONTAINER OPEN -->
 
@@ -119,10 +119,20 @@ $PAGE_KEY = 'syllabi';
     // CREATE / EDIT / DELETE MODALS
     // We’ll show Create modal on college/program modes (it needs lists).
     if ($mode !== 'global-folders') {
+      // Create modal needs:
       $colList  = $allColleges      ?? [];
       $progList = $programsOfCollege?? [];
       $courseList = $coursesOfProgram?? [];
       include $partialsDir . '/CreateModal.php';
+      if (function_exists('renderSyllabiCreateModal')) {
+        renderSyllabiCreateModal(
+          $ASSET_BASE,
+          $colList,
+          $progList,
+          $courseList,
+          $esc
+        );
+      }
     }
 
     include $partialsDir . '/EditModal.php';

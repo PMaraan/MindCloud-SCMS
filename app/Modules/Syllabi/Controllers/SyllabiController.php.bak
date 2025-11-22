@@ -113,33 +113,76 @@ final class SyllabiController
             $view['canCreate'] = $this->canCreate($role, $collegeId, $programId);
             $view['showBackToFolders'] = true;
             return $this->render('index', $view);
-        } elseif ($collegeId && in_array($role, $this->DEAN_ROLES, true)) {
+        } elseif (in_array($role, $this->DEAN_ROLES, true)) {
             // Dean Roles: College mode only (college param ignored)
-            $qCollege = null;
-            $view['mode'] = 'college';
-            $view['college'] = $this->model->getCollege($collegeId);
-            $collegePrograms = $this->model->getProgramsByCollege($collegeId);
-            $programs = [];
-            foreach ($collegePrograms as $p) {
-                $pid = (int)($p['program_id'] ?? 0);
-                $programs[] = [
-                    'program' => $p,
-                    'syllabi' => $this->model->getProgramSyllabi($pid),
-                ];
-            }
-            $view['programs'] = $programs;
-            $view['canCreate'] = $this->canCreate($role, $collegeId, $programId);
-            // Values for create modal selects
-            $view['colleges'] = [[ 'college_id' => $collegeId ?? '', 'short_name' => $user['college_short_name'] ?? '', 'college_name' => $user['college_name'] ?? '']]; 
-            $view['courses']  = $this->model->getCoursesOfCollege($collegeId);
-
-            return $this->render('index', $view);
+            $qCollege = $collegeId;
+            
         } elseif (in_array($role, $this->CHAIR_ROLES, true)) {
             // Chair Roles: Program mode only (college & program params ignored)
             $qCollege = $collegeId;
             $qProgram = $programId;
         }
 
+        // College or Program mode
+        $college = $this->model->getCollege($qCollege);
+        if (!$college) {
+            $_SESSION['flash'] = ['type'=>'danger','message'=>'College not found.'];
+            header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabi');
+            exit;
+        }
+
+        // Lists for Create modal
+        $allColleges      = $this->model->getCollegesForFolders();
+        $programsOfCollege= $this->model->getProgramsByCollege($qCollege);
+        $coursesOfCollege = $this->model->getCoursesOfCollege($qCollege);
+
+        if ($qProgram > 0) {
+            // PROGRAM mode
+            $program = $this->model->getProgram($qProgram);
+            if (!$program || (int)($program['college_id'] ?? 0) !== $qCollege) {
+                $_SESSION['flash'] = ['type'=>'danger','message'=>'Program not found for this college.'];
+                header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabi&college=' . $qCollege);
+                exit;
+            } // current
+
+            $general = $this->model->getCollegeSyllabi($qCollege);
+            $programSyllabi = $this->model->getProgramSyllabi($qProgram);
+
+            $view += [
+                'mode'             => 'program',
+                'showBackToFolders'=> true,
+                'college'          => $college,
+                'general'          => $general,
+                'program'          => $program,
+                'program_syllabi'  => $programSyllabi,
+                'allColleges'      => $allColleges,
+                'programsOfCollege'=> $programsOfCollege,
+                'coursesOfProgram' => $coursesOfProgram,
+            ];
+            return $this->render('index', $view);
+        }
+
+        // COLLEGE mode
+        $general  = $this->model->getCollegeSyllabi($qCollege);
+        $sections = [];
+        foreach ($programsOfCollege as $p) {
+            $pid = (int)($p['program_id'] ?? 0);
+            $sections[] = [
+                'program' => $p,
+                'syllabi' => $this->model->getProgramSyllabi($pid),
+            ];
+        }
+
+        $view += [
+            'mode'             => 'college',
+            'showBackToFolders'=> true,
+            'college'          => $college,
+            'general'          => $general,
+            'programs'         => $sections,
+            'allColleges'      => $allColleges,
+            'programsOfCollege'=> $programsOfCollege,
+            'coursesOfProgram' => $coursesOfProgram,
+        ];
         return $this->render('index', $view);
     }
 
@@ -217,10 +260,6 @@ final class SyllabiController
         // AAO roles can't create syllabus in any mode; only allow viewing
         if (in_array($role, $this->GLOBAL_ROLES, true)) {
             return false;
-        } elseif (in_array($role, $this->DEAN_ROLES, true)) {
-            return true; // Deans can create in college mode
-        } elseif (in_array($role, $this->CHAIR_ROLES, true)) {
-            return true; // Chairs can create in program mode
         }
         return true; // mirror templates UX; refine later with your exact policy
     }
