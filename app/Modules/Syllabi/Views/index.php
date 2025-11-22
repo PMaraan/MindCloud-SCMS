@@ -120,15 +120,15 @@ $PAGE_KEY = 'syllabi';
     // We’ll show Create modal on college/program modes (it needs lists).
     if ($mode !== 'global-folders') {
       // Create modal needs:
-      $colList  = $allColleges      ?? [];
-      $progList = $programsOfCollege?? [];
+      $colList  = $colleges      ?? [];
+      $programsOfCollege = $programs ?? [];
       $courseList = $coursesOfProgram?? [];
       include $partialsDir . '/CreateModal.php';
       if (function_exists('renderSyllabiCreateModal')) {
         renderSyllabiCreateModal(
           $ASSET_BASE,
           $colList,
-          $progList,
+          $programsOfCollege,
           $courseList,
           $esc
         );

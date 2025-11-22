@@ -113,8 +113,8 @@ final class SyllabiController
             $view['canCreate'] = $this->canCreate($role, $collegeId, $programId);
             $view['showBackToFolders'] = true;
             return $this->render('index', $view);
+        // Dean Roles: College mode only (college param ignored)    
         } elseif ($collegeId && in_array($role, $this->DEAN_ROLES, true)) {
-            // Dean Roles: College mode only (college param ignored)
             $qCollege = null;
             $view['mode'] = 'college';
             $view['college'] = $this->model->getCollege($collegeId);

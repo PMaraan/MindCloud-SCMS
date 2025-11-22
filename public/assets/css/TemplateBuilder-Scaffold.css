@@ -103,3 +103,7 @@ select[data-locked="1"] {
     white-space: nowrap;
 }
 #tb-info .btn .bi { vertical-align: -0.125em; }
+
+#syCreateModal .modal-dialog {
+  margin: 4.5rem auto 1.5rem !important;
+}
