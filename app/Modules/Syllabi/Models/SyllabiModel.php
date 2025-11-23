@@ -11,14 +11,7 @@ use PDO;
  * SyllabiModel
  *
  * Implements listing (search + pagination), create, update, delete for the `public.syllabi` table.
- * - Uses $db->getConnection() (per your adapter standard).
- * - Keeps the "same assigned course_id" access rule pluggable via getAccessibleCourseIds().
- * - Search applies to title and filename (ILIKE).
- * - Pagination uses sanitized LIMIT/OFFSET (inline ints, driver-safe).
- *
- * ISO 25010: Maintainability
- * - Separation of concerns (no SQL in controllers).
- * - Readability and explicit parameter binding.
+ * Updated to use `public.syllabi_programs` (many-to-many) instead of a single program_id column.
  */
 final class SyllabiModel
 {
@@ -59,11 +52,7 @@ final class SyllabiModel
     /** Programs for a college.
      *
      * NOTE: the programs table uses `department_id` (departments table) rather than
-     * `college_id`. For compatibility with callers that expect `college_id` we
-     * select `department_id AS college_id` so the returned rows keep the same key.
-     *
-     * @param int $collegeId department_id (college) to filter programs by
-     * @return array<int,array<string,mixed>>
+     * `college_id`. We keep compatibility by selecting department_id AS college_id.
      */
     public function getProgramsByCollege(int $collegeId): array
     {
@@ -84,7 +73,7 @@ final class SyllabiModel
     /** One program. */
     public function getProgram(int $programId): ?array
     {
-        $stmt = $this->pdo->prepare("SELECT program_id, program_name, college_id FROM public.programs WHERE program_id = :pid");
+        $stmt = $this->pdo->prepare("SELECT program_id, program_name, department_id AS college_id FROM public.programs WHERE program_id = :pid");
         $stmt->execute([':pid' => $programId]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ?: null;
@@ -109,19 +98,28 @@ final class SyllabiModel
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
-    /** College-wide syllabi (no per-program split). */
+    /** College-wide syllabi (no per-program split).
+     * Returns program_ids/program_names arrays for each syllabus.
+     */
     public function getCollegeSyllabi(int $collegeId): array
     {
         $sql = "
             SELECT
                 s.syllabus_id, s.title, s.filename, s.version, s.status,
                 s.course_id, c.course_code, c.course_name,
-                s.program_id, p.program_name,
+                array_remove(array_agg(DISTINCT p.program_name), NULL) AS program_names,
+                array_remove(array_agg(DISTINCT sp.program_id), NULL) AS program_ids,
+                (SELECT MIN(sp2.program_id) FROM public.syllabi_programs sp2 WHERE sp2.syllabus_id = s.syllabus_id) AS rep_program_id,
+                (SELECT p2.program_name FROM public.programs p2 WHERE p2.program_id = (
+                    SELECT MIN(sp3.program_id) FROM public.syllabi_programs sp3 WHERE sp3.syllabus_id = s.syllabus_id
+                )) AS rep_program_name,
                 s.updated_at
             FROM public.syllabi s
             LEFT JOIN public.courses  c ON c.course_id  = s.course_id
-            LEFT JOIN public.programs p ON p.program_id = s.program_id
+            LEFT JOIN public.syllabi_programs sp ON sp.syllabus_id = s.syllabus_id
+            LEFT JOIN public.programs p ON p.program_id = sp.program_id
             WHERE c.college_id = :cid
+            GROUP BY s.syllabus_id, s.title, s.filename, s.version, s.status, s.course_id, c.course_code, c.course_name, s.updated_at
             ORDER BY s.updated_at DESC, s.syllabus_id DESC
             LIMIT 120
         ";
@@ -130,19 +128,28 @@ final class SyllabiModel
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
-    /** Syllabi for one program. */
+    /** Syllabi for one program.
+     * Returns program_names/program_ids arrays (in practice these will contain the single program).
+     */
     public function getProgramSyllabi(int $programId): array
     {
         $sql = "
             SELECT
                 s.syllabus_id, s.title, s.filename, s.version, s.status,
                 s.course_id, c.course_code, c.course_name,
-                s.program_id, p.program_name,
+                array_remove(array_agg(DISTINCT p.program_name), NULL) AS program_names,
+                array_remove(array_agg(DISTINCT sp.program_id), NULL) AS program_ids,
+                (SELECT MIN(sp2.program_id) FROM public.syllabi_programs sp2 WHERE sp2.syllabus_id = s.syllabus_id) AS rep_program_id,
+                (SELECT p2.program_name FROM public.programs p2 WHERE p2.program_id = (
+                    SELECT MIN(sp3.program_id) FROM public.syllabi_programs sp3 WHERE sp3.syllabus_id = s.syllabus_id
+                )) AS rep_program_name,
                 s.updated_at
             FROM public.syllabi s
+            LEFT JOIN public.syllabi_programs sp ON sp.syllabus_id = s.syllabus_id
             LEFT JOIN public.courses  c ON c.course_id  = s.course_id
-            LEFT JOIN public.programs p ON p.program_id = s.program_id
-            WHERE s.program_id = :pid
+            LEFT JOIN public.programs p ON p.program_id = sp.program_id
+            WHERE sp.program_id = :pid
+            GROUP BY s.syllabus_id, s.title, s.filename, s.version, s.status, s.course_id, c.course_code, c.course_name, s.updated_at
             ORDER BY s.updated_at DESC, s.syllabus_id DESC
             LIMIT 120
         ";
@@ -155,12 +162,10 @@ final class SyllabiModel
     /**
      * List syllabi with filters:
      * - System roles: see all (optionally filter by search).
-     * - Dean roles: default-filter by their college's programs if you pass $collegeId (optional).
+     * - Dean roles: default-filter by their college's programs (if $collegeId passed).
      * - Chair roles: default-filter by their $programId (if provided).
-     * - Future: when you confirm a mapping table (e.g., faculty assigned courses),
-     *   implement getAccessibleCourseIds($userId) and we’ll narrow by course_id IN (...)
      *
-     * @return array{rows: array<int, array<string,mixed>>, total: int}
+     * Returns ['rows'=>..., 'total'=>N]
      */
     public function listSyllabi(
         string $userId,
@@ -176,7 +181,7 @@ final class SyllabiModel
         $offset  = ($pg - 1) * $perpage;
         $limit   = $perpage;
 
-        // Base WHERE clauses & params
+        // Base WHERE fragments (use EXISTS for program/college scoping)
         $wheres = [];
         $params = [];
 
@@ -186,15 +191,22 @@ final class SyllabiModel
             $params[':q'] = '%' . $q . '%';
         }
 
-        // Role-based default scoping (light, until we plug exact course-access table)
+        // Role-based scoping
         if (!in_array($role, $this->SYSTEM_ROLES, true)) {
             if (in_array($role, $this->CHAIR_ROLES, true) && $programId) {
-                $wheres[] = "s.program_id = :pgid";
+                // restrict to syllabi that map to given programId
+                $wheres[] = "EXISTS (
+                    SELECT 1 FROM public.syllabi_programs sp_ch
+                    WHERE sp_ch.syllabus_id = s.syllabus_id AND sp_ch.program_id = :pgid
+                )";
                 $params[':pgid'] = $programId;
             } elseif (in_array($role, $this->DEAN_ROLES, true) && $collegeId) {
-                // If dean has a college, derive program_ids from that college (cheap filter).
-                // This assumes programs.program_id -> syllabi.program_id (FK).
-                $wheres[] = "s.program_id IN (SELECT p.program_id FROM public.programs p WHERE p.college_id = :cid)";
+                // restrict to syllabi mapped to any program under the college
+                $wheres[] = "EXISTS (
+                    SELECT 1 FROM public.syllabi_programs sp_de
+                    JOIN public.programs pp ON pp.program_id = sp_de.program_id
+                    WHERE sp_de.syllabus_id = s.syllabus_id AND pp.department_id = :cid
+                )";
                 $params[':cid'] = $collegeId;
             }
         }
@@ -206,7 +218,6 @@ final class SyllabiModel
                 // Strict: deny all quickly
                 $wheres[] = "1=0";
             } else {
-                // Safe IN (...) with sanitized ints
                 $in = implode(',', array_map('intval', $courseIds));
                 $wheres[] = "s.course_id IN ($in)";
             }
@@ -214,30 +225,36 @@ final class SyllabiModel
 
         $whereSql = count($wheres) ? ("WHERE " . implode(" AND ", $wheres)) : "";
 
-        // COUNT
-        $sqlCount = "SELECT COUNT(*) FROM public.syllabi s $whereSql";
+        // COUNT distinct syllabi
+        $sqlCount = "SELECT COUNT(DISTINCT s.syllabus_id) FROM public.syllabi s $whereSql";
         $stmtC = $this->pdo->prepare($sqlCount);
         foreach ($params as $k => $v) {
-            // For arrays stringified to '{1,2}', bind as string
             $stmtC->bindValue($k, $v);
         }
         $stmtC->execute();
         $total = (int)$stmtC->fetchColumn();
 
-        // DATA
-        // Join courses/programs for nice columns (safe, both have FKs already)
+        // DATA: aggregate program names/ids and include a representative program id+name (rep_program_*)
         $sql = "
             SELECT
                 s.syllabus_id, s.title, s.filename, s.version, s.status,
                 s.course_id, c.course_code, c.course_name,
-                s.program_id, p.program_name,
+                array_remove(array_agg(DISTINCT p.program_name), NULL) AS program_names,
+                array_remove(array_agg(DISTINCT sp.program_id), NULL) AS program_ids,
+                (SELECT MIN(sp2.program_id) FROM public.syllabi_programs sp2 WHERE sp2.syllabus_id = s.syllabus_id) AS rep_program_id,
+                (SELECT p2.program_name FROM public.programs p2 WHERE p2.program_id = (
+                    SELECT MIN(sp3.program_id) FROM public.syllabi_programs sp3 WHERE sp3.syllabus_id = s.syllabus_id
+                )) AS rep_program_name,
                 s.updated_at
             FROM public.syllabi s
             LEFT JOIN public.courses  c ON c.course_id  = s.course_id
-            LEFT JOIN public.programs p ON p.program_id = s.program_id
+            LEFT JOIN public.syllabi_programs sp ON sp.syllabus_id = s.syllabus_id
+            LEFT JOIN public.programs p ON p.program_id = sp.program_id
             $whereSql
+            GROUP BY s.syllabus_id, s.title, s.filename, s.version, s.status, s.course_id, c.course_code, c.course_name, s.updated_at
             ORDER BY s.updated_at DESC, s.syllabus_id DESC
-            LIMIT {$limit} OFFSET {$offset}";
+            LIMIT {$limit} OFFSET {$offset}
+        ";
         $stmt = $this->pdo->prepare($sql);
         foreach ($params as $k => $v) {
             $stmt->bindValue($k, $v);
@@ -250,64 +267,96 @@ final class SyllabiModel
 
     /**
      * Create a syllabus.
-     * Expected keys in $payload: title, course_id, program_id, version?, status?, noted_by?, approved_by?, source_template_id?, filename?, content?
+     * Accepts either 'program_id' (int) for legacy callers or 'program_ids' (array) for multiple mappings.
+     * Expected keys in $payload: title, course_id, program_id|program_ids, version?, status?, filename?, content?
      * Returns new syllabus_id.
      */
     public function createSyllabus(array $payload, string $userId): int
     {
         $title     = trim((string)($payload['title'] ?? 'Untitled'));
         $course_id = (int)($payload['course_id'] ?? 0);
-        $program_id= (int)($payload['program_id'] ?? 0);
 
-        if ($course_id <= 0 || $program_id <= 0) {
-            throw new \InvalidArgumentException('course_id and program_id are required.');
+        // program mapping(s)
+        $programIds = [];
+        if (isset($payload['program_ids']) && is_array($payload['program_ids'])) {
+            foreach ($payload['program_ids'] as $pid) {
+                $p = (int)$pid;
+                if ($p > 0) $programIds[] = $p;
+            }
+        } elseif (isset($payload['program_id'])) {
+            $p = (int)$payload['program_id'];
+            if ($p > 0) $programIds[] = $p;
+        }
+
+        if ($course_id <= 0 || count($programIds) === 0) {
+            throw new \InvalidArgumentException('course_id and at least one program_id are required.');
         }
 
         $version   = (string)($payload['version'] ?? null);
         $status    = (string)($payload['status']  ?? 'draft');
-        $noted_by  = (string)($payload['noted_by'] ?? '');
-        $approved_by = (string)($payload['approved_by'] ?? '');
-        $source_template_id = isset($payload['source_template_id']) ? (int)$payload['source_template_id'] : null;
         $filename  = (string)($payload['filename'] ?? '');
         $content   = $payload['content'] ?? new \stdClass(); // json
 
-        $sql = "
-            INSERT INTO public.syllabi
-                (title, course_id, program_id, version, content, status, noted_by, approved_by, source_template_id, filename)
-            VALUES
-                (:title, :course_id, :program_id, :version, CAST(:content AS jsonb), :status, :noted_by, :approved_by, :source_template_id, :filename)
-            RETURNING syllabus_id";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([
-            ':title'    => $title,
-            ':course_id'=> $course_id,
-            ':program_id'=> $program_id,
-            ':version'  => ($version === '' ? null : $version),
-            ':content'  => json_encode($content, JSON_UNESCAPED_UNICODE),
-            ':status'   => ($status === '' ? 'draft' : $status),
-            ':noted_by' => ($noted_by === '' ? null : $noted_by),
-            ':approved_by' => ($approved_by === '' ? null : $approved_by),
-            ':source_template_id' => $source_template_id,
-            ':filename' => ($filename === '' ? null : $filename),
-        ]);
-        return (int)$stmt->fetchColumn();
+        $pdo = $this->pdo;
+        $pdo->beginTransaction();
+        try {
+            $sql = "
+                INSERT INTO public.syllabi
+                    (title, course_id, version, content, status, filename)
+                VALUES
+                    (:title, :course_id, :version, CAST(:content AS jsonb), :status, :filename)
+                RETURNING syllabus_id";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([
+                ':title'    => $title,
+                ':course_id'=> $course_id,
+                ':version'  => ($version === '' ? null : $version),
+                ':content'  => json_encode($content, JSON_UNESCAPED_UNICODE),
+                ':status'   => ($status === '' ? 'draft' : $status),
+                ':filename' => ($filename === '' ? null : $filename),
+            ]);
+            $newId = (int)$stmt->fetchColumn();
+
+            // insert mappings into syllabi_programs
+            $ins = $pdo->prepare("INSERT INTO public.syllabi_programs (syllabus_id, program_id) VALUES (:sid, :pid) ON CONFLICT DO NOTHING");
+            foreach ($programIds as $pid) {
+                $ins->execute([':sid' => $newId, ':pid' => $pid]);
+            }
+
+            $pdo->commit();
+            return $newId;
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
     }
 
-    /** Update basic fields; sets updated_at = now(). */
+    /** Update basic fields; sets updated_at = now().
+     * If payload contains 'program_ids' (array) the mappings are replaced atomically.
+     */
     public function updateSyllabus(int $id, array $payload, string $userId): void
     {
         if ($id <= 0) throw new \InvalidArgumentException('Invalid id.');
 
         $title     = isset($payload['title']) ? trim((string)$payload['title']) : null;
         $course_id = isset($payload['course_id']) ? (int)$payload['course_id'] : null;
-        $program_id= isset($payload['program_id']) ? (int)$payload['program_id'] : null;
         $version   = array_key_exists('version', $payload) ? (string)$payload['version'] : null;
         $status    = array_key_exists('status', $payload) ? (string)$payload['status'] : null;
-        $noted_by  = array_key_exists('noted_by', $payload) ? (string)$payload['noted_by'] : null;
-        $approved_by = array_key_exists('approved_by', $payload) ? (string)$payload['approved_by'] : null;
-        $source_template_id = array_key_exists('source_template_id', $payload) ? (int)$payload['source_template_id'] : null;
         $filename  = array_key_exists('filename', $payload) ? (string)$payload['filename'] : null;
         $content   = array_key_exists('content', $payload) ? $payload['content'] : null;
+
+        // optional program_ids replacement
+        $programIds = null;
+        if (array_key_exists('program_ids', $payload)) {
+            $programIds = [];
+            if (is_array($payload['program_ids'])) {
+                foreach ($payload['program_ids'] as $pid) {
+                    $p = (int)$pid;
+                    if ($p > 0) $programIds[] = $p;
+                }
+            }
+            // If empty array provided, we'll remove all mappings (caller explicitly asked).
+        }
 
         // Build dynamic SET list
         $sets = ["updated_at = CURRENT_TIMESTAMP"];
@@ -315,12 +364,8 @@ final class SyllabiModel
 
         $this->maybeSet($sets, $params, 'title', $title);
         $this->maybeSet($sets, $params, 'course_id', $course_id);
-        $this->maybeSet($sets, $params, 'program_id', $program_id);
         $this->maybeSet($sets, $params, 'version', $version, true);
         $this->maybeSet($sets, $params, 'status', $status, true);
-        $this->maybeSet($sets, $params, 'noted_by', $noted_by, true);
-        $this->maybeSet($sets, $params, 'approved_by', $approved_by, true);
-        $this->maybeSet($sets, $params, 'source_template_id', $source_template_id, false);
         $this->maybeSet($sets, $params, 'filename', $filename, true);
 
         if ($content !== null) {
@@ -328,17 +373,40 @@ final class SyllabiModel
             $params[':content'] = json_encode($content, JSON_UNESCAPED_UNICODE);
         }
 
-        if (count($sets) <= 1) {
-            // nothing to update except timestamp
-            $sql = "UPDATE public.syllabi SET updated_at = CURRENT_TIMESTAMP WHERE syllabus_id = :id";
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->execute([':id' => $id]);
-            return;
-        }
+        $pdo = $this->pdo;
+        $pdo->beginTransaction();
+        try {
+            if (count($sets) <= 1) {
+                // nothing to update except timestamp
+                $sql = "UPDATE public.syllabi SET updated_at = CURRENT_TIMESTAMP WHERE syllabus_id = :id";
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute([':id' => $id]);
+            } else {
+                $sql = "UPDATE public.syllabi SET " . implode(', ', $sets) . " WHERE syllabus_id = :id";
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute($params);
+            }
 
-        $sql = "UPDATE public.syllabi SET " . implode(', ', $sets) . " WHERE syllabus_id = :id";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($params);
+            // Replace program mappings if caller provided program_ids (can be empty array to clear)
+            if ($programIds !== null) {
+                // delete existing
+                $del = $pdo->prepare("DELETE FROM public.syllabi_programs WHERE syllabus_id = :sid");
+                $del->execute([':sid' => $id]);
+
+                if (count($programIds) > 0) {
+                    $ins = $pdo->prepare("INSERT INTO public.syllabi_programs (syllabus_id, program_id) VALUES (:sid, :pid) ON CONFLICT DO NOTHING");
+                    foreach ($programIds as $pid) {
+                        $ins->execute([':sid' => $id, ':pid' => $pid]);
+                    }
+                }
+            }
+
+            $pdo->commit();
+            return;
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
     }
 
     /** Delete by id. */
@@ -347,16 +415,9 @@ final class SyllabiModel
         if ($id <= 0) throw new \InvalidArgumentException('Invalid id.');
         $stmt = $this->pdo->prepare("DELETE FROM public.syllabi WHERE syllabus_id = :id");
         $stmt->execute([':id' => $id]);
+        // syllabi_programs will cascade if FK ON DELETE CASCADE; otherwise left orphan-cleanup can be added.
     }
 
-    // =====================================================================
-    // Sectioned data (mirrors Syllabus Templates)
-    // - getAllColleges()
-    // - getProgramsByCollege($collegeId)
-    // - getCollegeGeneralSyllabi($collegeId)
-    // - getProgramSyllabiExclusive($collegeId, $programId)
-    // =====================================================================
-    
     // -----------------------
     // Helpers
     // -----------------------
@@ -364,8 +425,6 @@ final class SyllabiModel
     /**
      * Placeholder: return a list of course_ids the user is allowed to see (for the “same assigned course id” rule).
      * Return null to skip narrowing (e.g., for system roles), or [] to deny all.
-     *
-     * Replace this with a real query when you share your assignment mapping (e.g., faculty_load, user_courses, etc.).
      */
     private function getAccessibleCourseIds(string $userId, string $role, ?int $collegeId, ?int $programId): ?array
     {
@@ -375,7 +434,6 @@ final class SyllabiModel
         }
 
         // Chairs/Deans/Faculty (and everyone else) — narrow by explicit mapping.
-        // Optional: also respect valid_from/valid_to if present.
         $sql = "
             SELECT uca.course_id
             FROM public.user_course_access uca
@@ -389,8 +447,7 @@ final class SyllabiModel
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
         $ids  = array_map(static fn($r) => (int)$r['course_id'], $rows);
 
-        // If no mapping rows exist, you can choose to return [] (deny all) or null (fallback to role scoping).
-        // To strictly enforce mapping, return [] when empty:
+        // If no mapping rows exist, return null to fallback to role scoping
         return (count($ids) ? $ids : null);
     }
 

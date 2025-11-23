@@ -5,9 +5,9 @@
  *
  * Expects from the parent view (abstract ok for now):
  *   - $ASSET_BASE (string)
- *   - $colleges (array)            // [{ college_id, short_name, college_name }, ...]
- *   - $programsOfCollege (array)   // [{ program_id, program_name, college_id }, ...] (optionally prefiltered)
- *   - $coursesOfProgram (array)    // [{ course_id, course_code, course_name, program_id? }, ...] (optionally prefiltered)
+*   - $colleges (array)    // [{ college_id, short_name, college_name }, ...]
+ *   - $programs (array)   // [{ program_id, program_name, college_id }, ...] (optionally prefiltered)
+ *   - $courses (array)    // [{ course_id, course_code, course_name, program_id? }, ...] (optionally prefiltered)
  *   - $esc (callable)
  *
  * Posts to: /dashboard?page=syllabi&action=create
@@ -22,8 +22,8 @@ if (!function_exists('renderSyllabiCreateModal')) {
   function renderSyllabiCreateModal(
     string $ASSET_BASE,
     array $colleges,
-    array $programsOfCollege,
-    array $coursesOfProgram,
+    array $programs,
+    array $courses,
     callable $esc
   ): void {
     $base    = (defined('BASE_PATH') ? BASE_PATH : '');
@@ -41,7 +41,12 @@ if (!function_exists('renderSyllabiCreateModal')) {
         <input type="hidden" name="csrf_token" value="<?= $esc($_SESSION['csrf_token'] ?? '') ?>"/>
 
         <div class="mb-3">
-          <label class="form-label">College <span class="text-danger">*</span></label>
+          <label for="sy-title" class="form-label">Title <span class="text-danger">*</span></label>
+          <input type="text" name="title" id="sy-title" class="form-control" required maxlength="255">
+        </div>
+
+        <div class="mb-3">
+          <label for="sy-college" class="form-label">College <span class="text-danger">*</span></label>
           <select name="college_id" id="sy-college" class="form-select" required>
             <option value="">— Select college —</option>
             <?php foreach ($colleges as $c): ?>
@@ -53,13 +58,13 @@ if (!function_exists('renderSyllabiCreateModal')) {
         </div>
 
         <div class="mb-3">
-          <label class="form-label">Program <span class="text-danger">*</span></label>
-          <select name="program_id" id="sy-program" class="form-select" required>
-            <option value="">— Select program —</option>
-            <?php foreach ($programsOfCollege as $p): ?>
-              <option value="<?= (int)($p['program_id'] ?? 0) ?>"
-                      data-college-id="<?= (int)($p['college_id'] ?? 0) ?>">
-                <?= $esc($p['program_name'] ?? '') ?>
+          <label for="sy-program" class="form-label">Program <span class="text-danger">*</span></label>
+          <select name="program_id[]" id="sy-program" class="form-select" multiple size="5" required>
+            <option value="" disabled hidden>— Select program —</option>
+            <?php foreach ($programs as $p): ?>
+              <option value="<?= (int)($p['program']['program_id'] ?? 0) ?>"
+                      data-college-id="<?= (int)($p['program']['college_id'] ?? 0) ?>">
+                <?= $esc($p['program']['program_name'] ?? '') ?>
               </option>
             <?php endforeach; ?>
           </select>
@@ -67,10 +72,10 @@ if (!function_exists('renderSyllabiCreateModal')) {
         </div>
 
         <div class="mb-3">
-          <label class="form-label">Course <span class="text-danger">*</span></label>
+          <label for="sy-course" class="form-label">Course <span class="text-danger">*</span></label>
           <select name="course_id" id="sy-course" class="form-select" required>
             <option value="">— Select course —</option>
-            <?php foreach ($coursesOfProgram as $crs): ?>
+            <?php foreach ($courses as $crs): ?>
               <option value="<?= (int)($crs['course_id'] ?? 0) ?>"
                       data-program-id="<?= (int)($crs['program_id'] ?? 0) ?>">
                 <?= $esc(($crs['course_code'] ?? '').' — '.($crs['course_name'] ?? '')) ?>
@@ -101,6 +106,7 @@ document.addEventListener('DOMContentLoaded', function(){
   const selCourse  = document.getElementById('sy-course');
 
   // Simple client-side filtering (works with pre-rendered option datasets)
+  // (Could be deprecated; programs are filtered server-side anyway).
   function filterProgramsByCollege(collegeId) {
     Array.from(selProgram.options).forEach(opt => {
       if (!opt.value) return; // keep placeholder
@@ -110,6 +116,7 @@ document.addEventListener('DOMContentLoaded', function(){
     });
   }
 
+  // (Could be deprecated; courses are filtered by college not program).
   function filterCoursesByProgram(programId) {
     Array.from(selCourse.options).forEach(opt => {
       if (!opt.value) return; // keep placeholder
@@ -119,6 +126,8 @@ document.addEventListener('DOMContentLoaded', function(){
     });
   }
 
+  // (Could be deprecated; programs are filtered server-side anyway and
+  // courses are filtered by college not program).
   if (selCollege) {
     selCollege.addEventListener('change', function(){
       const cid = this.value;
@@ -127,12 +136,15 @@ document.addEventListener('DOMContentLoaded', function(){
       filterCoursesByProgram('');
     });
   }
+  // (Could be deprecated; courses are filtered by college not program).
+  /*
   if (selProgram) {
     selProgram.addEventListener('change', function(){
       const pid = this.value;
       filterCoursesByProgram(pid);
     });
   }
+  */
 });
 </script>
 <?php

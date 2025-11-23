@@ -45,6 +45,31 @@ final class SyllabiController
     }
 
     /**
+     * Wraps programs + their syllabi for a given college.
+     * @param int $collegeId
+     * @return array   // [
+     *                      { 
+     *                          'program' => {...},
+     *                          'syllabi' => [...] 
+     *                      }, 
+     *                      ...
+*                         ]
+     */
+    private function getProgramsAndSyllabiByCollege(int $collegeId): array
+    {
+        $collegePrograms = $this->model->getProgramsByCollege($collegeId);
+        $programs = [];
+        foreach ($collegePrograms as $p) {
+            $pid = (int)($p['program_id'] ?? 0);
+            $programs[] = [
+                'program' => $p,
+                'syllabi' => $this->model->getProgramSyllabi($pid),
+            ];
+        }
+        return $programs;
+    }
+
+    /**
      * Index – aligned with Syllabus Templates UX:
      *   /dashboard?page=syllabi
      *   /dashboard?page=syllabi&college={id}
@@ -92,24 +117,10 @@ final class SyllabiController
             }
 
             // If college param provided, render college mode
-
-            // programs should be an array[
-            //  'program' => [...],
-            //  'syllabi' => [...],
-            // ]
-            $collegePrograms = $this->model->getProgramsByCollege($qCollege);
-            $programs = [];
-            foreach ($collegePrograms as $p) {
-                $pid = (int)($p['program_id'] ?? 0);
-                $programs[] = [
-                    'program' => $p,
-                    'syllabi' => $this->model->getProgramSyllabi($pid),
-                ];
-            }
             
             $view['mode'] = 'college';
             $view['college'] = $this->model->getCollege($qCollege);
-            $view['programs'] = $programs;
+            $view['programs'] = $this->getProgramsAndSyllabiByCollege($qCollege);
             $view['canCreate'] = $this->canCreate($role, $collegeId, $programId);
             $view['showBackToFolders'] = true;
             return $this->render('index', $view);
@@ -118,16 +129,7 @@ final class SyllabiController
             $qCollege = null;
             $view['mode'] = 'college';
             $view['college'] = $this->model->getCollege($collegeId);
-            $collegePrograms = $this->model->getProgramsByCollege($collegeId);
-            $programs = [];
-            foreach ($collegePrograms as $p) {
-                $pid = (int)($p['program_id'] ?? 0);
-                $programs[] = [
-                    'program' => $p,
-                    'syllabi' => $this->model->getProgramSyllabi($pid),
-                ];
-            }
-            $view['programs'] = $programs;
+            $view['programs'] = $this->getProgramsAndSyllabiByCollege($collegeId);
             $view['canCreate'] = $this->canCreate($role, $collegeId, $programId);
             // Values for create modal selects
             $view['colleges'] = [[ 'college_id' => $collegeId ?? '', 'short_name' => $user['college_short_name'] ?? '', 'college_name' => $user['college_name'] ?? '']]; 
@@ -149,12 +151,32 @@ final class SyllabiController
     {
         (new RBAC($this->db))->require((string)$_SESSION['user_id'], Permissions::SYLLABI_CREATE);
 
-        // NOTE: keep controller slim; model will validate & insert later when DB schema is ready.
+        // Map expected POST fields to the model's payload shape.
+        // Note: program_id[] (multiple) or single program_id are supported.
+        $title = trim((string)($_POST['title'] ?? 'Untitled'));
+        $courseId = isset($_POST['course_id']) ? (int)$_POST['course_id'] : 0;
+
+        // program(s) may come as program_id[] (array) or program_id (single)
+        $programIds = [];
+        if (isset($_POST['program_id'])) {
+            if (is_array($_POST['program_id'])) {
+                foreach ($_POST['program_id'] as $v) {
+                    $n = (int)$v;
+                    if ($n > 0) $programIds[] = $n;
+                }
+            } else {
+                $n = (int)$_POST['program_id'];
+                if ($n > 0) $programIds[] = $n;
+            }
+        }
+
+        $version = trim((string)($_POST['version'] ?? ''));
+
         $payload = [
-            'title'   => trim((string)($_POST['title'] ?? '')),
-            'course'  => trim((string)($_POST['course'] ?? '')),
-            'section' => trim((string)($_POST['section'] ?? '')),
-            // more fields later…
+            'title'       => $title,
+            'course_id'   => $courseId,
+            'program_ids' => $programIds, // model accepts program_ids (array) or program_id (int)
+            'version'     => $version,
         ];
 
         try {
