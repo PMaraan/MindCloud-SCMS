@@ -272,7 +272,69 @@ export function runOnce(editor, {
 } = {}) {
   if (!editor || !pageEl || !contentEl) return;
 
-  // --- compute usable height from CONFIG + DOM (take the smaller) ---
+  // Lightweight re-entrancy guard: avoid concurrent runs and rapid repeats
+  if (runOnce._running) {
+    if (DEBUG_FLAG) console.log('[auto-pagination] runOnce skipped: already running');
+    return;
+  }
+  const NOW = Date.now();
+  if (runOnce._lastRunAt && (NOW - runOnce._lastRunAt) < 250) {
+    // if we just ran very recently, skip to avoid tight cycles
+    if (DEBUG_FLAG) console.log('[auto-pagination] runOnce skipped: last run too recent');
+    return;
+  }
+  runOnce._running = true;
+  runOnce._lastRunAt = NOW;
+
+  // Helper: find the nearest scroll container for contentEl (main-content or closest overflowed ancestor).
+  function findScrollContainer(el) {
+    let node = el;
+    while (node) {
+      if (node instanceof HTMLElement) {
+        const cs = getComputedStyle(node);
+        const overflowY = cs.overflowY || cs.overflow;
+        if (node !== document.documentElement && node !== document.body && (overflowY === 'auto' || overflowY === 'scroll')) {
+          return node;
+        }
+      }
+      node = node.parentElement;
+    }
+    const main = document.querySelector('.main-content');
+    if (main) return main;
+    return window;
+  }
+
+  const scrollContainer = findScrollContainer(contentEl);
+
+  // quick scroll-pause watcher attachment (existing logic intact)
+  if (scrollContainer && !scrollContainer.__rt_scrollWatcherAttached) {
+    scrollContainer.__rt_scrollWatcherAttached = true;
+    scrollContainer.__rt_userScrolling = false;
+    scrollContainer.__rt_scrollTimer = null;
+
+    const touchOrWheel = () => {
+      scrollContainer.__rt_userScrolling = true;
+      if (scrollContainer.__rt_scrollTimer) clearTimeout(scrollContainer.__rt_scrollTimer);
+      scrollContainer.__rt_scrollTimer = setTimeout(() => {
+        scrollContainer.__rt_userScrolling = false;
+      }, 280);
+    };
+
+    scrollContainer.addEventListener('wheel', touchOrWheel, { passive: true });
+    scrollContainer.addEventListener('touchmove', touchOrWheel, { passive: true });
+    scrollContainer.addEventListener('scroll', touchOrWheel, { passive: true });
+    window.addEventListener('wheel', touchOrWheel, { passive: true });
+    window.addEventListener('touchmove', touchOrWheel, { passive: true });
+  }
+
+  // If user is actively scrolling, skip this run.
+  if (scrollContainer && scrollContainer.__rt_userScrolling) {
+    if (DEBUG_FLAG) console.log('[auto-pagination] skipping because user is scrolling');
+    runOnce._running = false;
+    return;
+  }
+
+  // ---------- compute usable height from CONFIG + DOM (take the smaller) ----------
   let usableH_cfg = 0;
   try {
     const cfg = (typeof getPageConfig === 'function') ? getPageConfig() : null;
@@ -296,21 +358,41 @@ export function runOnce(editor, {
 
   let usableH = Math.max(0, Math.min(usableH_cfg || Infinity, usableH_dom || Infinity) - safety);
 
-  console.log('[auto-pagination] usableH(cfg/dom)=', {
-    fromConfig: Math.round(usableH_cfg),
-    fromDom:    Math.round(usableH_dom),
-    chosen:     Math.round(usableH),
-    safety
-  });
+  if (DEBUG_FLAG) {
+    console.log('[auto-pagination] usableH(cfg/dom)=', {
+      fromConfig: Math.round(usableH_cfg),
+      fromDom:    Math.round(usableH_dom),
+      chosen:     Math.round(usableH),
+      safety
+    });
+  }
 
   if (clearExisting) removeAllPageBreaks(editor);
+
+  // Save scrollTop & heights before we mutate the DOM
+  function getScrollTop(container) {
+    if (container === window) return window.scrollY || window.pageYOffset || 0;
+    return container.scrollTop || 0;
+  }
+  function setScrollTop(container, v) {
+    if (container === window) {
+      window.scrollTo(0, v);
+    } else {
+      container.scrollTop = v;
+    }
+  }
+
+  const savedScrollTop = getScrollTop(scrollContainer || window);
+  const beforeHeight = contentEl.scrollHeight || contentEl.getBoundingClientRect().height || 0;
 
   const endMeasure = beginMeasure(pageEl, contentEl);
   try {
     const blocks = collectBlockHeights(editor, contentEl);
-    if (!blocks.length) return;
+    if (!blocks.length) {
+      return;
+    }
 
-    // Multi-page loop: keep cutting until the rest fits.
+    // Multi-page loop
     const breakPositions = [];
     let start = 0;
     let cutGuard = 0;
@@ -318,76 +400,81 @@ export function runOnce(editor, {
     while (start < blocks.length && cutGuard < 200) {
       cutGuard++;
 
-      // Window bounds for this page
       const firstTop = effectiveTop(blocks[start].el);
       const limitY   = firstTop + usableH;
-      console.log('[auto-pagination] TRACE firstTop/limitY', { firstTop: Math.round(firstTop), limitY: Math.round(limitY) });
+      if (DEBUG_FLAG) console.log('[auto-pagination] TRACE firstTop/limitY', { firstTop: Math.round(firstTop), limitY: Math.round(limitY) });
 
-      // Find first overflow index i
       let i = -1;
       for (let k = start; k < blocks.length; k++) {
         const b = blocks[k];
-        const top = effectiveTop(b.el);
         const bot = effectiveBottom(b.el);
         if (window.__RT_dumpBlocks) {
-          console.log(`[blk ${k}] effTop=${Math.round(top)} effBtm=${Math.round(bot)} sample="${(b.el.textContent||'').trim().slice(0,1)}"`);
+          console.log(`[blk ${k}] effTop=${Math.round(effectiveTop(b.el))} effBtm=${Math.round(bot)} sample="${(b.el.textContent||'').trim().slice(0,1)}"`);
         }
         if (bot > limitY) { i = k; break; }
       }
 
-      // If nothing overflows, we’re done.
       if (i === -1) break;
 
       const overflowBot = effectiveBottom(blocks[i].el);
       const overflowDelta = Math.round(overflowBot - limitY);
-
-      // Dynamic slack for this page
       const slackPx = computeSlackPx(blocks, start, i, contentEl, usableH);
 
-      // Snap back to the last block that stays within (limitY - slackPx)
       let j = i - 1;
       const target = limitY - slackPx;
       while (j >= start && effectiveBottom(blocks[j].el) > target) j--;
 
-      // If we couldn’t find a safe “snap” and overflow is huge, cut at i
       let cutIndex;
-      if (j < start && overflowDelta > slackPx) {
-        cutIndex = i; // fall back: first overflowing block
-      } else {
-        // Normal case: cut BEFORE j (so page 2 starts at blocks[j])
-        cutIndex = Math.max(start + 1, j); // ensure progress
-      }
+      if (j < start && overflowDelta > slackPx) cutIndex = i;
+      else cutIndex = Math.max(start + 1, j);
 
       const cutPos = posAtBlockStart(editor, blocks[cutIndex].el);
-      console.log('[auto-pagination] CUT', {
-        index: cutIndex,
-        pos: cutPos,
-        sample: (blocks[cutIndex].el.textContent || '').trim().slice(0,1),
-        effBottom: Math.round(effectiveBottom(blocks[cutIndex].el)),
-        limitY: Math.round(limitY),
-        overflowDelta,
-        slackPx
-      });
-
-      if (typeof cutPos === 'number') {
-        breakPositions.push(cutPos);
-      } else {
-        // If we fail to map, bail to avoid infinite loop.
-        break;
+      if (DEBUG_FLAG) {
+        console.log('[auto-pagination] CUT', {
+          index: cutIndex,
+          pos: cutPos,
+          sample: (blocks[cutIndex].el.textContent || '').trim().slice(0,1),
+          effBottom: Math.round(effectiveBottom(blocks[cutIndex].el)),
+          limitY: Math.round(limitY),
+          overflowDelta,
+          slackPx
+        });
       }
 
-      // Next page starts at the cut block
+      if (typeof cutPos === 'number') breakPositions.push(cutPos);
+      else break;
       start = cutIndex;
-
-      // Safety: if the very next block would produce a zero-height window due to odd layout, bump start.
       if (start < blocks.length - 1 && effectiveBottom(blocks[start].el) - effectiveTop(blocks[start].el) > usableH) {
         start++;
       }
     }
 
     insertBreaksAt(editor, breakPositions);
-    console.log('[auto-pagination] inserted breaks:', breakPositions.length);
+    if (DEBUG_FLAG) console.log('[auto-pagination] inserted breaks:', breakPositions.length);
   } finally {
     endMeasure();
+
+    // After pagination, compute height delta and restore relative scroll position.
+    try {
+      const afterHeight = contentEl.scrollHeight || contentEl.getBoundingClientRect().height || 0;
+      const heightDelta = (afterHeight - beforeHeight) || 0;
+
+      // If the content grew downward below the saved scroll, adjust the savedScrollTop
+      // so the same visual area stays visible.
+      const adjustedScroll = Math.max(0, savedScrollTop + heightDelta);
+
+      setTimeout(() => {
+        try {
+          setScrollTop(scrollContainer || window, adjustedScroll);
+        } catch (e) { /* ignore */ }
+      }, 0);
+
+      // Mark the editor with a timestamp so the scheduler can skip immediate re-runs
+      if (editor) editor.__rt_lastPaginateAt = Date.now();
+    } catch (e) { /* ignore */ }
+
+    // clear guard
+    runOnce._running = false;
+    runOnce._lastRunAt = Date.now();
   }
 }
