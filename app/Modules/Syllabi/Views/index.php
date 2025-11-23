@@ -28,7 +28,7 @@ $PAGE_KEY = 'syllabi';
   window.BASE_PATH = "<?= $esc($base) ?>";
 </script>
 
-<script defer src="<?= $ASSET_BASE ?>/assets/js/syllabi/Syllabi-Scaffold.js"></script>
+<script type="module" src="<?= $esc($ASSET_BASE) ?>/assets/js/syllabi/Syllabi-Scaffold.js?v=<?= time() ?>"></script>
 
 <div><!-- CONTAINER OPEN -->
 
@@ -90,23 +90,30 @@ $PAGE_KEY = 'syllabi';
           <div class="card">
             <div class="card-header"><strong>Details</strong></div>
             <div class="card-body">
-              <div class="text-muted" id="sy-info-empty">Select a syllabus to see details.</div>
-              <dl class="row mt-3 mb-0 d-none" id="sy-info">
-                <dt class="col-4">Title</dt>
+              <button id="sy-open" class="btn btn-sm btn-primary">
+                <i class="bi bi-box-arrow-up-right me-1"></i>
+                Open
+              </button>
+
+              <div id="sy-info-empty" class="text-center text-muted py-5">
+                <p>Select a syllabus to see its details here.</p>
+              </div>
+
+              <dl id="sy-info" class="row d-none align-items-center mb-0">
+                <dt class="col-4" id="sy-i-title-label">Title</dt>
                 <dd class="col-8" id="sy-i-title"></dd>
-                <dt class="col-4">Program</dt>
+
+                <dt class="col-4" id="sy-i-program-label">Program</dt>
                 <dd class="col-8" id="sy-i-program"></dd>
-                <dt class="col-4">Updated</dt>
+
+                <dt class="col-4" id="sy-i-college-label">College</dt>
+                <dd class="col-8" id="sy-i-college"></dd>
+
+                <dt class="col-4" id="sy-i-updated-label">Updated</dt>
                 <dd class="col-8" id="sy-i-updated"></dd>
-                <dt class="col-4">Status</dt>
+
+                <dt class="col-4" id="sy-i-status-label">Status</dt>
                 <dd class="col-8" id="sy-i-status"></dd>
-                <dt class="col-4">Actions</dt>
-                <dd class="col-8">
-                  <div class="d-flex gap-2">
-                    <button class="btn btn-sm btn-primary" id="sy-open">Open</button>
-                    <button class="btn btn-sm btn-outline-secondary" id="sy-duplicate" disabled>Duplicate</button>
-                  </div>
-                </dd>
               </dl>
             </div>
           </div>
@@ -123,7 +130,7 @@ $PAGE_KEY = 'syllabi';
       $colleges  = $colleges      ?? [];
       $programs = $programs ?? [];
       $courses = $courses?? [];
-      include $partialsDir . '/CreateModal.php';
+      //include $partialsDir . '/CreateModal.php';
       if (function_exists('renderSyllabiCreateModal')) {
         renderSyllabiCreateModal(
           $ASSET_BASE,
@@ -135,8 +142,8 @@ $PAGE_KEY = 'syllabi';
       }
     }
 
-    include $partialsDir . '/EditModal.php';
-    include $partialsDir . '/DeleteModal.php';
+    //include $partialsDir . '/EditModal.php';
+    //include $partialsDir . '/DeleteModal.php';
   ?>
 
 </div><!-- /CONTAINER CLOSE -->
