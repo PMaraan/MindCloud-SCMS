@@ -7,6 +7,17 @@
  * This is a simple, controlled environment to prove we can type.
  */
 $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
+
+// Simple asset versioning: uses file mtime so browsers get updated file when it changes.
+// In production you should use build-time content hashes instead.
+function asset_url(string $path): string {
+    $file = $_SERVER['DOCUMENT_ROOT'] . $path;
+    if (file_exists($file)) {
+        return $path . '?v=' . filemtime($file);
+    }
+    // fallback: return path unchanged
+    return $path;
+}
 ?>
 <script>document.body.classList.add('editor-page');</script>
 <!-- FIXED ribbon just below navbar, aligned to the right of the sidebar -->
@@ -46,7 +57,7 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
   <div id="rt-meta" data-scope="<?= htmlspecialchars($rtScope, ENT_QUOTES, 'UTF-8') ?>" data-id="<?= (int)$rtId ?>"></div>
 
   <!-- Editor CSS (kept) -->
-  <link rel="stylesheet" href="<?= BASE_PATH ?>/public/assets/css/rteditor/collab-editor.css">
+  <link rel="stylesheet" href="<?= htmlspecialchars(asset_url(BASE_PATH . '/public/assets/css/rteditor/collab-editor.css'), ENT_QUOTES) ?>">
 
 </div>
 
@@ -80,8 +91,11 @@ $ASSET_BASE = defined('BASE_PATH') ? BASE_PATH : '';
 
 <?php include __DIR__ . '/partials/importmap.php'; ?>
 
-<script type="module" src="<?= BASE_PATH ?>/public/assets/js/rteditor/collab-editor.js"></script>
+<!-- main module (cached by filemtime) -->
+<script type="module" src="<?= htmlspecialchars(asset_url(BASE_PATH . '/public/assets/js/rteditor/collab-editor.js'), ENT_QUOTES) ?>"></script>
+
+<!-- starter import: keep the inline import but reference the same versioned path -->
 <script type="module">
-  import { startEditorPage } from "<?= BASE_PATH ?>/public/assets/js/rteditor/collab-editor.js";
+  import { startEditorPage } from "<?= htmlspecialchars(asset_url(BASE_PATH . '/public/assets/js/rteditor/collab-editor.js'), ENT_QUOTES) ?>";
   startEditorPage({ debug: false, editable: <?= $canEdit ? 'true' : 'false' ?> });
 </script>
