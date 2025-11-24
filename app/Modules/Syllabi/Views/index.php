@@ -90,10 +90,6 @@ $PAGE_KEY = 'syllabi';
           <div class="card">
             <div class="card-header"><strong>Details</strong></div>
             <div class="card-body">
-              <button id="sy-open" class="btn btn-sm btn-primary">
-                <i class="bi bi-box-arrow-up-right me-1"></i>
-                Open
-              </button>
 
               <div id="sy-info-empty" class="text-center text-muted py-5">
                 <p>Select a syllabus to see its details here.</p>
@@ -114,6 +110,55 @@ $PAGE_KEY = 'syllabi';
 
                 <dt class="col-4" id="sy-i-status-label">Status</dt>
                 <dd class="col-8" id="sy-i-status"></dd>
+
+                <dt class="col-4">Actions</dt>
+                <dd class="col-8">
+                  <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-primary" id="sy-open">Open in Editor</button>
+
+                    <!-- Edit Button -->
+                    <button class="btn btn-sm btn-secondary"
+                            id="sy-edit"
+                            type="button"
+                            data-bs-toggle="modal"
+                            data-bs-target="#syEditModal"
+                            style="display:none">
+                      Edit Details
+                    </button>
+
+                    <!-- Archive / Unarchive: same color as previous edit (yellowish) -->
+                    <button class="btn btn-sm btn-warning" 
+                            id="sy-archive" 
+                            type="button"
+                            style="display:none">
+                      Archive
+                    </button>
+
+                    <!-- Delete: only shown when status is archived. Hidden by default. -->
+                    <button class="btn btn-sm btn-danger d-none" 
+                            id="sy-delete" 
+                            type="button"
+                            data-bs-toggle="modal" 
+                            data-bs-target="#syDeleteModal">
+                      Delete
+                    </button>
+                  </div>
+
+                  <script>
+                    // Expose per-scope edit permissions for client logic
+                    // prefer canEditGlobal (AAO) name; kept for clarity in JS
+                    window.TB_PERMS = {
+                      canEditGlobal:  <?= !empty($canEditGlobal)  ? 'true' : 'false' ?>, // change for syllabi
+                      canEditCollege: <?= !empty($canEditCollege) ? 'true' : 'false' ?>, // change for syllabi
+                      canEditProgram: <?= !empty($canEditProgram) ? 'true' : 'false' ?>, // change for syllabi
+                    };
+                  </script>
+                  <?php if (empty($canEditGlobal) && empty($canEditCollege) && empty($canEditProgram)): ?>
+                  <script>
+                    (function(){ const b = document.getElementById('sy-edit'); if (b) b.remove(); })();
+                  </script>
+                  <?php endif; ?>
+                </dd>
               </dl>
             </div>
           </div>
@@ -125,12 +170,12 @@ $PAGE_KEY = 'syllabi';
 
     // CREATE / EDIT / DELETE MODALS
     // We’ll show Create modal on college/program modes (it needs lists).
-    if ($mode !== 'global-folders') {
+    if ($mode !== 'global-folders' && !empty($canCreate)) {
       // Create modal needs:
       $colleges  = $colleges      ?? [];
       $programs = $programs ?? [];
       $courses = $courses?? [];
-      //include $partialsDir . '/CreateModal.php';
+      include $partialsDir . '/CreateModal.php';
       if (function_exists('renderSyllabiCreateModal')) {
         renderSyllabiCreateModal(
           $ASSET_BASE,
@@ -142,7 +187,23 @@ $PAGE_KEY = 'syllabi';
       }
     }
 
-    //include $partialsDir . '/EditModal.php';
+    // Show Edit modal only on college/program modes (it needs lists).
+    if ($mode !== 'global-folders' && !empty($canEdit)) {
+      // Edit modal needs:
+      $colleges  = $colleges      ?? [];
+      $programs = $programs ?? [];
+      $courses = $courses?? [];
+      include $partialsDir . '/EditModal.php';
+      if (function_exists('renderSyllabiCreateModal')) {
+        renderSyllabiCreateModal(
+          $ASSET_BASE,
+          $colleges,
+          $programs,
+          $courses,
+          $esc
+        );
+      }
+    }
     //include $partialsDir . '/DeleteModal.php';
   ?>
 

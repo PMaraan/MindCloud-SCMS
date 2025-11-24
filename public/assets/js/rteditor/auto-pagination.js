@@ -1,6 +1,7 @@
 // /public/assets/js/rteditor/auto-pagination.js
 // Auto-pagination for TipTap content using manual PageBreak nodes.
 // Safe to drop in. No other files need edits for this to work.
+window.__RT_debugAutoPaginate = true; // set to false in production
 
 function beginMeasure(pageEl, contentEl) {
   const prev = [];
@@ -272,21 +273,20 @@ export function runOnce(editor, {
 } = {}) {
   if (!editor || !pageEl || !contentEl) return;
 
-  // Lightweight re-entrancy guard: avoid concurrent runs and rapid repeats
+  // Re-entrancy guard + rapid-repeat guard
   if (runOnce._running) {
     if (DEBUG_FLAG) console.log('[auto-pagination] runOnce skipped: already running');
     return;
   }
   const NOW = Date.now();
   if (runOnce._lastRunAt && (NOW - runOnce._lastRunAt) < 250) {
-    // if we just ran very recently, skip to avoid tight cycles
     if (DEBUG_FLAG) console.log('[auto-pagination] runOnce skipped: last run too recent');
     return;
   }
   runOnce._running = true;
   runOnce._lastRunAt = NOW;
 
-  // Helper: find the nearest scroll container for contentEl (main-content or closest overflowed ancestor).
+  // Helper: find scroll container
   function findScrollContainer(el) {
     let node = el;
     while (node) {
@@ -303,15 +303,13 @@ export function runOnce(editor, {
     if (main) return main;
     return window;
   }
-
   const scrollContainer = findScrollContainer(contentEl);
 
-  // quick scroll-pause watcher attachment (existing logic intact)
+  // ---- attach light scroll watcher (if not already) ----
   if (scrollContainer && !scrollContainer.__rt_scrollWatcherAttached) {
     scrollContainer.__rt_scrollWatcherAttached = true;
     scrollContainer.__rt_userScrolling = false;
     scrollContainer.__rt_scrollTimer = null;
-
     const touchOrWheel = () => {
       scrollContainer.__rt_userScrolling = true;
       if (scrollContainer.__rt_scrollTimer) clearTimeout(scrollContainer.__rt_scrollTimer);
@@ -319,7 +317,6 @@ export function runOnce(editor, {
         scrollContainer.__rt_userScrolling = false;
       }, 280);
     };
-
     scrollContainer.addEventListener('wheel', touchOrWheel, { passive: true });
     scrollContainer.addEventListener('touchmove', touchOrWheel, { passive: true });
     scrollContainer.addEventListener('scroll', touchOrWheel, { passive: true });
@@ -327,14 +324,14 @@ export function runOnce(editor, {
     window.addEventListener('touchmove', touchOrWheel, { passive: true });
   }
 
-  // If user is actively scrolling, skip this run.
+  // If user is actively scrolling, skip run.
   if (scrollContainer && scrollContainer.__rt_userScrolling) {
     if (DEBUG_FLAG) console.log('[auto-pagination] skipping because user is scrolling');
     runOnce._running = false;
     return;
   }
 
-  // ---------- compute usable height from CONFIG + DOM (take the smaller) ----------
+  // ---------- compute usable height ----------
   let usableH_cfg = 0;
   try {
     const cfg = (typeof getPageConfig === 'function') ? getPageConfig() : null;
@@ -355,7 +352,6 @@ export function runOnce(editor, {
   const pt2 = parseFloat(cs2.paddingTop) || 0;
   const pb2 = parseFloat(cs2.paddingBottom) || 0;
   const usableH_dom = contentEl.clientHeight - pt2 - pb2;
-
   let usableH = Math.max(0, Math.min(usableH_cfg || Infinity, usableH_dom || Infinity) - safety);
 
   if (DEBUG_FLAG) {
@@ -367,39 +363,36 @@ export function runOnce(editor, {
     });
   }
 
-  if (clearExisting) removeAllPageBreaks(editor);
-
-  // Save scrollTop & heights before we mutate the DOM
-  function getScrollTop(container) {
-    if (container === window) return window.scrollY || window.pageYOffset || 0;
-    return container.scrollTop || 0;
-  }
-  function setScrollTop(container, v) {
-    if (container === window) {
-      window.scrollTo(0, v);
-    } else {
-      container.scrollTop = v;
-    }
+  // ---- Collect existing pageBreak positions (so we can compare and skip if unchanged) ----
+  const state = editor.state;
+  const existingBreaks = [];
+  if (state) {
+    state.doc.descendants((node, pos) => {
+      if (node.type && node.type.name === 'pageBreak') existingBreaks.push(pos);
+    });
   }
 
-  const savedScrollTop = getScrollTop(scrollContainer || window);
-  const beforeHeight = contentEl.scrollHeight || contentEl.getBoundingClientRect().height || 0;
+  console.log('[auto-pagination-debug] existingBreaks:', existingBreaks.length, 'lastDocSig:', editor && editor.__rt_lastPaginateAt);
 
+  // Compute blocks and breakPositions (DOM-measured)
   const endMeasure = beginMeasure(pageEl, contentEl);
+  let computedBreakPositions = [];
   try {
     const blocks = collectBlockHeights(editor, contentEl);
     if (!blocks.length) {
+      // nothing to paginate
+      if (DEBUG_FLAG) console.log('[auto-pagination] nothing to paginate (no blocks)');
+      runOnce._running = false;
+      endMeasure();
       return;
     }
 
-    // Multi-page loop
+    // Multi-page loop calculate breakPositions (copy of previous logic)
     const breakPositions = [];
     let start = 0;
     let cutGuard = 0;
-
     while (start < blocks.length && cutGuard < 200) {
       cutGuard++;
-
       const firstTop = effectiveTop(blocks[start].el);
       const limitY   = firstTop + usableH;
       if (DEBUG_FLAG) console.log('[auto-pagination] TRACE firstTop/limitY', { firstTop: Math.round(firstTop), limitY: Math.round(limitY) });
@@ -413,7 +406,6 @@ export function runOnce(editor, {
         }
         if (bot > limitY) { i = k; break; }
       }
-
       if (i === -1) break;
 
       const overflowBot = effectiveBottom(blocks[i].el);
@@ -429,17 +421,7 @@ export function runOnce(editor, {
       else cutIndex = Math.max(start + 1, j);
 
       const cutPos = posAtBlockStart(editor, blocks[cutIndex].el);
-      if (DEBUG_FLAG) {
-        console.log('[auto-pagination] CUT', {
-          index: cutIndex,
-          pos: cutPos,
-          sample: (blocks[cutIndex].el.textContent || '').trim().slice(0,1),
-          effBottom: Math.round(effectiveBottom(blocks[cutIndex].el)),
-          limitY: Math.round(limitY),
-          overflowDelta,
-          slackPx
-        });
-      }
+      if (DEBUG_FLAG) console.log('[auto-pagination] CUT', { index: cutIndex, pos: cutPos });
 
       if (typeof cutPos === 'number') breakPositions.push(cutPos);
       else break;
@@ -448,32 +430,140 @@ export function runOnce(editor, {
         start++;
       }
     }
+    computedBreakPositions = breakPositions;
+    console.log('[auto-pagination-debug] computedBreakPositions:', computedBreakPositions.length, computedBreakPositions.slice(0,10));
 
-    insertBreaksAt(editor, breakPositions);
-    if (DEBUG_FLAG) console.log('[auto-pagination] inserted breaks:', breakPositions.length);
   } finally {
     endMeasure();
+  }
 
-    // After pagination, compute height delta and restore relative scroll position.
-    try {
-      const afterHeight = contentEl.scrollHeight || contentEl.getBoundingClientRect().height || 0;
-      const heightDelta = (afterHeight - beforeHeight) || 0;
+  // ---------------------------
+  // Compare and apply minimal diff (tolerant equality)
+  // ---------------------------
+  // Helper: near-equal positions (px/pos noise tolerance)
+  const POS_TOLERANCE = 3; // positions within ±3 are treated equal
+  function isNear(a, b) { return Math.abs((a|0) - (b|0)) <= POS_TOLERANCE; }
 
-      // If the content grew downward below the saved scroll, adjust the savedScrollTop
-      // so the same visual area stays visible.
-      const adjustedScroll = Math.max(0, savedScrollTop + heightDelta);
+  // Quick equality: same length AND every entry matches within tolerance
+  let equal = false;
+  if (existingBreaks.length === computedBreakPositions.length) {
+    equal = existingBreaks.every((v, i) => isNear(v, computedBreakPositions[i]));
+  }
 
-      setTimeout(() => {
-        try {
-          setScrollTop(scrollContainer || window, adjustedScroll);
-        } catch (e) { /* ignore */ }
-      }, 0);
+  if (equal) {
+    if (DEBUG_FLAG) console.log('[auto-pagination] no-op: existing pageBreaks match computed positions — skipping edit');
+    if (editor) editor.__rt_lastPaginateAt = Date.now();
+    runOnce._running = false;
+    return;
+  }
 
-      // Mark the editor with a timestamp so the scheduler can skip immediate re-runs
-      if (editor) editor.__rt_lastPaginateAt = Date.now();
-    } catch (e) { /* ignore */ }
+  // Build sets of positions to insert and to delete (minimal patch)
+  const toInsert = []; // positions to insert
+  const toDelete = []; // existing positions to delete (exact doc positions)
 
-    // clear guard
+  // Mark computed insertions: keep a computed entry if it doesn't match any existingBreaks within tolerance
+  for (const cp of computedBreakPositions) {
+    const match = existingBreaks.find((eb) => isNear(eb, cp));
+    if (!match && cp != null) toInsert.push(cp);
+  }
+
+  // Mark deletions: keep an existing break only if it matches a computed position
+  for (const eb of existingBreaks) {
+    const match = computedBreakPositions.find((cp) => isNear(cp, eb));
+    if (!match) toDelete.push(eb);
+  }
+
+  // If diff is empty (unexpected) skip
+  if (!toInsert.length && !toDelete.length) {
+    if (DEBUG_FLAG) console.log('[auto-pagination] no-op after diff (no inserts/deletes)');
+    if (editor) editor.__rt_lastPaginateAt = Date.now();
+    runOnce._running = false;
+    return;
+  }
+
+  // Apply mutations minimally and safely
+  try {
+    if (editor) editor.__rt_applyingPageBreaks = true;
+
+    // Save scroll + heights before mutate
+    function getScrollTop(container) {
+      if (container === window) return window.scrollY || window.pageYOffset || 0;
+      return container.scrollTop || 0;
+    }
+    function setScrollTop(container, v) {
+      if (container === window) window.scrollTo(0, v);
+      else container.scrollTop = v;
+    }
+    const savedScrollTop = getScrollTop(scrollContainer || window);
+    const beforeHeight = contentEl.scrollHeight || contentEl.getBoundingClientRect().height || 0;
+
+    // Perform deletions first (from end to start to keep positions valid)
+    if (toDelete.length) {
+      // Build transaction deleting each pageBreak node we want removed.
+      const { state, view } = editor;
+      const tr = state.tr;
+      // Find concrete ranges for each break to delete
+      // We'll scan doc to locate pageBreak nodes and match their positions against toDelete tolerance
+      state.doc.descendants((node, pos) => {
+        if (node.type && node.type.name === 'pageBreak') {
+          const found = toDelete.find(d => isNear(d, pos));
+          if (found) {
+            // We delete the pageBreak node plus optionally adjacent empty paragraph (same logic as removeAllPageBreaks)
+            let from = pos;
+            let to   = pos + node.nodeSize;
+
+            const $pos = state.doc.resolve(pos);
+            const parentNode = $pos.parent;
+            const idx = $pos.index();
+
+            const before = parentNode.child(idx - 1);
+            if (isEmptyParagraph(before)) {
+              let cursor = $pos.start() + 0;
+              for (let i = 0; i < idx - 1; i++) cursor += parentNode.child(i).nodeSize;
+              const paraFrom = cursor;
+              const paraTo   = cursor + before.nodeSize;
+              from = Math.min(from, paraFrom);
+            }
+
+            const after = parentNode.child(idx + 1);
+            if (isEmptyParagraph(after)) {
+              let cursor = $pos.start() + 0;
+              for (let i = 0; i <= idx + 1; i++) cursor += parentNode.child(i).nodeSize;
+              const paraTo = cursor;
+              to = Math.max(to, paraTo);
+            }
+
+            tr.delete(from, to);
+          }
+        }
+      });
+      if (tr.docChanged) view.dispatch(tr);
+    }
+
+    // Insert missing breaks (in descending order)
+    if (toInsert.length) {
+      // Use existing helper: insertBreaksAt
+      insertBreaksAt(editor, toInsert);
+    }
+
+    // After mutation, restore scroll by height delta (small settle)
+    setTimeout(() => {
+      try {
+        const afterHeight = contentEl.scrollHeight || contentEl.getBoundingClientRect().height || 0;
+        const heightDelta = (afterHeight - beforeHeight) || 0;
+        const adjusted = Math.max(0, savedScrollTop + heightDelta);
+        setScrollTop(scrollContainer || window, adjusted);
+      } catch (e) { /* ignore */ }
+    }, 0);
+
+    if (DEBUG_FLAG) {
+      console.log('[auto-pagination] applied diff:', { inserted: toInsert.length, deleted: toDelete.length });
+    }
+
+    if (editor) editor.__rt_lastPaginateAt = Date.now();
+  } finally {
+    // keep suppression for a slightly longer cooldown to avoid immediate re-triggers
+    setTimeout(() => { if (editor) editor.__rt_applyingPageBreaks = false; }, 800);
     runOnce._running = false;
     runOnce._lastRunAt = Date.now();
   }

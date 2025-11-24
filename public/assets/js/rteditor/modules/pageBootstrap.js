@@ -99,6 +99,8 @@ export async function startEditorPage(opts = {}) {
       }
 
       function schedule() {
+        // If pagination process is currently mutating the document, ignore scheduling.
+        if (editor && editor.__rt_applyingPageBreaks) return;
         // If we've just paginated, avoid scheduling immediate re-run
         if (cooldown) {
           pending = true;
@@ -110,6 +112,8 @@ export async function startEditorPage(opts = {}) {
       }
 
       async function doPaginateIfNeeded() {
+      // top-level guard so we never bubble an exception out of the scheduler
+      try {
         if (!pending) return;
         if (running) {
           clearTimeout(idleTimer);
@@ -131,7 +135,7 @@ export async function startEditorPage(opts = {}) {
 
         if (Math.abs(curHeight - lastHeight) <= HEIGHT_EPS_PX && curDocSig === lastDocSig) {
           pending = false;
-          if (DEBUG_FLAG) console.log('[RTEditor] pagination skipped (no material change)');
+          if (!!window.__RT_debugAutoPaginate) console.log('[RTEditor] pagination skipped (no material change)');
           return;
         }
 
@@ -171,12 +175,19 @@ export async function startEditorPage(opts = {}) {
         } finally {
           running = false;
         }
+      } catch (outerErr) {
+        // Defensive: log and swallow to avoid uncaught promise rejections breaking editor updates.
+        console.warn('[RTEditor] live paginate scheduler fatal error (swallowed)', outerErr);
+        running = false;
+        pending = false;
       }
+    }
 
       // 1) TipTap update hook: schedule when doc size changes (ignore selection-only updates)
       if (editor && typeof editor.on === 'function') {
         let lastSeenDocSize = (editor.state && editor.state.doc) ? editor.state.doc.content.size : null;
         editor.on('update', (tr) => {
+           if (editor && editor.__rt_applyingPageBreaks) return;
           try {
             if (tr && typeof tr.docChanged !== 'undefined' && !tr.docChanged) return;
             const nowSize = (editor.state && editor.state.doc) ? editor.state.doc.content.size : null;

@@ -122,6 +122,7 @@ final class SyllabiController
             $view['college'] = $this->model->getCollege($qCollege);
             $view['programs'] = $this->getProgramsAndSyllabiByCollege($qCollege);
             $view['canCreate'] = $this->canCreate($role, $collegeId, $programId);
+            $view['canEdit'] = $this->canEdit($role, $collegeId, $programId);
             $view['showBackToFolders'] = true;
             return $this->render('index', $view);
         // Dean Roles: College mode only (college param ignored)    
@@ -248,6 +249,14 @@ final class SyllabiController
     }
     private function canEdit(string $role, ?int $collegeId, ?int $programId): bool
     {
+        
+        if (in_array($role, $this->GLOBAL_ROLES, true)) {
+            return false; // AAO roles cannot edit the metadata
+        } elseif (in_array($role, $this->DEAN_ROLES, true)) {
+            return true; // Deans can edit
+        } elseif (in_array($role, $this->CHAIR_ROLES, true)) {
+            return true; // Chairs can edit
+        }
         return true;
     }
     private function canDelete(string $role, ?int $collegeId, ?int $programId): bool
