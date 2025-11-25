@@ -34,12 +34,12 @@ if (!function_exists('renderEditModal')) {
       <div class="modal-body">
         <input type="hidden" name="csrf_token" value="<?= $esc($_SESSION['csrf_token'] ?? '') ?>">
         <input type="hidden" name="template_id" id="tb-e-id">
-
+        <!-- Title -->
         <div class="mb-3">
-          <label class="form-label">Title <span class="text-danger">*</span></label>
+          <label class="form-label">Title </label>
           <input type="text" name="title" id="tb-e-title" class="form-control" maxlength="255" required>
         </div>
-
+        <!-- Scope -->
         <div class="mb-3">
           <label class="form-label d-block">Scope <span class="text-danger">*</span></label>
           <div class="d-flex gap-3 flex-wrap">
@@ -63,7 +63,7 @@ if (!function_exists('renderEditModal')) {
             </div>
           </div>
         </div>
-
+        <!-- College -->
         <div class="mb-3" id="tb-e-college-wrap">
           <label class="form-label" for="tb-e-college">College</label>
           <select name="college_id" id="tb-e-college" class="form-select" aria-label="College" title="College">
@@ -75,7 +75,7 @@ if (!function_exists('renderEditModal')) {
             <?php endforeach; ?>
           </select>
         </div>
-
+        <!-- Program -->
         <div class="mb-3" id="tb-e-program-wrap">
           <label class="form-label" for="tb-e-program">Program</label>
           <select name="program_id" id="tb-e-program" class="form-select" aria-label="Program" title="Program">
@@ -87,7 +87,7 @@ if (!function_exists('renderEditModal')) {
             <?php endforeach; ?>
           </select>
         </div>
-
+        <!-- Course -->
         <div class="mb-3 d-none" id="tb-e-course-wrap">
           <label class="form-label" for="tb-e-course">Course</label>
           <select name="course_id" id="tb-e-course" class="form-select" aria-label="Course" title="Course">
