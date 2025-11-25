@@ -4,7 +4,6 @@ import { bindBasicToolbar } from "./toolbarBinder.js";
 import { runAutoPaginate } from "./paginationEngine.js";
 import { readInitialDocFromScriptTag, applyHydrationIfTrivial } from "./hydration.js";
 import { bindPageLayoutControls, getCurrentPageConfig } from "../page-layout.js";
-import { bindManualPagination } from "../manual-pagination.js";
 
 /**
  * Start editor page.
@@ -32,20 +31,6 @@ export async function startEditorPage(opts = {}) {
     const contentEl = document.getElementById('rtPageContent');
     bindPageLayoutControls(document, pageEl, contentEl);
   } catch (e) { console.warn('[RTEditor] bindPageLayoutControls failed', e); }
-
-  // manual preview
-  try {
-    const previewRoot = document.getElementById('pagePreviewRoot');
-    if (previewRoot) {
-      const { refresh: refreshPreview } = bindManualPagination(editor, {
-        pagePreviewRoot: previewRoot,
-        headerEl: document.getElementById('rtHeader'),
-        footerEl: document.getElementById('rtFooter'),
-        getPageConfig: () => getCurrentPageConfig(),
-      });
-      document.addEventListener('rt:page-layout-updated', () => refreshPreview());
-    }
-  } catch (e) { console.warn('[RTEditor] bindManualPagination failed:', e); }
 
   // autoPaginate button
   try {

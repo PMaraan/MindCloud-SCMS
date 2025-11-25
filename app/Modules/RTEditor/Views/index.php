@@ -73,9 +73,6 @@ function asset_url(string $path): string {
     </div>
   </div>
 
-  <!-- Manual Pagination Preview (read-only) -->
-  <div id="pagePreviewRoot"></div>
-
   <!-- Diagnostics BELOW the page -->
   <div class="mt-3 small text-muted">
     <div>Diagnostics:</div>
