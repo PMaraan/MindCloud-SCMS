@@ -86,6 +86,7 @@ $PAGE_KEY = 'syllabi';
           ?>
         </main><!-- /MAIN CLOSE -->
 
+        <!-- Details Pane ASIDE -->
         <aside class="tb-flex-aside flex-shrink-0" id="sy-info-pane"><!-- ASIDE OPEN -->
           <div class="card">
             <div class="card-header"><strong>Details</strong></div>
@@ -147,13 +148,14 @@ $PAGE_KEY = 'syllabi';
                   <script>
                     // Expose per-scope edit permissions for client logic
                     // prefer canEditGlobal (AAO) name; kept for clarity in JS
-                    window.TB_PERMS = {
-                      canEditGlobal:  <?= !empty($canEditGlobal)  ? 'true' : 'false' ?>, // change for syllabi
+                    window.SY_PERMS = {
+                      canEdit:  <?= !empty($canEdit)  ? 'true' : 'false' ?>, // change for syllabi
                       canEditCollege: <?= !empty($canEditCollege) ? 'true' : 'false' ?>, // change for syllabi
                       canEditProgram: <?= !empty($canEditProgram) ? 'true' : 'false' ?>, // change for syllabi
+                    
                     };
                   </script>
-                  <?php if (empty($canEditGlobal) && empty($canEditCollege) && empty($canEditProgram)): ?>
+                  <?php if (empty($canEdit) && empty($canEdit) && empty($canEdit)): ?>
                   <script>
                     (function(){ const b = document.getElementById('sy-edit'); if (b) b.remove(); })();
                   </script>
@@ -194,8 +196,8 @@ $PAGE_KEY = 'syllabi';
       $programs = $programs ?? [];
       $courses = $courses?? [];
       include $partialsDir . '/EditModal.php';
-      if (function_exists('renderSyllabiCreateModal')) {
-        renderSyllabiCreateModal(
+      if (function_exists('renderSyllabiEditModal')) {
+        renderSyllabiEditModal(
           $ASSET_BASE,
           $colleges,
           $programs,

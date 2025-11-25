@@ -1,4 +1,4 @@
-// /public/assets/js/syllabustemplates/editModal.js
+// /public/assets/js/syllabi/editModal.js
 import { fetchPrograms, fetchCourses } from './dataLoaders.js';
 import { fillSelect, getCurrentCollegeParam, lockSelectElement } from './utils.js';
 import { getActiveTile } from './state.js';
@@ -17,24 +17,12 @@ function fillFromTile(tile) {
   const get = (key, fallback = '') => tile.dataset[key] ?? fallback;
 
   //document.getElementById('tb-e-id').value = get('templateId', '');
-  document.getElementById('tb-e-title').value = get('title', '');
-  document.getElementById('tb-e-version').value = get('version', '');
-  document.getElementById('tb-e-status').value = get('status', 'draft');
-
-  const scope = (get('scope', 'global') || 'global').toLowerCase();
-  const scopeMap = {
-    global: 'tb-e-scope-global',
-    college: 'tb-e-scope-college',
-    program: 'tb-e-scope-program',
-    course: 'tb-e-scope-course'
-  };
-  const scopeId = scopeMap[scope] || scopeMap.global;
-  const scopeRadio = document.getElementById(scopeId);
-  if (scopeRadio) scopeRadio.checked = true;
-
-  document.getElementById('tb-e-college').value = get('ownerDepartmentId', '');
-  document.getElementById('tb-e-program').value = get('programId', '');
-  document.getElementById('tb-e-course').value = get('courseId', '');
+  document.getElementById('sy-e-title').value = get('title', '');
+  document.getElementById('sy-e-college').value = get('ownerDepartmentId', '');
+  document.getElementById('sy-e-program').value = get('programId', '');
+  document.getElementById('sy-e-course').value = get('courseId', '');
+  document.getElementById('sy-e-version').value = get('version', '');
+  document.getElementById('sy-e-status').value = get('status', 'draft');
 }
 
 /**

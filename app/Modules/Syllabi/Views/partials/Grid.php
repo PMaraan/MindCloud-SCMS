@@ -26,7 +26,15 @@ $esc  = $esc ?? static fn($value) => htmlspecialchars((string)$value, ENT_QUOTES
     $status = strtolower((string)($row['status'] ?? 'draft'));
     $updatedRaw = (string)($row['updated_at'] ?? $row['updated'] ?? '');
     $updated = $updatedRaw ? date('M j, Y', strtotime($updatedRaw)) : '';
-    $program = (string)($row['program_name'] ?? '');
+    $programNames = $row['program_names'] ?? ($row['program_name'] ?? []);
+    if (is_string($programNames) && $programNames !== '') {
+      $programNames = [$programNames];
+    }
+    if (!is_array($programNames)) {
+      $programNames = [];
+    }
+    $programDisplay = $programNames ? implode(', ', array_filter(array_map('strval', $programNames))) : '';
+    $dataPrograms = $esc(json_encode($programNames, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
     $ownerCollege = (string)($row['college_name'] ?? $row['department_name'] ?? '');
     $version = (string)($row['version'] ?? '');
     $icon = match ($status) {
@@ -42,22 +50,19 @@ $esc  = $esc ?? static fn($value) => htmlspecialchars((string)$value, ENT_QUOTES
     $href = $base . '/dashboard?page=rteditor&syllabusId=' . $sid;
   ?>
     <div class="col">
-      <div class="tb-tile card h-100" tabindex="0" role="button"
+      <div class="sy-tile card h-100" tabindex="0" role="button"
            aria-label="Open syllabus: <?= $esc($title) ?>"
            data-syllabus-id="<?= $esc($sid) ?>"
            data-title="<?= $esc($title) ?>"
            data-status="<?= $esc($status) ?>"
-           data-program-name="<?= $esc($program) ?>"
+           data-programs="<?= $dataPrograms ?>"
            data-college-name="<?= $esc($ownerCollege) ?>"
            data-updated="<?= $esc($updatedRaw) ?>"
            data-version="<?= $esc($version) ?>">
         <div class="card-body d-flex flex-column align-items-center text-center">
-          <div class="tb-icon tb-icon-xl mb-2"><i class="bi <?= $esc($icon) ?>"></i></div>
-          <div class="tb-name fw-semibold" title="<?= $esc($title) ?>"><?= $esc($title) ?></div>
-          <?php if ($program): ?>
-            <div class="text-muted small mb-1"><?= $esc($program) ?></div>
-          <?php endif; ?>
-          <div class="tb-meta text-muted small">
+          <div class="sy-icon sy-icon-xl mb-2"><i class="bi <?= $esc($icon) ?>"></i></div>
+          <div class="sy-name fw-semibold" title="<?= $esc($title) ?>"><?= $esc($title) ?></div>
+          <div class="sy-meta text-muted small">
             <?php if ($updated): ?><span class="me-2"><?= $esc($updated) ?></span><?php endif; ?>
             <span class="badge <?= $badgeClass ?> text-uppercase"><?= $esc($status ?: 'draft') ?></span>
           </div>

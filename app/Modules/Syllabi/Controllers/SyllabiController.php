@@ -83,6 +83,16 @@ final class SyllabiController
         $role      = (string)($user['role_name'] ?? '');
         $collegeId = isset($user['college_id']) ? (int)$user['college_id'] : null;
         $programId = isset($user['program_id']) ? (int)$user['program_id'] : null;
+        /*// Debugging RBAC
+        var_dump([
+            'role'              => $role,
+            'canEdit'           => $this->canEdit($role, $collegeId, $programId),
+            'canCreate'         => $this->canCreate($role, $collegeId, $programId),
+            'GLOBAL_MATCH'      => in_array($role, $this->GLOBAL_ROLES, true),
+            'DEAN_MATCH'        => in_array($role, $this->DEAN_ROLES, true),
+            'CHAIR_MATCH'       => in_array($role, $this->CHAIR_ROLES, true),
+        ]);
+        exit;*/
 
         $ASSET_BASE = (defined('BASE_PATH') ? BASE_PATH : '') . '/public';
         $esc = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
@@ -132,6 +142,7 @@ final class SyllabiController
             $view['college'] = $this->model->getCollege($collegeId);
             $view['programs'] = $this->getProgramsAndSyllabiByCollege($collegeId);
             $view['canCreate'] = $this->canCreate($role, $collegeId, $programId);
+            $view['canEdit'] = $this->canEdit($role, $collegeId, $programId);
             // Values for create modal selects
             $view['colleges'] = [[ 'college_id' => $collegeId ?? '', 'short_name' => $user['college_short_name'] ?? '', 'college_name' => $user['college_name'] ?? '']]; 
             $view['courses']  = $this->model->getCoursesOfCollege($collegeId);

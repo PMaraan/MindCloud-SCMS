@@ -51,15 +51,33 @@ function formatUpdated(value) {
   }
 }
 
+function parsePrograms(raw) {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return parsed.map((item) => String(item || '').trim()).filter(Boolean);
+    }
+  } catch (_) {
+    // fall through
+  }
+  return String(raw)
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 function updateDetailsPane(card) {
   const info = document.getElementById('sy-info');
   const empty = document.getElementById('sy-info-empty');
   if (!info || !empty) return;
 
   const title = robustData(card, 'title') || 'Untitled syllabus';
-  const status = robustData(card, 'status') || 'unknown';
-  const program = robustData(card, 'programName') || '';
-  const college = robustData(card, 'collegeName') || '';
+  const status = robustData(card, 'status');
+  const programsRaw = robustData(card, 'programs');
+  const programList = parsePrograms(programsRaw);
+  const programDisplay = programList.length ? programList.join(', ') : '';
+  const college = robustData(card, 'collegeName');
   const updated = formatUpdated(robustData(card, 'updated'));
 
   console.log('updateDetailsPane', {
@@ -68,7 +86,7 @@ function updateDetailsPane(card) {
       syllabusId: robustData(card, 'syllabusId'),
       title,
       status,
-      program,
+      program: programDisplay,
       college,
       updated
     }
@@ -76,28 +94,34 @@ function updateDetailsPane(card) {
 
   setText('sy-i-title', title);
   setText('sy-i-status', capitalizeForDisplay(status));
-  setText('sy-i-program', program || '—');
+  setText('sy-i-program', programDisplay || '—');
   setText('sy-i-college', college || '—');
   setText('sy-i-updated', updated);
 
-  toggleRow('sy-i-program-label', 'sy-i-program', !!program);
+  toggleRow('sy-i-program-label', 'sy-i-program', programList.length > 0);
   toggleRow('sy-i-college-label', 'sy-i-college', !!college);
 
   empty.classList.add('d-none');
   info.classList.remove('d-none');
+
+  // Show/hide Edit button based on permissions
+  const btnEdit = document.getElementById('sy-edit');
+  if (btnEdit) btnEdit.style.display = window.SY_PERMS.canEdit ? '' : 'none';
 }
 
 export function selectTile(card) {
   if (!card) return;
-  document.querySelectorAll('.tb-tile.tb-card--active').forEach((node) => node.classList.remove('tb-card--active'));
-  card.classList.add('tb-card--active');
+  document
+    .querySelectorAll('.sy-tile.sy-card--active')
+    .forEach((node) => node.classList.remove('sy-card--active'));
+  card.classList.add('sy-card--active');
   setSelectedSyllabusId(robustData(card, 'syllabusId') || null);
   updateDetailsPane(card);
 }
 
 function initTileClicks() {
   document.body.addEventListener('click', (event) => {
-    const tile = event.target.closest('.tb-tile');
+    const tile = event.target.closest('.sy-tile');
     if (tile) selectTile(tile);
   });
 }
@@ -106,7 +130,7 @@ function initArrowNavigation() {
   document.addEventListener('keydown', (event) => {
     if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
 
-    const tiles = Array.from(document.querySelectorAll('.tb-tile'));
+    const tiles = Array.from(document.querySelectorAll('.sy-tile'));
     if (!tiles.length) return;
 
     let index = tiles.findIndex((tile) => tile.classList.contains('tb-card--active'));
@@ -166,7 +190,7 @@ function initOpenHandlers() {
   }
 
   document.body.addEventListener('dblclick', (event) => {
-    const tile = event.target.closest('.tb-tile');
+    const tile = event.target.closest('.sy-tile');
     if (!tile) return;
     const id = robustData(tile, 'syllabusId');
     if (id) openSyllabusById(id, { newTab: true });
@@ -174,7 +198,7 @@ function initOpenHandlers() {
 
   document.addEventListener('keydown', (event) => {
     if (event.key !== 'Enter') return;
-    const tile = document.activeElement?.closest?.('.tb-tile');
+    const tile = document.activeElement?.closest?.('.sy-tile');
     if (!tile) return;
     const id = robustData(tile, 'syllabusId');
     if (id) openSyllabusById(id, { newTab: true });
@@ -183,15 +207,15 @@ function initOpenHandlers() {
 
 function ensureInitialSelection() {
   const tile =
-    document.querySelector('.tb-tile.tb-card--active') ||
-    document.querySelector('.tb-tile');
+    document.querySelector('.sy-tile.tb-card--active') ||
+    document.querySelector('.sy-tile');
 
   if (tile) selectTile(tile);
 }
 
-console.log('initTileInteractions running', document.querySelectorAll('.tb-tile').length);
+console.log('initTileInteractions running', document.querySelectorAll('.sy-tile').length);
 export default function initTileInteractions() {
-  console.log('initTileInteractions running', document.querySelectorAll('.tb-tile').length);
+  console.log('initTileInteractions running', document.querySelectorAll('.sy-tile').length);
   initTileClicks();
   initArrowNavigation();
   initOpenHandlers();
