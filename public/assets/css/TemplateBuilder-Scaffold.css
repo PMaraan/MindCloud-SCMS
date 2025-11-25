@@ -20,18 +20,21 @@
 #tb-info-pane { position: sticky; top: 12px; }
 
 /* Explorer-style tiles (Large icons) for templates */
-.tb-tile {
+.tb-tile, .sy-tile {
   border: 1px solid rgba(0,0,0,.06);
   transition: box-shadow .12s ease, border-color .12s ease, transform .06s ease;
   user-select: none;
 }
 .tb-tile:hover,
-.tb-tile:focus {
+.tb-tile:focus, 
+.sy-tile:hover,
+.sy-tile:focus {
   border-color: rgba(0,0,0,.12);
   box-shadow: 0 4px 14px rgba(0,0,0,.06);
   outline: 0;
 }
-.tb-tile.tb-card--active {
+.tb-tile.tb-card--active, 
+.sy-tile.sy-tile--active {
   border-color: rgba(13,110,253,.35);
   box-shadow: 0 2px 10px rgba(0,0,0,.08), 0 0 0 .15rem rgba(13,110,253,.12);
 }
@@ -104,6 +107,6 @@ select[data-locked="1"] {
 }
 #tb-info .btn .bi { vertical-align: -0.125em; }
 
-#syCreateModal .modal-dialog {
+.modal-dialog {
   margin: 4.5rem auto 1.5rem !important;
 }
