@@ -76,7 +76,7 @@ function updateDetailsPane(card) {
   const status = robustData(card, 'status');
   const programsRaw = robustData(card, 'programs');
   const programList = parsePrograms(programsRaw);
-  const programDisplay = programList.length ? programList.join(', ') : '';
+  const programDisplay = programList.length ? programList.join('\n') : '';
   const college = robustData(card, 'collegeName');
   const updated = formatUpdated(robustData(card, 'updated'));
 

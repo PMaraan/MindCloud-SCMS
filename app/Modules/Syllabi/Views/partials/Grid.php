@@ -27,14 +27,21 @@ $esc  = $esc ?? static fn($value) => htmlspecialchars((string)$value, ENT_QUOTES
     $updatedRaw = (string)($row['updated_at'] ?? $row['updated'] ?? '');
     $updated = $updatedRaw ? date('M j, Y', strtotime($updatedRaw)) : '';
     $programNames = $row['program_names'] ?? ($row['program_name'] ?? []);
-    if (is_string($programNames) && $programNames !== '') {
-      $programNames = [$programNames];
-    }
-    if (!is_array($programNames)) {
+    if (is_string($programNames)) {
+      $trimmed = trim($programNames);
+      if ($trimmed !== '' && $trimmed[0] === '{' && substr($trimmed, -1) === '}') {
+        $csv = substr($trimmed, 1, -1);
+        $programNames = array_filter(array_map('trim', str_getcsv($csv)));
+      } elseif ($trimmed !== '') {
+        $programNames = [$trimmed];
+      } else {
+        $programNames = [];
+      }
+    } elseif (!is_array($programNames)) {
       $programNames = [];
     }
-    $programDisplay = $programNames ? implode(', ', array_filter(array_map('strval', $programNames))) : '';
-    $dataPrograms = $esc(json_encode($programNames, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+    $programJson = $esc(json_encode(array_values($programNames), JSON_UNESCAPED_UNICODE));
+    $programDisplay = $programNames ? implode(', ', $programNames) : '';
     $ownerCollege = (string)($row['college_name'] ?? $row['department_name'] ?? '');
     $version = (string)($row['version'] ?? '');
     $icon = match ($status) {
@@ -55,7 +62,7 @@ $esc  = $esc ?? static fn($value) => htmlspecialchars((string)$value, ENT_QUOTES
            data-syllabus-id="<?= $esc($sid) ?>"
            data-title="<?= $esc($title) ?>"
            data-status="<?= $esc($status) ?>"
-           data-programs="<?= $dataPrograms ?>"
+           data-programs="<?= $programJson ?>"
            data-college-name="<?= $esc($ownerCollege) ?>"
            data-updated="<?= $esc($updatedRaw) ?>"
            data-version="<?= $esc($version) ?>">
