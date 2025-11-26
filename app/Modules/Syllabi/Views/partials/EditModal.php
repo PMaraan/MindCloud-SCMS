@@ -21,7 +21,8 @@ if (!function_exists('renderSyllabiEditModal')) {
 ?>
 <div class="modal fade" id="syEditModal" tabindex="-1" aria-hidden="true" aria-labelledby="syEditLabel">
   <div class="modal-dialog">
-    <form method="post" action="<?= $base ?>/dashboard?page=syllabi&action=update" class="modal-content">
+    <form method="post" action="<?= $base ?>/dashboard?page=syllabi&action=edit" class="modal-content">
+      <input type="hidden" name="syllabus_id" id="sy-e-id">
       <div class="modal-header">
         <h5 class="modal-title" id="syEditLabel">Edit Syllabus</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -29,7 +30,6 @@ if (!function_exists('renderSyllabiEditModal')) {
 
       <div class="modal-body">
         <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
-        <input type="hidden" name="syllabus_id" id="sy-e-id" value="">
         <!-- Title -->
         <div class="mb-3">
           <label class="form-label">Title <span class="text-danger">*</span></label>

@@ -338,65 +338,75 @@ final class SyllabiModel
      */
     public function createSyllabus(array $payload, string $userId): int
     {
-        $title     = trim((string)($payload['title'] ?? 'Untitled'));
-        $course_id = (int)($payload['course_id'] ?? 0);
-        $college_id = isset($payload['college_id']) ? (int)$payload['college_id'] : null;
-        if ($college_id !== null && $college_id <= 0) {
-            $college_id = null;
-        }
+        $this->pdo->beginTransaction();
+        try {
+            $title     = trim((string)($payload['title'] ?? 'Untitled'));
+            $course_id = (int)($payload['course_id'] ?? 0);
+            $college_id = isset($payload['college_id']) ? (int)$payload['college_id'] : null;
+            if ($college_id !== null && $college_id <= 0) {
+                $college_id = null;
+            }
 
-        // program mapping(s)
-        $programIds = [];
-        if (isset($payload['program_ids']) && is_array($payload['program_ids'])) {
-            foreach ($payload['program_ids'] as $pid) {
-                $p = (int)$pid;
+            // program mapping(s)
+            $programIds = [];
+            if (isset($payload['program_ids']) && is_array($payload['program_ids'])) {
+                foreach ($payload['program_ids'] as $pid) {
+                    $p = (int)$pid;
+                    if ($p > 0) $programIds[] = $p;
+                }
+            } elseif (isset($payload['program_id'])) {
+                $p = (int)$payload['program_id'];
                 if ($p > 0) $programIds[] = $p;
             }
-        } elseif (isset($payload['program_id'])) {
-            $p = (int)$payload['program_id'];
-            if ($p > 0) $programIds[] = $p;
-        }
 
-        if ($course_id <= 0 || count($programIds) === 0) {
-            throw new \InvalidArgumentException('course_id and at least one program_id are required.');
-        }
-
-        $version   = (string)($payload['version'] ?? null);
-        $status    = (string)($payload['status']  ?? 'draft');
-        $filename  = (string)($payload['filename'] ?? '');
-        $content   = $payload['content'] ?? new \stdClass(); // json
-
-        $pdo = $this->pdo;
-        $pdo->beginTransaction();
-        try {
-            $sql = "
-                INSERT INTO public.syllabi
-                    (title, college_id, course_id, version, content, status, filename)
-                VALUES
-                    (:title, :college_id, :course_id, :version, CAST(:content AS jsonb), :status, :filename)
-                RETURNING syllabus_id";
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute([
-                ':title'      => $title,
-                ':college_id' => $college_id,
-                ':course_id'  => $course_id,
-                ':version'    => ($version === '' ? null : $version),
-                ':content'    => json_encode($content, JSON_UNESCAPED_UNICODE),
-                ':status'     => ($status === '' ? 'draft' : $status),
-                ':filename'   => ($filename === '' ? null : $filename),
-            ]);
-            $newId = (int)$stmt->fetchColumn();
-
-            // insert mappings into syllabi_programs
-            $ins = $pdo->prepare("INSERT INTO public.syllabi_programs (syllabus_id, program_id) VALUES (:sid, :pid) ON CONFLICT DO NOTHING");
-            foreach ($programIds as $pid) {
-                $ins->execute([':sid' => $newId, ':pid' => $pid]);
+            if ($course_id <= 0 || count($programIds) === 0) {
+                throw new \InvalidArgumentException('course_id and at least one program_id are required.');
             }
 
-            $pdo->commit();
-            return $newId;
+            $version   = (string)($payload['version'] ?? null);
+            $status    = (string)($payload['status']  ?? 'draft');
+            $filename  = (string)($payload['filename'] ?? '');
+            $content   = $payload['content'] ?? new \stdClass(); // json
+
+            $pdo = $this->pdo;
+            $pdo->beginTransaction();
+            try {
+                $sql = "
+                    INSERT INTO public.syllabi
+                        (title, college_id, course_id, version, content, status, filename)
+                    VALUES
+                        (:title, :college_id, :course_id, :version, CAST(:content AS jsonb), :status, :filename)
+                    RETURNING syllabus_id";
+                $stmt = $pdo->prepare($sql);
+                $params = [
+                    ':title'      => $title,
+                    ':college_id' => $college_id,
+                    ':course_id'  => $course_id,
+                    ':version'    => ($version === '' ? null : $version),
+                    ':content'    => json_encode($content, JSON_UNESCAPED_UNICODE),
+                    ':status'     => ($status === '' ? 'draft' : $status),
+                    ':filename'   => ($filename === '' ? null : $filename),
+                ];
+                $stmt->execute($params);
+                $sid = (int)$stmt->fetchColumn();
+
+                $link = $this->pdo->prepare(
+                    "INSERT INTO public.syllabi_programs (syllabus_id, program_id)
+                     VALUES (:sid, :pid)
+                     ON CONFLICT DO NOTHING"
+                );
+                foreach ($programIds as $pid) {
+                    $link->execute([':sid' => $sid, ':pid' => $pid]);
+                }
+
+                $this->pdo->commit();
+                return $sid;
+            } catch (\Throwable $e) {
+                $this->pdo->rollBack();
+                throw $e;
+            }
         } catch (\Throwable $e) {
-            $pdo->rollBack();
+            $this->pdo->rollBack();
             throw $e;
         }
     }
@@ -406,87 +416,42 @@ final class SyllabiModel
      */
     public function updateSyllabus(int $id, array $payload, string $userId): void
     {
-        if ($id <= 0) throw new \InvalidArgumentException('Invalid id.');
-
-        $title     = isset($payload['title']) ? trim((string)$payload['title']) : null;
-        $course_id = isset($payload['course_id']) ? (int)$payload['course_id'] : null;
-        $version   = array_key_exists('version', $payload) ? (string)$payload['version'] : null;
-        $status    = array_key_exists('status', $payload) ? (string)$payload['status'] : null;
-        $filename  = array_key_exists('filename', $payload) ? (string)$payload['filename'] : null;
-        $content   = array_key_exists('content', $payload) ? $payload['content'] : null;
-
-        $collegeProvided = array_key_exists('college_id', $payload);
-        $collegeValue    = $payload['college_id'] ?? null;
-
-        // optional program_ids replacement
-        $programIds = null;
-        if (array_key_exists('program_ids', $payload)) {
-            $programIds = [];
-            if (is_array($payload['program_ids'])) {
-                foreach ($payload['program_ids'] as $pid) {
-                    $p = (int)$pid;
-                    if ($p > 0) $programIds[] = $p;
-                }
-            }
-            // If empty array provided, we'll remove all mappings (caller explicitly asked).
-        }
-
-        // Build dynamic SET list
-        $sets = ["updated_at = CURRENT_TIMESTAMP"];
-        $params = [':id' => $id];
-
-        $this->maybeSet($sets, $params, 'title', $title);
-        $this->maybeSet($sets, $params, 'course_id', $course_id);
-        $this->maybeSet($sets, $params, 'version', $version, true);
-        $this->maybeSet($sets, $params, 'status', $status, true);
-        $this->maybeSet($sets, $params, 'filename', $filename, true);
-
-        if ($content !== null) {
-            $sets[] = "content = CAST(:content AS jsonb)";
-            $params[':content'] = json_encode($content, JSON_UNESCAPED_UNICODE);
-        }
-
-        if ($collegeProvided) {
-            if ($collegeValue === null || $collegeValue === '' || (int)$collegeValue <= 0) {
-                $sets[] = "college_id = NULL";
-            } else {
-                $sets[] = "college_id = :college_id";
-                $params[':college_id'] = (int)$collegeValue;
-            }
-        }
-
-        $pdo = $this->pdo;
-        $pdo->beginTransaction();
+        $this->pdo->beginTransaction();
         try {
-            if (count($sets) <= 1) {
-                // nothing to update except timestamp
-                $sql = "UPDATE public.syllabi SET updated_at = CURRENT_TIMESTAMP WHERE syllabus_id = :id";
-                $stmt = $pdo->prepare($sql);
-                $stmt->execute([':id' => $id]);
-            } else {
-                $sql = "UPDATE public.syllabi SET " . implode(', ', $sets) . " WHERE syllabus_id = :id";
-                $stmt = $pdo->prepare($sql);
-                $stmt->execute($params);
+            $stmt = $this->pdo->prepare("
+                UPDATE public.syllabi
+                   SET title = :title,
+                       college_id = :college_id,
+                       course_id = :course_id,
+                       version = :version,
+                       status = :status,
+                       updated_at = NOW()
+                 WHERE syllabus_id = :sid
+            ");
+            $stmt->execute([
+                ':title'      => $payload['title'],
+                ':college_id' => $payload['college_id'],
+                ':course_id'  => $payload['course_id'],
+                ':version'    => $payload['version'],
+                ':status'     => $payload['status'] ?? 'draft',
+                ':sid'        => $id,
+            ]);
+
+            $this->pdo->prepare("DELETE FROM public.syllabi_programs WHERE syllabus_id = :sid")
+                ->execute([':sid' => $id]);
+
+            $link = $this->pdo->prepare(
+                "INSERT INTO public.syllabi_programs (syllabus_id, program_id)
+                 VALUES (:sid, :pid)
+                 ON CONFLICT DO NOTHING"
+            );
+            foreach ($payload['program_ids'] ?? [] as $pid) {
+                $link->execute([':sid' => $id, ':pid' => $pid]);
             }
 
-            // Replace program mappings if caller provided program_ids (can be empty array to clear)
-            if ($programIds !== null) {
-                // delete existing
-                $del = $pdo->prepare("DELETE FROM public.syllabi_programs WHERE syllabus_id = :sid");
-                $del->execute([':sid' => $id]);
-
-                if (count($programIds) > 0) {
-                    $ins = $pdo->prepare("INSERT INTO public.syllabi_programs (syllabus_id, program_id) VALUES (:sid, :pid) ON CONFLICT DO NOTHING");
-                    foreach ($programIds as $pid) {
-                        $ins->execute([':sid' => $id, ':pid' => $pid]);
-                    }
-                }
-            }
-
-            $pdo->commit();
-            return;
+            $this->pdo->commit();
         } catch (\Throwable $e) {
-            $pdo->rollBack();
+            $this->pdo->rollBack();
             throw $e;
         }
     }

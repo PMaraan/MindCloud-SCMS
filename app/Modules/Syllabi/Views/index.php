@@ -211,4 +211,17 @@ $PAGE_KEY = 'syllabi';
     //include $partialsDir . '/DeleteModal.php';
   ?>
 
+  <?php
+  $flash = \App\Helpers\FlashHelper::get();
+  if ($flash):
+?>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    if (window.showFlashMessage) {
+      window.showFlashMessage('<?= $esc($flash['message']) ?>', '<?= $esc($flash['type']) ?>');
+    }
+  });
+</script>
+<?php endif; ?>
+
 </div><!-- /CONTAINER CLOSE -->

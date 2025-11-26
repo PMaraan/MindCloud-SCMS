@@ -9,6 +9,7 @@ use App\Security\RBAC;
 use App\Config\Permissions;
 use App\Models\UserModel;
 use App\Modules\Syllabi\Models\SyllabiModel;
+use App\Helpers\FlashHelper;
 
 /**
  * SyllabiController
@@ -194,9 +195,9 @@ final class SyllabiController
 
         try {
             $id = $this->model->createSyllabus($payload, (string)($_SESSION['user_id'] ?? ''));
-            $_SESSION['flash'] = ['type'=>'success','message'=>'Syllabus created.'];
+            FlashHelper::set('success', 'Syllabus created.');
         } catch (\Throwable $e) {
-            $_SESSION['flash'] = ['type'=>'danger','message'=>'Create failed: '.$e->getMessage()];
+            FlashHelper::set('danger', 'Create failed: '.$e->getMessage());
         }
 
         header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabi');
@@ -209,21 +210,59 @@ final class SyllabiController
         (new RBAC($this->db))->require((string)$_SESSION['user_id'], Permissions::SYLLABI_EDIT);
 
         $id = isset($_POST['syllabus_id']) ? (int)$_POST['syllabus_id'] : 0;
+        $title     = trim((string)($_POST['title'] ?? ''));
+        $courseId  = isset($_POST['course_id']) ? (int)$_POST['course_id'] : 0;
+        $collegeId = isset($_POST['college_id']) ? (int)$_POST['college_id'] : 0;
+        $version   = trim((string)($_POST['version'] ?? ''));
+        $status    = trim((string)($_POST['status'] ?? 'draft'));
+
+        $programIds = [];
+        if (!empty($_POST['program_ids']) && is_array($_POST['program_ids'])) {
+            foreach ($_POST['program_ids'] as $pid) {
+                $pid = (int)$pid;
+                if ($pid > 0) {
+                    $programIds[] = $pid;
+                }
+            }
+        }
+
+        $user = $this->userModel->getUserProfile((string)$_SESSION['user_id']);
+        $role = (string)($user['role_name'] ?? '');
+
+        if (in_array($role, $this->DEAN_ROLES, true)) {
+            $collegeId = (int)($user['college_id'] ?? 0);
+        } elseif (in_array($role, $this->CHAIR_ROLES, true)) {
+            $collegeId = (int)($user['college_id'] ?? 0);
+            if (!$programIds && !empty($user['program_id'])) {
+                $programIds[] = (int)$user['program_id'];
+            }
+        }
+
         $payload = [
-            'title'   => trim((string)($_POST['title'] ?? '')),
-            'course'  => trim((string)($_POST['course'] ?? '')),
-            'section' => trim((string)($_POST['section'] ?? '')),
+            'title'       => $title,
+            'course_id'   => $courseId,
+            'college_id'  => $collegeId ?: null,
+            'program_ids' => $programIds,
+            'version'     => $version !== '' ? $version : null,
+            'status'      => $status !== '' ? $status : null,
         ];
 
         try {
-            if ($id <= 0) throw new \RuntimeException('Missing id.');
+            if ($id <= 0) {
+                throw new \RuntimeException('Missing id.');
+            }
             $this->model->updateSyllabus($id, $payload, (string)($_SESSION['user_id'] ?? ''));
-            $_SESSION['flash'] = ['type'=>'success','message'=>'Syllabus updated.'];
+            FlashHelper::set('success', 'Syllabus updated.');
         } catch (\Throwable $e) {
-            $_SESSION['flash'] = ['type'=>'danger','message'=>'Update failed: '.$e->getMessage()];
+            FlashHelper::set('danger', 'Update failed: '.$e->getMessage());
         }
 
-        header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabi');
+        $redirectCollege = $collegeId ?: (int)($user['college_id'] ?? 0);
+        $location = (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabi';
+        if ($redirectCollege) {
+            $location .= '&college=' . $redirectCollege;
+        }
+        header('Location: ' . $location);
         exit;
     }
 
@@ -237,12 +276,74 @@ final class SyllabiController
         try {
             if ($id <= 0) throw new \RuntimeException('Missing id.');
             $this->model->deleteSyllabus($id, (string)($_SESSION['user_id'] ?? ''));
-            $_SESSION['flash'] = ['type'=>'success','message'=>'Syllabus deleted.'];
+            FlashHelper::set('success', 'Syllabus deleted.');
         } catch (\Throwable $e) {
-            $_SESSION['flash'] = ['type'=>'danger','message'=>'Delete failed: '.$e->getMessage()];
+            FlashHelper::set('danger', 'Delete failed: '.$e->getMessage());
         }
 
         header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabi');
+        exit;
+    }
+
+    /** POST /dashboard?page=syllabi&action=edit */
+    public function edit(): void
+    {
+        $this->rbac->require((string)$_SESSION['user_id'], Permissions::SYLLABI_EDIT);
+
+        $id        = (int)($_POST['syllabus_id'] ?? 0);
+        $title     = trim((string)($_POST['title'] ?? ''));
+        $courseId  = (int)$_POST['course_id'] ?? 0;
+        $collegeId = (int)$_POST['college_id'] ?? 0;
+        $version   = trim((string)($_POST['version'] ?? ''));
+        $status    = trim((string)($_POST['status'] ?? 'draft'));
+
+        $programIds = [];
+        if (!empty($_POST['program_ids']) && is_array($_POST['program_ids'])) {
+            foreach ($_POST['program_ids'] as $pid) {
+                $pid = (int)$pid;
+                if ($pid > 0) {
+                    $programIds[] = $pid;
+                }
+            }
+        }
+
+        $user = $this->userModel->getUserProfile((string)$_SESSION['user_id']);
+        $role = (string)($user['role_name'] ?? '');
+
+        if (in_array($role, $this->DEAN_ROLES, true)) {
+            $collegeId = (int)($user['college_id'] ?? 0);
+        } elseif (in_array($role, $this->CHAIR_ROLES, true)) {
+            $collegeId = (int)($user['college_id'] ?? 0);
+            if (!$programIds && !empty($user['program_id'])) {
+                $programIds[] = (int)$user['program_id'];
+            }
+        }
+
+        $payload = [
+            'title'       => $title,
+            'course_id'   => $courseId,
+            'college_id'  => $collegeId ?: null,
+            'program_ids' => $programIds,
+            'version'     => $version !== '' ? $version : null,
+            'status'      => $status !== '' ? $status : null,
+        ];
+
+        try {
+            if ($id <= 0) {
+                throw new \RuntimeException('Missing syllabus id.');
+            }
+            $this->model->updateSyllabus($id, $payload, (string)($_SESSION['user_id'] ?? ''));
+            FlashHelper::set('success', 'Syllabus updated.');
+        } catch (\Throwable $e) {
+            FlashHelper::set('danger', 'Update failed: ' . $e->getMessage());
+        }
+
+        $redirectCollege = $collegeId ?: (int)($user['college_id'] ?? 0);
+        $location = (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabi';
+        if ($redirectCollege) {
+            $location .= '&college=' . $redirectCollege;
+        }
+        header('Location: ' . $location);
         exit;
     }
 
