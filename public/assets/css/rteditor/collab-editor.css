@@ -461,3 +461,34 @@ p + .rt-page-break {
 #editor .ProseMirror .rt-page-break + p {
   margin-top: 0 !important;
 }
+
+/* minimal page visuals (customize to taste) */
+.rt-page-wrapper {
+  background: white;
+  border: 1px solid #e6e6e6;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.04);
+  margin: 12px auto;
+  width: 794px;   /* approx for A4 portrait at 96dpi - you can set via page-layout instead */
+  box-sizing: border-box;
+  padding: 0;     /* headers/footers and inner area will control spacing */
+  border-radius: 4px;
+}
+
+.rt-page-header,
+.rt-page-footer {
+  padding: 6px 12px;
+  font-size: 12px;
+  color: #333;
+  background: transparent;
+  border-bottom: 1px solid rgba(0,0,0,0.02);
+}
+
+.rt-page-footer {
+  border-top: 1px solid rgba(0,0,0,0.02);
+  border-bottom: none;
+}
+
+.rt-page-inner {
+  padding: 16px;
+  min-height: 800px; /* will be overwritten dynamically by plugin when getPageConfig exists */
+}

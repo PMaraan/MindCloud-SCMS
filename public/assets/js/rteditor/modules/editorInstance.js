@@ -1,6 +1,8 @@
 // /public/assets/js/rteditor/modules/editorInstance.js
 import { Editor } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
+// Page container plugin — visually group PM children into page boxes (split at data-page-break)
+//import attachPageContainer from "../extensions/pageContainer.js";
 
 import Underline    from "@tiptap/extension-underline";
 import Strike       from "@tiptap/extension-strike";
@@ -24,6 +26,9 @@ import SpacingExtension from "../extensions/spacing.js";
 
 import PageBreak        from "../nodes/page-break.js";
 import SignatureField   from "../nodes/signature-field.js";
+
+// page container extension (installs the wrapper on editor lifecycle)
+import PageContainerExtension from "../extensions/pageContainerExtension.js";
 
 /* Hydration helper reused inside this module (keeps editor init tidy) */
 function readInitialDocFromScriptTag() {
@@ -63,6 +68,7 @@ export default function initBasicEditor(opts) {
       if (doc && doc.type) return doc;
       return initialHTML;
     })(),
+    pageContainerGetConfig: window.__RT_getPageConfig || (() => (typeof getCurrentPageConfig === 'function' ? getCurrentPageConfig() : null)),
     extensions: [
       StarterKit.configure({ history: true, strike: false }),
       EnterShortcuts,
@@ -73,12 +79,35 @@ export default function initBasicEditor(opts) {
       FontFamily, FontSize, SpacingExtension,
       Table.configure({ resizable: true, lastColumnResizable: true, allowTableNodeSelection: true }),
       TableRow, TableHeader, TableCell,
-      SignatureField, PageBreak
+      SignatureField, PageBreak,
+      // page-wrapper extension installs the DOM wrapper via attachPageContainer
+      PageContainerExtension,
     ],
   });
 
   try { editor.commands.focus("end"); } catch {}
 
+  // Expose editor globally
   window.editor = editor;
+
+  // Ensure page-container cleanup is available under both common property names.
+  // Some implementations attach cleanup under __rt_pageContainerCleanup, others
+  // used __rt_cleanupPageContainer. Normalize so console checks and callers work.
+  try {
+    // If extension already attached one of them, prefer that function.
+    const existingCleanup =
+      (editor && editor.__rt_pageContainerCleanup) ||
+      (editor && editor.__rt_cleanupPageContainer) ||
+      null;
+
+    // Set both properties (no-op if already identical)
+    try { if (editor) editor.__rt_pageContainerCleanup = existingCleanup; } catch (e) { /* ignore */ }
+    try { if (editor) editor.__rt_cleanupPageContainer = existingCleanup; } catch (e) { /* ignore */ }
+  } catch (e) {
+    // Defensive: don't break editor init if anything goes wrong here
+    try { if (editor) editor.__rt_pageContainerCleanup = null; } catch (ee) { /* ignore */ }
+    try { if (editor) editor.__rt_cleanupPageContainer = null; } catch (ee) { /* ignore */ }
+  }
+
   return editor;
 }

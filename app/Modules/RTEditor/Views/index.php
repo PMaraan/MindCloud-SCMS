@@ -65,10 +65,13 @@ function asset_url(string $path): string {
 <div class="container-fluid py-3">
   <div id="pageRoot">
     <div id="rtPage" class="rt-page">
+      <!-- Editable master header is part of the page so header/footer count toward the page height -->
       <div id="rtHeader" class="rt-header" contenteditable="true">Header…</div>
+
       <div id="rtPageContent" class="rt-page-content">
         <div id="editor" class="border-0"></div>        
       </div>
+      
       <div id="rtFooter" class="rt-footer" contenteditable="true">Footer…</div>
     </div>
   </div>
