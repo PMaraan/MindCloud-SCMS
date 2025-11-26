@@ -446,7 +446,7 @@ final class SyllabiController
             return;
         }
 
-        $rows = $this->model->getCoursesByProgram($programId);
+        $rows = $this->model->getCoursesOfCollege($programId);
         $courses = array_map(static fn($row) => [
             'id'    => (int)$row['course_id'],
             'label' => $row['course_code'] . ' — ' . $row['course_name'],

@@ -21,3 +21,8 @@ export function getActiveTile() {
   if (!selectedSyllabusId) return null;
   return document.querySelector(`.sy-tile[data-syllabus-id="${CSS.escape(selectedSyllabusId)}"]`);
 }
+
+export function getSelectedTileId() {
+  const active = getActiveTile();
+  return active ? active.dataset.syllabusId || '' : '';
+}

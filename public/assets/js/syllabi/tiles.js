@@ -73,7 +73,7 @@ function updateDetailsPane(card) {
   if (!info || !empty) return;
 
   const title = robustData(card, 'title') || 'Untitled syllabus';
-  const status = robustData(card, 'status');
+  const status = (robustData(card, 'status') || '').toLowerCase();
   const programsRaw = robustData(card, 'programs');
   const programList = parsePrograms(programsRaw);
   const programDisplay = programList.length ? programList.join('\n') : '';
@@ -105,8 +105,35 @@ function updateDetailsPane(card) {
   info.classList.remove('d-none');
 
   // Show/hide Edit button based on permissions
-  const btnEdit = document.getElementById('sy-edit');
-  if (btnEdit) btnEdit.style.display = window.SY_PERMS.canEdit ? '' : 'none';
+  const perms = window.SY_PERMS || {};
+
+  const editBtn = document.getElementById('sy-edit');
+  if (editBtn) {
+    const canEdit = !!perms.canEdit;
+    editBtn.classList.toggle('d-none', !canEdit);
+    if (canEdit) editBtn.dataset.syllabusId = robustData(card, 'syllabusId') || '';
+  }
+
+  const archiveBtn = document.getElementById('sy-archive');
+  if (archiveBtn) {
+    const canArchive = !!perms.canArchive;
+    archiveBtn.classList.toggle('d-none', !canArchive);
+    if (canArchive) {
+      archiveBtn.textContent = status === 'archived' ? 'Unarchive' : 'Archive';
+    }
+  }
+
+  const deleteBtn = document.getElementById('sy-delete');
+  if (deleteBtn) {
+    const canDelete = !!perms.canDelete && status === 'archived';
+    deleteBtn.classList.toggle('d-none', !canDelete);
+  }
+
+  const archiveTitle = document.getElementById('sy-archive-title');
+  if (archiveTitle) archiveTitle.textContent = robustData(card, 'title') || '—';
+
+  const deleteTitle = document.getElementById('sy-delete-title');
+  if (deleteTitle) deleteTitle.textContent = robustData(card, 'title') || '—';
 }
 
 export function selectTile(card) {
