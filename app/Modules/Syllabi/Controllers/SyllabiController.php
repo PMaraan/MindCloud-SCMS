@@ -109,9 +109,9 @@ final class SyllabiController
             'PAGE_KEY'   => $PAGE_KEY,
             'user'       => $user,
             'role'       => $role,
-            'canCreate'  => true, // keep UX; refine with policy later
-            'canEdit'    => true,
-            'canDelete'  => true,
+            //'canCreate'  => true, // keep UX; refine with policy later
+            //'canEdit'    => true,
+            //'canDelete'  => true,
         ];
 
         // AAO Roles: Global folders mode (no college param)
@@ -144,6 +144,8 @@ final class SyllabiController
             $view['programs'] = $this->getProgramsAndSyllabiByCollege($collegeId);
             $view['canCreate'] = $this->canCreate($role, $collegeId, $programId);
             $view['canEdit'] = $this->canEdit($role, $collegeId, $programId);
+            $view['canArchive'] = $this->canArchive($role, $collegeId, $programId);
+            $view['scanDelete'] = $this->canDelete($role, $collegeId, $programId);
             // Values for create modal selects
             $view['colleges'] = [[ 'college_id' => $collegeId ?? '', 'short_name' => $user['college_short_name'] ?? '', 'college_name' => $user['college_name'] ?? '']]; 
             $view['lockCollege'] = true;
@@ -168,6 +170,7 @@ final class SyllabiController
         // Map expected POST fields to the model's payload shape.
         // Note: program_id[] (multiple) or single program_id are supported.
         $title = trim((string)($_POST['title'] ?? 'Untitled'));
+        $collegeId = (int)($_POST['college_id'] ?? 0);
         $courseId = isset($_POST['course_id']) ? (int)$_POST['course_id'] : 0;
 
         // program(s) may come as program_id[] (array) or program_id (single)
@@ -185,12 +188,21 @@ final class SyllabiController
         }
 
         $version = trim((string)($_POST['version'] ?? ''));
+        $status    = trim((string)($_POST['status'] ?? 'draft'));
+        $user      = $this->userModel->getUserProfile((string)$_SESSION['user_id']);
+        $role      = (string)($user['role_name'] ?? '');
+
+        if (in_array($role, $this->DEAN_ROLES, true) || in_array($role, $this->CHAIR_ROLES, true)) {
+            $collegeId = (int)($user['college_id'] ?? 0);
+        }
 
         $payload = [
             'title'       => $title,
             'course_id'   => $courseId,
-            'program_ids' => $programIds, // model accepts program_ids (array) or program_id (int)
-            'version'     => $version,
+            'college_id'  => $collegeId ?: null,
+            'program_ids' => $programIds,
+            'version'     => $version !== '' ? $version : null,
+            'status'      => $status !== '' ? $status : null,
         ];
 
         try {
@@ -205,7 +217,7 @@ final class SyllabiController
     }
 
     /** POST /dashboard?page=syllabi&action=update */
-    public function update(): void
+    public function update(): void // deprecated; use edit()
     {
         (new RBAC($this->db))->require((string)$_SESSION['user_id'], Permissions::SYLLABI_EDIT);
 
@@ -321,9 +333,9 @@ final class SyllabiController
 
         $payload = [
             'title'       => $title,
-            'course_id'   => $courseId,
             'college_id'  => $collegeId ?: null,
             'program_ids' => $programIds,
+            'course_id'   => $courseId,
             'version'     => $version !== '' ? $version : null,
             'status'      => $status !== '' ? $status : null,
         ];
@@ -372,8 +384,30 @@ final class SyllabiController
         }
         return true;
     }
+    private function canArchive(string $role, ?int $collegeId, ?int $programId): bool
+    {
+        if (in_array($role, $this->GLOBAL_ROLES, true)) {
+            return false;
+        }
+        if (in_array($role, $this->DEAN_ROLES, true)) {
+            return true;
+        }
+        if (in_array($role, $this->CHAIR_ROLES, true)) {
+            return false;
+        }
+        return true;
+    }
     private function canDelete(string $role, ?int $collegeId, ?int $programId): bool
     {
+        if (in_array($role, $this->GLOBAL_ROLES, true)) {
+            return false;
+        }
+        if (in_array($role, $this->DEAN_ROLES, true)) {
+            return true;
+        }
+        if (in_array($role, $this->CHAIR_ROLES, true)) {
+            return false;
+        }
         return true;
     }
 
@@ -384,5 +418,48 @@ final class SyllabiController
         ob_start();
         require dirname(__DIR__) . "/Views/{$view}.php";
         return (string)ob_get_clean();
+    }
+
+    // --- API Endpoints ---
+    public function apiPrograms(): void
+    {
+        $deptId = (int)($_GET['department_id'] ?? 0);
+        if ($deptId <= 0) {
+            $this->respondJson(['success' => false, 'message' => 'Invalid department'], 400);
+            return;
+        }
+
+        $rows = $this->model->getProgramsByCollege($deptId);
+        $programs = array_map(static fn($row) => [
+            'id'    => (int)$row['program_id'],
+            'label' => $row['program_name'],
+        ], $rows);
+
+        $this->respondJson(['success' => true, 'programs' => $programs]);
+    }
+
+    public function apiCourses(): void
+    {
+        $programId = (int)($_GET['program_id'] ?? 0);
+        if ($programId <= 0) {
+            $this->respondJson(['success' => false, 'message' => 'Invalid program'], 400);
+            return;
+        }
+
+        $rows = $this->model->getCoursesByProgram($programId);
+        $courses = array_map(static fn($row) => [
+            'id'    => (int)$row['course_id'],
+            'label' => $row['course_code'] . ' — ' . $row['course_name'],
+        ], $rows);
+
+        $this->respondJson(['success' => true, 'courses' => $courses]);
+    }
+
+    private function respondJson(array $payload, int $status = 200): void
+    {
+        http_response_code($status);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode($payload, JSON_UNESCAPED_UNICODE);
+        exit;
     }
 }

@@ -114,52 +114,30 @@ $PAGE_KEY = 'syllabi';
 
                 <dt class="col-4">Actions</dt>
                 <dd class="col-8">
-                  <div class="d-flex gap-2">
-                    <button class="btn btn-sm btn-primary" id="sy-open">Open in Editor</button>
-
-                    <!-- Edit Button -->
-                    <button class="btn btn-sm btn-secondary"
+                  <div class="d-flex flex-wrap gap-2">
+                    <button class="btn btn-sm btn-primary" id="sy-open" type="button">Open</button>
+                    <button class="btn btn-sm btn-secondary d-none"
                             id="sy-edit"
                             type="button"
                             data-bs-toggle="modal"
-                            data-bs-target="#syEditModal"
-                            style="display:none">
+                            data-bs-target="#syEditModal">
                       Edit Details
                     </button>
-
-                    <!-- Archive / Unarchive: same color as previous edit (yellowish) -->
-                    <button class="btn btn-sm btn-warning" 
-                            id="sy-archive" 
+                    <button class="btn btn-sm btn-warning d-none"
+                            id="sy-archive"
                             type="button"
-                            style="display:none">
+                            data-bs-toggle="modal"
+                            data-bs-target="#syArchiveModal">
                       Archive
                     </button>
-
-                    <!-- Delete: only shown when status is archived. Hidden by default. -->
-                    <button class="btn btn-sm btn-danger d-none" 
-                            id="sy-delete" 
+                    <button class="btn btn-sm btn-danger d-none"
+                            id="sy-delete"
                             type="button"
-                            data-bs-toggle="modal" 
+                            data-bs-toggle="modal"
                             data-bs-target="#syDeleteModal">
                       Delete
                     </button>
                   </div>
-
-                  <script>
-                    // Expose per-scope edit permissions for client logic
-                    // prefer canEditGlobal (AAO) name; kept for clarity in JS
-                    window.SY_PERMS = {
-                      canEdit:  <?= !empty($canEdit)  ? 'true' : 'false' ?>, // change for syllabi
-                      canEditCollege: <?= !empty($canEditCollege) ? 'true' : 'false' ?>, // change for syllabi
-                      canEditProgram: <?= !empty($canEditProgram) ? 'true' : 'false' ?>, // change for syllabi
-                    
-                    };
-                  </script>
-                  <?php if (empty($canEdit) && empty($canEdit) && empty($canEdit)): ?>
-                  <script>
-                    (function(){ const b = document.getElementById('sy-edit'); if (b) b.remove(); })();
-                  </script>
-                  <?php endif; ?>
                 </dd>
               </dl>
             </div>
@@ -223,5 +201,13 @@ $PAGE_KEY = 'syllabi';
   });
 </script>
 <?php endif; ?>
-
+  <span id="sy-csrf" data-token="<?= $esc($_SESSION['csrf_token'] ?? '') ?>" hidden></span>
+  <script>
+    window.SY_PERMS = {
+      canCreate: <?= !empty($canCreate) ? 'true' : 'false' ?>,
+      canEdit: <?= !empty($canEdit) ? 'true' : 'false' ?>,
+      canArchive: <?= !empty($canArchive) ? 'true' : 'false' ?>,
+      canDelete: <?= !empty($canDelete) ? 'true' : 'false' ?>
+    };
+  </script>
 </div><!-- /CONTAINER CLOSE -->

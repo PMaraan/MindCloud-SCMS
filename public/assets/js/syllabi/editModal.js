@@ -115,7 +115,7 @@ export default function initEditModal(modal) {
   lockSelectElement(collegeSelect, hiddenCollegeInput);
 
   modal.addEventListener('show.bs.modal', () => {
-    if (!collegeSelect || !hiddenInput) return;
+    if (!collegeSelect || !hiddenCollegeInput) return;
     if (collegeSelect.dataset.locked === '1') {
       collegeSelect.value = collegeSelect.dataset.lockedValue || '';
     } else {
@@ -215,7 +215,7 @@ export default function initEditModal(modal) {
     if (form && !form.dataset.baseAction) form.dataset.baseAction = form.getAttribute('action') || '';
     const tile = getActiveTile();
     fillFromTile(tile);
-    updateVisibility();
+    //updateVisibility();
     applyLock();
     syncAction(tile);
   });
@@ -223,7 +223,7 @@ export default function initEditModal(modal) {
   modal.addEventListener('shown.bs.modal', async () => {
     const tile = getActiveTile();
     await populateDependentSelects(tile);
-    updateVisibility();
+    //updateVisibility();
     applyLock();
     syncAction(tile);
   });
