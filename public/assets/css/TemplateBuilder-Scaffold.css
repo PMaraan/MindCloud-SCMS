@@ -114,3 +114,8 @@ select[data-locked="1"] {
 #sy-i-program {
   white-space: pre-line;
 }
+
+.sy-tile.sy-card--active {
+  border-color: rgba(13,110,253,.75);
+  box-shadow: 0 0 0 .2rem rgba(13,110,253,.25);
+}
