@@ -1,28 +1,56 @@
 // /public/assets/js/syllabi/editModal.js
 import { fetchPrograms, fetchCourses } from './dataLoaders.js';
-import { fillSelect, getCurrentCollegeParam, lockSelectElement } from './utils.js';
+import { preselectCollege, preselectCourse, getCurrentCollegeParam, fillSelect, lockSelectElement } from './utils.js';
 import { getActiveTile } from './state.js';
 
 console.debug('[editModal] module loaded');
 
 /**
  * fillFromTile(tile)
- * - Copies dataset values from the currently selected template tile into the edit modal form controls.
+ * - Copies dataset values from the currently selected syllabus tile into the edit modal form controls.
  * - tile comes from tiles.js via getActiveTile(); it exposes attributes like data-template-id, data-scope, etc.
  * - Has no return value; it mutates the DOM inputs so the modal shows the tile’s current details.
  */
 function fillFromTile(tile) {
   if (!tile) return;
+  const selectedProgramIds = JSON.parse(tile.dataset.programIds || '[]');
+
+  const programSelect = document.getElementById('sy-e-program');
+  if (programSelect) {
+    Array.from(programSelect.options).forEach((opt) => {
+      opt.selected = selectedProgramIds.includes(Number(opt.value));
+    });
+  }
 
   const get = (key, fallback = '') => tile.dataset[key] ?? fallback;
 
-  //document.getElementById('tb-e-id').value = get('templateId', '');
+  document.getElementById('sy-e-id').value = get('syllabusId', '');
   document.getElementById('sy-e-title').value = get('title', '');
-  document.getElementById('sy-e-college').value = get('ownerDepartmentId', '');
-  document.getElementById('sy-e-program').value = get('programId', '');
+  document.getElementById('sy-e-college').value = get('collegeId', '');
+  //document.getElementById('sy-e-program').value = get('programId', '');
   document.getElementById('sy-e-course').value = get('courseId', '');
   document.getElementById('sy-e-version').value = get('version', '');
   document.getElementById('sy-e-status').value = get('status', 'draft');
+}
+
+/**
+ * parseProgramIds(raw)
+ * - Converts various formats of program ID lists into an array of positive integers.
+ * - Used to normalize the programIds dataset value from the tile for consistent processing.
+ * - Returns an array of program IDs, or an empty array if none are valid.
+ */
+function parseProgramIds(raw) {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return parsed.map((id) => Number(id)).filter((id) => Number.isFinite(id) && id > 0);
+    }
+  } catch (_) {}
+  return String(raw)
+    .split(',')
+    .map((id) => Number(id.trim()))
+    .filter((id) => Number.isFinite(id) && id > 0);
 }
 
 /**
@@ -32,29 +60,41 @@ function fillFromTile(tile) {
  * - Uses fetchPrograms/fetchCourses to pull JSON data; the results are injected into the selects via fillSelect().
  */
 async function populateDependentSelects(tile) {
-  const deptSelect = document.getElementById('tb-e-college');
-  const programSelect = document.getElementById('tb-e-program');
-  const courseSelect = document.getElementById('tb-e-course');
+  const collegeSelect = document.getElementById('sy-e-college');
+  const programSelect = document.getElementById('sy-e-program');
+  const courseSelect  = document.getElementById('sy-e-course');
+  if (!collegeSelect || !programSelect || !courseSelect) return;
 
-  const currentDept = tile?.dataset.ownerDepartmentId || '';
-  const currentProgram = tile?.dataset.programId || '';
-  const currentCourse = tile?.dataset.courseId || '';
+  const collegeId   = tile?.dataset.collegeId || tile?.dataset.ownerDepartmentId || '';
+  const programIds  = parseProgramIds(tile?.dataset.programIds || '[]');
+  const primaryProg = tile?.dataset.programId || String(programIds[0] ?? '');
+  const courseId    = tile?.dataset.courseId || '';
 
-  if (currentDept) {
-    const programs = await fetchPrograms(currentDept);
-    fillSelect(programSelect, programs, '— Select program —');
-    if (currentProgram) {
-      programSelect.value = currentProgram;
-      const courses = await fetchCourses(currentProgram);
-      fillSelect(courseSelect, courses, '— Select course —');
-      if (currentCourse) courseSelect.value = currentCourse;
-    } else {
-      fillSelect(courseSelect, [], '— Select course —');
-    }
-  } else {
-    fillSelect(programSelect, [], '— Select program —');
+  if (!collegeId) {
+    fillSelect(programSelect, [], programSelect.multiple ? null : '— Select program —');
     fillSelect(courseSelect, [], '— Select course —');
+    return;
   }
+
+  const programs = await fetchPrograms(collegeId);
+  fillSelect(programSelect, programs, programSelect.multiple ? null : '— Select program —');
+  if (programIds.length) {
+    Array.from(programSelect.options).forEach((opt) => {
+      opt.selected = programIds.includes(Number(opt.value));
+    });
+  } else if (primaryProg) {
+    programSelect.value = primaryProg;
+  }
+
+  const coursePivot = primaryProg || programSelect.value || '';
+  if (!coursePivot) {
+    fillSelect(courseSelect, [], '— Select course —');
+    return;
+  }
+
+  const courses = await fetchCourses(coursePivot);
+  fillSelect(courseSelect, courses, '— Select course —');
+  if (courseId) courseSelect.value = courseId;
 }
 
 /**
@@ -63,19 +103,33 @@ async function populateDependentSelects(tile) {
  * - Wires all interactions for the edit modal: fills inputs, locks college dropdowns for dean/chair, and keeps the form action scoped.
  * - No return; the side effects are event listeners and initial state sync.
  */
-export default function initEditModal() {
-  console.debug('[editModal] initEditModal() running');
-  const modal = document.getElementById('tbEditModal');
+export default function initEditModal(modal) {
   if (!modal) return;
+  const tile = getActiveTile();
+  const collegeSelect = modal.querySelector('#sy-e-college');
+  const hiddenCollegeInput = modal.querySelector('input[name="college_id"][type="hidden"]');
+  const courseSelect = modal.querySelector('#sy-e-course');
 
+  preselectCollege(collegeSelect, hiddenCollegeInput, tile?.dataset.lockedValue || null);
+  preselectCourse(courseSelect, tile?.dataset.courseId || null);
+  lockSelectElement(collegeSelect, hiddenCollegeInput);
+
+  modal.addEventListener('show.bs.modal', () => {
+    if (!collegeSelect || !hiddenInput) return;
+    if (collegeSelect.dataset.locked === '1') {
+      collegeSelect.value = collegeSelect.dataset.lockedValue || '';
+    } else {
+      hiddenInput.value = collegeSelect.value;
+    }
+  });
+
+  console.debug('[editModal] initEditModal() running');
   const form = modal.querySelector('form');
-  const scopeRadios = form?.querySelectorAll('input[name="scope"]');
-  const deptWrap = document.getElementById('tb-e-college-wrap');
-  const programWrap = document.getElementById('tb-e-program-wrap');
-  const courseWrap = document.getElementById('tb-e-course-wrap');
-  const deptSelect = document.getElementById('tb-e-college');
-  const programSelect = document.getElementById('tb-e-program');
-  const courseSelect = document.getElementById('tb-e-course');
+  const deptWrap = document.getElementById('sy-e-college-wrap');
+  const programWrap = document.getElementById('sy-e-program-wrap');
+  const courseWrap = document.getElementById('sy-e-course-wrap');
+  const deptSelect = document.getElementById('sy-e-college');
+  const programSelect = document.getElementById('sy-e-program');
 
   /**
    * syncAction(tile)
@@ -92,30 +146,6 @@ export default function initEditModal() {
     let action = base;
     if (collegeId) action += `&college=${encodeURIComponent(collegeId)}`;
     form.setAttribute('action', action);
-  };
-
-  /**
-   * updateVisibility()
-   * - Shows or hides the college/program/course selectors depending on the chosen scope radio button.
-   * - Also toggles the required attribute and resets downstream selects when the scope changes.
-   */
-  const updateVisibility = () => {
-    if (!form) return;
-    const scope = form.querySelector('input[name="scope"]:checked')?.value || 'global';
-    const showCollege = ['college', 'program', 'course'].includes(scope);
-    const showProgram = ['program', 'course'].includes(scope);
-    const showCourse = scope === 'course';
-
-    deptWrap?.classList.toggle('d-none', !showCollege);
-    programWrap?.classList.toggle('d-none', !showProgram);
-    courseWrap?.classList.toggle('d-none', !showCourse);
-
-    if (deptSelect) deptSelect.required = showCollege;
-    if (programSelect) programSelect.required = showProgram;
-    if (courseSelect) courseSelect.required = showCourse;
-
-    if (!showProgram) fillSelect(programSelect, [], '— Select program —');
-    if (!showCourse) fillSelect(courseSelect, [], '— Select course —');
   };
 
   /**
@@ -149,101 +179,11 @@ export default function initEditModal() {
 
   /**
    * Event Listeners
-   * - scopeRadios: on change, update visibility and apply lock
    * - deptSelect: on change, fetch programs unless locked, then sync action
    * - programSelect: on change, fetch courses unless locked, then sync action
    * - modal show: fill inputs from tile, update visibility, apply lock, sync action
    * - modal shown: populate dependent selects, update visibility, apply lock, sync action
    */
-  // Scope change: update visibility/lock and (when needed) populate programs & courses.
-  scopeRadios?.forEach((radio) => {
-    radio.addEventListener('change', async () => {
-      updateVisibility();
-      applyLock();
-
-      try {
-        const scope = form.querySelector('input[name="scope"]:checked')?.value || 'global';
-        const needsPrograms = scope === 'program' || scope === 'course';
-
-        // If we don't need programs, clear downstream selects and return
-        if (!needsPrograms) {
-          // When switching away from program/course scope, clear program/course selects
-          fillSelect(programSelect, [], '— Select program —');
-          fillSelect(courseSelect, [], '— Select course —');
-          syncAction(getActiveTile());
-          return;
-        }
-
-        // Resolve department id (respect locked state and current select value)
-        let deptId = '';
-        if (deptSelect) {
-          // if locked, prefer lockedValue (already applied by applyLock())
-          if (deptSelect.dataset.locked === '1') {
-            deptId = deptSelect.dataset.lockedValue || deptSelect.dataset.default || deptSelect.value || '';
-          } else {
-            deptId = deptSelect.value || '';
-          }
-        }
-
-        // If no dept id in select, try falling back to active tile or current ?college param
-        if (!deptId) {
-          const tile = getActiveTile();
-          if (tile && tile.dataset.ownerDepartmentId) deptId = tile.dataset.ownerDepartmentId;
-        }
-        if (!deptId) {
-          const qs = getCurrentCollegeParam ? getCurrentCollegeParam() : null;
-          if (qs) deptId = qs;
-        }
-
-        // If still no deptId, bail but keep UI sane (user must pick a college)
-        if (!deptId) {
-          console.debug('[EditModal] scope change to program/course but no college chosen yet — programs left empty');
-          fillSelect(programSelect, [], '— Select program —');
-          fillSelect(courseSelect, [], '— Select course —');
-          syncAction(getActiveTile());
-          return;
-        }
-
-        // Fetch programs and populate
-        console.debug('[EditModal] scope change -> fetching programs for deptId=', deptId);
-        const programs = await fetchPrograms(deptId);
-        console.debug('[EditModal] scope change -> programs payload:', programs);
-        fillSelect(programSelect, programs, '— Select program —');
-
-        // If the active tile has a program preselected, try to apply it
-        const tile = getActiveTile();
-        const preProgram = tile?.dataset.programId || '';
-        if (preProgram) {
-          // robust select by value if present; otherwise set value if option was injected by fetch result
-          programSelect.value = preProgram;
-          // If a program is selected now, fetch courses for it
-          const selectedPid = programSelect.value || '';
-          if (selectedPid) {
-            const courses = await fetchCourses(selectedPid);
-            fillSelect(courseSelect, courses, '— Select course —');
-            // preselect tile's course if present
-            const preCourse = tile?.dataset.courseId || '';
-            if (preCourse) courseSelect.value = preCourse;
-          } else {
-            fillSelect(courseSelect, [], '— Select course —');
-          }
-        } else {
-          // no pre-program; clear courses
-          programSelect.value = '';
-          fillSelect(courseSelect, [], '— Select course —');
-        }
-
-        syncAction(getActiveTile());
-      } catch (err) {
-        console.error('[EditModal] scope change populate error:', err);
-        // keep UI usable by leaving selects empty
-        fillSelect(programSelect, [], '— Select program —');
-        fillSelect(courseSelect, [], '— Select course —');
-        syncAction(getActiveTile());
-      }
-    });
-  });
-
   deptSelect?.addEventListener('change', async (event) => {
     if (deptSelect.dataset.locked === '1') {
       const lockedValue = deptSelect.dataset.lockedValue || deptSelect.dataset.default || '';
@@ -268,24 +208,6 @@ export default function initEditModal() {
       // keep UI usable by leaving program select empty
       fillSelect(programSelect, [], '— Select program —');
     }
-    syncAction(getActiveTile());
-  });
-
-  programSelect?.addEventListener('change', async (event) => {
-    if (programSelect.dataset.locked === '1') {
-      const lockedValue = programSelect.dataset.lockedValue || programSelect.dataset.default || '';
-      if (lockedValue) programSelect.value = lockedValue;
-      syncAction(getActiveTile());
-      return;
-    }
-    const programId = event.target.value || '';
-    resetCourseSelect();
-    if (!programId) {
-      syncAction(getActiveTile());
-      return;
-    }
-    const courses = await fetchCourses(programId);
-    fillSelect(courseSelect, courses, '— Select course —');
     syncAction(getActiveTile());
   });
 

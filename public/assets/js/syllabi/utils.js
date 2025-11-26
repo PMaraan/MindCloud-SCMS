@@ -51,3 +51,69 @@ export function capitalizeForDisplay(value) {
   const str = String(value);
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
+
+export function getCurrentCollegeParam() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('college') || '';
+  } catch {
+    return '';
+  }
+}
+
+export function preselectCollege(select, hiddenInput, collegeId) {
+  if (!select) return;
+  select.value = collegeId || '';
+  if (hiddenInput) hiddenInput.value = collegeId || '';
+}
+
+export function preselectCourse(select, courseId) {
+  if (!select) return;
+  select.value = courseId || '';
+}
+
+export function lockSelectElement(select, hiddenInput) {
+  if (!select) return;
+  const shouldLock = select.dataset.locked === '1';
+  const lockedValue = select.dataset.lockedValue || '';
+
+  if (shouldLock) {
+    select.value = lockedValue;
+    select.classList.add('is-readonly');
+    select.addEventListener('mousedown', (e) => e.preventDefault());
+    select.addEventListener('keydown', (e) => e.preventDefault());
+    select.addEventListener('focus', () => select.blur());
+  } else if (hiddenInput) {
+    hiddenInput.value = select.value;
+    select.addEventListener('change', () => {
+      hiddenInput.value = select.value;
+    });
+  }
+}
+
+export function fillSelect(select, items = [], placeholder = '— Select —') {
+  if (!select) return;
+
+  const previous = new Set(Array.from(select.selectedOptions).map((opt) => opt.value));
+  const multiple = select.multiple === true;
+
+  select.innerHTML = '';
+
+  if (!multiple && placeholder !== null) {
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = placeholder;
+    select.append(opt);
+  }
+
+  items.forEach((item) => {
+    if (!item) return;
+    const value = item.id ?? item.value ?? '';
+    const label = item.label ?? item.text ?? '';
+    const option = document.createElement('option');
+    option.value = String(value);
+    option.textContent = String(label);
+    if (previous.has(option.value)) option.selected = true;
+    select.append(option);
+  });
+}

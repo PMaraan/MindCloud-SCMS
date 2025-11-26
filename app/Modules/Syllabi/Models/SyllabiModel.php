@@ -34,39 +34,45 @@ final class SyllabiModel
     /** List colleges for the folders screen. */
     public function getCollegesForFolders(): array
     {
-        $sql = "SELECT c.college_id, c.short_name, c.college_name
-                FROM public.colleges c
-                ORDER BY COALESCE(NULLIF(c.short_name,''), c.college_name) ASC";
+        $sql = "SELECT d.department_id AS college_id,
+                       d.short_name,
+                       d.department_name AS college_name
+                FROM public.departments d
+                WHERE d.is_college = true
+                ORDER BY COALESCE(NULLIF(d.short_name, ''), d.department_name) ASC";
+
         return $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
     /** One college by id. */
     public function getCollege(int $collegeId): ?array
     {
-        $stmt = $this->pdo->prepare("SELECT college_id, short_name, college_name FROM public.colleges WHERE college_id = :id");
+        $stmt = $this->pdo->prepare(
+            "SELECT department_id AS college_id,
+                    short_name,
+                    department_name AS college_name
+             FROM public.departments
+             WHERE department_id = :id AND is_college = true"
+        );
         $stmt->execute([':id' => $collegeId]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
         return $row ?: null;
     }
 
-    /** Programs for a college.
-     *
-     * NOTE: the programs table uses `department_id` (departments table) rather than
-     * `college_id`. We keep compatibility by selecting department_id AS college_id.
-     */
+    /** Programs for a college (department). */
     public function getProgramsByCollege(int $collegeId): array
     {
         $sql = "
-            SELECT
-                program_id,
-                program_name,
-                department_id AS college_id
+            SELECT program_id,
+                   program_name,
+                   department_id AS college_id
             FROM public.programs
             WHERE department_id = :did
-            ORDER BY program_name
-        ";
+            ORDER BY program_name";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([':did' => $collegeId]);
+
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
@@ -105,8 +111,17 @@ final class SyllabiModel
     {
         $sql = "
             SELECT
-                s.syllabus_id, s.title, s.filename, s.version, s.status,
-                s.course_id, c.course_code, c.course_name,
+                s.syllabus_id,
+                s.title,
+                s.filename,
+                s.version,
+                s.status,
+                s.college_id,
+                d.short_name AS college_short_name,
+                d.department_name AS college_name,
+                s.course_id,
+                c.course_code,
+                c.course_name,
                 array_remove(array_agg(DISTINCT p.program_name), NULL) AS program_names,
                 array_remove(array_agg(DISTINCT sp.program_id), NULL) AS program_ids,
                 (SELECT MIN(sp2.program_id) FROM public.syllabi_programs sp2 WHERE sp2.syllabus_id = s.syllabus_id) AS rep_program_id,
@@ -115,28 +130,46 @@ final class SyllabiModel
                 )) AS rep_program_name,
                 s.updated_at
             FROM public.syllabi s
-            LEFT JOIN public.courses  c ON c.course_id  = s.course_id
+            LEFT JOIN public.departments d ON d.department_id = s.college_id
+            LEFT JOIN public.courses c      ON c.course_id      = s.course_id
             LEFT JOIN public.syllabi_programs sp ON sp.syllabus_id = s.syllabus_id
-            LEFT JOIN public.programs p ON p.program_id = sp.program_id
-            WHERE c.college_id = :cid
-            GROUP BY s.syllabus_id, s.title, s.filename, s.version, s.status, s.course_id, c.course_code, c.course_name, s.updated_at
+            LEFT JOIN public.programs p          ON p.program_id    = sp.program_id
+            WHERE s.college_id = :cid
+            GROUP BY s.syllabus_id,
+                     s.title,
+                     s.filename,
+                     s.version,
+                     s.status,
+                     s.college_id,
+                     d.short_name,
+                     d.department_name,
+                     s.course_id,
+                     c.course_code,
+                     c.course_name,
+                     s.updated_at
             ORDER BY s.updated_at DESC, s.syllabus_id DESC
-            LIMIT 120
-        ";
+            LIMIT 120";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([':cid' => $collegeId]);
+
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
-    /** Syllabi for one program.
-     * Returns program_names/program_ids arrays (in practice these will contain the single program).
-     */
     public function getProgramSyllabi(int $programId): array
     {
         $sql = "
             SELECT
-                s.syllabus_id, s.title, s.filename, s.version, s.status,
-                s.course_id, c.course_code, c.course_name,
+                s.syllabus_id,
+                s.title,
+                s.filename,
+                s.version,
+                s.status,
+                s.college_id,
+                d.short_name AS college_short_name,
+                d.department_name AS college_name,
+                s.course_id,
+                c.course_code,
+                c.course_name,
                 array_remove(array_agg(DISTINCT p.program_name), NULL) AS program_names,
                 array_remove(array_agg(DISTINCT sp.program_id), NULL) AS program_ids,
                 (SELECT MIN(sp2.program_id) FROM public.syllabi_programs sp2 WHERE sp2.syllabus_id = s.syllabus_id) AS rep_program_id,
@@ -145,16 +178,28 @@ final class SyllabiModel
                 )) AS rep_program_name,
                 s.updated_at
             FROM public.syllabi s
+            LEFT JOIN public.departments d ON d.department_id = s.college_id
+            LEFT JOIN public.courses c      ON c.course_id      = s.course_id
             LEFT JOIN public.syllabi_programs sp ON sp.syllabus_id = s.syllabus_id
-            LEFT JOIN public.courses  c ON c.course_id  = s.course_id
-            LEFT JOIN public.programs p ON p.program_id = sp.program_id
+            LEFT JOIN public.programs p          ON p.program_id    = sp.program_id
             WHERE sp.program_id = :pid
-            GROUP BY s.syllabus_id, s.title, s.filename, s.version, s.status, s.course_id, c.course_code, c.course_name, s.updated_at
+            GROUP BY s.syllabus_id,
+                     s.title,
+                     s.filename,
+                     s.version,
+                     s.status,
+                     s.college_id,
+                     d.short_name,
+                     d.department_name,
+                     s.course_id,
+                     c.course_code,
+                     c.course_name,
+                     s.updated_at
             ORDER BY s.updated_at DESC, s.syllabus_id DESC
-            LIMIT 120
-        ";
+            LIMIT 120";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([':pid' => $programId]);
+
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
@@ -237,8 +282,17 @@ final class SyllabiModel
         // DATA: aggregate program names/ids and include a representative program id+name (rep_program_*)
         $sql = "
             SELECT
-                s.syllabus_id, s.title, s.filename, s.version, s.status,
-                s.course_id, c.course_code, c.course_name,
+                s.syllabus_id,
+                s.title,
+                s.filename,
+                s.version,
+                s.status,
+                s.college_id,
+                d.short_name AS college_short_name,
+                d.department_name AS college_name,
+                s.course_id,
+                c.course_code,
+                c.course_name,
                 array_remove(array_agg(DISTINCT p.program_name), NULL) AS program_names,
                 array_remove(array_agg(DISTINCT sp.program_id), NULL) AS program_ids,
                 (SELECT MIN(sp2.program_id) FROM public.syllabi_programs sp2 WHERE sp2.syllabus_id = s.syllabus_id) AS rep_program_id,
@@ -247,14 +301,25 @@ final class SyllabiModel
                 )) AS rep_program_name,
                 s.updated_at
             FROM public.syllabi s
+            LEFT JOIN public.departments d ON d.department_id = s.college_id
             LEFT JOIN public.courses  c ON c.course_id  = s.course_id
             LEFT JOIN public.syllabi_programs sp ON sp.syllabus_id = s.syllabus_id
             LEFT JOIN public.programs p ON p.program_id = sp.program_id
             $whereSql
-            GROUP BY s.syllabus_id, s.title, s.filename, s.version, s.status, s.course_id, c.course_code, c.course_name, s.updated_at
+            GROUP BY s.syllabus_id,
+                     s.title,
+                     s.filename,
+                     s.version,
+                     s.status,
+                     s.college_id,
+                     d.short_name,
+                     d.department_name,
+                     s.course_id,
+                     c.course_code,
+                     c.course_name,
+                     s.updated_at
             ORDER BY s.updated_at DESC, s.syllabus_id DESC
-            LIMIT {$limit} OFFSET {$offset}
-        ";
+            LIMIT {$limit} OFFSET {$offset}";
         $stmt = $this->pdo->prepare($sql);
         foreach ($params as $k => $v) {
             $stmt->bindValue($k, $v);
@@ -275,6 +340,10 @@ final class SyllabiModel
     {
         $title     = trim((string)($payload['title'] ?? 'Untitled'));
         $course_id = (int)($payload['course_id'] ?? 0);
+        $college_id = isset($payload['college_id']) ? (int)$payload['college_id'] : null;
+        if ($college_id !== null && $college_id <= 0) {
+            $college_id = null;
+        }
 
         // program mapping(s)
         $programIds = [];
@@ -302,18 +371,19 @@ final class SyllabiModel
         try {
             $sql = "
                 INSERT INTO public.syllabi
-                    (title, course_id, version, content, status, filename)
+                    (title, college_id, course_id, version, content, status, filename)
                 VALUES
-                    (:title, :course_id, :version, CAST(:content AS jsonb), :status, :filename)
+                    (:title, :college_id, :course_id, :version, CAST(:content AS jsonb), :status, :filename)
                 RETURNING syllabus_id";
             $stmt = $pdo->prepare($sql);
             $stmt->execute([
-                ':title'    => $title,
-                ':course_id'=> $course_id,
-                ':version'  => ($version === '' ? null : $version),
-                ':content'  => json_encode($content, JSON_UNESCAPED_UNICODE),
-                ':status'   => ($status === '' ? 'draft' : $status),
-                ':filename' => ($filename === '' ? null : $filename),
+                ':title'      => $title,
+                ':college_id' => $college_id,
+                ':course_id'  => $course_id,
+                ':version'    => ($version === '' ? null : $version),
+                ':content'    => json_encode($content, JSON_UNESCAPED_UNICODE),
+                ':status'     => ($status === '' ? 'draft' : $status),
+                ':filename'   => ($filename === '' ? null : $filename),
             ]);
             $newId = (int)$stmt->fetchColumn();
 
@@ -345,6 +415,9 @@ final class SyllabiModel
         $filename  = array_key_exists('filename', $payload) ? (string)$payload['filename'] : null;
         $content   = array_key_exists('content', $payload) ? $payload['content'] : null;
 
+        $collegeProvided = array_key_exists('college_id', $payload);
+        $collegeValue    = $payload['college_id'] ?? null;
+
         // optional program_ids replacement
         $programIds = null;
         if (array_key_exists('program_ids', $payload)) {
@@ -371,6 +444,15 @@ final class SyllabiModel
         if ($content !== null) {
             $sets[] = "content = CAST(:content AS jsonb)";
             $params[':content'] = json_encode($content, JSON_UNESCAPED_UNICODE);
+        }
+
+        if ($collegeProvided) {
+            if ($collegeValue === null || $collegeValue === '' || (int)$collegeValue <= 0) {
+                $sets[] = "college_id = NULL";
+            } else {
+                $sets[] = "college_id = :college_id";
+                $params[':college_id'] = (int)$collegeValue;
+            }
         }
 
         $pdo = $this->pdo;

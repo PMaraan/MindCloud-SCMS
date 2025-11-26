@@ -11,7 +11,9 @@ if (!function_exists('renderSyllabiEditModal')) {
     array $colleges,
     array $programs,
     array $courses,
-    callable $esc
+    callable $esc,
+    bool $lockCollege = false,
+    array $college = []
   ): void {
     $base    = (defined('BASE_PATH') ? BASE_PATH : '');
     $pageKey = $GLOBALS['PAGE_KEY'] ?? 'syllabi';
@@ -34,22 +36,30 @@ if (!function_exists('renderSyllabiEditModal')) {
           <input type="text" class="form-control" name="title" id="sy-e-title" maxlength="255" required>
         </div>
         <!-- College -->
+        
         <div class="mb-3" id="sy-e-college-wrap">
           <label class="form-label" for="sy-e-college">College <span class="text-danger">*</span></label>
-          <select name="college_id" id="sy-e-college" class="form-select" aria-label="College" title="College">
+          <select
+            name="college_id"
+            id="sy-e-college"
+            class="form-select"
+            data-locked="<?= $lockCollege ? '1' : '0' ?>"
+            data-locked-value="<?= $lockCollege ? (int)$college['college_id'] ?? '' : '' ?>"
+          >
             <option value="">— Select college —</option>
             <?php foreach ($colleges as $c): ?>
-            <option value="<?= (int)($c['college_id'] ?? 0) ?>">
-              <?= $esc(($c['short_name'] ?? '').' — '.($c['college_name'] ?? '')) ?>
-            </option>
+              <option value="<?= (int)($c['college_id'] ?? 0) ?>"
+                      <?= $lockCollege && (int)($c['college_id'] ?? 0) === (int)$college['college_id'] ? 'selected' : '' ?>>
+                <?= $esc(($c['short_name'] ?? '').' — '.($c['college_name'] ?? '')) ?>
+              </option>
             <?php endforeach; ?>
           </select>
+          <input type="hidden" name="college_id" value="<?= $lockCollege ? (int)$college['college_id'] ?? '' : '' ?>">
         </div>
         <!-- Program -->
         <div class="mb-3" id="sy-e-program-wrap">
-          <label class="form-label" for="sy-e-program">Program <span class="text-danger">*</span></label>
-          <select name="program_id" id="sy-e-program" class="form-select" aria-label="Program" title="Program">
-            <option value="">— Select program —</option>
+          <label class="form-label" for="sy-e-program">Programs <span class="text-danger">*</span></label>
+          <select name="program_ids[]" id="sy-e-program" class="form-select" aria-label="Programs" title="Programs" multiple size="6">
             <?php foreach ($programs as $p): ?>
               <option value="<?= (int)($p['program']['program_id'] ?? 0) ?>"
                       data-college-id="<?= (int)($p['program']['college_id'] ?? 0) ?>">
@@ -57,6 +67,7 @@ if (!function_exists('renderSyllabiEditModal')) {
               </option>
             <?php endforeach; ?>
           </select>
+          <div class="form-text">Hold Ctrl (Windows) or Cmd (macOS) to select multiple programs.</div>
         </div>
         <!-- Course -->
         <div class="mb-3" id="sy-e-course-wrap">
@@ -75,11 +86,11 @@ if (!function_exists('renderSyllabiEditModal')) {
         <div class="row g-3 mt-1">
           <div class="col-sm-6">
             <label class="form-label">Version</label>
-            <input type="text" name="version" id="tb-e-version" class="form-control" maxlength="10" placeholder="v1.0" readonly>
+            <input type="text" name="version" id="sy-e-version" class="form-control" maxlength="10" placeholder="v1.0" readonly>
           </div>
           <div class="col-sm-6">
             <label class="form-label">Status</label>
-            <select name="status" id="tb-e-status" class="form-select">
+            <select name="status" id="sy-e-status" class="form-select">
               <option value="draft">draft</option>
               <option value="active">active</option>
               <option value="archived">archived</option>

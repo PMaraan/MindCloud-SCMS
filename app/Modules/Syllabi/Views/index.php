@@ -184,7 +184,7 @@ $PAGE_KEY = 'syllabi';
           $colleges,
           $programs,
           $courses,
-          $esc
+          $esc,
         );
       }
     }
@@ -202,7 +202,9 @@ $PAGE_KEY = 'syllabi';
           $colleges,
           $programs,
           $courses,
-          $esc
+          $esc,
+          $lockCollege ?? false,
+          $college ?? []
         );
       }
     }

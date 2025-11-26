@@ -145,6 +145,7 @@ final class SyllabiController
             $view['canEdit'] = $this->canEdit($role, $collegeId, $programId);
             // Values for create modal selects
             $view['colleges'] = [[ 'college_id' => $collegeId ?? '', 'short_name' => $user['college_short_name'] ?? '', 'college_name' => $user['college_name'] ?? '']]; 
+            $view['lockCollege'] = true;
             $view['courses']  = $this->model->getCoursesOfCollege($collegeId);
 
             return $this->render('index', $view);

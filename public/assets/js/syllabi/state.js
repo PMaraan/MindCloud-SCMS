@@ -16,8 +16,8 @@ export function getSelectedSyllabusId() {
 }
 
 export function getActiveTile() {
-  const active = document.querySelector('.tb-tile.tb-card--active');
+  const active = document.querySelector('.sy-tile.sy-card--active');
   if (active) return active;
   if (!selectedSyllabusId) return null;
-  return document.querySelector(`.tb-tile[data-syllabus-id="${CSS.escape(selectedSyllabusId)}"]`);
+  return document.querySelector(`.sy-tile[data-syllabus-id="${CSS.escape(selectedSyllabusId)}"]`);
 }

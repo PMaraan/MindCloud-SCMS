@@ -5,7 +5,7 @@
  *
  * Expected data keys: syllabus_id, title/course fields, status, updated_at, owner info, etc.
  */
-$rows = $rows_local ?? $rows ?? $syllabi ?? [];
+$rows = $rows_local ?? [];
 if (empty($rows)) {
   echo '<div class="text-muted">No syllabi.</div>';
   return;
@@ -16,16 +16,17 @@ $esc  = $esc ?? static fn($value) => htmlspecialchars((string)$value, ENT_QUOTES
 ?>
 <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-xl-6 g-3">
   <?php foreach ($rows as $row):
+    // Syllabus Id
     $sid    = (int)($row['syllabus_id'] ?? $row['id'] ?? 0);
-    $title  = (string)($row['title'] ?? $row['course_title'] ?? '');
-    $course = trim((string)($row['course_code'] ?? ''));
-    $courseName = trim((string)($row['course_name'] ?? ''));
+    // Title
+    $title  = (string)($row['title'] ?? '');
     if ($title === '') {
       $title = $course ? ($course . ($courseName ? ' — ' . $courseName : '')) : ($courseName ?: 'Untitled syllabus');
     }
-    $status = strtolower((string)($row['status'] ?? 'draft'));
-    $updatedRaw = (string)($row['updated_at'] ?? $row['updated'] ?? '');
-    $updated = $updatedRaw ? date('M j, Y', strtotime($updatedRaw)) : '';
+    // College / Owner Department
+    $collegeId = (int)($row['college_id'] ?? $row['owner_department_id'] ?? 0);
+    $ownerCollege = (string)($row['college_name'] ?? $row['department_name'] ?? '');
+    // Programs
     $programNames = $row['program_names'] ?? ($row['program_name'] ?? []);
     if (is_string($programNames)) {
       $trimmed = trim($programNames);
@@ -42,8 +43,34 @@ $esc  = $esc ?? static fn($value) => htmlspecialchars((string)$value, ENT_QUOTES
     }
     $programJson = $esc(json_encode(array_values($programNames), JSON_UNESCAPED_UNICODE));
     $programDisplay = $programNames ? implode(', ', $programNames) : '';
-    $ownerCollege = (string)($row['college_name'] ?? $row['department_name'] ?? '');
+    $programIdsRaw = $row['program_ids'] ?? ($row['program_id'] ?? []);
+    if (is_string($programIdsRaw)) {
+      $trimmedIds = trim($programIdsRaw);
+      if ($trimmedIds !== '' && $trimmedIds[0] === '{' && substr($trimmedIds, -1) === '}') {
+        $csvIds = substr($trimmedIds, 1, -1);
+        $programIds = array_filter(array_map('intval', str_getcsv($csvIds)));
+      } elseif ($trimmedIds !== '') {
+        $programIds = [(int)$trimmedIds];
+      } else {
+        $programIds = [];
+      }
+    } elseif (is_array($programIdsRaw)) {
+      $programIds = array_values(array_filter(array_map('intval', $programIdsRaw)));
+    } else {
+      $programIds = [];
+    }
+    $primaryProgramId = (int)($row['rep_program_id'] ?? ($programIds[0] ?? 0));
+    $programIdsJson = $esc(json_encode($programIds, JSON_UNESCAPED_UNICODE));
+    // Course
+    $course = trim((string)($row['course_code'] ?? ''));
+    $courseName = trim((string)($row['course_name'] ?? ''));
+    $courseId   = (int)($row['course_id'] ?? 0);
+    $courseCode = (string)($row['course_code'] ?? '');
+    $courseName = (string)($row['course_name'] ?? '');
+    // Version
     $version = (string)($row['version'] ?? '');
+    // Status
+    $status = strtolower((string)($row['status'] ?? 'draft'));
     $icon = match ($status) {
       'published', 'active' => 'bi-journal-check',
       'archived'           => 'bi-archive',
@@ -54,6 +81,10 @@ $esc  = $esc ?? static fn($value) => htmlspecialchars((string)$value, ENT_QUOTES
       'archived'            => 'bg-dark',
       default               => 'bg-secondary',
     };
+    // Updated At
+    $updatedRaw = (string)($row['updated_at'] ?? $row['updated'] ?? '');
+    $updated = $updatedRaw ? date('M j, Y', strtotime($updatedRaw)) : '';
+    // Hydrate to RTEditor link
     $href = $base . '/dashboard?page=rteditor&syllabusId=' . $sid;
   ?>
     <div class="col">
@@ -61,11 +92,18 @@ $esc  = $esc ?? static fn($value) => htmlspecialchars((string)$value, ENT_QUOTES
            aria-label="Open syllabus: <?= $esc($title) ?>"
            data-syllabus-id="<?= $esc($sid) ?>"
            data-title="<?= $esc($title) ?>"
-           data-status="<?= $esc($status) ?>"
-           data-programs="<?= $programJson ?>"
+           data-college-id="<?= $esc($collegeId) ?>"
+           data-owner-department-id="<?= $esc($collegeId) ?>"
            data-college-name="<?= $esc($ownerCollege) ?>"
-           data-updated="<?= $esc($updatedRaw) ?>"
-           data-version="<?= $esc($version) ?>">
+           data-programs="<?= $programJson ?>"
+           data-program-ids="<?= $programIdsJson ?>"
+           data-program-id="<?= $esc($primaryProgramId) ?>"
+           data-course-id="<?= $esc($courseId) ?>"
+           data-course-code="<?= $esc($courseCode) ?>"
+           data-course-name="<?= $esc($courseName) ?>"
+           data-version="<?= $esc($version) ?>"
+           data-status="<?= $esc($status) ?>"
+           data-updated="<?= $esc($updatedRaw) ?>">
         <div class="card-body d-flex flex-column align-items-center text-center">
           <div class="sy-icon sy-icon-xl mb-2"><i class="bi <?= $esc($icon) ?>"></i></div>
           <div class="sy-name fw-semibold" title="<?= $esc($title) ?>"><?= $esc($title) ?></div>
