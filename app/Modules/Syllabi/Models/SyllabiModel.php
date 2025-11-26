@@ -340,71 +340,66 @@ final class SyllabiModel
     {
         $this->pdo->beginTransaction();
         try {
-            $title     = trim((string)($payload['title'] ?? 'Untitled'));
-            $course_id = (int)($payload['course_id'] ?? 0);
+            $title      = trim((string)($payload['title'] ?? 'Untitled'));
+            $course_id  = (int)($payload['course_id'] ?? 0);
             $college_id = isset($payload['college_id']) ? (int)$payload['college_id'] : null;
             if ($college_id !== null && $college_id <= 0) {
                 $college_id = null;
             }
 
-            // program mapping(s)
             $programIds = [];
             if (isset($payload['program_ids']) && is_array($payload['program_ids'])) {
                 foreach ($payload['program_ids'] as $pid) {
                     $p = (int)$pid;
-                    if ($p > 0) $programIds[] = $p;
+                    if ($p > 0) {
+                        $programIds[] = $p;
+                    }
                 }
             } elseif (isset($payload['program_id'])) {
                 $p = (int)$payload['program_id'];
-                if ($p > 0) $programIds[] = $p;
+                if ($p > 0) {
+                    $programIds[] = $p;
+                }
             }
 
             if ($course_id <= 0 || count($programIds) === 0) {
                 throw new \InvalidArgumentException('course_id and at least one program_id are required.');
             }
 
-            $version   = (string)($payload['version'] ?? null);
-            $status    = (string)($payload['status']  ?? 'draft');
-            $filename  = (string)($payload['filename'] ?? '');
-            $content   = $payload['content'] ?? new \stdClass(); // json
+            $version  = (string)($payload['version'] ?? null);
+            $status   = (string)($payload['status'] ?? 'draft');
+            $filename = (string)($payload['filename'] ?? '');
+            $content  = $payload['content'] ?? new \stdClass();
 
-            $pdo = $this->pdo;
-            $pdo->beginTransaction();
-            try {
-                $sql = "
-                    INSERT INTO public.syllabi
-                        (title, college_id, course_id, version, content, status, filename)
-                    VALUES
-                        (:title, :college_id, :course_id, :version, CAST(:content AS jsonb), :status, :filename)
-                    RETURNING syllabus_id";
-                $stmt = $pdo->prepare($sql);
-                $params = [
-                    ':title'      => $title,
-                    ':college_id' => $college_id,
-                    ':course_id'  => $course_id,
-                    ':version'    => ($version === '' ? null : $version),
-                    ':content'    => json_encode($content, JSON_UNESCAPED_UNICODE),
-                    ':status'     => ($status === '' ? 'draft' : $status),
-                    ':filename'   => ($filename === '' ? null : $filename),
-                ];
-                $stmt->execute($params);
-                $sid = (int)$stmt->fetchColumn();
+            $stmt = $this->pdo->prepare("
+                INSERT INTO public.syllabi
+                    (title, college_id, course_id, version, content, status, filename)
+                VALUES
+                    (:title, :college_id, :course_id, :version, CAST(:content AS jsonb), :status, :filename)
+                RETURNING syllabus_id
+            ");
+            $stmt->execute([
+                ':title'      => $title,
+                ':college_id' => $college_id,
+                ':course_id'  => $course_id,
+                ':version'    => ($version === '' ? null : $version),
+                ':content'    => json_encode($content, JSON_UNESCAPED_UNICODE),
+                ':status'     => ($status === '' ? 'draft' : $status),
+                ':filename'   => ($filename === '' ? null : $filename),
+            ]);
+            $sid = (int)$stmt->fetchColumn();
 
-                $link = $this->pdo->prepare(
-                    "INSERT INTO public.syllabi_programs (syllabus_id, program_id)
-                     VALUES (:sid, :pid)
-                     ON CONFLICT DO NOTHING"
-                );
-                foreach ($programIds as $pid) {
-                    $link->execute([':sid' => $sid, ':pid' => $pid]);
-                }
-
-                $this->pdo->commit();
-                return $sid;
-            } catch (\Throwable $e) {
-                $this->pdo->rollBack();
-                throw $e;
+            $link = $this->pdo->prepare("
+                INSERT INTO public.syllabi_programs (syllabus_id, program_id)
+                VALUES (:sid, :pid)
+                ON CONFLICT DO NOTHING
+            ");
+            foreach ($programIds as $pid) {
+                $link->execute([':sid' => $sid, ':pid' => $pid]);
             }
+
+            $this->pdo->commit();
+            return $sid;
         } catch (\Throwable $e) {
             $this->pdo->rollBack();
             throw $e;
