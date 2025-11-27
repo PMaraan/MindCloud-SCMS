@@ -232,13 +232,6 @@ function initOpenHandlers() {
   });
 }
 
-function ensureInitialSelection() {
-  const tile =
-    document.querySelector('.sy-tile.tb-card--active') ||
-    document.querySelector('.sy-tile');
-
-  if (tile) selectTile(tile);
-}
 
 console.log('initTileInteractions running', document.querySelectorAll('.sy-tile').length);
 export default function initTileInteractions() {
@@ -246,5 +239,4 @@ export default function initTileInteractions() {
   initTileClicks();
   initArrowNavigation();
   initOpenHandlers();
-  ensureInitialSelection();
 }
