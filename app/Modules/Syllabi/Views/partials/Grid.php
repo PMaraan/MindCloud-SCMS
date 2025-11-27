@@ -72,8 +72,8 @@ $esc  = $esc ?? static fn($value) => htmlspecialchars((string)$value, ENT_QUOTES
     // Status
     $status = strtolower((string)($row['status'] ?? 'draft'));
     $icon = match ($status) {
-      'published', 'active' => 'bi-journal-check',
-      'archived'           => 'bi-archive',
+      //'published', 'active' => 'bi-journal-check',
+      //'archived'           => 'bi-archive',
       default              => 'bi-journal-text',
     };
     $badgeClass = match ($status) {

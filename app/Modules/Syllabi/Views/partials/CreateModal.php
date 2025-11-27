@@ -24,7 +24,9 @@ if (!function_exists('renderSyllabiCreateModal')) {
     array $colleges,
     array $programs,
     array $courses,
-    callable $esc
+    callable $esc,
+    bool $lockCollege = false,
+    array $college = []
   ): void {
     $base    = (defined('BASE_PATH') ? BASE_PATH : '');
     $pageKey = $GLOBALS['PAGE_KEY'] ?? 'syllabi';
@@ -47,10 +49,19 @@ if (!function_exists('renderSyllabiCreateModal')) {
 
         <div class="mb-3">
           <label for="sy-college" class="form-label">College <span class="text-danger">*</span></label>
-          <select name="college_id" id="sy-college" class="form-select" required>
+          <select 
+            name="college_id" 
+            id="sy-college" 
+            class="form-select" 
+            data-locked="<?= $lockCollege ? '1' : '0' ?>"
+            data-locked-value="<?= $lockCollege ? (int)($college['college_id'] ?? 0) : '' ?>"
+            data-default-value="<?= (int)($college['college_id'] ?? 0) ?>"
+            required>
             <option value="">— Select college —</option>
             <?php foreach ($colleges as $c): ?>
-              <option value="<?= (int)($c['college_id'] ?? 0) ?>">
+              <?php $cid = (int)($c['college_id'] ?? 0); ?>
+              <option value="<?= $cid ?>"
+                      <?= $cid === (int)($college['college_id'] ?? 0) ? 'selected' : '' ?>>
                 <?= $esc(($c['short_name'] ?? '').' — '.($c['college_name'] ?? '')) ?>
               </option>
             <?php endforeach; ?>
@@ -98,55 +109,6 @@ if (!function_exists('renderSyllabiCreateModal')) {
     </form>
   </div>
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function(){
-  const selCollege = document.getElementById('sy-college');
-  const selProgram = document.getElementById('sy-program');
-  const selCourse  = document.getElementById('sy-course');
-
-  // Simple client-side filtering (works with pre-rendered option datasets)
-  // (Could be deprecated; programs are filtered server-side anyway).
-  function filterProgramsByCollege(collegeId) {
-    Array.from(selProgram.options).forEach(opt => {
-      if (!opt.value) return; // keep placeholder
-      const cid = opt.getAttribute('data-college-id') || '';
-      opt.hidden = !!(collegeId && cid && cid !== String(collegeId));
-      if (opt.hidden && opt.selected) opt.selected = false;
-    });
-  }
-
-  // (Could be deprecated; courses are filtered by college not program).
-  function filterCoursesByProgram(programId) {
-    Array.from(selCourse.options).forEach(opt => {
-      if (!opt.value) return; // keep placeholder
-      const pid = opt.getAttribute('data-program-id') || '';
-      opt.hidden = !!(programId && pid && pid !== String(programId));
-      if (opt.hidden && opt.selected) opt.selected = false;
-    });
-  }
-
-  // (Could be deprecated; programs are filtered server-side anyway and
-  // courses are filtered by college not program).
-  if (selCollege) {
-    selCollege.addEventListener('change', function(){
-      const cid = this.value;
-      filterProgramsByCollege(cid);
-      // Reset courses when college changes (since program will change)
-      filterCoursesByProgram('');
-    });
-  }
-  // (Could be deprecated; courses are filtered by college not program).
-  /*
-  if (selProgram) {
-    selProgram.addEventListener('change', function(){
-      const pid = this.value;
-      filterCoursesByProgram(pid);
-    });
-  }
-  */
-});
-</script>
 <?php
   }
 }

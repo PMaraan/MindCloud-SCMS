@@ -12,7 +12,9 @@ $csrf = $esc($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8');
       <div class="modal-body">
         <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
         <input type="hidden" name="syllabus_id" id="sy-del-id" value="">
-        <p class="mb-0">Are you sure you want to delete this syllabus?</p>
+        <p>Are you sure you want to <strong>permanently delete</strong> this syllabus?</p>
+        <p class="fw-semibold" id="sy-delete-title">—</p>
+        <p class="text-danger small mb-0">This action cannot be undone.</p>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>

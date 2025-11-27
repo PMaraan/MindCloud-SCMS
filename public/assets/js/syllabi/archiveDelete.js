@@ -32,6 +32,8 @@ export default function initArchiveDelete() {
   const csrfSpan = document.getElementById('sy-csrf');
   const deleteBtn = document.getElementById('sy-delete');
   const deleteConfirm = document.getElementById('sy-delete-confirm');
+  const deleteModal = document.getElementById('syDeleteModal');
+  const deleteTitle = document.getElementById('sy-delete-title');
 
   if (archiveBtn && archiveModal && archiveConfirm) {
     archiveBtn.addEventListener('click', (event) => {
@@ -134,10 +136,30 @@ export default function initArchiveDelete() {
     });
   }
 
-  if (deleteBtn && deleteConfirm && csrfSpan) {
-    deleteConfirm.addEventListener('click', () => {
+  if (deleteBtn && deleteConfirm && deleteModal && deleteTitle && csrfSpan) {
+    deleteBtn.addEventListener('click', (event) => {
       const tile = getActiveTile();
-      const syllabusId = tile?.dataset.syllabusId;
+      if (!tile) {
+        event.preventDefault();
+        return;
+      }
+      const title =
+        tile.dataset.title ||
+        tile.querySelector('.sy-name')?.textContent?.trim() ||
+        '—';
+      deleteTitle.textContent = title;
+      deleteModal.dataset.syllabusId = tile.dataset.syllabusId || '';
+      deleteModal.dataset.collegeParam = resolveCollege(tile);
+    });
+
+    deleteModal.addEventListener('hidden.bs.modal', () => {
+      deleteModal.dataset.syllabusId = '';
+      deleteModal.dataset.collegeParam = '';
+      deleteTitle.textContent = '—';
+    });
+
+    deleteConfirm.addEventListener('click', () => {
+      const syllabusId = deleteModal.dataset.syllabusId || '';
       if (!syllabusId) {
         alert('No syllabus selected to delete.');
         return;
@@ -147,8 +169,8 @@ export default function initArchiveDelete() {
       form.method = 'POST';
       form.style.display = 'none';
 
-      const collegeParam = resolveCollege(tile);
       let action = `${getBase()}/dashboard?page=syllabi&action=delete`;
+      const collegeParam = deleteModal.dataset.collegeParam || '';
       if (collegeParam) {
         action += `&college=${encodeURIComponent(collegeParam)}`;
       }

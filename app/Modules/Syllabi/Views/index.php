@@ -172,6 +172,8 @@ $PAGE_KEY = 'syllabi';
           $programs,
           $courses,
           $esc,
+          $lockCollege ?? false,
+          $college ?? []
         );
       }
     }
