@@ -61,6 +61,9 @@ $PAGE_KEY = 'syllabi';
   </div>
   <!-- /PAGE HEADER -->
 
+  <!-- CSRF token for JS actions (duplicate, etc.) -->
+  <span id="sy-csrf" data-token="<?= $esc($_SESSION['csrf_token'] ?? '') ?>" hidden></span>
+
   <?php
     $partialsDir = __DIR__ . '/partials';
 
@@ -121,7 +124,7 @@ $PAGE_KEY = 'syllabi';
                 <dt class="col-4">Actions</dt>
                 <dd class="col-8">
                   <div class="d-flex flex-wrap gap-2">
-                    <button class="btn btn-sm btn-primary" id="sy-open" type="button">Open</button>
+                    <button class="btn btn-sm btn-primary" id="sy-open" type="button">Open in Editor</button>
                     <button class="btn btn-sm btn-secondary d-none"
                             id="sy-edit"
                             type="button"
@@ -192,7 +195,28 @@ $PAGE_KEY = 'syllabi';
         );
       }
     }
-    //include $partialsDir . '/DeleteModal.php';
+
+    // Archive modal (render only when allowed)
+    if ($mode !== 'global-folders' && !empty($canDelete)) {
+      include $partialsDir . '/ArchiveModal.php';
+      if (function_exists('renderSyllabiArchiveModal')) {
+        renderSyllabiArchiveModal(
+          $ASSET_BASE,
+          $esc
+        );
+      }
+    }
+
+    // Delete modal (render only when allowed)
+    if ($mode !== 'global-folders' && !empty($canDelete)) {
+      include $partialsDir . '/DeleteModal.php';
+      if (function_exists('renderSyllabiDeleteModal')) {
+        renderSyllabiDeleteModal(
+          $ASSET_BASE,
+          $esc
+        );
+      }
+    }
   ?>
 
   <?php

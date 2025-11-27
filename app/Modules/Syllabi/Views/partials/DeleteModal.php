@@ -1,11 +1,6 @@
 <?php
-// /app/Modules/Syllabi/Views/partials/DeleteModal.php
-/**
- * Placeholder Delete modal.
- * Uses csrf_token for now (per your current setup).
- */
-$base = defined('BASE_PATH') ? BASE_PATH : '';
-$csrf = htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8');
+// filepath: c:\xampp\htdocs\MindCloud-SCMS\app\Modules\Syllabi\Views\partials\DeleteModal.php
+$csrf = $esc($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8');
 ?>
 <div class="modal fade" id="syDeleteModal" tabindex="-1" aria-labelledby="syDeleteLabel" aria-hidden="true" data-no-reset>
   <div class="modal-dialog">

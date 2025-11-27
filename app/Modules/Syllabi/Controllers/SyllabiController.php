@@ -427,6 +427,47 @@ final class SyllabiController
         exit;
     }
 
+    /** POST /dashboard?page=syllabi&action=archive */
+    public function archive(): void
+    {
+        $this->rbac->require((string)$_SESSION['user_id'], Permissions::SYLLABI_DELETE);
+
+        $id = (int)($_POST['syllabus_id'] ?? 0);
+        $target = strtolower(trim((string)($_POST['target'] ?? '')));
+        $status = $target === 'archived' ? 'archived' : 'active';
+
+        if ($id <= 0) {
+            $this->respondJson(['success' => false, 'message' => 'Invalid syllabus id.'], 400);
+        }
+
+        $syllabus = $this->model->getSyllabus($id);
+        if (!$syllabus) {
+            $this->respondJson(['success' => false, 'message' => 'Syllabus not found.'], 404);
+        }
+
+        $user = $this->userModel->getUserProfile((string)$_SESSION['user_id']);
+        $role = (string)($user['role_name'] ?? '');
+        if (in_array($role, $this->DEAN_ROLES, true) || in_array($role, $this->CHAIR_ROLES, true)) {
+            $userCollege = (int)($user['college_id'] ?? 0);
+            if ($userCollege && $userCollege !== (int)($syllabus['college_id'] ?? 0)) {
+                $this->respondJson(['success' => false, 'message' => 'Unauthorized college scope.'], 403);
+            }
+        }
+
+        try {
+            $updated = $this->model->setSyllabusStatus($id, $status, (string)($_SESSION['user_id'] ?? ''));
+            $message = $status === 'archived' ? 'Syllabus archived.' : 'Syllabus unarchived.';
+            $this->respondJson([
+                'success' => true,
+                'status'  => $updated['status'] ?? $status,
+                'updated' => $updated['updated_at'] ?? null,
+                'message' => $message,
+            ]);
+        } catch (\Throwable $e) {
+            $this->respondJson(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
     /** POST /dashboard?page=syllabi&action=delete */
     public function delete(): void
     {
@@ -434,15 +475,36 @@ final class SyllabiController
 
         $id = isset($_POST['syllabus_id']) ? (int)$_POST['syllabus_id'] : 0;
 
+        $syllabus = $id > 0 ? $this->model->getSyllabus($id) : null;
+        if (!$syllabus) {
+            FlashHelper::set('danger', 'Syllabus not found.');
+            header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabi');
+            exit;
+        }
+
+        if (strtolower((string)($syllabus['status'] ?? '')) !== 'archived') {
+            FlashHelper::set('danger', 'Only archived syllabi can be deleted.');
+            $redirect = (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabi';
+            if (!empty($syllabus['college_id'])) {
+                $redirect .= '&college=' . (int)$syllabus['college_id'];
+            }
+            header('Location: ' . $redirect);
+            exit;
+        }
+
         try {
-            if ($id <= 0) throw new \RuntimeException('Missing id.');
             $this->model->deleteSyllabus($id, (string)($_SESSION['user_id'] ?? ''));
             FlashHelper::set('success', 'Syllabus deleted.');
         } catch (\Throwable $e) {
             FlashHelper::set('danger', 'Delete failed: '.$e->getMessage());
         }
 
-        header('Location: ' . (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabi');
+        $redirectCollege = (int)($syllabus['college_id'] ?? 0);
+        $location = (defined('BASE_PATH') ? BASE_PATH : '') . '/dashboard?page=syllabi';
+        if ($redirectCollege) {
+            $location .= '&college=' . $redirectCollege;
+        }
+        header('Location: ' . $location);
         exit;
     }
 

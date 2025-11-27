@@ -542,4 +542,71 @@ final class SyllabiModel
 
         return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN) ?: []);
     }
+
+    public function getSyllabus(int $id): ?array
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT syllabus_id, title, status, college_id, updated_at
+            FROM public.syllabi
+            WHERE syllabus_id = :sid
+            LIMIT 1
+        ");
+        $stmt->execute([':sid' => $id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row) {
+            return null;
+        }
+
+        $programStmt = $this->pdo->prepare("
+            SELECT program_id
+            FROM public.syllabi_programs
+            WHERE syllabus_id = :sid
+        ");
+        $programStmt->execute([':sid' => $id]);
+        $row['program_ids'] = array_map('intval', $programStmt->fetchAll(PDO::FETCH_COLUMN) ?: []);
+
+        return $row;
+    }
+
+    public function setSyllabusStatus(int $id, string $status, string $userId): array
+    {
+        $allowed = ['archived', 'active', 'draft', 'published'];
+        if (!in_array($status, $allowed, true)) {
+            $status = 'active';
+        }
+
+        $this->pdo->beginTransaction();
+        try {
+            $stmt = $this->pdo->prepare("
+                UPDATE public.syllabi
+                   SET status = :status,
+                       updated_at = NOW()
+                 WHERE syllabus_id = :sid
+            ");
+            $stmt->execute([
+                ':status' => $status,
+                ':sid'    => $id,
+            ]);
+
+            if ($stmt->rowCount() === 0) {
+                throw new \RuntimeException('Syllabus not found.');
+            }
+
+            $select = $this->pdo->prepare("
+                SELECT syllabus_id, status, updated_at
+                FROM public.syllabi
+                WHERE syllabus_id = :sid
+                LIMIT 1
+            ");
+            $select->execute([':sid' => $id]);
+            $updated = $select->fetch(PDO::FETCH_ASSOC) ?: [];
+
+            $this->pdo->commit();
+            return $updated;
+        } catch (\Throwable $e) {
+            $this->pdo->rollBack();
+            throw $e;
+        }
+    }
 }

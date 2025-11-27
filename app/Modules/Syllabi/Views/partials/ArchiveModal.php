@@ -1,8 +1,6 @@
 <?php
-// /app/Modules/Syllabi/Views/partials/ArchiveModal.php
-/**
- * Archive / Unarchive confirmation modal (UI-only). JS will set the title and handle confirm.
- */
+// filepath: c:\xampp\htdocs\MindCloud-SCMS\app\Modules\Syllabi\Views\partials\ArchiveModal.php
+$csrf = $esc($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8');
 ?>
 <div class="modal fade" id="syArchiveModal" tabindex="-1" aria-labelledby="syArchiveLabel" aria-hidden="true" data-no-reset>
   <div class="modal-dialog">
@@ -14,7 +12,9 @@
       <div class="modal-body">
         <p id="sy-archive-body">Are you sure you want to archive this syllabus?</p>
         <p class="fw-semibold" id="sy-archive-title">—</p>
-        <p class="text-muted small mb-0">You can unarchive it later from this same control.</p>
+        <p class="text-muted small mb-0">
+          You can unarchive it later from the same control.
+        </p>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
