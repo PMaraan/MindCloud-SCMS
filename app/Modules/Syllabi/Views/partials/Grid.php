@@ -109,7 +109,9 @@ $esc  = $esc ?? static fn($value) => htmlspecialchars((string)$value, ENT_QUOTES
           <div class="sy-name fw-semibold" title="<?= $esc($title) ?>"><?= $esc($title) ?></div>
           <div class="sy-meta text-muted small">
             <?php if ($updated): ?><span class="me-2"><?= $esc($updated) ?></span><?php endif; ?>
+            <!-- Temporarily hide status badge
             <span class="badge <?= $badgeClass ?> text-uppercase"><?= $esc($status ?: 'draft') ?></span>
+            -->
           </div>
         </div>
       </div>
