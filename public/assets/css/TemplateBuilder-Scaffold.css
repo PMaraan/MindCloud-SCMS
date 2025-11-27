@@ -46,6 +46,11 @@
   text-overflow: ellipsis;
 }
 
+.sy-icon-xl {
+  font-size: 3.5rem;
+  line-height: 1;
+}
+
 /* Folders: we’re using anchor rows (list-group) now */
 .list-group .list-group-item.list-group-item-action {
   display: flex;
