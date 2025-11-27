@@ -62,9 +62,9 @@ if (!function_exists('renderSyllabiCreateModal')) {
           <select name="program_id[]" id="sy-program" class="form-select" multiple size="5" required>
             <option value="" disabled hidden>— Select program —</option>
             <?php foreach ($programs as $p): ?>
-              <option value="<?= (int)($p['program']['program_id'] ?? 0) ?>"
-                      data-college-id="<?= (int)($p['program']['college_id'] ?? 0) ?>">
-                <?= $esc($p['program']['program_name'] ?? '') ?>
+              <option value="<?= (int)($p['program_id'] ?? 0) ?>"
+                      data-college-id="<?= (int)($p['college_id'] ?? 0) ?>">
+                <?= $esc($p['program_name'] ?? '') ?>
               </option>
             <?php endforeach; ?>
           </select>

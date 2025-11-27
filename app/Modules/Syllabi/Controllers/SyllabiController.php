@@ -80,89 +80,238 @@ final class SyllabiController
     {
         $this->rbac->require((string)$_SESSION['user_id'], Permissions::SYLLABI_VIEW);
 
-        $user      = ($this->userModel)->getUserProfile((string)$_SESSION['user_id']);
+        $user      = $this->userModel->getUserProfile((string)$_SESSION['user_id']);
         $role      = (string)($user['role_name'] ?? '');
         $collegeId = isset($user['college_id']) ? (int)$user['college_id'] : null;
         $programId = isset($user['program_id']) ? (int)$user['program_id'] : null;
-        /*// Debugging RBAC
-        var_dump([
-            'role'              => $role,
-            'canEdit'           => $this->canEdit($role, $collegeId, $programId),
-            'canCreate'         => $this->canCreate($role, $collegeId, $programId),
-            'GLOBAL_MATCH'      => in_array($role, $this->GLOBAL_ROLES, true),
-            'DEAN_MATCH'        => in_array($role, $this->DEAN_ROLES, true),
-            'CHAIR_MATCH'       => in_array($role, $this->CHAIR_ROLES, true),
-        ]);
-        exit;*/
 
         $ASSET_BASE = (defined('BASE_PATH') ? BASE_PATH : '') . '/public';
-        $esc = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
-        $PAGE_KEY = 'syllabi';
+        $esc        = fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
+        $PAGE_KEY   = 'syllabi';
 
-        $qCollege = isset($_GET['college']) ? (int)$_GET['college'] : null;
-        $qProgram = isset($_GET['program']) ? (int)$_GET['program'] : null;
+        $requestedCollege = isset($_GET['college']) ? (int)$_GET['college'] : null;
+        $requestedProgram = isset($_GET['program']) ? (int)$_GET['program'] : null;
 
-        // Defaults for view
         $view = [
             'ASSET_BASE' => $ASSET_BASE,
             'esc'        => $esc,
             'PAGE_KEY'   => $PAGE_KEY,
             'user'       => $user,
             'role'       => $role,
-            //'canCreate'  => true, // keep UX; refine with policy later
-            //'canEdit'    => true,
-            //'canDelete'  => true,
         ];
 
         // AAO Roles: Global folders mode (no college param)
-        if(in_array($role, $this->GLOBAL_ROLES, true)) {
+        if (in_array($role, $this->GLOBAL_ROLES, true)) {
             $colleges = $this->model->getCollegesForFolders();
-            
-            // If college param not provided, render global-folders mode
-            if ($qCollege === null) {
-                $colleges = $this->model->getCollegesForFolders();
+
+            /* redundant; use code below
+            if ($requestedCollege === null) {
                 $view['mode']     = 'global-folders';
                 $view['colleges'] = $colleges;
                 $view['canCreate'] = $this->canCreate($role, $collegeId, $programId);
+                $view['canEdit']   = $this->canEdit($role, $collegeId, $programId);
+                $view['canArchive'] = $this->canArchive($role, $collegeId, $programId);
+                $view['canDelete']  = $this->canDelete($role, $collegeId, $programId);
+                return $this->render('index', $view);
+            }
+            */
+            $activeCollege = $this->model->getCollege($requestedCollege);
+            if (!$activeCollege) {
+                $view['mode']     = 'global-folders';
+                $view['colleges'] = $colleges;
+                $view['canCreate'] = $this->canCreate($role, $collegeId, $programId);
+                $view['canEdit']   = $this->canEdit($role, $collegeId, $programId);
+                $view['canArchive'] = $this->canArchive($role, $collegeId, $programId);
+                $view['canDelete']  = $this->canDelete($role, $collegeId, $programId);
                 return $this->render('index', $view);
             }
 
-            // If college param provided, render college mode
-            
-            $view['mode'] = 'college';
-            $view['college'] = $this->model->getCollege($qCollege);
-            $view['programs'] = $this->getProgramsAndSyllabiByCollege($qCollege);
-            $view['canCreate'] = $this->canCreate($role, $collegeId, $programId);
-            $view['canEdit'] = $this->canEdit($role, $collegeId, $programId);
+            [$programList, $accordionData] = $this->buildAccordionData($user, $role, (int)$activeCollege['college_id']);
+
+            $view['mode']        = 'college';
+            $view['college']     = $activeCollege;
+            $view['programs']    = $programList;
+            $view['accordions']  = $accordionData;
             $view['showBackToFolders'] = true;
-            return $this->render('index', $view);
-        // Dean Roles: College mode only (college param ignored)    
-        } elseif ($collegeId && in_array($role, $this->DEAN_ROLES, true)) {
-            $qCollege = null;
-            $view['mode'] = 'college';
-            $view['college'] = $this->model->getCollege($collegeId);
-            $view['programs'] = $this->getProgramsAndSyllabiByCollege($collegeId);
-            $view['canCreate'] = $this->canCreate($role, $collegeId, $programId);
-            $view['canEdit'] = $this->canEdit($role, $collegeId, $programId);
-            $view['canArchive'] = $this->canArchive($role, $collegeId, $programId);
-            $view['scanDelete'] = $this->canDelete($role, $collegeId, $programId);
-            // Values for create modal selects
-            $view['colleges'] = [[ 'college_id' => $collegeId ?? '', 'short_name' => $user['college_short_name'] ?? '', 'college_name' => $user['college_name'] ?? '']]; 
-            $view['lockCollege'] = true;
-            $view['courses']  = $this->model->getCoursesOfCollege($collegeId);
+            $view['canCreate']   = $this->canCreate($role, $collegeId, $programId);
+            $view['canEdit']     = $this->canEdit($role, $collegeId, $programId);
+            $view['canArchive']  = $this->canArchive($role, $collegeId, $programId);
+            $view['canDelete']   = $this->canDelete($role, $collegeId, $programId);
+            $view['colleges']    = $colleges;
+            $view['courses']     = $this->model->getCoursesOfCollege((int)$activeCollege['college_id']);
 
             return $this->render('index', $view);
-        } elseif (in_array($role, $this->CHAIR_ROLES, true)) {
-            // Chair Roles: Program mode only (college & program params ignored)
-            $qCollege = $collegeId;
-            $qProgram = $programId;
         }
+        // Dean Roles: college mode if college assigned
+        if ($collegeId && in_array($role, $this->DEAN_ROLES, true)) {
+            $activeCollege = $this->model->getCollege($collegeId);
+            [$programList, $accordionData] = $this->buildAccordionData($user, $role, $collegeId);
+
+            $view['mode']        = 'college';
+            $view['college']     = $activeCollege;
+            $view['programs']    = $programList;
+            $view['accordions']  = $accordionData;
+            $view['canCreate']   = $this->canCreate($role, $collegeId, $programId);
+            $view['canEdit']     = $this->canEdit($role, $collegeId, $programId);
+            $view['canArchive']  = $this->canArchive($role, $collegeId, $programId);
+            $view['canDelete']   = $this->canDelete($role, $collegeId, $programId);
+            $view['colleges']    = [
+                [
+                    'college_id'  => $collegeId,
+                    'short_name'  => $user['college_short_name'] ?? '',
+                    'college_name'=> $user['college_name'] ?? '',
+                ]
+            ];
+            $view['lockCollege'] = true;
+            $view['courses']     = $this->model->getCoursesOfCollege($collegeId);
+
+            return $this->render('index', $view);
+        }
+        // Chair Roles: college mode if college + program assigned
+        if (in_array($role, $this->CHAIR_ROLES, true) && $collegeId && $programId) {
+            $activeCollege = $this->model->getCollege($collegeId);
+            [$programList, $accordionData] = $this->buildAccordionData($user, $role, $collegeId);
+
+            $view['mode']        = 'college';
+            $view['college']     = $activeCollege;
+            $view['programs']    = $programList;
+            $view['accordions']  = $accordionData;
+            $view['canCreate']   = $this->canCreate($role, $collegeId, $programId);
+            $view['canEdit']     = $this->canEdit($role, $collegeId, $programId);
+            $view['canArchive']  = $this->canArchive($role, $collegeId, $programId);
+            $view['canDelete']   = $this->canDelete($role, $collegeId, $programId);
+            $view['colleges']    = [
+                [
+                    'college_id'  => $collegeId,
+                    'short_name'  => $user['college_short_name'] ?? '',
+                    'college_name'=> $user['college_name'] ?? '',
+                ]
+            ];
+            $view['lockCollege'] = true;
+            $view['courses']     = $this->model->getCoursesOfCollege($collegeId);
+
+            return $this->render('index', $view);
+        }
+
+        $view['mode']       = 'global-folders';
+        $view['colleges']   = $this->model->getCollegesForFolders();
+        $view['canCreate']  = $this->canCreate($role, $collegeId, $programId);
+        $view['canEdit']    = $this->canEdit($role, $collegeId, $programId);
+        $view['canArchive'] = $this->canArchive($role, $collegeId, $programId);
+        $view['canDelete']  = $this->canDelete($role, $collegeId, $programId);
 
         return $this->render('index', $view);
     }
 
+    /** Build accordion view-model: general bucket + per-program buckets user can access. */
+    private function buildAccordionData(array $user, string $role, int $collegeId): array
+    {
+        $allSyllabi = $this->model->getCollegeSyllabi($collegeId);
+        $programList = $this->getAccessiblePrograms($user, $role, $collegeId);
 
-    /** POST /dashboard?page=syllabi&action=create */
+        $programBuckets = [];
+        foreach ($programList as $program) {
+            $pid = (int)($program['program_id'] ?? 0);
+            if ($pid > 0) {
+                $programBuckets[$pid] = [
+                    'program' => $program,
+                    'syllabi' => [],
+                ];
+            }
+        }
+
+        $general = [];
+        foreach ($allSyllabi as $syllabus) {
+            $programIds = $this->normalizeProgramIds($syllabus['program_ids'] ?? []);
+            if (count($programIds) !== 1) {
+                $general[] = $syllabus;
+                continue;
+            }
+
+            $targetProgram = $programIds[0];
+            if (!isset($programBuckets[$targetProgram])) {
+                $general[] = $syllabus;
+                continue;
+            }
+
+            $programBuckets[$targetProgram]['syllabi'][] = $syllabus;
+        }
+
+        $accordions = [
+            [
+                'key'     => 'general',
+                'label'   => 'All College Syllabi',
+                'syllabi' => $general,
+            ],
+        ];
+
+        foreach ($programBuckets as $pid => $bucket) {
+            $accordions[] = [
+                'key'      => 'program-' . $pid,
+                'label'    => $bucket['program']['program_name'] ?? 'Program',
+                'program'  => $bucket['program'],
+                'syllabi'  => $bucket['syllabi'],
+            ];
+        }
+
+        return [$programList, $accordions];
+    }
+
+    /** Program list the current user may see in this college. */
+    private function getAccessiblePrograms(array $user, string $role, int $collegeId): array
+    {
+        if (in_array($role, $this->GLOBAL_ROLES, true) || in_array($role, $this->DEAN_ROLES, true)) {
+            return $this->model->getProgramsByCollege($collegeId);
+        }
+
+        if (in_array($role, $this->CHAIR_ROLES, true)) {
+            $chairId = (string)($user['id_no'] ?? $user['user_id'] ?? '');
+            $allowedIds = $this->model->getChairProgramIds($chairId);
+
+            if (empty($allowedIds) && !empty($user['program_id'])) {
+                $allowedIds = [(int)$user['program_id']];
+            }
+
+            if (empty($allowedIds)) {
+                return [];
+            }
+
+            $programs = $this->model->getProgramsByIds($allowedIds);
+
+            return array_values(array_filter($programs, static function ($program) use ($collegeId) {
+                return (int)($program['college_id'] ?? 0) === $collegeId;
+            }));
+        }
+
+        return $this->model->getProgramsByCollege($collegeId);
+    }
+
+    /** Normalise program_ids value (array or Postgres array literal) into int[] */
+    private function normalizeProgramIds($raw): array
+    {
+        if (is_array($raw)) {
+            return array_values(array_filter(array_map('intval', $raw)));
+        }
+
+        if (is_string($raw)) {
+            $trim = trim($raw);
+            if ($trim === '') {
+                return [];
+            }
+
+            if ($trim[0] === '{' && substr($trim, -1) === '}') {
+                $trim = substr($trim, 1, -1);
+            }
+
+            return array_values(array_filter(array_map('intval', str_getcsv($trim))));
+        }
+
+        return [];
+    }
+
+    /**
+     * POST /dashboard?page=syllabi&action=create
+     */
     public function create(): void
     {
         (new RBAC($this->db))->require((string)$_SESSION['user_id'], Permissions::SYLLABI_CREATE);

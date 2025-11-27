@@ -75,11 +75,17 @@ $PAGE_KEY = 'syllabi';
         <main class="tb-flex-main flex-grow-1"><!-- MAIN OPEN -->
           <?php
             if ($mode === 'college') {
+              $accordions = $accordions ?? [];
               include $partialsDir . '/CollegeSection.php';
             } else {
-              // program mode: reuse college section with one program group
-              $programs = [
-                ['program' => ($program ?? []), 'syllabi' => ($program_syllabi ?? [])]
+              $accordions = [
+                ['key' => 'general', 'label' => 'All College Syllabi', 'syllabi' => $general ?? []],
+                [
+                  'key'     => 'program-' . ($program['program_id'] ?? '0'),
+                  'label'   => $program['program_name'] ?? 'Program',
+                  'program' => $program ?? [],
+                  'syllabi' => $program_syllabi ?? [],
+                ]
               ];
               include $partialsDir . '/CollegeSection.php';
             }
@@ -149,12 +155,12 @@ $PAGE_KEY = 'syllabi';
     }
 
     // CREATE / EDIT / DELETE MODALS
-    // We’ll show Create modal on college/program modes (it needs lists).
+    // We’ll show Create modal on college mode (it needs lists).
     if ($mode !== 'global-folders' && !empty($canCreate)) {
       // Create modal needs:
-      $colleges  = $colleges      ?? [];
+      $colleges = $colleges ?? [];
       $programs = $programs ?? [];
-      $courses = $courses?? [];
+      $courses  = $courses  ?? [];
       include $partialsDir . '/CreateModal.php';
       if (function_exists('renderSyllabiCreateModal')) {
         renderSyllabiCreateModal(
@@ -167,12 +173,12 @@ $PAGE_KEY = 'syllabi';
       }
     }
 
-    // Show Edit modal only on college/program modes (it needs lists).
+    // Show Edit modal only on college mode (it needs lists).
     if ($mode !== 'global-folders' && !empty($canEdit)) {
       // Edit modal needs:
-      $colleges  = $colleges      ?? [];
+      $colleges = $colleges ?? [];
       $programs = $programs ?? [];
-      $courses = $courses?? [];
+      $courses  = $courses  ?? [];
       include $partialsDir . '/EditModal.php';
       if (function_exists('renderSyllabiEditModal')) {
         renderSyllabiEditModal(

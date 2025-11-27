@@ -61,9 +61,9 @@ if (!function_exists('renderSyllabiEditModal')) {
           <label class="form-label" for="sy-e-program">Programs <span class="text-danger">*</span></label>
           <select name="program_ids[]" id="sy-e-program" class="form-select" aria-label="Programs" title="Programs" multiple size="6">
             <?php foreach ($programs as $p): ?>
-              <option value="<?= (int)($p['program']['program_id'] ?? 0) ?>"
-                      data-college-id="<?= (int)($p['program']['college_id'] ?? 0) ?>">
-                <?= $esc($p['program']['program_name'] ?? '') ?>
+              <option value="<?= (int)($p['program_id'] ?? 0) ?>"
+                      data-college-id="<?= (int)($p['college_id'] ?? 0) ?>">
+                <?= $esc($p['program_name'] ?? '') ?>
               </option>
             <?php endforeach; ?>
           </select>

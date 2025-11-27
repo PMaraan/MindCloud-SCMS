@@ -1,11 +1,8 @@
 <?php
+// /app/Modules/Syllabi/Views/partials/ProgramSections.php
 /**
- * /app/Modules/Syllabi/Views/partials/ProgramSections.php
- * Accordion of per-program syllabus grids for a college.
- *
- * Expects:
- *   - $programSections (array) // each item: ['program' => [...], 'syllabi' => [...]]
- *   - $esc (callable)
+ * Program accordion panels inside the college accordion.
+ * - Expects $programSections entries with keys: key, label, program?, syllabi[]
  */
 if (empty($programSections)) {
   echo '<div class="text-muted">No program syllabi.</div>';
@@ -13,24 +10,23 @@ if (empty($programSections)) {
 }
 ?>
 <div class="accordion" id="sy-program-accordion">
-  <?php foreach ($programSections as $idx => $sec):
-    $p        = $sec['program'] ?? [];
-    $syllabi  = $sec['syllabi'] ?? [];
-    $pid      = (int)($p['program_id'] ?? 0);
-    $label    = trim((string)($p['program_name'] ?? 'Program'));
-    $itemId   = 'sy-prog-' . ($pid ?: $idx);
+  <?php foreach ($programSections as $idx => $entry):
+    $panelId = $entry['key'] ?? ('program-' . $idx);
+    $label   = $entry['label'] ?? 'Program';
+    $program = $entry['program'] ?? [];
+    $syllabi = $entry['syllabi'] ?? [];
   ?>
   <div class="accordion-item mb-2">
-    <h2 class="accordion-header" id="<?= $itemId ?>-h">
+    <h2 class="accordion-header" id="<?= $esc($panelId) ?>-h">
       <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-              data-bs-target="#<?= $itemId ?>-c" aria-expanded="false" aria-controls="<?= $itemId ?>-c">
+              data-bs-target="#<?= $esc($panelId) ?>-c" aria-expanded="false" aria-controls="<?= $esc($panelId) ?>-c">
         <?= $esc($label) ?>
       </button>
     </h2>
-    <div id="<?= $itemId ?>-c" class="accordion-collapse collapse" aria-labelledby="<?= $itemId ?>-h">
+    <div id="<?= $esc($panelId) ?>-c" class="accordion-collapse collapse" aria-labelledby="<?= $esc($panelId) ?>-h">
       <div class="accordion-body">
         <?php
-          // Use the Syllabi grid; it expects $rows (or $rows_local)
+          // Use the Syllabi grid to render tiles; it expects $rows_local
           $rows_local = $syllabi;
           include __DIR__ . '/Grid.php';
         ?>

@@ -503,4 +503,43 @@ final class SyllabiModel
         $sets[] = "{$col} = :{$col}";
         $params[":{$col}"] = $val;
     }
+
+    /** Return all programs for a set of IDs (used for chair scoping). */
+    public function getProgramsByIds(array $programIds): array
+    {
+        $programIds = array_values(array_filter(array_map('intval', $programIds)));
+        if (empty($programIds)) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($programIds), '?'));
+        $stmt = $this->pdo->prepare(
+            "SELECT program_id,
+                    program_name,
+                    department_id AS college_id
+             FROM public.programs
+             WHERE program_id IN ($placeholders)
+             ORDER BY program_name"
+        );
+        $stmt->execute($programIds);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    /** Program IDs assigned to a chair via program_chairs. */
+    public function getChairProgramIds(string $chairId): array
+    {
+        if ($chairId === '') {
+            return [];
+        }
+
+        $stmt = $this->pdo->prepare(
+            "SELECT program_id
+             FROM public.program_chairs
+             WHERE chair_id = :chair"
+        );
+        $stmt->execute([':chair' => $chairId]);
+
+        return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN) ?: []);
+    }
 }
