@@ -589,13 +589,13 @@ final class SyllabiController
 
     public function apiCourses(): void
     {
-        $programId = (int)($_GET['program_id'] ?? 0);
-        if ($programId <= 0) {
-            $this->respondJson(['success' => false, 'message' => 'Invalid program'], 400);
+        $collegeId = (int)($_GET['college_id'] ?? 0);
+        if ($collegeId <= 0) {
+            $this->respondJson(['success' => false, 'message' => 'Invalid college'], 400);
             return;
         }
 
-        $rows = $this->model->getCoursesOfCollege($programId);
+        $rows = $this->model->getCoursesOfCollege($collegeId);
         $courses = array_map(static fn($row) => [
             'id'    => (int)$row['course_id'],
             'label' => $row['course_code'] . ' — ' . $row['course_name'],

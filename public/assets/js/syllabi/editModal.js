@@ -65,36 +65,27 @@ async function populateDependentSelects(tile) {
   const courseSelect  = document.getElementById('sy-e-course');
   if (!collegeSelect || !programSelect || !courseSelect) return;
 
-  const collegeId   = tile?.dataset.collegeId || tile?.dataset.ownerDepartmentId || '';
-  const programIds  = parseProgramIds(tile?.dataset.programIds || '[]');
-  const primaryProg = tile?.dataset.programId || String(programIds[0] ?? '');
-  const courseId    = tile?.dataset.courseId || '';
+  const currentCollege = tile?.dataset.collegeId || tile?.dataset.ownerDepartmentId || collegeSelect?.value || '';
+  const selectedProgramIds = parseProgramIds(tile?.dataset.programIds || '[]');
+  const currentCourse  = tile?.dataset.courseId || '';
 
-  if (!collegeId) {
+  if (!currentCollege) {
     fillSelect(programSelect, [], programSelect.multiple ? null : '— Select program —');
     fillSelect(courseSelect, [], '— Select course —');
     return;
   }
 
-  const programs = await fetchPrograms(collegeId);
+  const programs = await fetchPrograms(currentCollege);
   fillSelect(programSelect, programs, programSelect.multiple ? null : '— Select program —');
-  if (programIds.length) {
+  if (selectedProgramIds.length) {
     Array.from(programSelect.options).forEach((opt) => {
-      opt.selected = programIds.includes(Number(opt.value));
+      opt.selected = selectedProgramIds.includes(Number(opt.value));
     });
-  } else if (primaryProg) {
-    programSelect.value = primaryProg;
   }
 
-  const coursePivot = primaryProg || programSelect.value || '';
-  if (!coursePivot) {
-    fillSelect(courseSelect, [], '— Select course —');
-    return;
-  }
-
-  const courses = await fetchCourses(coursePivot);
+  const courses = await fetchCourses(currentCollege);
   fillSelect(courseSelect, courses, '— Select course —');
-  if (courseId) courseSelect.value = courseId;
+  if (currentCourse) courseSelect.value = currentCourse;
 }
 
 /**
@@ -203,6 +194,11 @@ export default function initEditModal(modal) {
       const programs = await fetchPrograms(depId);
       console.debug('[EditModal] programs payload:', programs);
       fillSelect(programSelect, programs, '— Select program —');
+
+      const courses = await fetchCourses(depId);
+      fillSelect(courseSelect, courses, '— Select course —');
+      if (hiddenCollegeInput) hiddenCollegeInput.value = depId;
+      syncAction(getActiveTile());
     } catch (err) {
       console.error('[EditModal] fetchPrograms error:', err);
       // keep UI usable by leaving program select empty

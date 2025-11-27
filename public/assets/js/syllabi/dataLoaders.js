@@ -20,7 +20,9 @@ export async function fetchPrograms(departmentId) {
  * fetchCourses(programId)
  * - Retrieves courses for the selected program in the Syllabi module.
  * - Returns an array of { id, label } objects.
+ * might be deprecated in favor of fetchCourses(collegeId)
  */
+/*
 export async function fetchCourses(programId) {
   const progId = Number(programId);
   if (!Number.isFinite(progId) || progId <= 0) return [];
@@ -35,4 +37,17 @@ export async function fetchCourses(programId) {
     const label = code && name ? `${code} — ${name}` : (code || name || '');
     return { id, label };
   });
+}
+*/
+
+/**
+ * fetchCourses(collegeId)
+ * - Retrieves courses for the selected college in the Syllabi module.
+ * - Returns an array of { id, label } objects.
+ */
+export async function fetchCourses(collegeId) {
+  if (!collegeId) return [];
+  const url = `${getBase()}/dashboard?page=syllabi&action=apicourses&college_id=${encodeURIComponent(collegeId)}`;
+  const payload = await fetchJSON(url);
+  return payload?.courses ?? [];
 }
