@@ -68,6 +68,7 @@ if (!function_exists('renderSyllabiEditModal')) {
             <?php endforeach; ?>
           </select>
           <div class="form-text">Hold Ctrl (Windows) or Cmd (macOS) to select multiple programs.</div>
+          <div id="sy-e-program-hidden" class="d-none"></div>
         </div>
         <!-- Course -->
         <div class="mb-3" id="sy-e-course-wrap">

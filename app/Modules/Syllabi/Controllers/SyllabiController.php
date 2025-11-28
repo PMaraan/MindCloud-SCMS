@@ -98,6 +98,8 @@ final class SyllabiController
             'PAGE_KEY'   => $PAGE_KEY,
             'user'       => $user,
             'role'       => $role,
+            'restrictPrograms'     => in_array($role, $this->CHAIR_ROLES, true),
+            'accessibleProgramIds' => [],
         ];
 
         // AAO Roles: Global folders mode (no college param)
@@ -131,6 +133,10 @@ final class SyllabiController
             $view['mode']        = 'college';
             $view['college']     = $activeCollege;
             $view['programs']    = $programList;
+            $view['accessibleProgramIds'] = array_values(array_filter(array_map(
+                static fn($p) => (int)($p['program_id'] ?? 0),
+                $programList
+            )));
             $view['accordions']  = $accordionData;
             $view['showBackToFolders'] = true;
             $view['canCreate']   = $this->canCreate($role, $collegeId, $programId);
@@ -150,6 +156,10 @@ final class SyllabiController
             $view['mode']        = 'college';
             $view['college']     = $activeCollege;
             $view['programs']    = $programList;
+            $view['accessibleProgramIds'] = array_values(array_filter(array_map(
+                static fn($p) => (int)($p['program_id'] ?? 0),
+                $programList
+            )));
             $view['accordions']  = $accordionData;
             $view['canCreate']   = $this->canCreate($role, $collegeId, $programId);
             $view['canEdit']     = $this->canEdit($role, $collegeId, $programId);
@@ -175,6 +185,10 @@ final class SyllabiController
             $view['mode']        = 'college';
             $view['college']     = $activeCollege;
             $view['programs']    = $programList;
+            $view['accessibleProgramIds'] = array_values(array_filter(array_map(
+                static fn($p) => (int)($p['program_id'] ?? 0),
+                $programList
+            )));
             $view['accordions']  = $accordionData;
             $view['canCreate']   = $this->canCreate($role, $collegeId, $programId);
             $view['canEdit']     = $this->canEdit($role, $collegeId, $programId);

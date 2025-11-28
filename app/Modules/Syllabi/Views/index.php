@@ -236,10 +236,16 @@ $PAGE_KEY = 'syllabi';
   <span id="sy-csrf" data-token="<?= $esc($_SESSION['csrf_token'] ?? '') ?>" hidden></span>
   <script>
     window.SY_PERMS = {
-      canCreate: <?= !empty($canCreate) ? 'true' : 'false' ?>,
       canEdit: <?= !empty($canEdit) ? 'true' : 'false' ?>,
       canArchive: <?= !empty($canArchive) ? 'true' : 'false' ?>,
       canDelete: <?= !empty($canDelete) ? 'true' : 'false' ?>
+    };
+
+    // Expose chair scoping so editModal.js can lock disallowed programs.
+    window.SY_CONTEXT = {
+      role: <?= json_encode($role ?? '') ?>,
+      restrictPrograms: <?= !empty($restrictPrograms) ? 'true' : 'false' ?>,
+      accessibleProgramIds: <?= json_encode($accessibleProgramIds ?? []) ?>
     };
   </script>
 </div><!-- /CONTAINER CLOSE -->
