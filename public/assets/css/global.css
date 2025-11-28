@@ -318,3 +318,8 @@ body.use-main-scroll .rt-sticky-header .tooltip {
 /* Safety: if any page-level layout previously forced overflow on .main-content,
    this rule wins because it's more specific when body.use-main-scroll present. */
 body.use-main-scroll .main-content[style] { overflow-y: auto !important; }
+
+/* Add extra margin to modals so they don't clip against the top navbar */
+.modal-dialog {
+  margin: 4.5rem auto 1.5rem !important;
+}
