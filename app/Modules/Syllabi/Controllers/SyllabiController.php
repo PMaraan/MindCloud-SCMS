@@ -104,7 +104,7 @@ final class SyllabiController
         if (in_array($role, $this->GLOBAL_ROLES, true)) {
             $colleges = $this->model->getCollegesForFolders();
 
-            /* redundant; use code below
+            
             if ($requestedCollege === null) {
                 $view['mode']     = 'global-folders';
                 $view['colleges'] = $colleges;
@@ -114,7 +114,7 @@ final class SyllabiController
                 $view['canDelete']  = $this->canDelete($role, $collegeId, $programId);
                 return $this->render('index', $view);
             }
-            */
+            
             $activeCollege = $this->model->getCollege($requestedCollege);
             if (!$activeCollege) {
                 $view['mode']     = 'global-folders';
@@ -221,20 +221,44 @@ final class SyllabiController
         }
 
         $general = [];
+
+        // Chairs should only see syllabi tied to programs they’re allowed to handle.
+        $restrictGeneral = in_array($role, $this->CHAIR_ROLES, true);
+        $accessibleProgramIds = array_keys($programBuckets);
+
         foreach ($allSyllabi as $syllabus) {
             $programIds = $this->normalizeProgramIds($syllabus['program_ids'] ?? []);
-            if (count($programIds) !== 1) {
+
+            // -- Case 1: syllabi assigned to a single program ---------------------
+            if (count($programIds) === 1) {
+                $targetProgram = $programIds[0];
+
+                if (isset($programBuckets[$targetProgram])) {
+                    $programBuckets[$targetProgram]['syllabi'][] = $syllabus;
+                    continue;
+                }
+
+                // Chair may not see programs outside their scope—skip entirely.
+                if ($restrictGeneral) {
+                    continue;
+                }
+
+                // Other roles (AAO/Dean/etc.) still want those syllabi in the general list.
                 $general[] = $syllabus;
                 continue;
             }
 
-            $targetProgram = $programIds[0];
-            if (!isset($programBuckets[$targetProgram])) {
-                $general[] = $syllabus;
+            // -- Case 2: syllabi mapped to multiple (or zero) programs -----------
+            if ($restrictGeneral) {
+                if ($this->syllabusTouchesAccessibleProgram($programIds, $accessibleProgramIds)) {
+                    $general[] = $syllabus;
+                }
+                // otherwise skip: no overlap with chair-owned programs
                 continue;
             }
 
-            $programBuckets[$targetProgram]['syllabi'][] = $syllabus;
+            // Unrestricted roles keep seeing all multi-program syllabi in “All College”.
+            $general[] = $syllabus;
         }
 
         $accordions = [
@@ -307,6 +331,22 @@ final class SyllabiController
         }
 
         return [];
+    }
+
+    /**
+     * Chairs should only see “general” syllabi when at least one of the syllabus’ programs
+     * belongs to their accessible program list.
+     */
+    private function syllabusTouchesAccessibleProgram(array $syllabusProgramIds, array $accessibleProgramIds): bool
+    {
+        if (empty($syllabusProgramIds) || empty($accessibleProgramIds)) {
+            return false;
+        }
+
+        return count(array_intersect(
+            array_map('intval', $syllabusProgramIds),
+            array_map('intval', $accessibleProgramIds)
+        )) > 0;
     }
 
     /**
@@ -604,7 +644,7 @@ final class SyllabiController
             return true;
         }
         if (in_array($role, $this->CHAIR_ROLES, true)) {
-            return false;
+            return true;
         }
         return true;
     }
@@ -617,7 +657,7 @@ final class SyllabiController
             return true;
         }
         if (in_array($role, $this->CHAIR_ROLES, true)) {
-            return false;
+            return true;
         }
         return true;
     }
