@@ -236,6 +236,7 @@ $PAGE_KEY = 'syllabi';
   <span id="sy-csrf" data-token="<?= $esc($_SESSION['csrf_token'] ?? '') ?>" hidden></span>
   <script>
     window.SY_PERMS = {
+      canCreate: <?= !empty($canCreate) ? 'true' : 'false' ?>,
       canEdit: <?= !empty($canEdit) ? 'true' : 'false' ?>,
       canArchive: <?= !empty($canArchive) ? 'true' : 'false' ?>,
       canDelete: <?= !empty($canDelete) ? 'true' : 'false' ?>

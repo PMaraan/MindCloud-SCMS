@@ -278,7 +278,7 @@ final class SyllabiController
         $accordions = [
             [
                 'key'     => 'general',
-                'label'   => 'All College Syllabi',
+                'label'   => 'Shared Syllabi',
                 'syllabi' => $general,
             ],
         ];

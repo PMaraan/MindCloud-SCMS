@@ -23,7 +23,7 @@ foreach ($accordions ?? [] as $entry) {
 }
 
 $generalSyllabi = $generalEntry['syllabi'] ?? [];
-$generalLabel   = $generalEntry['label'] ?? 'All College Syllabi';
+$generalLabel   = $generalEntry['label'] ?? 'Shared Syllabi';
 ?>
 <div class="card mb-4">
   <div class="card-header d-flex justify-content-between align-items-center">
