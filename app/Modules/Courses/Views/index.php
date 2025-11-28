@@ -93,8 +93,18 @@ $globalPagination = dirname(__DIR__, 3) . '/Views/partials/Pagination.php';
   include __DIR__ . '/partials/DeleteModal.php';
 ?>
 
+<script>
+  window.COURSE_CONTEXT = {
+    role: <?= json_encode($role ?? '') ?>,
+    restrictCollege: <?= !empty($restrictCollege) ? 'true' : 'false' ?>,
+    lockedCollegeId: <?= $lockedCollegeId !== null ? json_encode((string)$lockedCollegeId) : 'null' ?>,
+    canAssignProfessors: <?= !empty($canAssignProfessors) ? 'true' : 'false' ?>
+  };
+  window.COURSE_PROFESSORS = <?= json_encode($professors ?? [], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+</script>
+
 <?php
-$jsPath = '/public/assets/js/Courses.js';
+$jsPath = '/public/assets/js/courses/Courses.js';
 $ver = @filemtime($_SERVER['DOCUMENT_ROOT'] . $jsPath) ?: '1';
 ?>
 <script defer src="<?= BASE_PATH . $jsPath ?>?v=<?= urlencode((string)$ver) ?>"></script>

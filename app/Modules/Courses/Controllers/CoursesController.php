@@ -6,12 +6,14 @@ use App\Helpers\FlashHelper;
 use App\Security\RBAC;
 use App\Modules\Courses\Models\CoursesModel;
 use App\Interfaces\StorageInterface;
+use App\Models\UserModel;
 
 final class CoursesController
 {
     private StorageInterface $db;
     private CoursesModel $model;
     private RBAC $rbac;
+    private UserModel $userModel;
 
      /** Cached module definition from ModuleRegistry */
     private array $moduleDef = [];
@@ -19,15 +21,20 @@ final class CoursesController
     /** Convenience: base URL for this module */
     private string $baseUrl;
 
+    /** Role groupings for finer access controls*/
+    private array $GLOBAL_ROLES  = ['VPAA','VPAA Secretary'];
+    private array $DEAN_ROLES    = ['Dean'];
+    private array $CHAIR_ROLES   = ['Chair'];
+    private array $FACULTY_ROLES = ['Professor'];
+
     public function __construct(StorageInterface $db)
     {
-        $this->db = $db;
+        $this->db   = $db;
+        if (session_status() !== \PHP_SESSION_ACTIVE) session_start();
         $this->model = new CoursesModel($db);
         $this->rbac  = new RBAC($db);
+        $this->userModel = new UserModel($db);
 
-        if (session_status() !== \PHP_SESSION_ACTIVE) {
-            session_start();
-        }
         if (empty($_SESSION['csrf_token'])) {
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }
@@ -95,6 +102,10 @@ final class CoursesController
         $this->enforceModulePermission();
 
         $uid       = (string)($_SESSION['user_id'] ?? '');
+        $user      = $this->userModel->getUserProfile($uid);
+        $role      = (string)($user['role_name'] ?? '');
+        $collegeId = isset($user['college_id']) ? (int)$user['college_id'] : null;
+
         $canCreate = ($p = $this->getActionPermission('create')) !== '' ? $this->rbac->has($uid, $p) : false;
         $canEdit   = ($p = $this->getActionPermission('edit'))   !== '' ? $this->rbac->has($uid, $p) : false;
         $canDelete = ($p = $this->getActionPermission('delete')) !== '' ? $this->rbac->has($uid, $p) : false;
@@ -106,9 +117,15 @@ final class CoursesController
         $perPage = max(1, (int)(defined('UI_PER_PAGE_DEFAULT') ? UI_PER_PAGE_DEFAULT : 10));
         $offset  = ($page - 1) * $perPage;
 
-        $result = $this->model->getPage($search, $perPage, $offset);
-        $rows   = $result['rows'];
-        $total  = $result['total'];
+        $restrictToCollege = in_array($role, $this->DEAN_ROLES, true) || in_array($role, $this->CHAIR_ROLES, true);
+        $result = $this->model->getPage(
+            $search,
+            $perPage,
+            $offset,
+            $restrictToCollege ? $collegeId : null
+        );
+        $rows  = $result['rows'];
+        $total = $result['total'];
 
         // Compute range for "Showing X–Y of Z"
         $from = $total > 0 ? ($offset + 1) : 0;
@@ -129,6 +146,11 @@ final class CoursesController
         $colleges  = $this->model->listColleges();
         $curricula = $this->model->listCurricula();
 
+        $canAssignProfessors = $this->canAssignProfessors($role);
+        $professors = $canAssignProfessors
+            ? $this->model->listProfessors($collegeId)
+            : [];
+
         $data = [
             'rows'      => $rows,
             'pager'     => $pager,
@@ -138,6 +160,12 @@ final class CoursesController
             'colleges'  => $colleges,
             'curricula' => $curricula,
             'csrf'      => (string)($_SESSION['csrf_token'] ?? ''),
+            'role'                => $role,
+            'collegeId'           => $collegeId,
+            'restrictCollege'     => $restrictToCollege,
+            'lockedCollegeId'     => $restrictToCollege ? $collegeId : null,
+            'canAssignProfessors' => $canAssignProfessors,
+            'professors'          => $professors,
         ];
         extract($data, EXTR_SKIP);
 
@@ -151,15 +179,23 @@ final class CoursesController
         $this->requireActionPermission('create');
         $this->assertCsrf();
 
+        $uid       = (string)($_SESSION['user_id'] ?? '');
+        $user      = $this->userModel->getUserProfile($uid);
+        $role      = (string)($user['role_name'] ?? '');
+        $collegeId = isset($user['college_id']) ? (int)$user['college_id'] : null;
+        $canAssignProfessors = $this->canAssignProfessors($role);
+
         $data = [
-            'course_code' => trim((string)($_POST['course_code'] ?? '')),
-            'course_name' => trim((string)($_POST['course_name'] ?? '')),
-            'department_id'  => ($_POST['department_id'] ?? '') === '' ? null : (int)$_POST['department_id'],
+            'course_code'   => trim((string)($_POST['course_code'] ?? '')),
+            'course_name'   => trim((string)($_POST['course_name'] ?? '')),
+            'department_id' => ($_POST['department_id'] ?? '') === '' ? null : (int)$_POST['department_id'],
         ];
         // Multiple selections allowed; may be absent
         $curriculumIds = isset($_POST['curriculum_ids']) && is_array($_POST['curriculum_ids'])
             ? array_filter($_POST['curriculum_ids'], fn($v) => (int)$v > 0)
             : [];
+
+        $professorIds = $this->resolveProfessorIds($_POST['professor_ids'] ?? [], $canAssignProfessors, $collegeId);
 
         $errors = [];
         if ($data['course_code'] === '') $errors[] = 'Course code is required.';
@@ -172,12 +208,15 @@ final class CoursesController
 
         try {
             $newId = $this->model->create([
-                'course_code' => $data['course_code'],
-                'course_name' => $data['course_name'],
-                'department_id'  => $data['department_id'],
-                // curriculum_id removed (M:N now)
+                'course_code'   => $data['course_code'],
+                'course_name'   => $data['course_name'],
+                'department_id' => $data['department_id'],
             ]);
-            // link selections
+
+            if ($canAssignProfessors) {
+                $this->model->setCourseProfessors((int)$newId, $professorIds);
+            }
+
             if (!empty($curriculumIds)) {
                 $this->model->setCourseCurricula((int)$newId, $curriculumIds);
             }
@@ -200,6 +239,12 @@ final class CoursesController
         $this->requireActionPermission('edit');
         $this->assertCsrf();
 
+        $uid       = (string)($_SESSION['user_id'] ?? '');
+        $user      = $this->userModel->getUserProfile($uid);
+        $role      = (string)($user['role_name'] ?? '');
+        $collegeId = isset($user['college_id']) ? (int)$user['college_id'] : null;
+        $canAssignProfessors = $this->canAssignProfessors($role);
+
         $id = (int)($_POST['id'] ?? 0);
         if ($id <= 0) {
             FlashHelper::set('danger', 'Invalid ID.');
@@ -207,13 +252,16 @@ final class CoursesController
         }
 
         $data = [
-            'course_code' => trim((string)($_POST['course_code'] ?? '')),
-            'course_name' => trim((string)($_POST['course_name'] ?? '')),
-            'department_id'  => ($_POST['department_id'] ?? '') === '' ? null : (int)$_POST['department_id'],
+            'course_code'   => trim((string)($_POST['course_code'] ?? '')),
+            'course_name'   => trim((string)($_POST['course_name'] ?? '')),
+            'department_id' => ($_POST['department_id'] ?? '') === '' ? null : (int)$_POST['department_id'],
         ];
+
         $curriculumIds = isset($_POST['curriculum_ids']) && is_array($_POST['curriculum_ids'])
             ? array_filter($_POST['curriculum_ids'], fn($v) => (int)$v > 0)
             : [];
+
+        $professorIds = $this->resolveProfessorIds($_POST['professor_ids'] ?? [], $canAssignProfessors, $collegeId);
 
         $errors = [];
         if ($data['course_code'] === '') $errors[] = 'Course code is required.';
@@ -226,8 +274,10 @@ final class CoursesController
 
         try {
             $ok = $this->model->update($id, $data);
-            // rewrite mappings (even if none)
             $this->model->setCourseCurricula($id, $curriculumIds);
+            if ($canAssignProfessors) {
+                $this->model->setCourseProfessors($id, $professorIds);
+            }
 
             $ok ? FlashHelper::set('success', 'Course updated.')
                 : FlashHelper::set('warning', 'No changes were made.');
@@ -264,5 +314,46 @@ final class CoursesController
         }
 
         $this->redirect($this->baseUrl);
+    }
+
+    private function canAssignProfessors(string $role): bool
+    {
+        return in_array($role, $this->DEAN_ROLES, true) || in_array($role, $this->CHAIR_ROLES, true);
+    }
+
+    private function resolveProfessorIds(mixed $raw, bool $allowAssignments, ?int $collegeId): array
+    {
+        if (!$allowAssignments) {
+            return [];
+        }
+
+        $values = is_array($raw) ? $raw : [$raw];
+        $clean  = [];
+
+        foreach ($values as $value) {
+            $value = trim((string)$value);
+            if ($value !== '' && !isset($clean[$value])) {
+                $clean[$value] = $value;
+            }
+        }
+
+        if (empty($clean)) {
+            return [];
+        }
+
+        $allowed = $this->model->listProfessors($collegeId);
+        if (empty($allowed)) {
+            return [];
+        }
+
+        $allowedMap = [];
+        foreach ($allowed as $prof) {
+            $allowedMap[(string)$prof['id_no']] = true;
+        }
+
+        return array_values(array_filter(
+            $clean,
+            static fn(string $id): bool => isset($allowedMap[$id])
+        ));
     }
 }

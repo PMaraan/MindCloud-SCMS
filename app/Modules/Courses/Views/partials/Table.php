@@ -17,6 +17,7 @@
  * @var bool $canDelete
  */
 ?>
+<?php $esc = $esc ?? static fn($value) => htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8'); ?>
 <div class="table-responsive shadow-sm border rounded">
   <table class="table table-bordered table-striped table-hover align-middle mb-0">
     <thead class="table-light">
@@ -25,6 +26,7 @@
         <th>Name</th>
         <th style="width:220px;">Curricula</th>
         <th style="width:160px;">College</th>
+        <th style="width:200px;">Assigned Professors</th>
         <?php if (!empty($canEdit) || !empty($canDelete)): ?>
           <th style="width:180px;" class="text-end">Actions</th>
         <?php endif; ?>
@@ -41,18 +43,24 @@
             $collegeShort   = $r['department_short']  ?? '—';
             $curriculaLabel = ($r['curricula']     ?? '') !== '' ? $r['curricula'] : '—';
             $curriculaIds   = $r['curricula_ids']  ?? ''; // e.g., "3,5,9"
+            $professorsList   = $r['assigned_professors'] ?? [];
+            $profNames        = array_column($professorsList, 'name');
+            $profDisplay      = !empty($profNames) ? implode('<br>', array_map($esc, $profNames)) : '<span class="text-muted">—</span>';
+            $profJson         = $esc(json_encode($professorsList, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP));
           ?>
           <tr
-            data-course-id="<?= htmlspecialchars((string)$courseId, ENT_QUOTES, 'UTF-8') ?>"
-            data-course-code="<?= htmlspecialchars((string)$courseCode, ENT_QUOTES, 'UTF-8') ?>"
-            data-course-name="<?= htmlspecialchars((string)$courseName, ENT_QUOTES, 'UTF-8') ?>"
-            data-college-id="<?= htmlspecialchars((string)$collegeId, ENT_QUOTES, 'UTF-8') ?>"
-            data-curricula-ids="<?= htmlspecialchars((string)$curriculaIds, ENT_QUOTES, 'UTF-8') ?>"
+            data-course-id="<?= (int)$r['course_id'] ?>"
+            data-course-code="<?= $esc($r['course_code']) ?>"
+            data-course-name="<?= $esc($r['course_name']) ?>"
+            data-college-id="<?= $r['college_id'] !== null ? (int)$r['college_id'] : '' ?>"
+            data-curricula-ids="<?= $esc($r['curricula_ids'] ?? '') ?>"
+            data-professors="<?= $profJson ?>"
           >
-            <td><?= htmlspecialchars((string)$courseCode, ENT_QUOTES, 'UTF-8') ?></td>
-            <td><?= htmlspecialchars((string)$courseName, ENT_QUOTES, 'UTF-8') ?></td>
-            <td><?= htmlspecialchars((string)$curriculaLabel, ENT_QUOTES, 'UTF-8') ?></td>
-            <td><?= htmlspecialchars((string)$collegeShort, ENT_QUOTES, 'UTF-8') ?></td>
+            <td><?= $esc($r['course_code']) ?></td>
+            <td><?= $esc($r['course_name']) ?></td>
+            <td><?= $esc($curriculaLabel) ?></td>
+            <td><?= $esc($r['department_short'] ?? '—') ?></td>
+            <td><?= $profDisplay ?></td>
 
             <?php if (!empty($canEdit) || !empty($canDelete)): ?>
               <td class="text-end">
@@ -67,7 +75,7 @@
                 <?php endif; ?>
                 <?php if (!empty($canDelete)): ?>
                   <button
-                    class="btn btn-sm btn-danger"
+                    class="btn btn-sm btn-outline-danger"
                     data-bs-toggle="modal"
                     data-bs-target="#DeleteModal"
                   >
