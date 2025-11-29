@@ -51,6 +51,7 @@ $generalLabel   = $generalEntry['label'] ?? 'Shared Syllabi';
       </div>
 
       <!-- Program sections -->
+       <?php if ($mode === 'global-folders' || $mode === 'college'): ?>
       <div class="accordion-item">
         <h2 class="accordion-header" id="sy-programs-h">
           <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
@@ -67,6 +68,7 @@ $generalLabel   = $generalEntry['label'] ?? 'Shared Syllabi';
           </div>
         </div>
       </div>
+       <?php endif; ?>
     </div>
   </div>
 </div>

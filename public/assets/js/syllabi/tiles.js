@@ -73,13 +73,15 @@ function updateDetailsPane(card) {
   if (!info || !empty) return;
 
   const title = robustData(card, 'title') || 'Untitled syllabus';
-  const status = (robustData(card, 'status') || '').toLowerCase();
+  const college = robustData(card, 'collegeName');
   const programsRaw = robustData(card, 'programs');
   const programList = parsePrograms(programsRaw);
   const programDisplay = programList.length ? programList.join('\n') : '';
-  const college = robustData(card, 'collegeName');
+  const course = robustData(card, 'courseCode');
+  const courseName = robustData(card, 'courseName');
+  const courseDisplay = course && courseName ? `${course} — ${courseName}` : (course || courseName || '—');
   const updated = formatUpdated(robustData(card, 'updated'));
-
+  const status = (robustData(card, 'status') || '').toLowerCase();
   console.log('updateDetailsPane', {
     card,
     dataset: {
@@ -88,18 +90,21 @@ function updateDetailsPane(card) {
       status,
       program: programDisplay,
       college,
-      updated
+      updated,
+      course: courseDisplay,
     }
   });
-
+  //console.log('courseCode:', course, 'courseName:', courseName, 'courseDisplay:', courseDisplay);
   setText('sy-i-title', title);
-  setText('sy-i-status', capitalizeForDisplay(status));
-  setText('sy-i-program', programDisplay || '—');
   setText('sy-i-college', college || '—');
+  setText('sy-i-program', programDisplay || '—');
+  setText('sy-i-course', courseDisplay);
   setText('sy-i-updated', updated);
-
-  toggleRow('sy-i-program-label', 'sy-i-program', programList.length > 0);
+  setText('sy-i-status', capitalizeForDisplay(status));
+  
   toggleRow('sy-i-college-label', 'sy-i-college', !!college);
+  toggleRow('sy-i-program-label', 'sy-i-program', programList.length > 0);
+  toggleRow('sy-i-course-label', 'sy-i-course', !!courseDisplay && courseDisplay !== '—');
 
   empty.classList.add('d-none');
   info.classList.remove('d-none');

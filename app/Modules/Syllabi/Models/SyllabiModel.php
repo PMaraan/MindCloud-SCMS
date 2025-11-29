@@ -609,4 +609,58 @@ final class SyllabiModel
             throw $e;
         }
     }
+
+    /**
+     * Get all syllabi for courses assigned to a professor.
+     * @param string $professorId
+     * @return array
+     */
+    public function getSyllabiForProfessor(string $professorId): array
+    {
+        $sql = "
+            SELECT
+                s.syllabus_id,
+                s.title,
+                s.filename,
+                s.version,
+                s.status,
+                s.college_id,
+                d.short_name AS college_short_name,
+                d.department_name AS college_name,
+                s.course_id,
+                c.course_code,
+                c.course_name,
+                array_remove(array_agg(DISTINCT p.program_name), NULL) AS program_names,
+                array_remove(array_agg(DISTINCT sp.program_id), NULL) AS program_ids,
+                (SELECT MIN(sp2.program_id) FROM public.syllabi_programs sp2 WHERE sp2.syllabus_id = s.syllabus_id) AS rep_program_id,
+                (SELECT p2.program_name FROM public.programs p2 WHERE p2.program_id = (
+                    SELECT MIN(sp3.program_id) FROM public.syllabi_programs sp3 WHERE sp3.syllabus_id = s.syllabus_id
+                )) AS rep_program_name,
+                s.updated_at
+            FROM public.syllabi s
+            LEFT JOIN public.departments d ON d.department_id = s.college_id
+            LEFT JOIN public.courses c      ON c.course_id      = s.course_id
+            LEFT JOIN public.syllabi_programs sp ON sp.syllabus_id = s.syllabus_id
+            LEFT JOIN public.programs p          ON p.program_id    = sp.program_id
+            INNER JOIN public.course_assignments ca ON ca.course_id = s.course_id
+            WHERE ca.professor_id = :professorId
+            GROUP BY s.syllabus_id,
+                     s.title,
+                     s.filename,
+                     s.version,
+                     s.status,
+                     s.college_id,
+                     d.short_name,
+                     d.department_name,
+                     s.course_id,
+                     c.course_code,
+                     c.course_name,
+                     s.updated_at
+            ORDER BY s.updated_at DESC, s.syllabus_id DESC
+            LIMIT 120";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([':professorId' => $professorId]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
 }

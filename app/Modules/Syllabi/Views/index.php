@@ -70,7 +70,7 @@ $PAGE_KEY = 'syllabi';
     if ($mode === 'global-folders') {
       include $partialsDir . '/FoldersList.php';
 
-    } else {
+    } else if ($mode === 'college' || $mode === 'program' || $mode === 'faculty') {
       // FLEX LAYOUT: MAIN + ASIDE
       ?>
       <div class="tb-flex-wrap d-block d-md-flex gap-3 align-items-start"><!-- FLEX WRAP OPEN -->
@@ -79,6 +79,9 @@ $PAGE_KEY = 'syllabi';
           <?php
             if ($mode === 'college') {
               $accordions = $accordions ?? [];
+              include $partialsDir . '/CollegeSection.php';
+            } else if ($mode === 'faculty') {
+              // Do NOT overwrite $accordions; use what the controller provides
               include $partialsDir . '/CollegeSection.php';
             } else {
               $accordions = [
@@ -109,11 +112,14 @@ $PAGE_KEY = 'syllabi';
                 <dt class="col-4" id="sy-i-title-label">Title</dt>
                 <dd class="col-8" id="sy-i-title"></dd>
 
-                <dt class="col-4" id="sy-i-program-label">Program</dt>
-                <dd class="col-8" id="sy-i-program"></dd>
-
                 <dt class="col-4" id="sy-i-college-label">College</dt>
                 <dd class="col-8" id="sy-i-college"></dd>
+
+                <dt class="col-4" id="sy-i-program-label">Programs</dt>
+                <dd class="col-8" id="sy-i-program"></dd>
+
+                <dt class="col-4" id="sy-i-course-label">Course</dt>
+                <dd class="col-8" id="sy-i-course"></dd>
 
                 <dt class="col-4" id="sy-i-updated-label">Updated</dt>
                 <dd class="col-8" id="sy-i-updated"></dd>
@@ -154,6 +160,7 @@ $PAGE_KEY = 'syllabi';
         </aside><!-- /ASIDE CLOSE -->
 
       </div><!-- FLEX WRAP CLOSE -->
+
       <?php
     }
 

@@ -35,6 +35,7 @@ final class SyllabiController
     private array $GLOBAL_ROLES  = ['VPAA','VPAA Secretary'];
     private array $DEAN_ROLES    = ['Dean'];
     private array $CHAIR_ROLES   = ['Chair'];
+    private array $FACULTY_ROLES = ['Professor'];
 
     public function __construct(StorageInterface $db)
     {
@@ -203,6 +204,42 @@ final class SyllabiController
             ];
             $view['lockCollege'] = true;
             $view['courses']     = $this->model->getCoursesOfCollege($collegeId);
+
+            return $this->render('index', $view);
+        }
+        // Faculty roles (Professor)
+        if ($collegeId && in_array($role, $this->FACULTY_ROLES, true)) {
+            $view['mode'] = 'faculty';
+
+            // Get all syllabi for courses assigned to this professor
+            $professorId = (string)($user['id_no'] ?? '');
+            $syllabi = $this->model->getSyllabiForProfessor($professorId);
+            $view['accordions'] = [[
+                'key'     => 'general',
+                'label'   => 'My Assigned Syllabi',
+                'syllabi' => $syllabi,
+            ]];
+
+            file_put_contents(
+                __DIR__ . '/prof_debug.log',
+                print_r([
+                    'professorId' => $professorId,
+                    'syllabi'     => $syllabi,
+                    'accordions'  => $view['accordions'],
+                    'user'        => $user,
+                ], true),
+                FILE_APPEND
+            );
+
+            $view['canCreate']  = false;
+            $view['canEdit']    = false;
+            $view['canArchive'] = false;
+            $view['canDelete']  = false;
+            $view['colleges']   = $this->model->getCollegesForFolders();
+            $view['canCreate']   = $this->canCreate($role, $collegeId, $programId);
+            $view['canEdit']     = $this->canEdit($role, $collegeId, $programId);
+            $view['canArchive']  = $this->canArchive($role, $collegeId, $programId);
+            $view['canDelete']   = $this->canDelete($role, $collegeId, $programId);
 
             return $this->render('index', $view);
         }
@@ -634,8 +671,10 @@ final class SyllabiController
             return true; // Deans can create in college mode
         } elseif (in_array($role, $this->CHAIR_ROLES, true)) {
             return true; // Chairs can create in program mode
+        } elseif (in_array($role, $this->FACULTY_ROLES, true)) {
+            return false; // Faculty cannot create
         }
-        return true; // mirror templates UX; refine later with your exact policy
+        return false;
     }
     private function canEdit(string $role, ?int $collegeId, ?int $programId): bool
     {
@@ -646,8 +685,10 @@ final class SyllabiController
             return true; // Deans can edit
         } elseif (in_array($role, $this->CHAIR_ROLES, true)) {
             return true; // Chairs can edit
+        } elseif (in_array($role, $this->FACULTY_ROLES, true)) {
+            return false; // Faculty cannot edit
         }
-        return true;
+        return false;
     }
     private function canArchive(string $role, ?int $collegeId, ?int $programId): bool
     {
@@ -659,8 +700,11 @@ final class SyllabiController
         }
         if (in_array($role, $this->CHAIR_ROLES, true)) {
             return true;
+        } 
+        if (in_array($role, $this->FACULTY_ROLES, true)) {
+            return false;
         }
-        return true;
+        return false;
     }
     private function canDelete(string $role, ?int $collegeId, ?int $programId): bool
     {
@@ -673,7 +717,10 @@ final class SyllabiController
         if (in_array($role, $this->CHAIR_ROLES, true)) {
             return true;
         }
-        return true;
+        if (in_array($role, $this->FACULTY_ROLES, true)) {
+            return false;
+        }
+        return false;
     }
 
     // ---- View renderer ----
