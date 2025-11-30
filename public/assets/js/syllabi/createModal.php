@@ -1,8 +1,14 @@
+<?php
 // /public/assets/js/syllabi/createModal.js
-import { fetchPrograms, fetchCourses } from './dataLoaders.js';
-import { preselectCollege, preselectCourse, getCurrentCollegeParam, fillSelect, lockSelectElement } from './utils.js';
-import { getActiveTile } from './state.js';
-
+header('Content-Type: application/javascript');
+function ver($file) {
+  $abs = $_SERVER['DOCUMENT_ROOT'] . '/public/assets/js/syllabi/' . $file;
+  return @filemtime($abs) ?: time();
+}
+?>
+import { fetchPrograms, fetchCourses } from './dataLoaders.php?v=<?=ver('dataLoaders.php')?>';
+import { preselectCollege, preselectCourse, getCurrentCollegeParam, fillSelect, lockSelectElement } from './utils.js?v=<?=ver('utils.js')?>';
+import { getActiveTile } from './state.js?v=<?=ver('state.js')?>';
 console.debug('[createModal] module loaded');
 
 /**

@@ -1,6 +1,13 @@
+<?php
 // /public/assets/js/syllabi/tiles.js
-import { getBase, capitalizeForDisplay } from './utils.js';
-import { setSelectedSyllabusId, getSelectedSyllabusId, getActiveTile } from './state.js';
+header('Content-Type: application/javascript');
+function ver($file) {
+  $abs = $_SERVER['DOCUMENT_ROOT'] . '/public/assets/js/syllabi/' . $file;
+  return @filemtime($abs) ?: time();
+}
+?>
+import { getBase, capitalizeForDisplay } from './utils.js?v=<?=ver('utils.js')?>';
+import { setSelectedSyllabusId, getSelectedSyllabusId, getActiveTile } from './state.js?v=<?=ver('state.js')?>';
 
 /** 
  * robustData(el, key)
@@ -82,6 +89,7 @@ function updateDetailsPane(card) {
   const courseDisplay = course && courseName ? `${course} — ${courseName}` : (course || courseName || '—');
   const updated = formatUpdated(robustData(card, 'updated'));
   const status = (robustData(card, 'status') || '').toLowerCase();
+  /*
   console.log('updateDetailsPane', {
     card,
     dataset: {
@@ -94,7 +102,7 @@ function updateDetailsPane(card) {
       course: courseDisplay,
     }
   });
-  //console.log('courseCode:', course, 'courseName:', courseName, 'courseDisplay:', courseDisplay);
+  */
   setText('sy-i-title', title);
   setText('sy-i-college', college || '—');
   setText('sy-i-program', programDisplay || '—');
@@ -238,9 +246,9 @@ function initOpenHandlers() {
 }
 
 
-console.log('initTileInteractions running', document.querySelectorAll('.sy-tile').length);
+//console.log('initTileInteractions running', document.querySelectorAll('.sy-tile').length);
 export default function initTileInteractions() {
-  console.log('initTileInteractions running', document.querySelectorAll('.sy-tile').length);
+  //console.log('initTileInteractions running', document.querySelectorAll('.sy-tile').length);
   initTileClicks();
   initArrowNavigation();
   initOpenHandlers();

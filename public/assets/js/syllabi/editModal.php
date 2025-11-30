@@ -1,13 +1,20 @@
+<?php
 // /public/assets/js/syllabi/editModal.js
-import { fetchPrograms, fetchCourses } from './dataLoaders.js';
+header('Content-Type: application/javascript');
+function ver($file) {
+  $abs = $_SERVER['DOCUMENT_ROOT'] . '/public/assets/js/syllabi/' . $file;
+  return @filemtime($abs) ?: time();
+}
+?>
 import {
   preselectCollege,
   preselectCourse,
   getCurrentCollegeParam,
   fillSelect,
   lockSelectElement,
-} from './utils.js';
-import { getActiveTile } from './state.js';
+} from './utils.js?v=<?=ver('utils.js')?>';
+import { getActiveTile } from './state.js?v=<?=ver('state.js')?>';
+import { fetchPrograms, fetchCourses } from './dataLoaders.php?v=<?=ver('dataLoaders.php')?>';
 
 console.debug('[editModal] module loaded');
 

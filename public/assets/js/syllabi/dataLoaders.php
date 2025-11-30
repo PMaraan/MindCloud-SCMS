@@ -1,5 +1,13 @@
+<?php
 // /public/assets/js/syllabi/dataLoaders.js
-import { fetchJSON, getBase } from './utils.js';
+header('Content-Type: application/javascript');
+function ver($file) {
+  $abs = $_SERVER['DOCUMENT_ROOT'] . '/public/assets/js/syllabi/' . $file;
+  return @filemtime($abs) ?: time();
+}
+?>
+// /public/assets/js/syllabi/dataLoaders.js
+import { fetchJSON, getBase } from './utils.js?v=<?=ver('utils.js')?>';
 
 /**
  * fetchPrograms(departmentId)

@@ -1,7 +1,14 @@
-// filepath: c:\xampp\htdocs\MindCloud-SCMS\public\assets\js\syllabi\archiveDelete.js
-import { getActiveTile } from './state.js';
-import { selectTile } from './tiles.js';
-import { getBase, getCurrentCollegeParam } from './utils.js';
+<?php
+// /public/assets/js/syllabi/archiveDelete.js
+header('Content-Type: application/javascript');
+function ver($file) {
+  $abs = $_SERVER['DOCUMENT_ROOT'] . '/public/assets/js/syllabi/' . $file;
+  return @filemtime($abs) ?: time();
+}
+?>
+import { getBase, getCurrentCollegeParam } from './utils.js?v=<?=ver('utils.js')?>';
+import { getActiveTile } from './state.js?v=<?=ver('state.js')?>';
+import { selectTile } from './tiles.php?v=<?=ver('tiles.php')?>';
 
 function getCsrfToken(csrfSpan) {
   return csrfSpan?.dataset?.token || '';
