@@ -1,7 +1,7 @@
 // /public/assets/js/rteditor/auto-pagination.js
 // Auto-pagination for TipTap content using manual PageBreak nodes.
 // Safe to drop in. No other files need edits for this to work.
-window.__RT_debugAutoPaginate = true; // set to false in production
+window.__RT_debugAutoPaginate = false; // set to false in production
 
 function beginMeasure(pageEl, contentEl) {
   const prev = [];
@@ -372,7 +372,7 @@ export function runOnce(editor, {
     });
   }
 
-  console.log('[auto-pagination-debug] existingBreaks:', existingBreaks.length, 'lastDocSig:', editor && editor.__rt_lastPaginateAt);
+  //console.log('[auto-pagination-debug] existingBreaks:', existingBreaks.length, 'lastDocSig:', editor && editor.__rt_lastPaginateAt);
 
   // Compute blocks and breakPositions (DOM-measured)
   const endMeasure = beginMeasure(pageEl, contentEl);
@@ -431,7 +431,7 @@ export function runOnce(editor, {
       }
     }
     computedBreakPositions = breakPositions;
-    console.log('[auto-pagination-debug] computedBreakPositions:', computedBreakPositions.length, computedBreakPositions.slice(0,10));
+    //console.log('[auto-pagination-debug] computedBreakPositions:', computedBreakPositions.length, computedBreakPositions.slice(0,10));
 
   } finally {
     endMeasure();
