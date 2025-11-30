@@ -76,7 +76,11 @@ final class AccountsController
         $perPage = max(1, (int)(defined('UI_PER_PAGE_DEFAULT') ? UI_PER_PAGE_DEFAULT : 10));
         $offset  = ($page - 1) * $perPage;
 
-        $result = $this->model->getUsersPage($search, $perPage, $offset);
+        // Status filter
+        $status = isset($_GET['status']) ? trim((string)$_GET['status']) : 'active';
+
+        // Pass status to model
+        $result = $this->model->getUsersPage($search, $perPage, $offset, $status);
         $users  = $result['rows'];
         $total  = $result['total'];
 
@@ -90,6 +94,9 @@ final class AccountsController
             'from'    => $total > 0 ? (($page - 1) * $perPage + 1) : 0,
             'to'      => $total > 0 ? min($total, $page * $perPage) : 0,
         ];
+
+        // Pass status to view
+        $pager['status'] = $status;
 
         // Action gating from ModuleRegistry
         $registry = require dirname(__DIR__, 4) . '/config/ModuleRegistry.php';

@@ -33,6 +33,15 @@ if (defined('APP_ENV') && APP_ENV === 'dev') {
 }
 ?>
 
+<?php
+$status = $pager['status'] ?? 'active';
+$base   = BASE_PATH . '/dashboard?page=accounts';
+function accounts_url_with(string $base, array $qs): string {
+    $q = [];
+    foreach ($qs as $k => $v) $q[] = urlencode((string)$k) . '=' . urlencode((string)$v);
+    return $base . '&' . implode('&', $q);
+}
+?>
 <div class="container-fluid">
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="mb-0">Accounts</h2>
@@ -49,6 +58,19 @@ if (defined('APP_ENV') && APP_ENV === 'dev') {
       <button class="btn btn-outline-primary" type="submit">Search</button>
     </form>
 
+    <!-- Status Filter Buttons -->
+    <div class="btn-group" role="group" aria-label="Filter">
+      <a class="btn btn-outline-secondary<?= $status==='all'?' active':'' ?>"
+         href="<?= htmlspecialchars(accounts_url_with($base, ['status'=>'all','pg'=>1])) ?>">All</a>
+      <a class="btn btn-outline-secondary<?= $status==='active'?' active':'' ?>"
+         href="<?= htmlspecialchars(accounts_url_with($base, ['status'=>'active','pg'=>1])) ?>">Active</a>
+      <a class="btn btn-outline-secondary<?= $status==='password_reset_required'?' active':'' ?>"
+         href="<?= htmlspecialchars(accounts_url_with($base, ['status'=>'password_reset_required','pg'=>1])) ?>">Reset Required</a>
+      <a class="btn btn-outline-secondary<?= $status==='archived'?' active':'' ?>"
+         href="<?= htmlspecialchars(accounts_url_with($base, ['status'=>'archived','pg'=>1])) ?>">Archived</a>
+    </div>
+
+    <!-- Create User Button -->
     <?php if (!empty($canCreate)): ?>
       <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createUserModal">
         + Create

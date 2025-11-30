@@ -216,7 +216,7 @@ final class AccountsModel {
      *
      * @return array{rows: array<int,array<string,mixed>>, total: int}
      */
-    public function getUsersPage(?string $q, int $limit, int $offset): array {
+    public function getUsersPage(?string $q, int $limit, int $offset, string $status = 'active'): array {
         $limit  = max(1, (int)$limit);
         $offset = max(0, (int)$offset);
 
@@ -236,6 +236,12 @@ final class AccountsModel {
               )
             ";
             $params[':q'] = '%' . $q . '%';
+        }
+
+        // Status filter
+        if ($status !== 'all') {
+            $where .= " AND u.status = :status ";
+            $params[':status'] = $status;
         }
 
         // total
