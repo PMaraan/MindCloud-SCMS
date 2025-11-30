@@ -79,8 +79,12 @@ final class AccountsController
         // Status filter
         $status = isset($_GET['status']) ? trim((string)$_GET['status']) : 'active';
 
-        // Pass status to model
-        $result = $this->model->getUsersPage($search, $perPage, $offset, $status);
+        // Get current user's id_no
+        $currentUserId = (string)$_SESSION['user_id'];
+
+        // Pass status and current user to model for filtering
+        $result = $this->model->getUsersPage($search, $perPage, $offset, $status, $currentUserId);
+
         $users  = $result['rows'];
         $total  = $result['total'];
 

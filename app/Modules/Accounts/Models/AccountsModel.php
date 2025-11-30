@@ -216,9 +216,33 @@ final class AccountsModel {
      *
      * @return array{rows: array<int,array<string,mixed>>, total: int}
      */
-    public function getUsersPage(?string $q, int $limit, int $offset, string $status = 'active'): array {
+    public function getUsersPage(
+        ?string $q,
+        int $limit,
+        int $offset,
+        string $status = 'active',
+        string $currentUserId = ''
+    ): array {
+        global $GLOBAL_ROLES;
+
         $limit  = max(1, (int)$limit);
         $offset = max(0, (int)$offset);
+
+        // Get current user's role and level
+        $stmt = $this->pdo->prepare("
+            SELECT r.role_level, r.role_name
+            FROM user_roles ur
+            JOIN roles r ON ur.role_id = r.role_id
+            WHERE ur.id_no = :id_no
+            LIMIT 1
+        ");
+        $stmt->execute([':id_no' => $currentUserId]);
+        $currentRole = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        $currentRoleLevel = (int)($currentRole['role_level'] ?? 0);
+        $currentRoleName  = $currentRole['role_name'] ?? '';
+
+        $isAAO = in_array($currentRoleName, $GLOBAL_ROLES, true);
 
         $where  = ' WHERE 1=1 ';
         $params = [];
@@ -243,6 +267,14 @@ final class AccountsModel {
             $where .= " AND u.status = :status ";
             $params[':status'] = $status;
         }
+
+        // Role level filter
+        if ($isAAO) {
+            $where .= " AND (r.role_level <= :role_level) ";
+        } else {
+            $where .= " AND (r.role_level < :role_level) ";
+        }
+        $params[':role_level'] = $currentRoleLevel;
 
         // total
         $stmtCount = $this->pdo->prepare("
