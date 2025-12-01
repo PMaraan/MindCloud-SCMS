@@ -14,6 +14,7 @@
         <th>Email</th>
         <th>Role</th>
         <th>College/Department</th>
+        <th>Status</th>
         <th style="width:180px;" class="text-end">Actions</th>
       </tr>
     </thead>
@@ -38,6 +39,7 @@
           <td><?= htmlspecialchars((string)$row['email']) ?></td>
           <td><?= htmlspecialchars((string)($row['role_name'])) ?></td>
           <td><?= htmlspecialchars((string)($row['department_short_name'] ?: '-unassigned-')) ?></td>
+          <td><?= htmlspecialchars((string)($row['status'] ?? '')) ?></td>
           <td class="text-end">
             <?php if ($canEdit): ?>
               <button class="btn btn-sm btn-primary <?= $canDelete ? 'me-2' : '' ?>"

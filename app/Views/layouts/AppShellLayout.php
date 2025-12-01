@@ -78,6 +78,7 @@ $basePath = rtrim(BASE_PATH, '/'); // BASE_PATH is from config.php
   <!-- Main Content -->
   <div class="main-content container-fluid py-4">
     <?php if (!empty($flashMessage)): ?>
+      <!-- Flash Message -->
       <div class="alert alert-<?= htmlspecialchars($flashMessage['type'], ENT_QUOTES, 'UTF-8') ?>">
         <?= htmlspecialchars($flashMessage['message'], ENT_QUOTES, 'UTF-8') ?>
       </div>

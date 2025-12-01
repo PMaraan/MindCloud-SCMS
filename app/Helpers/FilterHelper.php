@@ -35,4 +35,5 @@ class FilterHelper
             return (int)$college['department_id'] === (int)$userCollegeId;
         });
     }
+
 }

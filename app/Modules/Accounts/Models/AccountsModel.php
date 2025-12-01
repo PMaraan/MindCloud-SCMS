@@ -323,13 +323,19 @@ final class AccountsModel {
                 ur.department_id,
                 COALESCE(r.role_name, '')  AS role_name,
                 COALESCE(d.short_name, '') AS department_short_name,
-                COALESCE(d.short_name, '') AS college_short_name -- legacy alias for views
+                COALESCE(d.short_name, '') AS college_short_name, -- legacy alias for views
+                u.status
             FROM users u
        LEFT JOIN user_roles ur ON u.id_no = ur.id_no
        LEFT JOIN roles r       ON ur.role_id = r.role_id
        LEFT JOIN departments d ON ur.department_id = d.department_id
             $where
-        ORDER BY u.lname ASC, u.fname ASC
+        ORDER BY
+            ur.department_id IS NOT NULL,  -- nulls first
+            ur.department_id ASC,
+            r.role_level DESC,
+            u.lname ASC,
+            u.fname ASC
             $pageClause
         ");
         foreach ($params as $k => $v) $stmtUserList->bindValue($k, $v);
