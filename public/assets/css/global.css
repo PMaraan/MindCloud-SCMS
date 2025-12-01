@@ -323,3 +323,11 @@ body.use-main-scroll .main-content[style] { overflow-y: auto !important; }
 .modal-dialog {
   margin: 4.5rem auto 1.5rem !important;
 }
+
+/* Add a red asterisk after required labels */
+label.required::after {
+  content: "*";
+  color: #d32f2f; /* Bootstrap danger red or adjust as needed */
+  margin-left: 2px;
+  font-weight: bold;
+}

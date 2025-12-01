@@ -12,12 +12,12 @@
         <input type="hidden" name="csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
 
         <div class="mb-3">
-          <label for="create-id-no" class="form-label">ID No.</label>
+          <label for="create-id-no" class="form-label required">ID No.</label>
           <input id="create-id-no" name="id_no" class="form-control" required>
         </div>
 
         <div class="mb-3">
-          <label for="create-fname" class="form-label">First Name</label>
+          <label for="create-fname" class="form-label required">First Name</label>
           <input id="create-fname" name="fname" class="form-control" required>
         </div>
 
@@ -27,17 +27,17 @@
         </div>
 
         <div class="mb-3">
-          <label for="create-lname" class="form-label">Last Name</label>
+          <label for="create-lname" class="form-label required">Last Name</label>
           <input id="create-lname" name="lname" class="form-control" required>
         </div>
 
         <div class="mb-3">
-          <label for="create-email" class="form-label">Email</label>
+          <label for="create-email" class="form-label required">Email</label>
           <input type="email" id="create-email" name="email" class="form-control" required>
         </div>
         <!-- Role Selection -->
         <div class="mb-3">
-          <label for="create-role" class="form-label">Role</label>
+          <label for="create-role" class="form-label required">Role</label>
           <select id="create-role" name="role_id" class="form-select" required>
             <option value="" selected disabled>— Select —</option>
             <?php foreach ($roles as $r): ?>
@@ -49,7 +49,9 @@
         </div>
         <!-- College Selection -->
         <div class="mb-3">
-          <label for="create-college" class="form-label">College (optional)</label>
+          <label for="create-college" class="form-label<?= empty($isAAO) ? ' required' : '' ?>">
+            College<?= !empty($isAAO) ? ' (optional)' : '' ?>
+          </label>
           <select id="create-college" name="department_id" class="form-select" <?= empty($isAAO) ? 'required' : '' ?>>
             <option value="">— None —</option>
             <?php foreach ($colleges as $c): ?>
@@ -61,7 +63,7 @@
         </div>
         <!-- Status Selection -->
         <div class="mb-3">
-          <label for="create-status" class="form-label">Status</label>
+          <label for="create-status" class="form-label required">Status</label>
           <select id="create-status" name="status" class="form-select" required>
             <option value="active" selected>Active</option>
             <option value="password_reset_required">Reset Required</option>

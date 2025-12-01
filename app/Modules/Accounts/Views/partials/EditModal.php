@@ -15,7 +15,7 @@
           <input type="hidden" id="edit-id-no" name="id_no" required>
 
           <div class="mb-3">
-            <label for="edit-fname" class="form-label">First Name</label>
+            <label for="edit-fname" class="form-label required">First Name</label>
             <input type="text" id="edit-fname" name="fname" class="form-control" required>
           </div>
           <div class="mb-3">
@@ -23,15 +23,15 @@
             <input type="text" id="edit-mname" name="mname" class="form-control">
           </div>
           <div class="mb-3">
-            <label for="edit-lname" class="form-label">Last Name</label>
+            <label for="edit-lname" class="form-label required">Last Name</label>
             <input type="text" id="edit-lname" name="lname" class="form-control" required>
           </div>
           <div class="mb-3">
-            <label for="edit-email" class="form-label">Email</label>
+            <label for="edit-email" class="form-label required">Email</label>
             <input type="email" id="edit-email" name="email" class="form-control" required>
           </div>
           <div class="mb-3">
-            <label for="edit-role" class="form-label">Role</label>
+            <label for="edit-role" class="form-label required">Role</label>
             <select id="edit-role" name="role_id" class="form-select" required>
               <option value="">— Select —</option>
               <?php foreach ($roles as $r): ?>
@@ -42,7 +42,9 @@
             </select>
           </div>
           <div class="mb-3">
-            <label for="edit-college" class="form-label">College (optional)</label>
+            <label for="edit-college" class="form-label<?= empty($isAAO) ? ' required' : '' ?>">
+              College<?= !empty($isAAO) ? ' (optional)' : '' ?>
+            </label>
             <select id="edit-college" name="department_id" class="form-select" <?= empty($isAAO) ? 'required' : '' ?>>
               <option value="">— None —</option>
               <?php foreach ($colleges as $c): ?>
@@ -53,7 +55,7 @@
             </select>
           </div>
           <div class="mb-3">
-            <label for="edit-status" class="form-label">Status</label>
+            <label for="edit-status" class="form-label required">Status</label>
             <select id="edit-status" name="status" class="form-select" required>
               <option value="active">Active</option>
               <option value="password_reset_required">Reset Required</option>
