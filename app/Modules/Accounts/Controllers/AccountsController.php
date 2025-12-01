@@ -11,6 +11,7 @@ use App\Helpers\PasswordHelper;
 use App\Security\RBAC;
 use App\Helpers\NotifyHelper;
 use App\Services\AssignmentsService;
+use App\Helpers\FilterHelper;
 
 /**
  * AccountsController
@@ -118,6 +119,20 @@ final class AccountsController
         $colleges     = $this->model->getDepartments(true);   // is_college = TRUE
         $departments  = $this->model->getDepartments(false);  // is_college = FALSE
 
+        // Get current user's role/level/college for filtering
+        $currentUserId = (string)$_SESSION['user_id'];
+        $userRoleInfo = $this->model->getUserRoleInfo($currentUserId); // You may need to add this helper in the model if not present
+
+        $currentRoleLevel = (int)($userRoleInfo['role_level'] ?? 0);
+        $currentRoleName  = $userRoleInfo['role_name'] ?? '';
+        global $GLOBAL_ROLES;
+        $isAAO = in_array($currentRoleName, $GLOBAL_ROLES, true);
+        $userCollegeId = $userRoleInfo['department_id'] ?? null;
+
+        // Filter roles and colleges
+        $roles    = FilterHelper::filterRolesByLevel($roles, $currentRoleLevel, $isAAO);
+        $colleges = FilterHelper::filterColleges($colleges, $userCollegeId, $isAAO);
+
         // CSRF
         if (empty($_SESSION['csrf_token'])) {
             $_SESSION['csrf_token'] = bin2hex(random_bytes(16));
@@ -179,6 +194,7 @@ final class AccountsController
         $passwd        = (string)($_POST['password']     ?? $defaultPassword);
         $role_id       = (string)($_POST['role_id']      ?? '');
         $department_id = (string)($_POST['department_id'] ?? ''); // optional
+        $status        = trim((string)($_POST['status'] ?? 'active'));
 
         $errors = [];
         if ($id_no === '')                                   $errors[] = 'ID No is required.';
@@ -206,6 +222,7 @@ final class AccountsController
             'password'      => $hash,
             'role_id'       => (int)$role_id,
             'department_id' => ($department_id === '') ? null : (int)$department_id,
+            'status'        => $status,
         ]);
 
         if ($ok) {
@@ -269,6 +286,7 @@ final class AccountsController
             'email'         => trim((string)($_POST['email'] ?? '')),
             'role_id'       => (string)($_POST['role_id'] ?? ''),
             'department_id' => (string)($_POST['department_id'] ?? ''), // optional
+            'status'        => trim((string)($_POST['status'] ?? 'active')),
         ];
 
         $errs = [];

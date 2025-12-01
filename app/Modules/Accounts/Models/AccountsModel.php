@@ -82,8 +82,8 @@ final class AccountsModel {
             $this->pdo->beginTransaction();
 
             $stmt = $this->pdo->prepare("
-                INSERT INTO users (id_no, fname, mname, lname, email, password)
-                VALUES (:id_no, :fname, :mname, :lname, :email, :password)
+                INSERT INTO users (id_no, fname, mname, lname, email, password, status)
+                VALUES (:id_no, :fname, :mname, :lname, :email, :password, :status)
             ");
             $stmt->execute([
                 ':id_no'    => $data['id_no'],
@@ -92,6 +92,7 @@ final class AccountsModel {
                 ':lname'    => $data['lname'],
                 ':email'    => $data['email'],
                 ':password' => $data['password'],
+                ':status'   => $data['status'] ?? 'active',
             ]);
 
             $data = $this->normalizeUserRolePayload($data);
@@ -133,7 +134,7 @@ final class AccountsModel {
 
     /** Roles list. */
     public function getAllRoles(): array {
-        $stmt = $this->pdo->query('SELECT role_id, role_name FROM roles ORDER BY role_name ASC');
+        $stmt = $this->pdo->query('SELECT role_id, role_name, role_level FROM roles ORDER BY role_level DESC, role_name ASC');
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
@@ -244,6 +245,20 @@ final class AccountsModel {
 
         $isAAO = in_array($currentRoleName, $GLOBAL_ROLES, true);
 
+        // Determine if user has a college (department with is_college = true)
+        $userCollegeId = null;
+        if (!$isAAO && $currentUserId) {
+            $stmtDept = $this->pdo->prepare("
+                SELECT d.department_id
+                FROM user_roles ur
+                JOIN departments d ON ur.department_id = d.department_id
+                WHERE ur.id_no = :id_no AND d.is_college = " . $this->sqlBoolTrue() . "
+                LIMIT 1
+            ");
+            $stmtDept->execute([':id_no' => $currentUserId]);
+            $userCollegeId = $stmtDept->fetchColumn();
+        }
+
         $where  = ' WHERE 1=1 ';
         $params = [];
 
@@ -275,6 +290,12 @@ final class AccountsModel {
             $where .= " AND (r.role_level < :role_level) ";
         }
         $params[':role_level'] = $currentRoleLevel;
+
+        // College scoping for non-AAO users with a college
+        if (!$isAAO && $userCollegeId) {
+            $where .= " AND ur.department_id = :user_college_id ";
+            $params[':user_college_id'] = $userCollegeId;
+        }
 
         // total
         $stmtCount = $this->pdo->prepare("
@@ -330,15 +351,17 @@ final class AccountsModel {
                SET fname = :fname,
                    mname = :mname,
                    lname = :lname,
-                   email = :email
+                   email = :email,
+                   status = :status
              WHERE id_no = :id_no
         ");
         return $stmt->execute([
-            ':fname' => $data['fname'],
-            ':mname' => $data['mname'],
-            ':lname' => $data['lname'],
-            ':email' => $data['email'],
-            ':id_no' => $data['id_no']
+            ':fname'  => $data['fname'],
+            ':mname'  => $data['mname'],
+            ':lname'  => $data['lname'],
+            ':email'  => $data['email'],
+            ':status' => $data['status'] ?? 'active',
+            ':id_no'  => $data['id_no'],
         ]);
     }
 
@@ -358,7 +381,8 @@ final class AccountsModel {
                    SET fname = :fname,
                        mname = :mname,
                        lname = :lname,
-                       email = :email
+                       email = :email,
+                       status = :status
                  WHERE id_no = :id_no
             ");
             $stmt->execute([
@@ -366,6 +390,7 @@ final class AccountsModel {
                 ':mname' => $data['mname'],
                 ':lname' => $data['lname'],
                 ':email' => $data['email'],
+                ':status' => $data['status'] ?? 'active',
                 ':id_no' => $data['id_no'],
             ]);
 
@@ -444,6 +469,7 @@ final class AccountsModel {
         $lname  = trim((string)($data['lname'] ?? ''));
         $email  = trim((string)($data['email'] ?? ''));
         $roleId = (int)($data['role_id'] ?? 0);
+        $status = $data['status'] ?? 'active';
         $deptId = isset($data['department_id']) && $data['department_id'] !== '' ? (int)$data['department_id'] : null;
 
         if ($idNo === '' || $fname === '' || $lname === '' || $email === '' || $roleId <= 0) {
@@ -459,7 +485,8 @@ final class AccountsModel {
                 SET fname = :fname,
                     mname = :mname,
                     lname = :lname,
-                    email = :email
+                    email = :email,
+                    status = :status
                 WHERE id_no = :id_no
             ");
             $stmt->execute([
@@ -467,6 +494,7 @@ final class AccountsModel {
                 ':mname' => $mname,
                 ':lname' => $lname,
                 ':email' => $email,
+                ':status' => $status,
                 ':id_no' => $idNo,
             ]);
 
@@ -493,5 +521,18 @@ final class AccountsModel {
             error_log('updateUserWithRoleDepartment failed: ' . $e->getMessage());
             return false;
         }
+    }
+
+    /** Get user role info (level, name, department_id) by user ID. */
+    public function getUserRoleInfo(string $idNo): ?array {
+        $stmt = $this->pdo->prepare("
+            SELECT r.role_level, r.role_name, ur.department_id
+            FROM user_roles ur
+            JOIN roles r ON ur.role_id = r.role_id
+            WHERE ur.id_no = :id_no
+            LIMIT 1
+        ");
+        $stmt->execute([':id_no' => $idNo]);
+        return $stmt->fetch(\PDO::FETCH_ASSOC) ?: null;
     }
 }

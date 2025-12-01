@@ -12,34 +12,33 @@
         <input type="hidden" name="csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
 
         <div class="mb-3">
-          <label class="form-label">ID No.</label>
-          <input name="id_no" class="form-control" required>
+          <label for="create-id-no" class="form-label">ID No.</label>
+          <input id="create-id-no" name="id_no" class="form-control" required>
         </div>
 
         <div class="mb-3">
-          <label class="form-label">First Name</label>
-          <input name="fname" class="form-control" required>
-        </div>
-
-        <!-- NEW: Middle Name (optional) -->
-        <div class="mb-3">
-          <label class="form-label">Middle Name (optional)</label>
-          <input name="mname" class="form-control">
+          <label for="create-fname" class="form-label">First Name</label>
+          <input id="create-fname" name="fname" class="form-control" required>
         </div>
 
         <div class="mb-3">
-          <label class="form-label">Last Name</label>
-          <input name="lname" class="form-control" required>
+          <label for="create-mname" class="form-label">Middle Name (optional)</label>
+          <input id="create-mname" name="mname" class="form-control">
         </div>
 
         <div class="mb-3">
-          <label class="form-label">Email</label>
-          <input type="email" name="email" class="form-control" required>
+          <label for="create-lname" class="form-label">Last Name</label>
+          <input id="create-lname" name="lname" class="form-control" required>
         </div>
 
         <div class="mb-3">
-          <label class="form-label">Role</label>
-          <select name="role_id" class="form-select" required>
+          <label for="create-email" class="form-label">Email</label>
+          <input type="email" id="create-email" name="email" class="form-control" required>
+        </div>
+        <!-- Role Selection -->
+        <div class="mb-3">
+          <label for="create-role" class="form-label">Role</label>
+          <select id="create-role" name="role_id" class="form-select" required>
             <option value="" selected disabled>— Select —</option>
             <?php foreach ($roles as $r): ?>
               <option value="<?= (int)$r['role_id'] ?>">
@@ -48,16 +47,25 @@
             <?php endforeach; ?>
           </select>
         </div>
-
+        <!-- College Selection -->
         <div class="mb-3">
-          <label class="form-label">College (optional)</label>
-          <select name="department_id" class="form-select">
+          <label for="create-college" class="form-label">College (optional)</label>
+          <select id="create-college" name="department_id" class="form-select" <?= empty($isAAO) ? 'required' : '' ?>>
             <option value="">— None —</option>
             <?php foreach ($colleges as $c): ?>
               <option value="<?= (int)$c['department_id'] ?>">
                 <?= htmlspecialchars((string)($c['short_name'] ?: $c['college_name']), ENT_QUOTES, 'UTF-8') ?>
               </option>
             <?php endforeach; ?>
+          </select>
+        </div>
+        <!-- Status Selection -->
+        <div class="mb-3">
+          <label for="create-status" class="form-label">Status</label>
+          <select id="create-status" name="status" class="form-select" required>
+            <option value="active" selected>Active</option>
+            <option value="password_reset_required">Reset Required</option>
+            <option value="archived">Archived</option>
           </select>
         </div>
       </div>
