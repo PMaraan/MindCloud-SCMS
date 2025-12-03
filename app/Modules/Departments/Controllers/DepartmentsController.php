@@ -89,6 +89,7 @@ final class DepartmentsController
             'short_name'       => trim((string)($_POST['short_name'] ?? '')),
             'department_name'  => trim((string)($_POST['department_name'] ?? '')),
             'is_college'       => !empty($_POST['is_college']),
+            'status'           => trim((string)($_POST['status'] ?? 'active')),
         ];
         $deanIdNo = trim((string)($_POST['dean_id_no'] ?? ''));
 
@@ -130,6 +131,7 @@ final class DepartmentsController
             'short_name'       => trim((string)($_POST['short_name'] ?? '')),
             'department_name'  => trim((string)($_POST['department_name'] ?? '')),
             'is_college'       => !empty($_POST['is_college']),
+            'status'           => trim((string)($_POST['status'] ?? 'active')),
         ];
         $deanIdNo = trim((string)($_POST['dean_id_no'] ?? ''));
 

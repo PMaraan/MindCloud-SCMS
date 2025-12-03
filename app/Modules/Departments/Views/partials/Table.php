@@ -12,6 +12,7 @@
         <th style="width:160px;">Short Name</th>
         <th>College Name</th>
         <th style="width:220px;">Dean Full Name</th>
+        <th>Status</th>
         <th style="width:180px;" class="text-end">Actions</th>
       </tr>
     </thead>
@@ -24,10 +25,12 @@
           data-department_name="<?= htmlspecialchars((string)($r['department_name'] ?? ''), ENT_QUOTES) ?>"
           data-dean_id_no="<?= htmlspecialchars((string)($r['dean_id_no'] ?? ''), ENT_QUOTES) ?>"
           data-is_college="<?= !empty($r['is_college']) ? '1' : '0' ?>"
+          data-status="<?= htmlspecialchars((string)($r['status'] ?? ''), ENT_QUOTES) ?>"
         >
           <td><?= htmlspecialchars((string)($r['short_name'] ?? ''), ENT_QUOTES) ?></td>
           <td><?= htmlspecialchars((string)($r['department_name'] ?? ''), ENT_QUOTES) ?></td>
           <td><?= htmlspecialchars((string)(($r['dean_full_name'] ?? '') ?: '-unassigned-'), ENT_QUOTES) ?></td>
+          <td><?= htmlspecialchars((string)($r['status'] ?? ''), ENT_QUOTES) ?></td>
           <td class="text-end">
             <?php if ($canEdit): ?>
               <button class="btn btn-sm btn-primary <?= $canDelete ? 'me-2' : '' ?>"

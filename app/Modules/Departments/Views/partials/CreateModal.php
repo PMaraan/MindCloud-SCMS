@@ -55,6 +55,14 @@
               <?php endforeach; ?>
             </select>
           </div>
+
+          <div class="col-12">
+            <label class="form-label" for="create-status">Status <span class="text-danger">*</span></label>
+            <select class="form-select" name="status" id="create-status" required>
+              <option value="active" selected>Active</option>
+              <option value="archived">Archived</option>
+            </select>
+          </div>
         </div>
 
         <div class="modal-footer">
