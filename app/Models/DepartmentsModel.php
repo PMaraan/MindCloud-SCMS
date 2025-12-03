@@ -50,13 +50,22 @@ final class DepartmentsModel
      * - Search matches department_name, short_name (case-insensitive).
      * - Includes dean info via LEFT JOIN on college_deans: dean_id_no, dean_full_name.
      */
-    public function getPage(?string $q, int $limit, int $offset): array
-    {
+    public function getPage(
+        ?string $q, 
+        int $limit, 
+        int $offset,
+        string $status = 'active' // <-- add status param, default to 'active'
+    ): array {
         $where  = ' WHERE 1=1 ';
         $params = [];
         if ($q !== null && $q !== '') {
             $where .= ' AND (LOWER(d.department_name) LIKE :q OR LOWER(d.short_name) LIKE :q) ';
             $params[':q'] = '%' . mb_strtolower($q) . '%';
+        }
+        // Status filter
+        if ($status !== 'all') {
+            $where .= ' AND d.status = :status ';
+            $params[':status'] = $status;
         }
 
         $countSql = "SELECT COUNT(*) FROM departments d {$where}";
@@ -73,13 +82,14 @@ final class DepartmentsModel
                 d.short_name,
                 d.department_name,
                 d.is_college,
+                d.status,
                 cd.dean_id                AS dean_id_no,
                 {$fullName}               AS dean_full_name
             FROM departments d
             LEFT JOIN college_deans cd
-              ON cd.department_id = d.department_id
+            ON cd.department_id = d.department_id
             LEFT JOIN users u
-              ON u.id_no = cd.dean_id
+            ON u.id_no = cd.dean_id
             {$where}
             ORDER BY LOWER(d.department_name) ASC, LOWER(d.short_name) ASC
             {$pageClause}
@@ -95,9 +105,11 @@ final class DepartmentsModel
     /** Create department; returns new department_id. */
     public function create(array $data): int
     {
-        $short = trim((string)($data['short_name'] ?? ''));
-        $name  = trim((string)($data['department_name'] ?? ''));
-        $isCol = !empty($data['is_college']);
+        $short  = trim((string)($data['short_name'] ?? ''));
+        $name   = trim((string)($data['department_name'] ?? ''));
+        $isCol  = !empty($data['is_college']);
+        $status = in_array($data['status'] ?? '', ['active', 'archived'], true)
+            ? $data['status'] : 'active';
 
         if ($short === '' || $name === '') {
             throw new \InvalidArgumentException('short_name and department_name are required.');
@@ -105,26 +117,28 @@ final class DepartmentsModel
 
         if ($this->driver === 'pgsql') {
             $sql = "
-                INSERT INTO departments (short_name, department_name, is_college)
-                VALUES (:short, :name, :is_college)
+                INSERT INTO departments (short_name, department_name, is_college, status)
+                VALUES (:short, :name, :is_college, :status)
                 RETURNING department_id
             ";
             $stmt = $this->pdo->prepare($sql);
             $stmt->bindValue(':short', $short);
             $stmt->bindValue(':name',  $name);
             $stmt->bindValue(':is_college', $isCol, PDO::PARAM_BOOL);
+            $stmt->bindValue(':status', $status);
             $stmt->execute();
             return (int)$stmt->fetchColumn();
         }
 
         $sql = "
-            INSERT INTO departments (short_name, department_name, is_college)
-            VALUES (:short, :name, :is_college)
+            INSERT INTO departments (short_name, department_name, is_college, status)
+            VALUES (:short, :name, :is_college, :status)
         ";
         $stmt = $this->pdo->prepare($sql);
         $stmt->bindValue(':short', $short);
         $stmt->bindValue(':name',  $name);
         $stmt->bindValue(':is_college', $isCol, PDO::PARAM_BOOL);
+        $stmt->bindValue(':status', $status);
         $stmt->execute();
 
         return (int)$this->pdo->lastInsertId();
@@ -133,9 +147,11 @@ final class DepartmentsModel
     /** Update department; returns true if a row changed. */
     public function update(int $id, array $data): bool
     {
-        $short = trim((string)($data['short_name'] ?? ''));
-        $name  = trim((string)($data['department_name'] ?? ''));
-        $isCol = !empty($data['is_college']);
+        $short  = trim((string)($data['short_name'] ?? ''));
+        $name   = trim((string)($data['department_name'] ?? ''));
+        $isCol  = !empty($data['is_college']);
+        $status = in_array($data['status'] ?? '', ['active', 'archived'], true)
+            ? $data['status'] : 'active';
 
         if ($id <= 0) {
             throw new \InvalidArgumentException('Invalid department_id.');
@@ -146,15 +162,17 @@ final class DepartmentsModel
 
         $sql = "
             UPDATE departments
-               SET short_name      = :short,
-                   department_name = :name,
-                   is_college      = :is_college
-             WHERE department_id   = :id
+            SET short_name      = :short,
+                department_name = :name,
+                is_college      = :is_college,
+                status          = :status
+            WHERE department_id   = :id
         ";
         $stmt = $this->pdo->prepare($sql);
         $stmt->bindValue(':short', $short);
         $stmt->bindValue(':name',  $name);
         $stmt->bindValue(':is_college', $isCol, PDO::PARAM_BOOL);
+        $stmt->bindValue(':status', $status);
         $stmt->bindValue(':id',    $id, PDO::PARAM_INT);
         $stmt->execute();
 

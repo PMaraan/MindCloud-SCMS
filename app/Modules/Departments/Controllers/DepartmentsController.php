@@ -42,11 +42,12 @@ final class DepartmentsController
 
         $rawQ   = isset($_GET['q']) ? trim((string)$_GET['q']) : null;
         $search = ($rawQ !== null && $rawQ !== '') ? mb_strtolower($rawQ) : null;
+        $status = isset($_GET['status']) ? trim((string)$_GET['status']) : 'active'; // <-- add this line
         $page    = max(1, (int)($_GET['pg'] ?? 1));
         $perPage = max(1, (int)(defined('UI_PER_PAGE_DEFAULT') ? UI_PER_PAGE_DEFAULT : 10));
         $offset  = ($page - 1) * $perPage;
 
-        $result = $this->model->getPage($search, $perPage, $offset);
+        $result = $this->model->getPage($search, $perPage, $offset, $status); // <-- pass $status
         $rows   = $result['rows'];
         $total  = $result['total'];
 
@@ -62,6 +63,7 @@ final class DepartmentsController
             'query'    => $rawQ ?? '',
             'from'     => $from,
             'to'       => $to,
+            'status'   => $status, // <-- add this for the view
         ];
 
         // Get a list of users who are deans.
@@ -111,12 +113,11 @@ final class DepartmentsController
                 \App\Helpers\FlashHelper::set('success', 'Department created (ID ' . (int)$id . ').');
             }
         } catch (\Throwable $e) {
-            \App\Helpers\FlashHelper::set('danger', 'Create failed: ' . $e->getMessage());
-        }
-
+           
         $this->redirect(BASE_PATH . '/dashboard?page=departments');
+        }
     }
-
+    
     public function edit(): void {
         $this->requireActionPermission('edit');
         \App\Helpers\CsrfHelper::assertOrRedirect(BASE_PATH . '/dashboard?page=departments');
