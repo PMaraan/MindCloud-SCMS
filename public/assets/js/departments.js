@@ -48,6 +48,9 @@
         editModal.querySelector('[name="short_name"]').value = shortName;
         editModal.querySelector('[name="department_name"]').value = departmentName;
 
+        // Store deanIdNo for later use
+        editModal.dataset.deanIdNo = deanIdNo || '';
+
         // Set checkbox then apply visibility
         if (editIsCollege) {
           editIsCollege.checked = isCollege;
@@ -72,6 +75,28 @@
           }
         }
       });
+
+      // Add this event listener to handle re-selecting dean when is_college is checked
+      if (editIsCollege && editDeanSelect) {
+        editIsCollege.addEventListener('change', () => {
+          if (editIsCollege.checked) {
+            // Restore dean selection if available
+            const deanIdNo = editModal.dataset.deanIdNo || '';
+            if (deanIdNo) {
+              editDeanSelect.value = deanIdNo;
+              if (deanIdNo && ![...editDeanSelect.options].some(o => o.value === deanIdNo)) {
+                const opt = document.createElement('option');
+                opt.value = deanIdNo;
+                opt.textContent = deanIdNo + ' — (not in list)';
+                editDeanSelect.appendChild(opt);
+                editDeanSelect.value = deanIdNo;
+              }
+            }
+          } else {
+            editDeanSelect.value = '';
+          }
+        });
+      }
     }
 
     // ----- CREATE MODAL -----
