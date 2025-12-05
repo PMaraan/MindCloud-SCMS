@@ -27,7 +27,7 @@ final class ProgramsModel
     }
 
     /** @return array{0: list<array<string,mixed>>, 1: int} */
-    public function getProgramsPage(?string $q, int $limit, int $offset): array
+    public function getProgramsPage(?string $q, int $limit, int $offset, string $status = 'active'): array
     {
         $where = ' WHERE 1=1 ';
         $params = [];
@@ -40,6 +40,12 @@ final class ProgramsModel
                 )
             ";
             $params[':q'] = '%' . $q . '%';
+        }
+
+        // Status filter
+        if ($status !== 'all') {
+            $where .= "AND p.status = :status";
+            $params[':status'] = $status;
         }
 
         // total
@@ -60,6 +66,7 @@ final class ProgramsModel
                 p.program_id,
                 p.program_name,
                 p.department_id,
+                p.status,
                 COALESCE(d.short_name, d.department_name) AS college_label,
                 pc.chair_id,
                 CASE 

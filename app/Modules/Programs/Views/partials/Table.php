@@ -16,6 +16,7 @@
         <th>Program</th>
         <th style="width:200px;">College</th>
         <th style="width:260px;">Chair</th>
+        <th>Status</th>
         <th style="width:180px;" class="text-end">Actions</th>
       </tr>
     </thead>
@@ -26,10 +27,12 @@
             data-program-name="<?= htmlspecialchars((string)$r['program_name'], ENT_QUOTES) ?>"
             data-college-id="<?= (int)$r['department_id'] ?>"
             data-chair-id="<?= htmlspecialchars((string)($r['chair_id'] ?? ''), ENT_QUOTES) ?>"
-            data-chair-name="<?= htmlspecialchars((string)($r['chair_full_name'] ?? ''), ENT_QUOTES) ?>">
+            data-chair-name="<?= htmlspecialchars((string)($r['chair_full_name'] ?? ''), ENT_QUOTES) ?>"
+            data-status="<?= htmlspecialchars((string)($r['status'] ?? ''), ENT_QUOTES) ?>">
           <td><?= htmlspecialchars((string)$r['program_name'], ENT_QUOTES) ?></td>
           <td><?= htmlspecialchars((string)($r['college_label'] ?? ''), ENT_QUOTES) ?></td>
           <td><?= htmlspecialchars((string)($r['chair_full_name'] ?? '-unassigned-'), ENT_QUOTES) ?></td>
+          <td><?= htmlspecialchars((string)($r['status'] ?? ''), ENT_QUOTES) ?></td>
           <td class="text-end">
             <?php if (!empty($canEdit)): ?>
               <button class="btn btn-sm btn-primary <?= !empty($canDelete) ? 'me-2' : '' ?>"

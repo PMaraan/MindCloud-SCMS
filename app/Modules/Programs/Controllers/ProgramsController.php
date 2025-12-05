@@ -33,14 +33,14 @@ final class ProgramsController
         $this->rbac->require((string)$_SESSION['user_id'], Permissions::PROGRAMS_VIEW);
 
         // Search + pagination (global standard)
-        $rawQ    = isset($_GET['q']) ? trim((string)$_GET['q']) : '';
-        $q       = ($rawQ !== '') ? mb_strtolower($rawQ) : null;
+        $rawQ    = isset($_GET['q']) ? trim((string)$_GET['q']) : ''; // Search param
+        $search       = ($rawQ !== '') ? mb_strtolower($rawQ) : null; // Normalise search param
+        $status = isset($_GET['status']) ? trim((string)$_GET['status']) : 'active'; // Status param
+        $page    = max(1, (int)($_GET['pg'] ?? 1)); // Current page
+        $perPage = defined('UI_PER_PAGE_DEFAULT') ? (int)UI_PER_PAGE_DEFAULT : 10; // Items per page
+        $offset  = ($page - 1) * $perPage; // Offset for query
 
-        $page    = max(1, (int)($_GET['pg'] ?? 1));
-        $perPage = defined('UI_PER_PAGE_DEFAULT') ? (int)UI_PER_PAGE_DEFAULT : 10;
-        $offset  = ($page - 1) * $perPage;
-
-        [$rows, $total] = $this->model->getProgramsPage($q, $perPage, $offset);
+        [$rows, $total] = $this->model->getProgramsPage($search, $perPage, $offset, $status); // Db query
 
         $pager = [
             'total'   => $total,
@@ -50,6 +50,7 @@ final class ProgramsController
             'query'   => $rawQ,
             'from'    => ($total === 0) ? 0 : ($offset + 1),
             'to'      => min($offset + $perPage, $total),
+            'status'  => $status,
         ];
 
         $uid       = (string)($_SESSION['user_id'] ?? '');
