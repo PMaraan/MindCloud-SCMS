@@ -44,15 +44,19 @@ document.addEventListener('DOMContentLoaded', function () {
       const nameInput   = editModal.querySelector('#progEditName');
       const collegeSel  = editModal.querySelector('#progEditCollege');
       const chairSel    = editModal.querySelector('#progEditChair');
+      const statusSel   = editModal.querySelector('#edit-status');
 
       const progId   = row.dataset.programId || '';
       const progName = row.dataset.programName || '';
       const deptId   = row.dataset.collegeId || '';
       const chairId  = row.dataset.chairId || '';
+      const status   = row.dataset.programStatus || '';
 
+      // Populate basic fields
       if (idInput)    idInput.value    = progId;
       if (nameInput)  nameInput.value  = progName;
       if (collegeSel) collegeSel.value = deptId;
+      if (statusSel)  statusSel.value  = status;
 
       // Populate chair list for current department and preselect
       loadChairsForDepartment(deptId, chairSel, chairId);

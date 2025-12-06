@@ -10,12 +10,12 @@
       <div class="modal-body">
 
         <div class="mb-3">
-          <label class="form-label">Program name</label>
+          <label class="form-label required">Program name</label>
           <input type="text" name="program_name" class="form-control" maxlength="255" required>
         </div>
-
+        <!-- College Select -->
         <div class="mb-3">
-          <label class="form-label">College</label>
+          <label class="form-label required">College</label>
           <select name="department_id" class="form-select" required>
             <option value="">— Select —</option>
             <?php foreach ($colleges as $c): ?>
@@ -23,11 +23,19 @@
             <?php endforeach; ?>
           </select>
         </div>
-
+        <!-- Chair Select -->
         <div class="mb-3">
           <label class="form-label">Program Chair (optional)</label>
           <select name="chair_id_no" id="createProgChair" class="form-select">
             <option value="">— None —</option>
+          </select>
+        </div>
+        <!-- Status Select -->
+        <div class="mb-3">
+          <label class="form-label required" for="create-status">Status</label>
+          <select name="status" id="create-status" class="form-select" required>
+            <option value="active" selected>Active</option>
+            <option value="archived">Archived</option>
           </select>
         </div>
 

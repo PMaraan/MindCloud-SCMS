@@ -4,7 +4,7 @@
  * Programs listing table.
  *
  * Expects:
- * @var array $rows       Each row: program_id, program_name, department_id, college_label, chair_id, chair_full_name
+ * @var array $rows       Each row: program_id, program_name, department_id, college_label, chair_id, chair_full_name, status
  * @var bool  $canEdit
  * @var bool  $canDelete
  */
@@ -17,7 +17,7 @@
         <th style="width:200px;">College</th>
         <th style="width:260px;">Chair</th>
         <th>Status</th>
-        <th style="width:180px;" class="text-end">Actions</th>
+        <th style="width:220px;" class="text-end">Actions</th>
       </tr>
     </thead>
     <tbody>
@@ -33,8 +33,9 @@
           <td><?= htmlspecialchars((string)($r['college_label'] ?? ''), ENT_QUOTES) ?></td>
           <td><?= htmlspecialchars((string)($r['chair_full_name'] ?? '-unassigned-'), ENT_QUOTES) ?></td>
           <td><?= htmlspecialchars((string)($r['status'] ?? ''), ENT_QUOTES) ?></td>
+          <!-- Actions -->
           <td class="text-end">
-            <?php if (!empty($canEdit)): ?>
+            <?php if (!empty($canEdit) && $r['status'] === 'active'): ?>
               <button class="btn btn-sm btn-primary <?= !empty($canDelete) ? 'me-2' : '' ?>"
                       data-bs-toggle="modal"
                       data-bs-target="#editProgramModal">
@@ -42,6 +43,13 @@
               </button>
             <?php endif; ?>
             <?php if (!empty($canDelete)): ?>
+              <button class="btn btn-sm btn-warning"
+                      data-bs-toggle="modal"
+                      data-bs-target="#archiveProgramModal">
+                <i class="bi bi-archive"></i> <?= $r['status'] === 'active' ? 'Archive' : 'Unarchive' ?>
+              </button>
+            <?php endif; ?>
+            <?php if (!empty($canDelete) && $r['status'] === 'archived'): ?>
               <button class="btn btn-sm btn-danger"
                       data-bs-toggle="modal"
                       data-bs-target="#deleteProgramModal">

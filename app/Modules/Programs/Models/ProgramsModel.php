@@ -97,12 +97,13 @@ final class ProgramsModel
     {
         if ($this->driver === 'pgsql') {
             $st = $this->pdo->prepare("
-                INSERT INTO programs (program_name, department_id)
+                INSERT INTO programs (program_name, department_id, status)
                 VALUES (:program_name, :department_id)
                 RETURNING program_id
             ");
             $st->bindValue(':program_name', $data['program_name']);
             $st->bindValue(':department_id', $data['department_id'], PDO::PARAM_INT);
+            $st->bindValue(':status', $data['status']);
             $st->execute();
             return (int)$st->fetchColumn();
         }
@@ -122,12 +123,14 @@ final class ProgramsModel
         $st = $this->pdo->prepare("
             UPDATE programs
                SET program_name = :program_name,
-                   department_id   = :department_id
+                   department_id   = :department_id,
+                   status          = :status
              WHERE program_id   = :program_id
         ");
         $st->bindValue(':program_id', $programId, PDO::PARAM_INT);
         $st->bindValue(':program_name', $data['program_name']);
         $st->bindValue(':department_id', $data['department_id'], PDO::PARAM_INT);
+        $st->bindValue(':status', $data['status']);
         $st->execute();
     }
 

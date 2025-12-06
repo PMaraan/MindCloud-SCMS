@@ -9,14 +9,14 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-
+        <!-- Program Name Input -->
         <div class="mb-3">
-          <label class="form-label">Program name</label>
+          <label class="form-label required">Program name</label>
           <input type="text" name="program_name" id="progEditName" class="form-control" maxlength="255" required>
         </div>
-
+        <!-- College Select -->
         <div class="mb-3">
-          <label class="form-label">College</label>
+          <label class="form-label required">College</label>
           <select name="department_id" id="progEditCollege" class="form-select" required>
             <option value="">— Select —</option>
             <?php foreach ($colleges as $c): ?>
@@ -24,7 +24,7 @@
             <?php endforeach; ?>
           </select>
         </div>
-
+        <!-- Chair Select -->
         <div class="mb-3">
           <label class="form-label">Program Chair (optional)</label>
           <select name="chair_id_no" id="progEditChair" class="form-select">
@@ -37,7 +37,14 @@
             <?php endforeach; ?>
           </select>
         </div>
-
+        <!-- Status Select -->
+        <div class="mb-3">
+          <label class="form-label required" for="edit-status">Status</label>
+          <select name="status" id="edit-status" class="form-select" required>
+            <option value="active">Active</option>
+            <option value="archived">Archived</option>
+          </select>
+        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>

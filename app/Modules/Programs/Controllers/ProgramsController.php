@@ -60,7 +60,7 @@ final class ProgramsController
 
         // Preload dropdown options
         $colleges = $this->model->getCollegesList();                 // departments with is_college = TRUE
-        $chairs   = (new UserModel($this->db))->listUsersByRole('Program Chair'); // adjust role name if needed
+        $chairs   = (new UserModel($this->db))->listUsersByRole('Chair'); // adjust role name if needed
 
         // Render
         ob_start();
@@ -77,6 +77,7 @@ final class ProgramsController
         $data = [
             'program_name'  => trim((string)($_POST['program_name'] ?? '')),
             'department_id' => (int)($_POST['department_id'] ?? 0),
+            'status'        => trim((string)($_POST['status'] ?? 'active')),
         ];
         $chairIdNo = trim((string)($_POST['chair_id_no'] ?? ''));
 
@@ -116,6 +117,7 @@ final class ProgramsController
         $data = [
             'program_name'  => trim((string)($_POST['program_name'] ?? '')),
             'department_id' => (int)($_POST['department_id'] ?? 0),
+            'status'        => trim((string)($_POST['status'] ?? 'active')),
         ];
         $chairIdNo = trim((string)($_POST['chair_id_no'] ?? '')); // empty => clear
 
