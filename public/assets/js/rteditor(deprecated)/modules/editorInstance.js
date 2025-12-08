@@ -26,6 +26,7 @@ import SpacingExtension from "../extensions/spacing.js";
 
 import PageBreak        from "../nodes/page-break.js";
 import SignatureField   from "../nodes/signature-field.js";
+import PageWrapper from "../nodes/page-wrapper.js";
 
 // page container extension (installs the wrapper on editor lifecycle)
 import PageContainerExtension from "../extensions/pageContainerExtension.js";
@@ -80,8 +81,8 @@ export default function initBasicEditor(opts) {
       Table.configure({ resizable: true, lastColumnResizable: true, allowTableNodeSelection: true }),
       TableRow, TableHeader, TableCell,
       SignatureField, PageBreak,
-      // page-wrapper extension installs the DOM wrapper via attachPageContainer
-      PageContainerExtension,
+      // pageWrapper Node (serializable): convert flow into per-page nodes + NodeView
+      PageWrapper,
     ],
   });
 
@@ -108,6 +109,23 @@ export default function initBasicEditor(opts) {
     try { if (editor) editor.__rt_pageContainerCleanup = null; } catch (ee) { /* ignore */ }
     try { if (editor) editor.__rt_cleanupPageContainer = null; } catch (ee) { /* ignore */ }
   }
+
+  // Optional: auto-convert top-level flow with pageBreak markers into pageWrapper nodes
+  try {
+    // run once after initialization to transform into page nodes if any pageBreak exists
+    if (editor && typeof editor.commands.wrapIntoPages === 'function') {
+      // attempt to convert top-level flow into pageWrapper nodes — nonfatal if it fails (module mismatch)
+      try {
+        if (editor.commands && typeof editor.commands.wrapIntoPages === 'function') {
+          const ok = editor.commands.wrapIntoPages();
+          if (!ok) console.info('[RTEditor] wrapIntoPages returned false (no pages created)');
+        }
+      } catch (wrapErr) {
+        console.warn('[RTEditor] wrapIntoPages skipped due to runtime mismatch (nonfatal):', wrapErr && wrapErr.message ? wrapErr.message : wrapErr);
+        // keep running — auto-pagination + page-container wrappers still work (we'll fix the root cause next)
+      }
+    }
+  } catch (e) { console.warn('[RTEditor] wrapIntoPages failed', e); }
 
   return editor;
 }

@@ -4525,3 +4525,280 @@ HINT:  Perhaps you meant to reference the column "p.program_id". | {"exception":
 [27-Nov-2025 06:37:35 Europe/Berlin] PHP Warning:  Undefined variable $base in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Syllabi\Views\partials\DeleteModal.php on line 12
 [27-Nov-2025 06:56:33 Europe/Berlin] PHP Warning:  Undefined variable $base in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Syllabi\Views\partials\DeleteModal.php on line 12
 [2025-11-28T05:12:48+01:00] dev.CRITICAL [req:51b221af98529c00] App\Modules\Syllabi\Models\SyllabiModel::getCollege(): Argument #1 ($collegeId) must be of type int, null given, called in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Syllabi\Controllers\SyllabiController.php on line 118 | {"exception":"TypeError","code":0,"file":"C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Syllabi\\Models\\SyllabiModel.php","line":48,"trace":"#0 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Syllabi\\Controllers\\SyllabiController.php(118): App\\Modules\\Syllabi\\Models\\SyllabiModel->getCollege(NULL)\n#1 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Controllers\\AppShellController.php(155): App\\Modules\\Syllabi\\Controllers\\SyllabiController->index()\n#2 C:\\xampp\\htdocs\\MindCloud-SCMS\\Router\\router.php(102): App\\Controllers\\AppShellController->render('syllabi')\n#3 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\bootstrap.php(116): route('/MindCloud-SCMS...', Object(App\\Models\\Postgres), 'GET')\n#4 C:\\xampp\\htdocs\\MindCloud-SCMS\\public\\index.php(7): require_once('C:\\\\xampp\\\\htdocs...')\n#5 {main}"}
+[2025-11-28T11:17:44+01:00] dev.CRITICAL [req:ab8e0716785056a8] SQLSTATE[42P10]: Invalid column reference: 7 ERROR:  for SELECT DISTINCT, ORDER BY expressions must appear in select list
+LINE 10:          AND ur.department_id = $1 ORDER BY LOWER(u.lname), ...
+                                                     ^ | {"exception":"PDOException","code":"42P10","file":"C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Courses\\Models\\CoursesModel.php","line":207,"trace":"#0 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Courses\\Models\\CoursesModel.php(207): PDOStatement->execute(Array)\n#1 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Courses\\Controllers\\CoursesController.php(151): App\\Modules\\Courses\\Models\\CoursesModel->listProfessors(1)\n#2 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Controllers\\AppShellController.php(155): App\\Modules\\Courses\\Controllers\\CoursesController->index()\n#3 C:\\xampp\\htdocs\\MindCloud-SCMS\\Router\\router.php(102): App\\Controllers\\AppShellController->render('courses')\n#4 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\bootstrap.php(116): route('/MindCloud-SCMS...', Object(App\\Models\\Postgres), 'GET')\n#5 C:\\xampp\\htdocs\\MindCloud-SCMS\\public\\index.php(7): require_once('C:\\\\xampp\\\\htdocs...')\n#6 {main}"}
+[2025-11-28T11:23:08+01:00] dev.CRITICAL [req:23e5200907dd0a36] SQLSTATE[42703]: Undefined column: 7 ERROR:  column "full_name" does not exist
+LINE 10:          AND ur.department_id = $1 ORDER BY LOWER(full_name)...
+                                                           ^
+HINT:  Perhaps you meant to reference the column "r.role_name". | {"exception":"PDOException","code":"42703","file":"C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Courses\\Models\\CoursesModel.php","line":208,"trace":"#0 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Courses\\Models\\CoursesModel.php(208): PDOStatement->execute(Array)\n#1 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Courses\\Controllers\\CoursesController.php(151): App\\Modules\\Courses\\Models\\CoursesModel->listProfessors(1)\n#2 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Controllers\\AppShellController.php(155): App\\Modules\\Courses\\Controllers\\CoursesController->index()\n#3 C:\\xampp\\htdocs\\MindCloud-SCMS\\Router\\router.php(102): App\\Controllers\\AppShellController->render('courses')\n#4 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\bootstrap.php(116): route('/MindCloud-SCMS...', Object(App\\Models\\Postgres), 'GET')\n#5 C:\\xampp\\htdocs\\MindCloud-SCMS\\public\\index.php(7): require_once('C:\\\\xampp\\\\htdocs...')\n#6 {main}"}
+[2025-11-28T11:23:15+01:00] dev.CRITICAL [req:102eaa292b161e0d] SQLSTATE[42703]: Undefined column: 7 ERROR:  column "full_name" does not exist
+LINE 10:          AND ur.department_id = $1 ORDER BY LOWER(full_name)...
+                                                           ^
+HINT:  Perhaps you meant to reference the column "r.role_name". | {"exception":"PDOException","code":"42703","file":"C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Courses\\Models\\CoursesModel.php","line":208,"trace":"#0 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Courses\\Models\\CoursesModel.php(208): PDOStatement->execute(Array)\n#1 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Courses\\Controllers\\CoursesController.php(151): App\\Modules\\Courses\\Models\\CoursesModel->listProfessors(1)\n#2 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Controllers\\AppShellController.php(155): App\\Modules\\Courses\\Controllers\\CoursesController->index()\n#3 C:\\xampp\\htdocs\\MindCloud-SCMS\\Router\\router.php(102): App\\Controllers\\AppShellController->render('courses')\n#4 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\bootstrap.php(116): route('/MindCloud-SCMS...', Object(App\\Models\\Postgres), 'GET')\n#5 C:\\xampp\\htdocs\\MindCloud-SCMS\\public\\index.php(7): require_once('C:\\\\xampp\\\\htdocs...')\n#6 {main}"}
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Undefined variable $row in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 52
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type null in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 52
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Undefined variable $row in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 53
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type null in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 53
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Undefined variable $row in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 54
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type null in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 54
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Undefined variable $row in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 55
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type null in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 55
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Undefined variable $row in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 59
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type null in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 59
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Undefined variable $row in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 60
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type null in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 60
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Undefined variable $curriculaDisplay in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 62
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Undefined variable $row in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 52
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type null in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 52
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Undefined variable $row in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 53
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type null in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 53
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Undefined variable $row in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 54
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type null in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 54
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Undefined variable $row in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 55
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type null in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 55
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Undefined variable $row in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 59
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type null in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 59
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Undefined variable $row in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 60
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type null in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 60
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Undefined variable $curriculaDisplay in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 62
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Undefined variable $row in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 52
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type null in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 52
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Undefined variable $row in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 53
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type null in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 53
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Undefined variable $row in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 54
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type null in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 54
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Undefined variable $row in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 55
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type null in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 55
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Undefined variable $row in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 59
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type null in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 59
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Undefined variable $row in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 60
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type null in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 60
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Undefined variable $curriculaDisplay in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 62
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Undefined variable $row in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 52
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type null in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 52
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Undefined variable $row in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 53
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type null in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 53
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Undefined variable $row in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 54
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type null in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 54
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Undefined variable $row in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 55
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type null in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 55
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Undefined variable $row in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 59
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type null in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 59
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Undefined variable $row in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 60
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Trying to access array offset on value of type null in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 60
+[28-Nov-2025 11:25:11 Europe/Berlin] PHP Warning:  Undefined variable $curriculaDisplay in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Courses\Views\partials\Table.php on line 62
+[28-Nov-2025 16:30:17 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[28-Nov-2025 16:30:17 Europe/Berlin] accounts.page rows=10 total=21 limit=10 offset=0
+[28-Nov-2025 16:30:17 Europe/Berlin] accounts.index total=21 rows=10
+[28-Nov-2025 16:30:17 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"department_id":null,"role_name":"Admin","department_short_name":"","college_short_name":""}
+[28-Nov-2025 16:30:21 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[28-Nov-2025 16:30:21 Europe/Berlin] accounts.page rows=1 total=1 limit=10 offset=0
+[28-Nov-2025 16:30:21 Europe/Berlin] accounts.index total=1 rows=1
+[28-Nov-2025 16:30:21 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-60001","fname":"Cyril","mname":"F","lname":"Pastor","email":"professor@lpunetwork.edu.ph","role_id":7,"department_id":1,"role_name":"Professor","department_short_name":"CCS","college_short_name":"CCS"}
+[28-Nov-2025 16:30:41 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[28-Nov-2025 16:30:41 Europe/Berlin] accounts.page rows=6 total=6 limit=10 offset=0
+[28-Nov-2025 16:30:41 Europe/Berlin] accounts.index total=6 rows=6
+[28-Nov-2025 16:30:41 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-50003","fname":"Jack","mname":"","lname":"Black","email":"jackblack@lpunetwork.edu.ph","role_id":6,"department_id":1,"role_name":"Chair","department_short_name":"CCS","college_short_name":"CCS"}
+[28-Nov-2025 16:31:32 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[28-Nov-2025 16:31:32 Europe/Berlin] accounts.page rows=10 total=21 limit=10 offset=0
+[28-Nov-2025 16:31:32 Europe/Berlin] accounts.index total=21 rows=10
+[28-Nov-2025 16:31:32 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"department_id":null,"role_name":"Admin","department_short_name":"","college_short_name":""}
+[28-Nov-2025 16:31:40 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[28-Nov-2025 16:31:40 Europe/Berlin] accounts.page rows=10 total=21 limit=10 offset=10
+[28-Nov-2025 16:31:40 Europe/Berlin] accounts.index total=21 rows=10
+[28-Nov-2025 16:31:40 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-50002","fname":"John","mname":"A","lname":"Doe","email":"chair2@lpunetwork.edu.ph","role_id":6,"department_id":2,"role_name":"Chair","department_short_name":"CEA","college_short_name":"CEA"}
+[28-Nov-2025 16:32:00 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[28-Nov-2025 16:32:00 Europe/Berlin] accounts.page rows=1 total=21 limit=10 offset=20
+[28-Nov-2025 16:32:00 Europe/Berlin] accounts.index total=21 rows=1
+[28-Nov-2025 16:32:00 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-30001","fname":"User3","mname":"C","lname":"VPAASecretary","email":"vsecretary@lpunetwork.edu.ph","role_id":3,"department_id":6,"role_name":"VPAA Secretary","department_short_name":"AAO","college_short_name":"AAO"}
+[28-Nov-2025 16:32:49 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[28-Nov-2025 16:32:49 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[28-Nov-2025 16:32:49 Europe/Berlin] accounts.page rows=10 total=22 limit=10 offset=0
+[28-Nov-2025 16:32:49 Europe/Berlin] accounts.index total=22 rows=10
+[28-Nov-2025 16:32:49 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"department_id":null,"role_name":"Admin","department_short_name":"","college_short_name":""}
+[28-Nov-2025 16:35:38 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[28-Nov-2025 16:35:38 Europe/Berlin] accounts.page rows=10 total=22 limit=10 offset=0
+[28-Nov-2025 16:35:38 Europe/Berlin] accounts.index total=22 rows=10
+[28-Nov-2025 16:35:38 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"department_id":null,"role_name":"Admin","department_short_name":"","college_short_name":""}
+[28-Nov-2025 16:35:51 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[28-Nov-2025 16:35:51 Europe/Berlin] accounts.page rows=3 total=3 limit=10 offset=0
+[28-Nov-2025 16:35:51 Europe/Berlin] accounts.index total=3 rows=3
+[28-Nov-2025 16:35:51 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-60005","fname":"Test","mname":null,"lname":"CCSProf","email":"professor2@lpunetwork.edu.ph","role_id":7,"department_id":1,"role_name":"Professor","department_short_name":"CCS","college_short_name":"CCS"}
+[29-Nov-2025 02:18:17 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[29-Nov-2025 02:18:17 Europe/Berlin] accounts.page rows=10 total=22 limit=10 offset=0
+[29-Nov-2025 02:18:17 Europe/Berlin] accounts.index total=22 rows=10
+[29-Nov-2025 02:18:17 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"department_id":null,"role_name":"Admin","department_short_name":"","college_short_name":""}
+[29-Nov-2025 15:20:59 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[29-Nov-2025 15:20:59 Europe/Berlin] accounts.page rows=10 total=22 limit=10 offset=0
+[29-Nov-2025 15:20:59 Europe/Berlin] accounts.index total=22 rows=10
+[29-Nov-2025 15:20:59 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"department_id":null,"role_name":"Admin","department_short_name":"","college_short_name":""}
+[30-Nov-2025 04:57:30 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Nov-2025 04:57:30 Europe/Berlin] accounts.page rows=10 total=22 limit=10 offset=0
+[30-Nov-2025 04:57:30 Europe/Berlin] accounts.index total=22 rows=10
+[30-Nov-2025 04:57:30 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"department_id":null,"role_name":"Admin","department_short_name":"","college_short_name":""}
+[30-Nov-2025 04:57:40 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Nov-2025 04:57:40 Europe/Berlin] accounts.page rows=10 total=22 limit=10 offset=0
+[30-Nov-2025 04:57:40 Europe/Berlin] accounts.index total=22 rows=10
+[30-Nov-2025 04:57:40 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"department_id":null,"role_name":"Admin","department_short_name":"","college_short_name":""}
+[30-Nov-2025 04:57:42 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Nov-2025 04:57:42 Europe/Berlin] accounts.page rows=10 total=22 limit=10 offset=0
+[30-Nov-2025 04:57:42 Europe/Berlin] accounts.index total=22 rows=10
+[30-Nov-2025 04:57:42 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"department_id":null,"role_name":"Admin","department_short_name":"","college_short_name":""}
+[30-Nov-2025 04:57:44 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Nov-2025 04:57:44 Europe/Berlin] accounts.page rows=0 total=0 limit=10 offset=0
+[30-Nov-2025 04:57:44 Europe/Berlin] accounts.index total=0 rows=0
+[30-Nov-2025 04:57:45 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Nov-2025 04:57:45 Europe/Berlin] accounts.page rows=0 total=0 limit=10 offset=0
+[30-Nov-2025 04:57:45 Europe/Berlin] accounts.index total=0 rows=0
+[30-Nov-2025 04:57:46 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Nov-2025 04:57:46 Europe/Berlin] accounts.page rows=10 total=22 limit=10 offset=0
+[30-Nov-2025 04:57:46 Europe/Berlin] accounts.index total=22 rows=10
+[30-Nov-2025 04:57:46 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"department_id":null,"role_name":"Admin","department_short_name":"","college_short_name":""}
+[30-Nov-2025 04:59:20 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Nov-2025 04:59:20 Europe/Berlin] accounts.page rows=10 total=22 limit=10 offset=0
+[30-Nov-2025 04:59:20 Europe/Berlin] accounts.index total=22 rows=10
+[30-Nov-2025 04:59:20 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"department_id":null,"role_name":"Admin","department_short_name":"","college_short_name":""}
+[30-Nov-2025 05:00:09 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Nov-2025 05:00:09 Europe/Berlin] accounts.page rows=2 total=2 limit=10 offset=0
+[30-Nov-2025 05:00:09 Europe/Berlin] accounts.index total=2 rows=2
+[30-Nov-2025 05:00:09 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-20001","fname":"User2","mname":"B","lname":"VPAA","email":"vpaa@lpunetwork.edu.ph","role_id":2,"department_id":6,"role_name":"VPAA","department_short_name":"AAO","college_short_name":"AAO"}
+[30-Nov-2025 05:05:44 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Nov-2025 05:05:44 Europe/Berlin] accounts.page rows=1 total=1 limit=10 offset=0
+[30-Nov-2025 05:05:44 Europe/Berlin] accounts.index total=1 rows=1
+[30-Nov-2025 05:05:44 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-30001","fname":"User3","mname":"C","lname":"VPAASecretary","email":"vsecretary@lpunetwork.edu.ph","role_id":3,"department_id":6,"role_name":"VPAA Secretary","department_short_name":"AAO","college_short_name":"AAO"}
+[30-Nov-2025 05:05:52 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Nov-2025 05:05:52 Europe/Berlin] accounts.page rows=10 total=22 limit=10 offset=0
+[30-Nov-2025 05:05:52 Europe/Berlin] accounts.index total=22 rows=10
+[30-Nov-2025 05:05:52 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"department_id":null,"role_name":"Admin","department_short_name":"","college_short_name":""}
+[30-Nov-2025 05:14:50 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Nov-2025 05:14:50 Europe/Berlin] accounts.page rows=10 total=22 limit=10 offset=0
+[30-Nov-2025 05:14:50 Europe/Berlin] accounts.index total=22 rows=10
+[30-Nov-2025 05:14:50 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-10001","fname":"User1","mname":"B","lname":"Admin","email":"admin@lpunetwork.edu.ph","role_id":1,"department_id":null,"role_name":"Admin","department_short_name":"","college_short_name":""}
+[30-Nov-2025 06:12:49 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Nov-2025 06:12:49 Europe/Berlin] accounts.page rows=8 total=8 limit=10 offset=0
+[30-Nov-2025 06:12:49 Europe/Berlin] accounts.index total=8 rows=8
+[30-Nov-2025 06:12:49 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-50003","fname":"Jack","mname":"","lname":"Black","email":"jackblack@lpunetwork.edu.ph","role_id":6,"department_id":1,"role_name":"Chair","department_short_name":"CCS","college_short_name":"CCS"}
+[30-Nov-2025 06:13:33 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Nov-2025 06:13:33 Europe/Berlin] accounts.page rows=6 total=6 limit=10 offset=0
+[30-Nov-2025 06:13:33 Europe/Berlin] accounts.index total=6 rows=6
+[30-Nov-2025 06:13:33 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-50003","fname":"Jack","mname":"","lname":"Black","email":"jackblack@lpunetwork.edu.ph","role_id":6,"department_id":1,"role_name":"Chair","department_short_name":"CCS","college_short_name":"CCS"}
+[30-Nov-2025 06:13:37 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Nov-2025 06:13:37 Europe/Berlin] accounts.page rows=5 total=5 limit=10 offset=0
+[30-Nov-2025 06:13:37 Europe/Berlin] accounts.index total=5 rows=5
+[30-Nov-2025 06:13:37 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-50003","fname":"Jack","mname":"","lname":"Black","email":"jackblack@lpunetwork.edu.ph","role_id":6,"department_id":1,"role_name":"Chair","department_short_name":"CCS","college_short_name":"CCS"}
+[30-Nov-2025 06:15:15 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Nov-2025 06:15:15 Europe/Berlin] accounts.page rows=3 total=3 limit=10 offset=0
+[30-Nov-2025 06:15:15 Europe/Berlin] accounts.index total=3 rows=3
+[30-Nov-2025 06:15:15 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-60005","fname":"Test","mname":null,"lname":"CCSProf","email":"professor2@lpunetwork.edu.ph","role_id":7,"department_id":1,"role_name":"Professor","department_short_name":"CCS","college_short_name":"CCS"}
+[30-Nov-2025 06:15:29 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Nov-2025 06:15:29 Europe/Berlin] accounts.page rows=8 total=8 limit=10 offset=0
+[30-Nov-2025 06:15:29 Europe/Berlin] accounts.index total=8 rows=8
+[30-Nov-2025 06:15:29 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-50003","fname":"Jack","mname":"","lname":"Black","email":"jackblack@lpunetwork.edu.ph","role_id":6,"department_id":1,"role_name":"Chair","department_short_name":"CCS","college_short_name":"CCS"}
+[30-Nov-2025 06:15:59 Europe/Berlin] AccountsController using model: App\Modules\Accounts\Models\AccountsModel
+[30-Nov-2025 06:15:59 Europe/Berlin] accounts.page rows=8 total=8 limit=10 offset=0
+[30-Nov-2025 06:15:59 Europe/Berlin] accounts.index total=8 rows=8
+[30-Nov-2025 06:15:59 Europe/Berlin] accounts.index firstRow={"id_no":"2025-01-50003","fname":"Jack","mname":"","lname":"Black","email":"jackblack@lpunetwork.edu.ph","role_id":6,"department_id":1,"role_name":"Chair","department_short_name":"CCS","college_short_name":"CCS"}
+[01-Dec-2025 04:41:20 Europe/Berlin] PHP Warning:  Undefined variable $GLOBAL_ROLES in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Accounts\Controllers\AccountsController.php on line 128
+[2025-12-01T04:41:20+01:00] development.CRITICAL [req:e4b0b889f05376cc] in_array(): Argument #2 ($haystack) must be of type array, null given | {"exception":"TypeError","code":0,"file":"C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Accounts\\Controllers\\AccountsController.php","line":128,"trace":"#0 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Accounts\\Controllers\\AccountsController.php(128): in_array('Dean', NULL, true)\n#1 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Controllers\\AppShellController.php(155): App\\Modules\\Accounts\\Controllers\\AccountsController->index()\n#2 C:\\xampp\\htdocs\\MindCloud-SCMS\\Router\\router.php(102): App\\Controllers\\AppShellController->render('accounts')\n#3 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\bootstrap.php(116): route('/MindCloud-SCMS...', Object(App\\Models\\Postgres), 'GET')\n#4 C:\\xampp\\htdocs\\MindCloud-SCMS\\public\\index.php(7): require_once('C:\\\\xampp\\\\htdocs...')\n#5 {main}"}
+[2025-12-01T04:47:34+01:00] development.CRITICAL [req:f5fc81d027f45f74] syntax error, unexpected variable "$GLOBAL_ROLES", expecting ":" | {"exception":"ParseError","code":0,"file":"C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Accounts\\Controllers\\AccountsController.php","line":128,"trace":"#0 [internal function]: {closure}('App\\\\Modules\\\\Acc...')\n#1 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Controllers\\AppShellController.php(115): class_exists('App\\\\Modules\\\\Acc...')\n#2 C:\\xampp\\htdocs\\MindCloud-SCMS\\Router\\router.php(102): App\\Controllers\\AppShellController->render('accounts')\n#3 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\bootstrap.php(116): route('/MindCloud-SCMS...', Object(App\\Models\\Postgres), 'GET')\n#4 C:\\xampp\\htdocs\\MindCloud-SCMS\\public\\index.php(7): require_once('C:\\\\xampp\\\\htdocs...')\n#5 {main}"}
+[2025-12-01T04:47:38+01:00] development.CRITICAL [req:917af54f4e2a39ed] syntax error, unexpected variable "$GLOBAL_ROLES", expecting ":" | {"exception":"ParseError","code":0,"file":"C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Accounts\\Controllers\\AccountsController.php","line":128,"trace":"#0 [internal function]: {closure}('App\\\\Modules\\\\Acc...')\n#1 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Controllers\\AppShellController.php(115): class_exists('App\\\\Modules\\\\Acc...')\n#2 C:\\xampp\\htdocs\\MindCloud-SCMS\\Router\\router.php(102): App\\Controllers\\AppShellController->render('accounts')\n#3 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\bootstrap.php(116): route('/MindCloud-SCMS...', Object(App\\Models\\Postgres), 'GET')\n#4 C:\\xampp\\htdocs\\MindCloud-SCMS\\public\\index.php(7): require_once('C:\\\\xampp\\\\htdocs...')\n#5 {main}"}
+[2025-12-01T04:48:39+01:00] development.CRITICAL [req:5cba9160bf01fb72] syntax error, unexpected variable "$GLOBAL_ROLES", expecting ":" | {"exception":"ParseError","code":0,"file":"C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Accounts\\Controllers\\AccountsController.php","line":128,"trace":"#0 [internal function]: {closure}('App\\\\Modules\\\\Acc...')\n#1 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Controllers\\AppShellController.php(115): class_exists('App\\\\Modules\\\\Acc...')\n#2 C:\\xampp\\htdocs\\MindCloud-SCMS\\Router\\router.php(102): App\\Controllers\\AppShellController->render('accounts')\n#3 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\bootstrap.php(116): route('/MindCloud-SCMS...', Object(App\\Models\\Postgres), 'GET')\n#4 C:\\xampp\\htdocs\\MindCloud-SCMS\\public\\index.php(7): require_once('C:\\\\xampp\\\\htdocs...')\n#5 {main}"}
+[01-Dec-2025 10:46:02 Europe/Berlin] PHP Warning:  Undefined variable $status in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Departments\Views\index.php on line 26
+[2025-12-01T10:46:02+01:00] development.CRITICAL [req:835435c78e2974d3] Call to undefined function departments_url_with() | {"exception":"Error","code":0,"file":"C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Departments\\Views\\index.php","line":27,"trace":"#0 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Departments\\Controllers\\DepartmentsController.php(80): require()\n#1 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Controllers\\AppShellController.php(155): App\\Modules\\Departments\\Controllers\\DepartmentsController->index()\n#2 C:\\xampp\\htdocs\\MindCloud-SCMS\\Router\\router.php(102): App\\Controllers\\AppShellController->render('departments')\n#3 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\bootstrap.php(116): route('/MindCloud-SCMS...', Object(App\\Models\\Postgres), 'GET')\n#4 C:\\xampp\\htdocs\\MindCloud-SCMS\\public\\index.php(7): require_once('C:\\\\xampp\\\\htdocs...')\n#5 {main}"}
+[01-Dec-2025 10:46:11 Europe/Berlin] PHP Warning:  Undefined variable $status in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Departments\Views\index.php on line 26
+[2025-12-01T10:46:11+01:00] development.CRITICAL [req:ff7e0b19614a5d53] Call to undefined function departments_url_with() | {"exception":"Error","code":0,"file":"C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Departments\\Views\\index.php","line":27,"trace":"#0 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Departments\\Controllers\\DepartmentsController.php(80): require()\n#1 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Controllers\\AppShellController.php(155): App\\Modules\\Departments\\Controllers\\DepartmentsController->index()\n#2 C:\\xampp\\htdocs\\MindCloud-SCMS\\Router\\router.php(102): App\\Controllers\\AppShellController->render('departments')\n#3 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\bootstrap.php(116): route('/MindCloud-SCMS...', Object(App\\Models\\Postgres), 'GET')\n#4 C:\\xampp\\htdocs\\MindCloud-SCMS\\public\\index.php(7): require_once('C:\\\\xampp\\\\htdocs...')\n#5 {main}"}
+[2025-12-05T07:04:33+01:00] development.CRITICAL [req:d41ff5a358510da5] Call to undefined function departments_url_with() | {"exception":"Error","code":0,"file":"C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Programs\\Views\\index.php","line":25,"trace":"#0 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Programs\\Controllers\\ProgramsController.php(68): require()\n#1 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Controllers\\AppShellController.php(155): App\\Modules\\Programs\\Controllers\\ProgramsController->index()\n#2 C:\\xampp\\htdocs\\MindCloud-SCMS\\Router\\router.php(102): App\\Controllers\\AppShellController->render('programs')\n#3 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\bootstrap.php(116): route('/MindCloud-SCMS...', Object(App\\Models\\Postgres), 'GET')\n#4 C:\\xampp\\htdocs\\MindCloud-SCMS\\public\\index.php(7): require_once('C:\\\\xampp\\\\htdocs...')\n#5 {main}"}
+[05-Dec-2025 07:04:52 Europe/Berlin] PHP Deprecated:  Creation of dynamic property App\Modules\Departments\Controllers\DepartmentsController::$flashHelper is deprecated in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Departments\Controllers\DepartmentsController.php on line 27
+[2025-12-05T07:05:55+01:00] development.CRITICAL [req:a2852d49da7d39cf] Call to undefined function departments_url_with() | {"exception":"Error","code":0,"file":"C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Programs\\Views\\index.php","line":25,"trace":"#0 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Programs\\Controllers\\ProgramsController.php(68): require()\n#1 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Controllers\\AppShellController.php(155): App\\Modules\\Programs\\Controllers\\ProgramsController->index()\n#2 C:\\xampp\\htdocs\\MindCloud-SCMS\\Router\\router.php(102): App\\Controllers\\AppShellController->render('programs')\n#3 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\bootstrap.php(116): route('/MindCloud-SCMS...', Object(App\\Models\\Postgres), 'GET')\n#4 C:\\xampp\\htdocs\\MindCloud-SCMS\\public\\index.php(7): require_once('C:\\\\xampp\\\\htdocs...')\n#5 {main}"}
+[2025-12-05T07:07:01+01:00] development.CRITICAL [req:b2991b15571aedf8] Call to undefined function departments_url_with() | {"exception":"Error","code":0,"file":"C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Programs\\Views\\index.php","line":25,"trace":"#0 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Programs\\Controllers\\ProgramsController.php(68): require()\n#1 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Controllers\\AppShellController.php(155): App\\Modules\\Programs\\Controllers\\ProgramsController->index()\n#2 C:\\xampp\\htdocs\\MindCloud-SCMS\\Router\\router.php(102): App\\Controllers\\AppShellController->render('programs')\n#3 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\bootstrap.php(116): route('/MindCloud-SCMS...', Object(App\\Models\\Postgres), 'GET')\n#4 C:\\xampp\\htdocs\\MindCloud-SCMS\\public\\index.php(7): require_once('C:\\\\xampp\\\\htdocs...')\n#5 {main}"}
+[2025-12-05T07:07:06+01:00] development.CRITICAL [req:69cb5c145fe29cfe] Call to undefined function departments_url_with() | {"exception":"Error","code":0,"file":"C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Programs\\Views\\index.php","line":25,"trace":"#0 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Modules\\Programs\\Controllers\\ProgramsController.php(68): require()\n#1 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\Controllers\\AppShellController.php(155): App\\Modules\\Programs\\Controllers\\ProgramsController->index()\n#2 C:\\xampp\\htdocs\\MindCloud-SCMS\\Router\\router.php(102): App\\Controllers\\AppShellController->render('programs')\n#3 C:\\xampp\\htdocs\\MindCloud-SCMS\\app\\bootstrap.php(116): route('/MindCloud-SCMS...', Object(App\\Models\\Postgres), 'GET')\n#4 C:\\xampp\\htdocs\\MindCloud-SCMS\\public\\index.php(7): require_once('C:\\\\xampp\\\\htdocs...')\n#5 {main}"}
+[06-Dec-2025 04:55:46 Europe/Berlin] Program chairs: Array
+(
+    [0] => Array
+        (
+            [id_no] => 2025-01-50003
+            [fname] => Jack
+            [mname] => 
+            [lname] => Black
+        )
+
+    [1] => Array
+        (
+            [id_no] => 2025-01-50001
+            [fname] => Prince
+            [mname] => E
+            [lname] => Caparaz
+        )
+
+    [2] => Array
+        (
+            [id_no] => 2025-01-50002
+            [fname] => John
+            [mname] => A
+            [lname] => Doe
+        )
+
+    [3] => Array
+        (
+            [id_no] => 2025-01-60004
+            [fname] => Chair
+            [mname] => 
+            [lname] => Four
+        )
+
+    [4] => Array
+        (
+            [id_no] => 2025-01-50005
+            [fname] => Robert
+            [mname] => 
+            [lname] => Lee
+        )
+
+)
+
+[06-Dec-2025 05:06:40 Europe/Berlin] Program chairs: Array
+(
+    [0] => Array
+        (
+            [id_no] => 2025-01-50003
+            [fname] => Jack
+            [mname] => 
+            [lname] => Black
+        )
+
+    [1] => Array
+        (
+            [id_no] => 2025-01-50001
+            [fname] => Prince
+            [mname] => E
+            [lname] => Caparaz
+        )
+
+    [2] => Array
+        (
+            [id_no] => 2025-01-50002
+            [fname] => John
+            [mname] => A
+            [lname] => Doe
+        )
+
+    [3] => Array
+        (
+            [id_no] => 2025-01-60004
+            [fname] => Chair
+            [mname] => 
+            [lname] => Four
+        )
+
+    [4] => Array
+        (
+            [id_no] => 2025-01-50005
+            [fname] => Robert
+            [mname] => 
+            [lname] => Lee
+        )
+
+)
+
+[06-Dec-2025 10:15:27 Europe/Berlin] PHP Warning:  Undefined array key "status" in C:\xampp\htdocs\MindCloud-SCMS\app\Modules\Programs\Models\ProgramsModel.php on line 132
