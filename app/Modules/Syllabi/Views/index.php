@@ -20,6 +20,11 @@
  */
 $base = defined('BASE_PATH') ? BASE_PATH : '';
 $PAGE_KEY = 'syllabi';
+
+// Cache busting for Syllabi-Scaffold.js
+$scaffoldPath = $ASSET_BASE . '/assets/js/syllabi/Syllabi-Scaffold.php';
+$scaffoldAbs  = $_SERVER['DOCUMENT_ROOT'] . str_replace($base, '', $scaffoldPath);
+$scaffoldVer  = @filemtime($scaffoldAbs) ?: time();
 ?>
 <link rel="stylesheet" href="<?= $ASSET_BASE ?>/assets/css/TemplateBuilder-Scaffold.css">
 
@@ -28,7 +33,7 @@ $PAGE_KEY = 'syllabi';
   window.BASE_PATH = "<?= $esc($base) ?>";
 </script>
 
-<script type="module" src="<?= $esc($ASSET_BASE) ?>/assets/js/syllabi/Syllabi-Scaffold.js?v=<?= time() ?>"></script>
+<script type="module" src="<?= $esc($scaffoldPath) ?>?v=<?= $scaffoldVer ?>"></script>
 
 <div><!-- CONTAINER OPEN -->
 
