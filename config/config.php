@@ -53,3 +53,9 @@ define('BASE_PATH', $base);
 
 //$basePath = BASE_PATH ?: '/MindCloud-SCMS';
 // echo "USE_MOCK: " . var_export(USE_MOCK, true) . "<br>"; // delete for production
+
+// Role groupings (global arrays)
+$GLOBAL_ROLES  = ['VPAA', 'VPAA Secretary'];
+$DEAN_ROLES    = ['Dean'];
+$CHAIR_ROLES   = ['Chair'];
+$FACULTY_ROLES = ['Professor'];
