@@ -1,1 +1,23 @@
+# Environment
 .env
+.envnode_modules/ 
+
+# Node / package manager artifacts
+node_modules/
+.vite/
+dist/
+build/
+npm-debug.log*
+yarn-error.log*
+pnpm-lock.yaml
+package-lock.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Misc
+coverage/
+.env.local
