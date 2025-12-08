@@ -4,6 +4,8 @@
   "description": "A syllabus content management system created by MindCloud.",
   "main": "index.js",
   "scripts": {
+    "dev": "vite",
+    "build": "vite build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -20,5 +22,22 @@
   "homepage": "https://github.com/PMaraan/MindCloud-SCMS#readme",
   "devDependencies": {
     "vite": "^7.2.4"
+  },
+  "dependencies": {
+    "@tiptap/core": "^2.27.1",
+    "@tiptap/extension-color": "^2.27.1",
+    "@tiptap/extension-font-family": "^2.27.1",
+    "@tiptap/extension-highlight": "^2.27.1",
+    "@tiptap/extension-strike": "^2.27.1",
+    "@tiptap/extension-subscript": "^2.27.1",
+    "@tiptap/extension-superscript": "^2.27.1",
+    "@tiptap/extension-table": "^2.27.1",
+    "@tiptap/extension-table-cell": "^2.27.1",
+    "@tiptap/extension-table-header": "^2.27.1",
+    "@tiptap/extension-table-row": "^2.27.1",
+    "@tiptap/extension-text-align": "^2.27.1",
+    "@tiptap/extension-text-style": "^2.27.1",
+    "@tiptap/extension-underline": "^2.27.1",
+    "@tiptap/starter-kit": "^2.27.1"
   }
 }
