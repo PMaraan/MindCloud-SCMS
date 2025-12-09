@@ -86,6 +86,52 @@ final class RTEditorController
             // You can log if you want: error_log('[RTEditor@index] ' . $e->getMessage());
         }
 
+        // --- SANITIZE nested pageWrapper nodes in server payload (defensive) ---
+        // This will remove nested pageWrapper wrappers by flattening their children into the outer node.
+        function flatten_page_wrappers(array $node) : array {
+            // only nodes with 'type' and 'content' are considered
+            if (!isset($node['type']) || !is_array($node['content'] ?? null)) return $node;
+
+            // If this node is a pageWrapper, inspect its children and flatten any child pageWrapper
+            if ($node['type'] === 'pageWrapper' || $node['type'] === 'page-wrapper' || $node['type'] === 'page_wrapper') {
+                $newContent = [];
+                foreach ($node['content'] as $child) {
+                    // If child is a pageWrapper, splice its content in instead of keeping the child wrapper
+                    if (isset($child['type']) && ($child['type'] === 'pageWrapper' || $child['type'] === 'page-wrapper' || $child['type'] === 'page_wrapper') && is_array($child['content'] ?? null)) {
+                        // recursively flatten child's children too
+                        foreach ($child['content'] as $grand) {
+                            $newContent[] = flatten_page_wrappers($grand);
+                        }
+                    } else {
+                        $newContent[] = flatten_page_wrappers($child);
+                    }
+                }
+                $node['content'] = $newContent;
+                return $node;
+            }
+
+            // For non-pageWrapper nodes, recurse into content if present
+            if (is_array($node['content'] ?? null)) {
+                $nc = [];
+                foreach ($node['content'] as $c) {
+                    $nc[] = flatten_page_wrappers($c);
+                }
+                $node['content'] = $nc;
+            }
+            return $node;
+        }
+
+        try {
+            // try parse JSON and flatten nested wrappers (non-fatal)
+            $maybe = json_decode($initialJsonRaw, true);
+            if (is_array($maybe) && isset($maybe['type']) && is_array($maybe['content'] ?? null)) {
+                $flattened = flatten_page_wrappers($maybe);
+                $initialJsonRaw = json_encode($flattened, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            }
+        } catch (\Throwable $e) {
+            // non-fatal — keep original payload if anything goes wrong
+        }
+
         // 4) Provide a safe fallback doc so the <script id="rt-initial-json"> is always present
         if (!is_string($initialJsonRaw) || trim($initialJsonRaw) === '') {
             $initialJsonRaw = '{"type":"doc","content":[{"type":"paragraph"}]}';
