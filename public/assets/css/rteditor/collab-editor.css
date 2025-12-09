@@ -1,370 +1,175 @@
 /* Path: /public/assets/css/rteditor/collab-editor.css
-   Minimal, framework-free ProseMirror styling so typing feels natural. */
+   Cleaned & deduped — preserves comments/anchors for maintainers.
+   Purpose: readable paged editor styling (canvas gray, pages white, visible gap).
+*/
 
-#editor { position: relative; z-index: 1; background: #fff; }
+/* =========================================================
+   0) Design tokens & global anchors
+   ========================================================= */
+:root{
+  --rt-toolbar-h: 52px; /* toolbar height used by page layout */
+  --canvas-bg: #f2f3f5;  /* light gray canvas behind sheets */
+  --sheet-bg: #ffffff;   /* white paper */
+  --sheet-border: #e5e7eb;
+  --muted: #6c757d;
+}
+
+/* =========================================================
+   1) Editor container & ProseMirror typography / basic controls
+   ========================================================= */
+
+/* Editor container: let the canvas (rt-canvas) show through */
+#editor { position: relative; z-index: 1; background: transparent; }
 #editor .ProseMirror {
   min-height: 360px;
   outline: none;
   white-space: pre-wrap;
   word-break: break-word;
   padding: 0; /* outer #editor already has padding (Bootstrap card-body) */
+  background: transparent !important; /* show canvas behind ProseMirror */
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11pt;
 }
 
-/* Toolbar look when it sits inside the sticky card header */
-.card > .card-header .rt-toolbar {
-  background: #fff;
-}
-
-:root{
-  /* toolbar height stays here (editor-specific) */
-  --rt-toolbar-h: 52px;   /* fixed ribbon height */
-  /* --app-topbar-h and --sidebar-w are managed by SidebarComponent.css */
-}
-
-/* =========================
-   Page-specific sticky header (title + toolbar together)
-   Applies only to the container with class .rt-sticky-header
-   ========================= */
-/* Sticky container which sits at the top of the main-content area.
-   When we're using .editor-page we want it to sit flush under the navbar
-   and span the entire width of the main-content (not the full viewport). */
-.rt-sticky-header {
-  position: sticky;
-  top: 0;                       /* stick to the top of the scrolling container (.main-content) */
-  z-index: 1031;
-  background: #fff;
-  border-bottom: 1px solid rgba(0,0,0,.06);
-  padding: .25rem 1rem;         /* a bit smaller vertical padding to avoid visual bulk */
-  box-sizing: border-box;
-  width: 100%;                  /* fill the width of the main-content column */
-  margin: 0;                    /* ensure no extra offsets */
-}
-
-/* Make sure the container touches the navbar when in editor-page mode:
-   the navbar sits outside .main-content, so by making html/body not scroll
-   and main-content start directly under navbar, .rt-sticky-header's top:0
-   will align with bottom of navbar. */
-body.editor-page .main-content {
-  padding-top: 0 !important; /* clear any container padding (e.g. py-4) that pushes header down */
-}
-
-/* Give the sticky area horizontal breathing room inside the main-content */
-body.editor-page .rt-sticky-header {
-  padding-left: 1rem;
-  padding-right: 1rem;
-}
-
-/* Constrain high z-index to toolbar/popovers inside the editor header only */
-body.editor-page .rt-sticky-header .dropdown-menu,
-body.editor-page .rt-sticky-header .popover,
-body.editor-page .rt-sticky-header .tooltip {
-  z-index: 2200 !important;
-}
-
-/* ensure title row and toolbar stack vertically with proper spacing */
-.rt-sticky-header > .d-flex.align-items-center {
-  margin-bottom: .25rem; /* smaller gap so toolbar is close but not overlapping */
-}
-
-/* toolbar inside sticky header: keep toolbar controls visible & not overlapping */
-.rt-sticky-header .rt-toolbar,
-.rt-sticky-header .rt-toolbar-sticky,
-.rt-sticky-header .rt-fixed-toolbar {
-  display: flex;
-  align-items: center;
-  gap: .5rem;
-  padding: .25rem 0;
-  background: transparent;
-  margin: 0;
-  width: 100%;
-  flex-wrap: wrap; /* allow buttons to flow to next row on narrow screens */
-}
-
-/* Push down the immediate canvas container that follows the sticky header
-   by the visible header height (only toolbar height + breathing) */
-.rt-sticky-header + .container-fluid {
-  padding-top: calc(var(--rt-toolbar-h, 52px) + 0.5rem); /* uses toolbar height only */
-}
-
-/* Ensure floating menus from toolbar are above everything when opened */
-.rt-sticky-header .dropdown-menu,
-.rt-sticky-header .popover,
-.rt-sticky-header .tooltip {
-  z-index: 1080; /* keep well above canvas and navbar backdrops */
-}
-
-/* If any toolbar helpers previously set .rt-toolbar-sticky or similar to sticky,
-   ensure inside this header it is static (no double-sticky) */
-.rt-sticky-header .rt-toolbar-sticky {
-  position: static !important;
-}
-
-/* LEGACY: neutralize previous fixed toolbar rules so toolbar flows inside .rt-sticky-header */
-.rt-fixed-toolbar {
-  position: static !important;
-  left: auto !important;
-  right: auto !important;
-  top: auto !important;
-  box-shadow: none !important;
-  padding: 0 !important;
-  background: transparent !important;
-  z-index: auto !important;
-  display: block;
-}
-
-/* Ensure toolbar menus float above main content and canvas */
-.rt-fixed-toolbar .dropdown-menu,
-.rt-fixed-toolbar .popover,
-.rt-fixed-toolbar .tooltip {
-  z-index: 1055; /* above modals backdrop 1050, safe with Bootstrap */
-}
-
-/* Mobile / narrow: sidebar usually overlays; let toolbar span full width */
-@media (max-width: 991.98px){
-  .rt-fixed-toolbar{ left: 0; }
-}
-
-/* (Optional) If your sidebar toggle adds a body class, adjust offset when collapsed.
-   Replace `.sidebar-collapsed` with the real class your toggle uses. */
-body.sidebar-collapsed .rt-fixed-toolbar{
-  left: 0; /* or set to the collapsed width if it’s not zero */
-}
-
-.card > .card-header .rt-toolbar .btn,
-.card > .card-header .rt-toolbar .form-select,
-.card > .card-header .rt-toolbar .form-control {
-  margin-top: .25rem;
-  margin-bottom: .25rem;
-}
-
-/* Paragraph spacing */
-#editor .ProseMirror p {
-  margin-top: 0;
-  margin-bottom: 8px;   /* 6pt ≈ 8px – matches Word test */
-  line-height: 1.5;     /* toolbar can still override */
-}
-
-/* Headings */
-#editor .ProseMirror h1 {
-  font-size: 1.5rem;
-  margin-top: 0;
-  margin-bottom: 8px;
-}
-#editor .ProseMirror h2 {
-  font-size: 1.25rem;
-  margin-top: 0;
-  margin-bottom: 8px;
-}
-#editor .ProseMirror h3 {
-  font-size: 1.125rem;
-  margin-top: 0;
-  margin-bottom: 8px;
-}
-
-/* Lists */
-#editor .ProseMirror ul, 
-#editor .ProseMirror ol { padding-left: 1.5rem; margin: 0 0 .75rem; }
-
-/* Code block / blockquote */
+/* Paragraphs, headings, lists, code, blockquote */
+#editor .ProseMirror p { margin: 0 0 8px; line-height: 1.15; }
+#editor .ProseMirror h1 { font-size: 1.5rem; margin: 0 0 8px; }
+#editor .ProseMirror h2 { font-size: 1.25rem; margin: 0 0 8px; }
+#editor .ProseMirror h3 { font-size: 1.125rem; margin: 0 0 8px; }
+#editor .ProseMirror ul, #editor .ProseMirror ol { padding-left: 1.5rem; margin: 0 0 .75rem; }
 #editor .ProseMirror pre { background: #f8f9fa; padding: .75rem; border-radius: .5rem; }
-#editor .ProseMirror blockquote { border-left: 3px solid #dee2e6; margin: .75rem 0; padding: .25rem .75rem; color: #6c757d; }
+#editor .ProseMirror blockquote { border-left: 3px solid #dee2e6; margin: .75rem 0; padding: .25rem .75rem; color: var(--muted); }
 
-/* Table basics (if you add tables later) */
-#editor .ProseMirror table { border-collapse: collapse; width: 100%; margin: .75rem 0; }
-#editor .ProseMirror th,
-#editor .ProseMirror td { border: 1px solid #dee2e6; padding: .5rem; }
+/* Tables in ProseMirror */
+#editor .ProseMirror table { border-collapse: collapse; width: 100%; margin: .75rem 0; table-layout: fixed; }
+#editor .ProseMirror th, #editor .ProseMirror td { border: 1px solid #dee2e6; padding: .5rem; vertical-align: top; background: #fff; }
+#editor .ProseMirror th { background: #f8f9fa; font-weight: 600; text-align: left; }
 
-/* Defensive: ensure editor remains interactive */
+/* Editor interactivity defensive rules */
 #editor, #editor * { pointer-events: auto; user-select: text; }
 #editor .ProseMirror[contenteditable="false"] { background: #f8f9fa; }
 
 #editor mark { padding: 0 .15em; border-radius: .15rem; }
 
-/* sensible defaults 
-#editor .ProseMirror p,
-#editor .ProseMirror h1,
-#editor .ProseMirror h2,
-#editor .ProseMirror h3,
-#editor .ProseMirror blockquote {
-  line-height: 1.15;
-  margin-top: 0;
-  margin-bottom: .75rem; /* visual breathing room; user setting overrides inline 
-}*/
+/* Signature UI (node styles) */
+#editor .rt-signature-field { display: block; border: 1px dashed #c9c9c9; border-radius: .25rem; padding: .5rem .75rem; margin: .5rem 0; background: #fcfcfc; }
+#editor .rt-signature-line { border-bottom: 2px solid #333; height: 1.75rem; margin-bottom: .25rem; }
+#editor .rt-signature-meta { font-size: .85rem; color: var(--muted); }
 
-/* lists: paragraphs inside list items should not add extra bottom margin by default */
-#editor .ProseMirror li > p {
-  margin: 0; /* user-set spacing will override with inline style */
-}
+/* =========================================================
+   2) Toolbar / sticky header
+   ========================================================= */
 
-/* tables styling */
-#editor .ProseMirror table {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-}
+/* Toolbar look when inside the sticky card header */
+.card > .card-header .rt-toolbar { background: #fff; }
 
-#editor .ProseMirror th,
-#editor .ProseMirror td {
-  border: 1px solid #dee2e6;
-  padding: .5rem;
-  vertical-align: top;
-  background: #fff;
-}
-
-#editor .ProseMirror th {
-  background: #f8f9fa;
-  font-weight: 600;
-  text-align: left;
-}
-
-/* show column resize handle nicer */
-#editor .ProseMirror .column-resize-handle {
-  position: absolute;
-  right: -2px;
+/* Sticky editor header area (title + toolbar) */
+.rt-sticky-header {
+  position: sticky;
   top: 0;
-  bottom: 0;
-  width: 4px;
-  background: rgba(0,0,0,.15);
-  pointer-events: none;
-}
-
-/* Signature field block */
-#editor .rt-signature-field {
-  display: block;
-  border: 1px dashed #c9c9c9;
-  border-radius: .25rem;
-  padding: .5rem .75rem;
-  margin: .5rem 0;
-  background: #fcfcfc;
-}
-
-#editor .rt-signature-line {
-  border-bottom: 2px solid #333;
-  height: 1.75rem;
-  margin-bottom: .25rem;
-}
-
-#editor .rt-signature-meta {
-  font-size: .85rem;
-  color: #6c757d;
-}
-
-/* Optional: make font-family options preview their font */
-select[data-cmd-input="setFontFamily"] option[value*="Times New Roman"] { font-family: "Times New Roman", Times, serif; }
-select[data-cmd-input="setFontFamily"] option[value*="Georgia"]        { font-family: Georgia, serif; }
-select[data-cmd-input="setFontFamily"] option[value*="Garamond"]       { font-family: Garamond, serif; }
-select[data-cmd-input="setFontFamily"] option[value*="Arial"]          { font-family: Arial, Helvetica, sans-serif; }
-select[data-cmd-input="setFontFamily"] option[value*="Helvetica"]      { font-family: Helvetica, Arial, sans-serif; }
-select[data-cmd-input="setFontFamily"] option[value*="Tahoma"]         { font-family: Tahoma, Verdana, Segoe, sans-serif; }
-select[data-cmd-input="setFontFamily"] option[value*="Verdana"]        { font-family: Verdana, Tahoma, sans-serif; }
-select[data-cmd-input="setFontFamily"] option[value*="Segoe UI"]       { font-family: Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
-select[data-cmd-input="setFontFamily"] option[value*="Courier New"]    { font-family: "Courier New", Courier, monospace; }
-select[data-cmd-input="setFontFamily"] option[value*="Consolas"]       { font-family: Consolas, Monaco, monospace; }
-
-/* ===== Paged Layout ===== */
-/* Page band should only scroll horizontally; vertical scroll goes to the window */
-#pageRoot {
-  display: block;           /* not flex: we’ll center differently */
-  padding: 1rem;
-  background: #f2f3f5;
-  overflow-x: auto;     /* keep horizontal scroll for wide pages */
-  overflow-y: visible;  /* vertical scroll on window so sticky works */
-}
-
-/* If your site-wide layout sets a clipping scroll container, ensure the local ancestors don't clip */
-.card-body { overflow: visible; }
-
-/* Center the page and allow it to overflow horizontally inside pageRoot */
-#pageRoot .rt-page {
-  margin: 0 auto;           /* center */
-}
-
-/* One visual page becomes a flex column: header / content / footer */
-.rt-page {
-  position: relative;
+  z-index: 1031;
   background: #fff;
-  box-sizing: content-box;
-  box-shadow: 0 6px 24px rgba(0,0,0,.12), 0 2px 6px rgba(0,0,0,.08);
-  border: 1px solid #e5e7eb;
+  border-bottom: 1px solid rgba(0,0,0,.06);
+  padding: .25rem 1rem;
+  box-sizing: border-box;
+  width: 100%;
+}
+body.editor-page .rt-sticky-header { padding-left: 1rem; padding-right: 1rem; }
+.rt-sticky-header + .container-fluid { padding-top: calc(var(--rt-toolbar-h, 52px) + 0.5rem); }
+
+/* Keep floating menus above canvas */
+.rt-sticky-header .dropdown-menu,
+.rt-sticky-header .popover,
+.rt-sticky-header .tooltip { z-index: 2200 !important; }
+
+/* Legacy neutralizations for any previously fixed toolbars */
+.rt-fixed-toolbar { position: static !important; box-shadow: none !important; padding: 0 !important; background: transparent !important; }
+
+/* =========================================================
+   3) Paged layout — canvas, page container, sheet visuals
+   ========================================================= */
+
+/* Canvas around pages (gray) */
+#editorMount.rt-canvas,
+#pageRoot,
+.rt-canvas { background: var(--canvas-bg); }
+
+/* Page band container: vertical stack with visible gray gap between sheets */
+#pageContainer {
   display: flex;
   flex-direction: column;
-  overflow: hidden;                /* content clipped at page edge (for now) */
-  margin: 0 auto;                  /* center page */
-}
-
-/* Header / Footer stay auto height; footer’s border shows */
-.rt-header, .rt-footer {
-  padding: .5rem .75rem;
-  font-size: .9rem;
-  color: #495057;
-  min-height: 32px;
-}
-.rt-header { border-bottom: 1px dashed #e5e7eb; }
-.rt-footer { border-top: 1px dashed #e5e7eb; }
-
-/* Content area flexes to fill the remaining height; The content area should NOT scroll by itself */
-.rt-page-content {
-  flex: 1 1 auto;           /* <— fill remaining space */
-  min-height: 0;            /* <— enable child scroll */
-  /*overflow: visible;           /* <— key: no inner scroll, page moves as a whole */
-  overflow: hidden;          /* temporary while we dial in pagination */
+  align-items: center;
+  gap: 28px;              /* visible gray gap between sheets */
+  padding: 28px 16px;
+  box-sizing: border-box;
+  width: 100%;
   background: transparent;
-  box-sizing: border-box; /* padding counts inside the content height */
-}
-
-/* Make editor fill the content area nicely */
-#editor {
-  min-height: 600px;
-}
-
-/* Print: remove shadows, center, and let @page control size/margins */
-@media print {
-  #pageRoot { padding: 0; background: #fff; overflow: visible; }
-  .rt-page {
-    box-shadow: none;
-    border: 0;
-    margin: 0 auto;
-    page-break-after: always;
-  }
-}
-
-/* Visible page-break marker on screen */
-.rt-page-break {
-  border: 0;
-  border-top: 2px dashed #c7c7c7;
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-  height: 0;
   position: relative;
+  pointer-events: auto;
 }
 
-/* paragraph right before a page break */
-.rt-page-break + p,
-p + .rt-page-break {
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
+/* Generic page-related spacing anchors */
+#pageRoot { display: block; padding: 1rem; background: var(--canvas-bg); overflow-x: auto; overflow-y: visible; }
+.card-body { overflow: visible; }
+
+/* NodeView / sheet: authoritative single definition for a sheet */
+.rt-node-page,
+.ProseMirror > .rt-node-page,
+#pageContainer > .rt-node-page {
+  box-sizing: border-box;
+  background: var(--sheet-bg);         /* white paper */
+  width: var(--page-width, 793.701px); /* default A4 at 96dpi */
+  min-height: var(--page-height, 1122.52px);
+  margin: 12px auto;                   /* center & separate from surrounding flow */
+  border: 1px solid var(--sheet-border);
+  display: flex;
+  flex-direction: column;
+  page-break-after: always;
+  box-shadow: 0 6px 24px rgba(0,0,0,.12);
+  pointer-events: auto;
+  -webkit-user-select: text;
+  user-select: text;
 }
 
-.rt-page-break::after {
-  content: "Page Break";
-  position: absolute;
-  top: -0.8rem;
-  left: 0;
-  font-size: .75rem;
-  color: #6c757d;
-  background: #fff;
-  padding: 0 .4rem;
+/* Ensure header/footer/body align exactly with page inner area */
+.ProseMirror > .rt-node-page,
+#pageContainer > .rt-node-page { display: flex; flex-direction: column; align-items: stretch; width: auto; }
+
+/* Header/footer inside sheet */
+.rt-node-page-header,
+.rt-node-page-footer {
+  padding: .5rem .75rem;
+  min-height: 32px;
+  color: #495057;
+  background: transparent;
+  border: none;
+  outline: none;
+  pointer-events: auto;
 }
 
-/* Print: force an actual page break */
+/* Editable page body area */
+.rt-node-page-body {
+  flex: 1 1 auto;
+  padding: 1rem 1.5rem;
+  min-height: 0;
+  overflow: visible;
+  box-sizing: border-box;
+}
+
+/* When pages are inside ProseMirror ensure first-child spacing rules keep layout tidy */
+#editor .ProseMirror > :first-child { margin-top: 0 !important; }
+
+/* Visible page-break marker (kept in DOM for logic but hidden by default) */
+.rt-page-break { border: 0; height: 0; position: relative; }
+.rt-page-break::after { content: "Page Break"; position: absolute; top: -0.8rem; left: 0; font-size: .75rem; color: var(--muted); background: var(--sheet-bg); padding: 0 .4rem; }
+#editor .ProseMirror p + .rt-page-break,
+#editor .ProseMirror .rt-page-break + p { margin-top: 0 !important; }
+
+/* Keep page-break behavior for print */
 @media print {
-  .rt-page-break {
-    break-after: page;        /* modern */
-    page-break-after: always; /* legacy */
-    border: 0;
-    height: 0;
-    margin: 0;
-  }
+  #pageRoot { padding: 0; background: #fff; }
+  .rt-node-page { box-shadow: none; border: 0; margin: 0 auto; page-break-after: always; }
+  .rt-page-break { break-after: page; page-break-after: always; }
 }
 
 /* Preview pages band */
@@ -377,118 +182,30 @@ p + .rt-page-break {
   background: #f6f7f9;
   border-top: 1px solid #e9ecef;
 }
+#pagePreviewRoot .rt-page { background: var(--sheet-bg); }
 
-/* Each preview page mirrors .rt-page look */
-#pagePreviewRoot .rt-page {
-  position: relative;
-  background: #fff;
-  box-shadow: 0 6px 24px rgba(0,0,0,.12), 0 2px 6px rgba(0,0,0,.08);
-  border: 1px solid #e5e7eb;
-  display: flex;
-  flex-direction: column;
-}
+/* Visual tags / small metadata on page */
+.rt-page-tag { position: absolute; right: 8px; bottom: 8px; font-size: 12px; color: var(--muted); background: rgba(255,255,255,.8); padding: 2px 6px; border-radius: 6px; border: 1px solid #e9ecef; }
 
-#pagePreviewRoot .rt-page .rt-header,
-#pagePreviewRoot .rt-page .rt-footer {
-  padding: .5rem .75rem;
-  font-size: .9rem;
-  color: #495057;
-}
+/* =========================================================
+   4) Utility / fallbacks
+   ========================================================= */
 
-#pagePreviewRoot .rt-page .rt-header { border-bottom: 1px dashed #e5e7eb; }
-#pagePreviewRoot .rt-page .rt-footer { border-top: 1px dashed #e5e7eb; }
+/* Ensure ProseMirror internal page nodes do not get clipped by site layout */
+#rtPage, #rtPageContent { overflow: visible !important; width: auto !important; height: auto !important; }
 
-#pagePreviewRoot .rt-page .rt-page-content {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: hidden;
-}
+/* Ensure nodes inside pages are visible if alternate page-wrapper mode is active */
+body.rt-pagewrapper-active #rtPage > .rt-page-content { display: block !important; overflow: visible !important; }
 
-.rt-preview-body {
-  /* read-only preview uses the same typography as editor content */
-}
-
-.rt-page-tag {
-  position: absolute;
-  right: 8px;
-  bottom: 8px;
-  font-size: 12px;
-  color: #6c757d;
-  background: rgba(255,255,255,.8);
-  padding: 2px 6px;
-  border-radius: 6px;
-  border: 1px solid #e9ecef;
-}
-
-/* neutralize spacing around visible page-break marker */
-#editor .ProseMirror p + .rt-page-break { margin-top: 0; }
-#editor .ProseMirror .rt-page-break + p { margin-top: 0; }
-#editor .ProseMirror .rt-page-break { margin-top: 0; margin-bottom: 0; }
-
-/* Final defaults (Word-like “Normal”): Arial 11pt, 1.15 line, 0 after */
-#editor .ProseMirror {
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 11pt;
-}
-
-#editor .ProseMirror p,
-.rt-preview-body p {
-  margin-top: 0;
-  margin-bottom: 8px;  /* 6pt ≈ 8px */
-  line-height: 1.15; /* Line = 1.15 */
-}
-
-/* Headings — keep zero top margin + small space after */
-#editor .ProseMirror h1,
-#editor .ProseMirror h2,
-#editor .ProseMirror h3,
-.rt-preview-body h1,
-.rt-preview-body h2,
-.rt-preview-body h3 {
-  margin-top: 0;
-  margin-bottom: 8px;
-}
-
-/* First paragraph at top of a page should not gain extra space */
-#editor .ProseMirror > :first-child,
-.rt-preview-body > :first-child {
-  font: inherit; /* pulls font-size/line-height/family from page container */
-  margin-top: 0 !important;
-}
-
-/* Neutralize spacing adjacent to our visible page-break marker */
+/* Small helpers: avoid extra margins near page-break markers */
 #editor .ProseMirror p + .rt-page-break,
-#editor .ProseMirror .rt-page-break + p {
-  margin-top: 0 !important;
-}
+#editor .ProseMirror .rt-page-break + p { margin-top: 0; margin-bottom: 0; }
 
-/* minimal page visuals (customize to taste) */
-.rt-page-wrapper {
-  background: white;
-  border: 1px solid #e6e6e6;
-  box-shadow: 0 1px 0 rgba(0,0,0,0.04);
-  margin: 12px auto;
-  width: 794px;   /* approx for A4 portrait at 96dpi - you can set via page-layout instead */
-  box-sizing: border-box;
-  padding: 0;     /* headers/footers and inner area will control spacing */
-  border-radius: 4px;
-}
-
-.rt-page-header,
-.rt-page-footer {
-  padding: 6px 12px;
-  font-size: 12px;
-  color: #333;
-  background: transparent;
-  border-bottom: 1px solid rgba(0,0,0,0.02);
-}
-
-.rt-page-footer {
-  border-top: 1px solid rgba(0,0,0,0.02);
-  border-bottom: none;
-}
-
-.rt-page-inner {
-  padding: 16px;
-  min-height: 800px; /* will be overwritten dynamically by plugin when getPageConfig exists */
-}
+/* =========================================================
+   5) Notes for maintainers
+   =========================================================
+   - This file is condensed: the authoritative .rt-node-page rule is above.
+   - Canvas color: var(--canvas-bg). Sheet color: var(--sheet-bg).
+   - If you need larger gap between sheets, edit #pageContainer gap (currently 28px).
+   - Keep comments/anchors — they help when JS relocates node views.
+*/
