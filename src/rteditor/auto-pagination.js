@@ -1,7 +1,19 @@
 // Path: /src/rteditor/auto-pagination.js
 // Auto-pagination for TipTap content using manual PageBreak nodes.
 // Safe to drop in. No other files need edits for this to work.
-window.__RT_debugAutoPaginate = false; // set to false in production
+window.__RT_debugAutoPaginate = true; // set to false in production
+
+function ensurePageOverlay(editorEl) {
+  let overlay = editorEl.querySelector('.rt-page-overlay');
+
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.className = 'rt-page-overlay';
+    editorEl.appendChild(overlay);
+  }
+
+  return overlay;
+}
 
 function beginMeasure(pageEl, contentEl) {
   const prev = [];
@@ -10,14 +22,56 @@ function beginMeasure(pageEl, contentEl) {
   return () => { for (const [el, v] of prev) el.style.overflow = v; };
 }
 
-function pmRoot(contentEl) {
-  return contentEl?.querySelector('.ProseMirror') || null;
+function pmRoot(contentEl, editor) {
+  // Absolute source of truth in TipTap
+  if (editor?.view?.dom instanceof HTMLElement) {
+    return editor.view.dom;
+  }
+
+  // Defensive fallback (should not be needed)
+  return document.querySelector('.ProseMirror');
 }
 
-/** Return an array of top-level block DOM nodes under .ProseMirror */
-function topLevelBlocks(contentEl) {
-  const pm = pmRoot(contentEl);
-  return pm ? Array.from(pm.children) : [];
+// ---------- page separator helpers (DOM-only, ephemeral) ----------
+
+function clearPageSeparators(pm) {
+  if (!pm) return;
+  pm.querySelectorAll('.rt-page-separator').forEach(el => el.remove());
+}
+
+function renderPageSeparators(editor, contentEl, pageCuts) {
+  if (!editor || !contentEl || !Array.isArray(pageCuts)) return;
+
+  const editorEl = editor.view?.dom?.parentElement;
+  const proseEl  = editor.view?.dom;
+
+  if (!editorEl || !proseEl) return;
+
+  const overlay = ensurePageOverlay(editorEl);
+
+  // Pure DOM: recreate every run
+  overlay.innerHTML = '';
+
+  const editorRect = editorEl.getBoundingClientRect();
+
+  // Render separators (map PM doc pos → DOM Y)
+  pageCuts.forEach((cutPos) => {
+    let coords;
+    try {
+      coords = editor.view.coordsAtPos(cutPos);
+    } catch {
+      return;
+    }
+
+    // coords.top is viewport-based
+    const y =
+      coords.top - editorRect.top;
+
+    const sep = document.createElement('div');
+    sep.className = 'rt-page-separator';
+    sep.style.top = `${Math.round(y)}px`;
+    overlay.appendChild(sep);
+  });
 }
 
 /** Effective top/bottom including vertical margins (no collapsing guesswork) */
@@ -124,9 +178,11 @@ function getUsableContentHeightFromPieces({ pageEl, headerEl, footerEl, contentE
 }
 
 // ---------- low-noise debug (won't keep huge object refs in console) ----------
-const DEBUG_FLAG = !!window.__RT_debugAutoPaginate; // set to true in console when needed
+// Dynamic debug check — read the window flag at runtime so console toggles take effect without reload.
+function DEBUG_FLAG() { return !!window.__RT_debugAutoPaginate; }
+
 function debugSnapshot({ pageEl, headerEl, footerEl, contentEl, blocks }) {
-  if (!DEBUG_FLAG) return;
+  if (!DEBUG_FLAG()) return;
 
   const byContentBox = getUsableContentHeight(contentEl);
   const byPieces     = getUsableContentHeightFromPieces({ pageEl, headerEl, footerEl, contentEl });
@@ -163,7 +219,7 @@ function posBeforeDomBlock(editor, el) {
  */
 function collectBlockHeights(editor, contentEl) {
   const view = editor?.view;
-  const pm = contentEl?.querySelector('.ProseMirror');
+  const pm = pmRoot(contentEl, editor);
   if (!view || !pm) return [];
 
   const blocks = [];
@@ -173,7 +229,7 @@ function collectBlockHeights(editor, contentEl) {
     // Skip any existing page-wrapper DOM nodes (they represent full pages already)
     // and skip page-break marker elements themselves.
     if (el.classList && (el.classList.contains('rt-node-page') || el.getAttribute('data-type') === 'page-wrapper')) {
-      if (DEBUG_FLAG) console.log('[auto-pagination] skipping page-wrapper DOM element in collectBlockHeights');
+      if (DEBUG_FLAG()) console.log('[auto-pagination] skipping page-wrapper DOM element in collectBlockHeights');
       continue;
     }
     if (el.hasAttribute && el.hasAttribute('data-page-break')) {
@@ -204,70 +260,6 @@ function collectBlockHeights(editor, contentEl) {
   return blocks;
 }
 
-// ---------- break insertion / removal ----------
-function insertBreaksAt(editor, positions) {
-  if (!positions || !positions.length) return;
-  // Insert from end to start so earlier positions don't shift
-  const sorted = positions.slice().sort((a, b) => b - a);
-  const chain = editor.chain().focus();
-  for (const pos of sorted) {
-    chain.insertContentAt(pos, { type: 'pageBreak' }, { updateSelection: false });
-  }
-  chain.run();
-}
-
-function removeAllPageBreaks(editor) {
-  const { state, view } = editor;
-  const toDelete = [];
-
-  state.doc.nodesBetween(0, state.doc.content.size, (node, pos, parent, index) => {
-    if (node.type.name !== 'pageBreak') return;
-
-    // plan to delete the break itself
-    let from = pos;
-    let to   = pos + node.nodeSize;
-
-    // also delete a single empty paragraph *immediately before* the break
-    const $pos = state.doc.resolve(pos);
-    const parentNode = $pos.parent;
-    const idx = $pos.index();
-
-    // sibling before (only if idx > 0)
-    const before = (idx > 0) ? parentNode.child(idx - 1) : null;
-    if (before && isEmptyParagraph(before)) {
-      // compute the document positions for that paragraph
-      let cursor = $pos.start() + 0;
-      for (let i = 0; i < idx - 1; i++) cursor += parentNode.child(i).nodeSize;
-      const paraFrom = cursor;
-      const paraTo   = cursor + before.nodeSize;
-      from = Math.min(from, paraFrom);
-    }
-
-    // sibling after (only if idx + 1 < childCount)
-    const after = (idx + 1 < parentNode.childCount) ? parentNode.child(idx + 1) : null;
-    if (after && isEmptyParagraph(after)) {
-      let cursor = $pos.start() + 0;
-      for (let i = 0; i <= idx + 1; i++) cursor += parentNode.child(i).nodeSize;
-      const paraTo = cursor;
-      to = Math.max(to, paraTo);
-    }
-
-    toDelete.push({ from, to });
-  });
-
-  if (!toDelete.length) return;
-
-  const tr = state.tr;
-  // delete from end to start
-  toDelete.sort((a, b) => b.from - a.from).forEach(({ from, to }) => tr.delete(from, to));
-  view.dispatch(tr);
-}
-
-// Enable detailed block trace by running in console:
-if (typeof window.__RT_dumpBlocks === 'undefined') {
-  window.__RT_dumpBlocks = false; // set to true in console when needed in debugging
-}
-
 // ---------- main entry (DROP-IN) ----------
 /**
  * Insert pageBreak nodes so that each "page" consumes up to usableH
@@ -279,10 +271,13 @@ export function runOnce(editor, {
   headerEl,
   footerEl,
   getPageConfig,
-  clearExisting = true,
   safety = 14,
 } = {}) {
-  if (!editor || !pageEl || !contentEl) return;
+  // Require editor and contentEl; pageEl may be null for nodeView page mode.
+  if (!editor || !contentEl) {
+    if (typeof console !== 'undefined') console.warn('[auto-pagination] runOnce aborted: missing editor or contentEl');
+    return;
+  }
 
   // --- quick guard: if document already contains pageWrapper nodes, skip insertion phase ---
   try {
@@ -298,7 +293,7 @@ export function runOnce(editor, {
       });
     }
     if (hasPageWrapper) {
-      if (DEBUG_FLAG) console.log('[auto-pagination] runOnce skipped: document already in pageWrapper mode');
+      // PageWrapper mode uses ProseMirror transforms, not DOM block pagination
       runOnce._running = false;
       return;
     }
@@ -306,13 +301,13 @@ export function runOnce(editor, {
     // continue cautiously
   }
 
-  if (runOnce._running) {
-    if (DEBUG_FLAG) console.log('[auto-pagination] runOnce skipped: already running');
+   if (runOnce._running) {
+    if (DEBUG_FLAG()) console.log('[auto-pagination] runOnce skipped: already running');
     return;
   }
   const NOW = Date.now();
   if (runOnce._lastRunAt && (NOW - runOnce._lastRunAt) < 250) {
-    if (DEBUG_FLAG) console.log('[auto-pagination] runOnce skipped: last run too recent');
+    if (DEBUG_FLAG()) console.log('[auto-pagination] runOnce skipped: last run too recent');
     return;
   }
   runOnce._running = true;
@@ -379,27 +374,69 @@ export function runOnce(editor, {
     }
   } catch {}
 
-  const cs2 = getComputedStyle(contentEl);
-  const pt2 = parseFloat(cs2.paddingTop) || 0;
-  const pb2 = parseFloat(cs2.paddingBottom) || 0;
-  const usableH_dom = contentEl.clientHeight - pt2 - pb2;
-  let usableH = Math.max(0, Math.min(usableH_cfg || Infinity, usableH_dom || Infinity) - safety);
+  // ---- Word-accurate usable height ----
+  // Treat margins as header/footer, NOT padding
 
-  if (DEBUG_FLAG) {
-    console.log('[auto-pagination] usableH(cfg/dom)=', {
-      fromConfig: Math.round(usableH_cfg),
-      fromDom:    Math.round(usableH_dom),
-      chosen:     Math.round(usableH),
+  const cfg = (typeof getPageConfig === 'function') ? getPageConfig() : null;
+
+  // Cache page config for visual pagination (separators)
+  if (editor && cfg) {
+    editor.__rt_lastPageConfig = cfg;
+  }
+
+    // Page height (A4 fallback if config is missing or late)
+  let pageH_px = 0;
+
+  if (cfg?.size) {
+    const isLandscape = cfg.orientation === 'landscape';
+    const pageH_mm = isLandscape
+      ? (cfg.size.wmm || cfg.size.w)
+      : (cfg.size.hmm || cfg.size.h);
+
+    pageH_px = (parseFloat(pageH_mm) || 0) / 25.4 * 96;
+  }
+
+  // HARD FALLBACK: A4 portrait (Word default)
+  if (!pageH_px || pageH_px < 100) {
+    pageH_px = 297 / 25.4 * 96; // A4 height in px
+    if (DEBUG_FLAG()) {
+      console.warn('[auto-pagination] page size missing — falling back to A4');
+    }
+  }
+
+  // Margins = header/footer heights
+  const margins = cfg?.margins || {};
+  const marginTop_px =
+    cssLenToPx(margins.top ?? '25.4mm');
+  const marginBottom_px =
+    cssLenToPx(margins.bottom ?? '25.4mm');
+
+  // Final usable height
+ let usableH = pageH_px - marginTop_px - marginBottom_px - safety;
+
+  // Guard: never allow zero/negative usable height
+  if (!usableH || usableH < 100) {
+    usableH = Math.max(100, pageH_px * 0.8);
+    if (DEBUG_FLAG()) {
+      console.warn('[auto-pagination] usableH invalid — clamped', Math.round(usableH));
+    }
+  }
+
+  if (DEBUG_FLAG()) {
+    console.log('[auto-pagination] usableH (Word model)=', {
+      pageH_px: Math.round(pageH_px),
+      marginTop_px: Math.round(marginTop_px),
+      marginBottom_px: Math.round(marginBottom_px),
+      usableH: Math.round(usableH),
       safety
     });
   }
 
-  // collect existing pageBreak positions
-  const state = editor.state;
-  const existingBreaks = [];
-  if (state) {
-    state.doc.descendants((node, pos) => {
-      if (node.type && node.type.name === 'pageBreak') existingBreaks.push(pos);
+  if (DEBUG_FLAG()) {
+    console.log('[auto-pagination] usableH=', {
+      fromConfig: Math.round(usableH_cfg),
+      chosen:     Math.round(usableH),
+      safety
     });
   }
 
@@ -479,174 +516,31 @@ export function runOnce(editor, {
     endMeasure();
   }
 
-  // ---------- build minimal diff to apply ----------
-  const POS_TOLERANCE = 3;
-  function isNear(a, b) { return Math.abs((a|0) - (b|0)) <= POS_TOLERANCE; }
+  // Phase 1: Continuous-flow mode
+  // We compute break positions ONLY for visual pagination.
+  // No document mutations are allowed.
 
-  // quick equality
-  let equal = false;
-  if (existingBreaks.length === computedBreakPositions.length) {
-    equal = existingBreaks.every((v, i) => isNear(v, computedBreakPositions[i]));
+  if (DEBUG_FLAG()) {
+    console.log('[auto-pagination] computed virtual page cuts:', computedBreakPositions);
   }
 
-  if (equal) {
-    if (DEBUG_FLAG) console.log('[auto-pagination] no-op: existing pageBreaks match computed positions — skipping edit');
-    if (editor) editor.__rt_lastPaginateAt = Date.now();
-    runOnce._running = false;
-    return;
+  if (editor) {
+    editor.__rt_lastPaginateAt = Date.now();
   }
 
-  // compute sets toInsert / toDelete (tolerant)
-  const toInsert = [];
-  const toDelete = [];
-
-  // find computed positions that don't match any existing break => insert
-  for (const cp of computedBreakPositions) {
-    const match = existingBreaks.find((eb) => isNear(eb, cp));
-    if (!match && cp != null) toInsert.push(cp);
-  }
-
-  // find existing breaks that don't match computed => delete
-  for (const eb of existingBreaks) {
-    const match = computedBreakPositions.find((cp) => isNear(cp, eb));
-    if (!match) toDelete.push(eb);
-  }
-
-  // Defensive: if computed list is strictly shorter than existing, ensure extra existing breaks are removed.
-  if (computedBreakPositions.length < existingBreaks.length) {
-    // any leftover existing breaks that weren't matched should be deleted (already in toDelete),
-    // but we also attempt to detect any that are outside the doc range and mark them for deletion.
-    for (const eb of existingBreaks) {
-      if (eb < 0 || eb > (state.doc ? state.doc.content.size : Infinity)) {
-        if (!toDelete.includes(eb)) toDelete.push(eb);
-      }
+  // ---- Phase 1B: render visual page separators (DOM-only) ----
+  if (computedBreakPositions.length) {
+    renderPageSeparators(editor, contentEl, computedBreakPositions);
+  } else {
+    // Clear any stale separators
+    const editorEl = editor?.view?.dom?.parentElement;
+    const overlay = editorEl?.querySelector('.rt-page-overlay');
+    if (overlay) {
+      overlay.querySelectorAll('.rt-page-separator').forEach(el => el.remove());
     }
   }
 
-  // If no change
-  if (!toInsert.length && !toDelete.length) {
-    if (DEBUG_FLAG) console.log('[auto-pagination] no-op after diff (no inserts/deletes)');
-    if (editor) editor.__rt_lastPaginateAt = Date.now();
-    runOnce._running = false;
-    return;
-  }
+  runOnce._running = false;
+  return computedBreakPositions;
 
-  // ---------- Apply mutations safely ----------
-  try {
-    if (editor) editor.__rt_applyingPageBreaks = true;
-
-    // Save scroll + heights before mutate
-    function getScrollTop(container) {
-      if (container === window) return window.scrollY || window.pageYOffset || 0;
-      return container.scrollTop || 0;
-    }
-    function setScrollTop(container, v) {
-      if (container === window) window.scrollTo(0, v);
-      else container.scrollTop = v;
-    }
-    const savedScrollTop = getScrollTop(scrollContainer || window);
-    const beforeHeight = contentEl.scrollHeight || contentEl.getBoundingClientRect().height || 0;
-
-    // DELETIONS FIRST: build a single transaction removing all target breaks (descending order)
-    if (toDelete.length) {
-      const { state, view } = editor;
-      const tr = state.tr;
-
-      // find pageBreak nodes to delete by matching positions with tolerance
-      state.doc.descendants((node, pos) => {
-        if (!(node.type && node.type.name === 'pageBreak')) return;
-        const found = toDelete.find(d => isNear(d, pos));
-        if (!found) return;
-
-        // delete the break and optionally adjacent empty paragraph (existing logic)
-        let from = pos;
-        let to   = pos + node.nodeSize;
-
-        const $pos = state.doc.resolve(pos);
-        const parentNode = $pos.parent;
-        const idx = $pos.index();
-
-        const before = (idx > 0) ? parentNode.child(idx - 1) : null;
-        if (before && isEmptyParagraph(before)) {
-          let cursor = $pos.start() + 0;
-          for (let i = 0; i < idx - 1; i++) cursor += parentNode.child(i).nodeSize;
-          const paraFrom = cursor;
-          const paraTo   = cursor + before.nodeSize;
-          from = Math.min(from, paraFrom);
-        }
-
-        const after = (idx + 1 < parentNode.childCount) ? parentNode.child(idx + 1) : null;
-        if (after && isEmptyParagraph(after)) {
-          let cursor = $pos.start() + 0;
-          for (let i = 0; i <= idx + 1; i++) cursor += parentNode.child(i).nodeSize;
-          const paraTo = cursor;
-          to = Math.max(to, paraTo);
-        }
-
-        // clamp
-        const docSize = state.doc.content.size;
-        from = Math.max(0, Math.min(from, docSize));
-        to   = Math.max(0, Math.min(to, docSize));
-        if (from >= to) {
-          if (DEBUG_FLAG) {
-            console.warn('[auto-pagination] skipping invalid delete range after clamp', { origPos: pos, computedFrom: pos, adjustedFrom: from, adjustedTo: to, docSize });
-          }
-          return;
-        }
-
-        try {
-          tr.delete(from, to);
-        } catch (err) {
-          if (DEBUG_FLAG) {
-            console.warn('[auto-pagination] failed to append delete range (skipping)', { from, to, err });
-          }
-        }
-      });
-
-      try {
-        if (tr.docChanged) {
-          // preserve selection: map current selection to new transaction
-          // (we'll let the editor handle mapping; dispatch the tr)
-          view.dispatch(tr);
-          if (DEBUG_FLAG) console.log('[auto-pagination] dispatched deletion transaction for pageBreaks', toDelete);
-        } else {
-          if (DEBUG_FLAG) console.log('[auto-pagination] no deletion tr changes found');
-        }
-      } catch (err) {
-        console.warn('[auto-pagination] error dispatching delete transaction', err);
-      }
-    }
-
-    // INSERTS (descending order)
-    if (toInsert.length) {
-      try {
-        insertBreaksAt(editor, toInsert);
-        if (DEBUG_FLAG) console.log('[auto-pagination] inserted pageBreaks at', toInsert);
-      } catch (err) {
-        console.warn('[auto-pagination] failed to insert pageBreaks', err);
-      }
-    }
-
-    // restore scroll by height delta
-    setTimeout(() => {
-      try {
-        const afterHeight = contentEl.scrollHeight || contentEl.getBoundingClientRect().height || 0;
-        const heightDelta = (afterHeight - beforeHeight) || 0;
-        const adjusted = Math.max(0, savedScrollTop + heightDelta);
-        setScrollTop(scrollContainer || window, adjusted);
-      } catch (e) { /* ignore */ }
-    }, 0);
-
-    if (DEBUG_FLAG) {
-      console.log('[auto-pagination] applied diff:', { inserted: toInsert.length, deleted: toDelete.length });
-    }
-
-    if (editor) editor.__rt_lastPaginateAt = Date.now();
-  } finally {
-    // release suppression after a small delay
-    setTimeout(() => { if (editor) editor.__rt_applyingPageBreaks = false; }, 800);
-    runOnce._running = false;
-    runOnce._lastRunAt = Date.now();
-  }
 }
-

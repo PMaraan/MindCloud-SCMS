@@ -74,14 +74,12 @@ function asset_url(string $path): string {
 <!-- Full-width band for the page canvas -->
 <div class="container-fluid py-3">
 
-  <div id="pageRoot">
+  <div id="pageRoot" style="width:100%;height:auto;">
     <!-- Single editor container: TipTap will mount its .ProseMirror here.
      pageContainer is inside the editor so NodeViews live under ProseMirror root. -->
-    <div id="editor" class="rt-canvas">
-      <!-- pageContainer is intentionally inside the editor so NodeViews and contentDOM
-          remain inside the ProseMirror tree (keeps selection and keyboard events working). -->
-      <div id="pageContainer"></div>
-    </div>
+    <div id="editor" class="rt-canvas"></div>
+    <!-- Visual page container lives OUTSIDE the editor -->
+    <div id="pageContainer"></div>
   </div>
 
   <!-- Diagnostics BELOW the page -->

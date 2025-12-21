@@ -1,11 +1,15 @@
 // /src/rteditor/modules/paginationEngine.js
-import { runOnce as autoPaginate } from "../auto-pagination.js";
+import { runOnce } from "../auto-pagination.js";
 
 /**
- * Run auto paginate with friendly options. This is the entry used by
- * pageBootstrap to paginate live or manually.
+ * High-level entry used by pageBootstrap / editorInstance to paginate live or manually.
+ * Re-exports the low-level runner for advanced callers who want direct access.
  */
 export function runAutoPaginate(editor, opts = {}) {
-  // opts expected to include: pageEl, contentEl, headerEl, footerEl, getPageConfig, clearExisting, debug
-  return autoPaginate(editor, opts);
+  // opts expected to include:
+  // contentEl, headerEl, footerEl, getPageConfig, clearExisting, forceResegment
+  return runOnce(editor, opts);
 }
+
+// Also export the raw runner for tests/advanced usage
+export { runOnce };

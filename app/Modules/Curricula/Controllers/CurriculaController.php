@@ -13,6 +13,7 @@ final class CurriculaController
 {
     private StorageInterface $db;
     private PDO $pdo;
+    private CurriculaModel $model;
     private RBAC $rbac;
 
     public function __construct(StorageInterface $db) {
