@@ -4,12 +4,35 @@
 window.__RT_debugAutoPaginate = true; // set to false in production
 
 function ensurePageOverlay(editorEl) {
-  let overlay = editorEl.querySelector('.rt-page-overlay');
+  // Find the nearest stable layout root (AppShell main content)
+  let host = editorEl;
+
+  while (host && host !== document.body) {
+    const cs = getComputedStyle(host);
+    if (cs.position === 'relative' || cs.position === 'absolute') break;
+    host = host.parentElement;
+  }
+
+  if (!host || host === document.body) {
+    host = editorEl;
+  }
+
+  let overlay = host.querySelector('.rt-page-overlay');
 
   if (!overlay) {
     overlay = document.createElement('div');
     overlay.className = 'rt-page-overlay';
-    editorEl.appendChild(overlay);
+    overlay.style.position = 'absolute';
+    overlay.style.left = '0';
+    overlay.style.top = '0';
+    overlay.style.right = '0';
+    overlay.style.pointerEvents = 'none';
+    host.appendChild(overlay);
+  }
+
+  const prose = editorEl.querySelector('.ProseMirror');
+  if (prose) {
+    overlay.style.height = `${prose.scrollHeight}px`;
   }
 
   return overlay;
@@ -52,7 +75,7 @@ function renderPageSeparators(editor, contentEl, pageCuts) {
   // Pure DOM: recreate every run
   overlay.innerHTML = '';
 
-  const editorRect = editorEl.getBoundingClientRect();
+  const proseRect = proseEl.getBoundingClientRect();
 
   // Render separators (map PM doc pos → DOM Y)
   pageCuts.forEach((cutPos) => {
@@ -64,14 +87,62 @@ function renderPageSeparators(editor, contentEl, pageCuts) {
     }
 
     // coords.top is viewport-based
-    const y =
-      coords.top - editorRect.top;
+    const y = coords.top - proseRect.top;
 
     const sep = document.createElement('div');
     sep.className = 'rt-page-separator';
     sep.style.top = `${Math.round(y)}px`;
     overlay.appendChild(sep);
   });
+}
+
+function renderPageBackgrounds(editor, pageH_px, marginTop_px, marginBottom_px) {
+  const editorEl = editor?.view?.dom?.parentElement;
+  if (!editorEl) return;
+
+  const overlay = ensurePageOverlay(editorEl);
+  overlay.querySelectorAll('.rt-page-bg').forEach(el => el.remove());
+
+  const prose = editor.view.dom;
+  const proseRect = prose.getBoundingClientRect();
+  const editorRect = editorEl.getBoundingClientRect();
+
+  const cs = getComputedStyle(prose);
+  const contentHeight =
+    prose.scrollHeight
+    - parseFloat(cs.paddingTop)
+    - parseFloat(cs.paddingBottom);
+  const pageCount = Math.max(1, Math.ceil(contentHeight / pageH_px));
+
+  for (let i = 0; i < pageCount; i++) {
+    const pageTop =
+      proseRect.top - editorRect.top + (i * pageH_px);
+
+    const page = document.createElement('div');
+    page.className = 'rt-page-bg';
+    page.style.top = `${Math.round(pageTop)}px`;
+    page.style.height = `${Math.round(pageH_px)}px`;
+
+    if (editor.__rt_lastPageConfig?.size) {
+      const { wmm, hmm } = editor.__rt_lastPageConfig.size;
+      const isLandscape = editor.__rt_lastPageConfig.orientation === 'landscape';
+      const w = isLandscape ? hmm : wmm;
+      page.style.width = `${mmToPx(w)}px`;
+    }
+
+    // Margin guides
+    const mt = document.createElement('div');
+    mt.className = 'rt-margin-top';
+    mt.style.top = `${marginTop_px}px`;
+
+    const mb = document.createElement('div');
+    mb.className = 'rt-margin-bottom';
+    mb.style.bottom = `${marginBottom_px}px`;
+
+    page.appendChild(mt);
+    page.appendChild(mb);
+    overlay.appendChild(page);
+  }
 }
 
 /** Effective top/bottom including vertical margins (no collapsing guesswork) */
@@ -384,7 +455,26 @@ export function runOnce(editor, {
     editor.__rt_lastPageConfig = cfg;
   }
 
-    // Page height (A4 fallback if config is missing or late)
+  // Sync ProseMirror width to page size (WYSIWYG)
+  try {
+    const prose = editor.view.dom;
+    if (cfg?.size) {
+      const isLandscape = cfg.orientation === 'landscape';
+      const pageW_mm = isLandscape
+        ? (cfg.size.hmm || cfg.size.h)
+        : (cfg.size.wmm || cfg.size.w);
+
+      const pageW_px = mmToPx(pageW_mm);
+      prose.style.width = `${Math.round(pageW_px)}px`;
+      prose.style.marginLeft = '0';
+      prose.style.marginRight = '0';
+      prose.style.paddingLeft  = `var(--rt-margin-left, 96px)`;
+      prose.style.paddingRight = `var(--rt-margin-right, 96px)`;
+      prose.style.boxSizing = 'border-box';
+    }
+  } catch {}
+
+  // Page height (A4 fallback if config is missing or late)
   let pageH_px = 0;
 
   if (cfg?.size) {
@@ -405,11 +495,25 @@ export function runOnce(editor, {
   }
 
   // Margins = header/footer heights
-  const margins = cfg?.margins || {};
+  const margins =
+  editor.__rt_liveMargins ||
+  cfg?.margins || {
+    top: '25.4mm',
+    right: '25.4mm',
+    bottom: '25.4mm',
+    left: '25.4mm',
+  };
   const marginTop_px =
     cssLenToPx(margins.top ?? '25.4mm');
   const marginBottom_px =
     cssLenToPx(margins.bottom ?? '25.4mm');
+
+    // Sync margins to ProseMirror padding (visual WYSIWYG)
+    const prose = editor.view.dom;
+    prose.style.setProperty('--rt-margin-top',    `${marginTop_px}px`);
+    prose.style.setProperty('--rt-margin-bottom', `${marginBottom_px}px`);
+    prose.style.setProperty('--rt-margin-left',   `${cssLenToPx(margins.left ?? '25.4mm')}px`);
+    prose.style.setProperty('--rt-margin-right',  `${cssLenToPx(margins.right ?? '25.4mm')}px`);
 
   // Final usable height
  let usableH = pageH_px - marginTop_px - marginBottom_px - safety;
@@ -431,6 +535,14 @@ export function runOnce(editor, {
       safety
     });
   }
+
+  // ---- Phase 0: render visual page boxes + margins ----
+  renderPageBackgrounds(
+    editor,
+    pageH_px,
+    marginTop_px,
+    marginBottom_px
+  );
 
   if (DEBUG_FLAG()) {
     console.log('[auto-pagination] usableH=', {

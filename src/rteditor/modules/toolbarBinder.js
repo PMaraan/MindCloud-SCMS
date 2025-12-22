@@ -1,6 +1,29 @@
 // /src/rteditor/modules/toolbarBinder.js
 import { getBasePath } from "./editorInstance.js";
 
+function requestRepaginate(editor) {
+  if (!editor) return;
+
+  // mark dirty
+  editor.__rt_lastPaginateAt = 0;
+
+  // store live margins for pageConfig consumers
+  editor.__rt_liveMargins = {
+    top:    getComputedStyle(document.documentElement).getPropertyValue('--rt-margin-top').trim(),
+    right:  getComputedStyle(document.documentElement).getPropertyValue('--rt-margin-right').trim(),
+    bottom: getComputedStyle(document.documentElement).getPropertyValue('--rt-margin-bottom').trim(),
+    left:   getComputedStyle(document.documentElement).getPropertyValue('--rt-margin-left').trim(),
+  };
+
+  if (typeof window.__RT_forcePaginate === 'function') {
+    window.__RT_forcePaginate();
+  }
+}
+
+function setCSSVar(name, value) {
+  document.documentElement.style.setProperty(name, value);
+}
+
 export function bindBasicToolbar(editor, rootEl = document) {
   let currentTextColor = '#000000';
   let currentHighlightColor = '#fff59d';
@@ -157,6 +180,26 @@ export function bindBasicToolbar(editor, rootEl = document) {
     });
   });
 
+  rootEl.querySelectorAll(
+    '[data-page-margin-top], [data-page-margin-right], [data-page-margin-bottom], [data-page-margin-left]'
+  ).forEach(inp => {
+    inp.addEventListener('input', () => {
+      setCSSVar('--rt-margin-top',    rootEl.querySelector('[data-page-margin-top]')?.value || '25.4mm');
+      setCSSVar('--rt-margin-right',  rootEl.querySelector('[data-page-margin-right]')?.value || '25.4mm');
+      setCSSVar('--rt-margin-bottom', rootEl.querySelector('[data-page-margin-bottom]')?.value || '25.4mm');
+      setCSSVar('--rt-margin-left',   rootEl.querySelector('[data-page-margin-left]')?.value || '25.4mm');
+
+      requestRepaginate(editor);
+    });
+  });
+
+  // Page size / orientation → repaginate + store config
+  rootEl.querySelectorAll('[data-page-size], [data-page-orientation]').forEach(sel => {
+    sel.addEventListener('change', () => {
+      requestRepaginate(editor);
+    });
+  });
+
   // Ctrl+S / Cmd+S on rootEl
   rootEl.addEventListener('keydown', (ev) => {
     const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
@@ -166,4 +209,9 @@ export function bindBasicToolbar(editor, rootEl = document) {
       map.saveDoc();
     }
   });
+
+  setCSSVar('--rt-margin-top', '25.4mm');
+  setCSSVar('--rt-margin-right', '25.4mm');
+  setCSSVar('--rt-margin-bottom', '25.4mm');
+  setCSSVar('--rt-margin-left', '25.4mm');
 }

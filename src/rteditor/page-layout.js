@@ -1,4 +1,6 @@
 // /src/rteditor/page-layout.js
+// deprecated for editor; might still be used in docx/pdf export
+
 // Pure, framework-free page layout utilities for the “Word view”
 
 // Remember the last applied page config so others (preview) can read it

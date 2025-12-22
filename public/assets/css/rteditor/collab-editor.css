@@ -13,7 +13,13 @@
 }
 
 /* 1) Editor container & ProseMirror base */
-#editor { position: relative; z-index: 1; background: transparent; }
+#editor {
+  position: relative;
+  z-index: 1;
+  background: var(--canvas-bg);
+  padding: 32px 0;
+}
+
 #editor .ProseMirror {
   min-height: 360px;
   outline: none;
@@ -61,53 +67,28 @@ body.editor-page .rt-sticky-header { padding-left: 1rem; padding-right: 1rem; }
 /* Small helpers */
 #editor .ProseMirror > :first-child { margin-top: 0 !important; }
 
-/* =========================================================
-   Page separators (Phase 1B – continuous flow)
-   ========================================================= */
-
-/* visible dashed line */
-#editor .ProseMirror .rt-page-separator::before,
-#editor .ProseMirror .rt-page-break::before,
-#editor .ProseMirror .rt-page-guide::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  border-top: 1px dashed #c7c7c7;
-}
-
-/* subtle page label (optional but helpful) */
-#editor .ProseMirror .rt-page-separator::after {
-  content: "Page break";
-  position: absolute;
-  top: -10px;
-  right: 0;
-  font-size: 10px;
-  color: #9aa0a6;
-  background: #fff;
-  padding-left: 6px;
-}
-
 .ProseMirror {
-  padding: 96px 72px;
-  max-width: 816px;
+  position: relative;
+  padding:
+    var(--rt-margin-top, 96px)
+    var(--rt-margin-right, 72px)
+    var(--rt-margin-bottom, 96px)
+    var(--rt-margin-left, 72px);
+  max-width: var(--rt-page-width, 794px);
   margin: 0 auto;
+  z-index: 1;
 }
 
 /* =========================================================
    Page separators – overlay based (Option B, correct)
    ========================================================= */
-
-#editor {
-  position: relative;
-}
-
 #editor .rt-page-overlay {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100%;
   pointer-events: none;
-  z-index: 5;
+  z-index: 2; /* BELOW text, ABOVE canvas bg */
 }
 
 #editor .rt-page-separator {
@@ -135,6 +116,72 @@ body.editor-page .rt-sticky-header { padding-left: 1rem; padding-right: 1rem; }
   color: #9aa0a6;
   background: #fff;
   padding-left: 6px;
+}
+
+/* ===== PAGE BACKGROUND LAYER ===== */
+/* Single page */
+.rt-page-bg {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 200px; /* defensive floor */
+  background: #ffffff;
+  box-shadow: 0 0 0 1px #e5e7eb, 0 8px 24px rgba(0,0,0,.08);
+  border-radius: 2px;
+  border: 1px solid #ddd;
+  box-sizing: border-box;
+  z-index: 0; /* behind text */
+}
+
+/* Margin guides */
+.rt-margin-top,
+.rt-margin-bottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 1px dashed rgba(200,0,0,.35);
+}
+
+.rt-margin-left,
+.rt-margin-right {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 1px dashed rgba(200,0,0,.35);
+}
+
+.rt-margin-top {
+  top: var(--rt-margin-top);
+}
+
+.rt-margin-bottom {
+  bottom: var(--rt-margin-bottom);
+}
+
+.rt-margin-left {
+  left: var(--rt-margin-left);
+}
+
+.rt-margin-right {
+  right: var(--rt-margin-right);
+}
+
+.rt-canvas .ProseMirror {
+  position: relative;
+  z-index: 2;
+}
+
+.rt-page-bg-host {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.rt-canvas {
+  position: relative; /* REQUIRED for page backgrounds */
+  min-height: 100%;
 }
 
 /* End of file */

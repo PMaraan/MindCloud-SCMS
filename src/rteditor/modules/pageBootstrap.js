@@ -2,7 +2,7 @@
 import initBasicEditor from "./editorInstance.js";
 import { bindBasicToolbar } from "./toolbarBinder.js";
 import { runAutoPaginate } from "./paginationEngine.js";
-import { readInitialDocFromScriptTag, applyHydrationIfTrivial } from "./hydration.js";
+import { readInitialDocFromScriptTag, applyHydrationIfTrivial } from "./hydration.js"; // unused
 import { bindPageLayoutControls, getCurrentPageConfig } from "../page-layout.js";
 
 // DEBUG helpers: expose runAutoPaginate so you can call it from the browser console
@@ -20,10 +20,11 @@ export async function startEditorPage(opts = {}) {
     editable = true,
     initialHTML = '<p>TipTap ready — start typing…</p>',
     debug = false,
-    autoPaginateDebounceMs = 220
+    autoPaginateDebounceMs = 220 // declared but never read
   } = opts;
 
   const editor = initBasicEditor({ selector, editable, initialHTML });
+
   // expose for debugging / other modules (legacy)
   window.__RT_editor = editor;
   window.editor = editor;
@@ -98,13 +99,15 @@ export async function startEditorPage(opts = {}) {
   // Doing it again here is redundant and was removed to avoid multiple setContent calls.
 
   // Phase 1: no real pages yet → only bind page layout when page DOM exists
+  // Editor uses live overlay pagination.
+  // Page layout controls are NOT bound to the editor DOM.
   try {
-    const { pageEl, contentEl } = getPageEls();
-    if (pageEl && contentEl) {
-      bindPageLayoutControls(document, pageEl, contentEl);
-    }
+    //const { pageEl, contentEl } = getPageEls();
+    //if (pageEl && contentEl) {
+      //bindPageLayoutControls(document, pageEl, contentEl);
+    //}
   } catch (e) {
-    console.warn('[RTEditor] bindPageLayoutControls failed', e);
+    // console.warn('[RTEditor] bindPageLayoutControls failed', e);
   }
 
   // AutoPaginate button binding (one-off)
