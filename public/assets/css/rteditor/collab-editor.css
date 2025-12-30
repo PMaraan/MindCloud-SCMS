@@ -15,9 +15,7 @@
 /* 1) Editor container & ProseMirror base */
 #editor {
   position: relative;
-  z-index: 1;
-  background: var(--canvas-bg);
-  padding: 32px 0;
+  z-index: 2;
 }
 
 #editor .ProseMirror {
@@ -25,11 +23,13 @@
   outline: none;
   white-space: pre-wrap;
   word-break: break-word;
-  padding: 0;
+
   background: transparent !important;
   font-family: Arial, Helvetica, sans-serif;
   font-size: 11pt;
+  box-sizing: border-box;
 }
+
 #editor .ProseMirror p { margin: 0 0 8px; line-height: 1.15; }
 #editor .ProseMirror h1 { font-size: 1.5rem; margin: 0 0 8px; }
 #editor .ProseMirror h2 { font-size: 1.25rem; margin: 0 0 8px; }
@@ -71,51 +71,13 @@ body.editor-page .rt-sticky-header { padding-left: 1rem; padding-right: 1rem; }
   position: relative;
   padding:
     var(--rt-margin-top, 96px)
-    var(--rt-margin-right, 72px)
+    var(--rt-margin-right, 96px)
     var(--rt-margin-bottom, 96px)
-    var(--rt-margin-left, 72px);
+    var(--rt-margin-left, 96px);
   max-width: var(--rt-page-width, 794px);
   margin: 0 auto;
   z-index: 1;
-}
-
-/* =========================================================
-   Page separators – overlay based (Option B, correct)
-   ========================================================= */
-#editor .rt-page-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  pointer-events: none;
-  z-index: 2; /* BELOW text, ABOVE canvas bg */
-}
-
-#editor .rt-page-separator {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 0;
-}
-
-#editor .rt-page-separator::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  border-top: 1px dashed #c7c7c7;
-}
-
-#editor .rt-page-separator::after {
-  content: "Page break";
-  position: absolute;
-  top: -10px;
-  right: 0;
-  font-size: 10px;
-  color: #9aa0a6;
-  background: #fff;
-  padding-left: 6px;
+  box-sizing: border-box;
 }
 
 /* ===== PAGE BACKGROUND LAYER ===== */
@@ -130,7 +92,8 @@ body.editor-page .rt-sticky-header { padding-left: 1rem; padding-right: 1rem; }
   border-radius: 2px;
   border: 1px solid #ddd;
   box-sizing: border-box;
-  z-index: 0; /* behind text */
+  z-index: 1;
+  pointer-events: none; /* paper is visual only */
 }
 
 /* Margin guides */
@@ -176,12 +139,74 @@ body.editor-page .rt-sticky-header { padding-left: 1rem; padding-right: 1rem; }
 .rt-page-bg-host {
   position: absolute;
   inset: 0;
-  z-index: 0;
+  z-index: 1;                /* BELOW text, ABOVE canvas */
+  pointer-events: none;
 }
 
 .rt-canvas {
-  position: relative; /* REQUIRED for page backgrounds */
-  min-height: 100%;
+  position: relative;
+  background: var(--canvas-bg);
+  padding: 32px 0;
+}
+
+/* =========================================================
+   Page Headers & Footers (visual-only)
+   ========================================================= */
+
+.rt-page-header,
+.rt-page-footer {
+  position: absolute;
+  left: var(--rt-margin-left);
+  right: var(--rt-margin-right);
+  pointer-events: auto !important; /* allow editing */
+  z-index: 3;
+  user-select: text;
+  cursor: text;
+  font-size: 10pt;
+  color: #444;
+  outline: none;
+  box-sizing: border-box;
+  border-left: 1px dashed rgba(0,0,0,0.05); /* for tuning only; remove for production */
+  border-right: 1px dashed rgba(0,0,0,0.05); /* for tuning only; remove for production */
+}
+
+.rt-page-header:focus,
+.rt-page-footer:focus {
+  background: rgba(255, 245, 200, 0.35);
+}
+
+.rt-hf-placeholder {
+  opacity: 0.6;
+  font-style: italic;
+}
+
+.rt-page-header {
+  top: 0; /* overridden inline per page */
+  height: var(--rt-margin-top);
+  display: flex;
+  align-items: center;
+}
+
+.rt-page-footer {
+  bottom: 0; /* overridden inline per page */
+  height: var(--rt-margin-bottom);
+  display: flex;
+  align-items: center;
+}
+
+.rt-hf-inner {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  opacity: 0.75;
+}
+
+/* Container for headers and footers */
+#headerFooterLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
 }
 
 /* End of file */

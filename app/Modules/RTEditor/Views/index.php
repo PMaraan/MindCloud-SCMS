@@ -74,12 +74,15 @@ function asset_url(string $path): string {
 <!-- Full-width band for the page canvas -->
 <div class="container-fluid py-3">
 
-  <div id="pageRoot" style="width:100%;height:auto;">
-    <!-- Single editor container: TipTap will mount its .ProseMirror here.
-     pageContainer is inside the editor so NodeViews live under ProseMirror root. -->
-    <div id="editor" class="rt-canvas"></div>
-    <!-- Visual page container lives OUTSIDE the editor -->
-    <div id="pageContainer"></div>
+  <div id="pageRoot" style="width:100%;height:auto; position:relative;">
+    <div class="rt-canvas">   <!-- shared stacking context -->
+      <!-- Page background + margins -->
+      <div id="pageVisualLayer" class="rt-page-bg-host" aria-hidden="true"></div>
+      <!-- Editable document flow -->
+      <div id="editor"></div>
+      <!-- Header / Footer overlay layer -->
+      <div id="headerFooterLayer" class="rt-header-footer-host"></div>
+    </div>
   </div>
 
   <!-- Diagnostics BELOW the page -->
@@ -140,3 +143,4 @@ function asset_url(string $path): string {
       startEditorPage({ debug: false, editable: <?= $canEdit ? 'true' : 'false' ?> });
     </script>
   <?php endif; ?>
+  

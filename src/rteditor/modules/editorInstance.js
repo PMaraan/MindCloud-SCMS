@@ -1,8 +1,6 @@
 // /src/rteditor/modules/editorInstance.js
 import { Editor } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
-// Page container plugin — visually group PM children into page boxes (split at data-page-break)
-//import attachPageContainer from "../extensions/pageContainer.js";
 
 import Underline    from "@tiptap/extension-underline";
 import Strike       from "@tiptap/extension-strike";
@@ -26,10 +24,6 @@ import SpacingExtension from "../extensions/spacing.js";
 
 import SignatureField   from "../nodes/signature-field.js";
 
-// page container extension (installs the wrapper on editor lifecycle)
-// import PageContainerExtension from "../extensions/pageContainerExtension.js";
-
-import { runAutoPaginate } from "../modules/paginationEngine.js";
 import { attachLivePagination } from "../modules/livePaginationController.js";
 
 /* Hydration helper reused inside this module (keeps editor init tidy) */
@@ -98,6 +92,22 @@ export default function initBasicEditor(opts) {
       SignatureField,
       // PageContainerExtension, // Phase 1: virtual pages only
     ],
+    editorProps: {
+      handleDOMEvents: {
+        focus(view, event) {
+          if (document.body.classList.contains('rt-editing-header')) {
+            return true; // 🛑 block PM focus
+          }
+          return false;
+        },
+        mousedown(view, event) {
+          if (document.body.classList.contains('rt-editing-header')) {
+            return true; // 🛑 block PM mouse handling
+          }
+          return false;
+        }
+      }
+    }
   });
 
   try { editor.commands.focus('end'); } catch {}
@@ -130,66 +140,6 @@ export default function initBasicEditor(opts) {
     };
   } catch (e) { /* ignore */ }
 
-  //
-  // === Move NodeView pages into #pageContainer (safe reparent after PM rendered) ===
-  // Rationale: TipTap/ProseMirror renders NodeView DOM inside the .ProseMirror root.
-  // We reparent those `.rt-node-page` elements into our #pageContainer so they
-  // become true top-level visual pages while keeping the NodeView contentDOM links intact.
-  //
-  /*
-  (function reparentNodeViewPages() {
-    // small helper to perform the reparent pass
-    function doMove() {
-      try {
-        const container = document.getElementById('pageContainer');
-        if (!container) {
-          // If no pageContainer, nothing to do.
-          return;
-        }
-        // ProseMirror root (editor.element may be hidden); look for node views inside it
-        const pmRoot = editor && editor.view && editor.view.dom ? editor.view.dom : null;
-        if (!pmRoot) return;
-
-        // Move only direct node-view page elements found beneath the ProseMirror tree.
-        // Use querySelectorAll with an array snapshot; appendChild will reparent in document.
-        const nodes = Array.from(pmRoot.querySelectorAll('.rt-node-page'));
-        if (!nodes.length) return;
-
-        let moved = 0;
-        for (const n of nodes) {
-          // Only move if not already inside our container
-          if (!container.contains(n)) {
-            try {
-              container.appendChild(n);
-              moved++;
-            } catch (e) {
-              // ignore single-element failures
-            }
-          }
-        }
-        if (moved && window.__RT_debugAutoPaginate) {
-          console.log(`[RTEditor] moved ${moved} node-view page(s) into #pageContainer`);
-        }
-      } catch (err) {
-        // non-fatal
-        if (window.__RT_debugAutoPaginate) console.warn('[RTEditor] reparentNodeViewPages failed', err);
-      }
-    }
-
-    // Try a few times to cover timing: immediate + microtask + small timeout.
-    // Some NodeViews may be created asynchronously. This sequence is resilient.
-    try { doMove(); } catch (_) {}
-    // microtask
-    Promise.resolve().then(() => { try { doMove(); } catch (_) {} });
-    // small timeout to catch late NodeView attachments
-    setTimeout(() => { try { doMove(); } catch (_) {} }, 40);
-    // one more delayed attempt - covers slower devices
-    setTimeout(() => { try { doMove(); } catch (_) {} }, 220);
-  })();*/
-
-  // Ensure page-container cleanup is available under both common property names.
-  // Some implementations attach cleanup under __rt_pageContainerCleanup, others
-  // used __rt_cleanupPageContainer. Normalize so console checks and callers work.
   try {
     // If extension already attached one of them, prefer that function.
     const existingCleanup =
