@@ -1,4 +1,4 @@
-// /src/rteditor/modules/pageHeaderFooter.js
+/* /src/rteditor/modules/pageHeaderFooter.js */
 /**
  * Module: pageHeaderFooter
  * ------------------------------------------------------------
@@ -89,6 +89,40 @@ function applyEditHint(el, label) {
   });
 }
 
+function positionOverlayHorizontally(el, hostRect, pageRect) {
+  el.style.left =
+    `${pageRect.left - hostRect.left}px`;
+  el.style.width =
+    `${pageRect.width}px`;
+}
+
+function getContentRect(pageRect, margins) {
+  const left   = pageRect.left + margins.left;
+  const right  = pageRect.right - margins.right;
+  const top    = pageRect.top + margins.top;
+  const bottom = pageRect.bottom - margins.bottom;
+
+  return {
+    left,
+    top,
+    width: right - left,
+    right,
+    bottom,
+  };
+}
+
+function getLiveMarginsPx() {
+  const root = document.querySelector('.ProseMirror');
+  const cs = getComputedStyle(root);
+
+  return {
+    top:    parseFloat(cs.getPropertyValue('--rt-margin-top'))    || 0,
+    bottom: parseFloat(cs.getPropertyValue('--rt-margin-bottom')) || 0,
+    left:   parseFloat(cs.getPropertyValue('--rt-margin-left'))   || 0,
+    right:  parseFloat(cs.getPropertyValue('--rt-margin-right'))  || 0,
+  };
+}
+
 /**
  * Public entry point.
  * Attaches both header and footer to a page element.
@@ -115,6 +149,8 @@ export function attachPageHeaderFooter(
 function attachHeader(host, pageBg, pageIndex) {
   const pageRect = pageBg.getBoundingClientRect();
   const hostRect = host.getBoundingClientRect();
+  const margins = getLiveMarginsPx();
+  const contentRect = getContentRect(pageRect, margins);
 
   if (!pageRect.height) return;
 
@@ -138,11 +174,22 @@ function attachHeader(host, pageBg, pageIndex) {
   header.style.pointerEvents = 'auto';
 
   header.style.position = 'absolute';
-  // Header aligns to the top edge of the page
-  // Header: anchored to page top
-  header.style.top = `${pageRect.top - hostRect.top}px`;
-  header.style.left = `${pageRect.left - hostRect.left}px`;
-  header.style.width = `${pageRect.width}px`;
+
+  // const top  = pageRect.top  - hostRect.top;
+  // const left = pageRect.left - hostRect.left;
+  // const width = pageRect.width;
+
+  header.style.top =
+    `${pageRect.top - hostRect.top}px`;
+
+  header.style.left =
+    `${contentRect.left - hostRect.left}px`;
+
+  header.style.width =
+    `${contentRect.width}px`;
+
+  header.style.height =
+    `${margins.top}px`;
   header.style.pointerEvents = 'auto';
 
   host.appendChild(header);
@@ -192,6 +239,8 @@ function attachHeader(host, pageBg, pageIndex) {
 function attachFooter(host, pageBg, pageIndex) {
   const pageRect = pageBg.getBoundingClientRect();
   const hostRect = host.getBoundingClientRect();
+  const margins = getLiveMarginsPx();
+  const contentRect = getContentRect(pageRect, margins);
 
   if (!pageRect.height) return;
 
@@ -215,16 +264,33 @@ function attachFooter(host, pageBg, pageIndex) {
   footer.style.pointerEvents = 'auto';
 
   footer.style.position = 'absolute';
-  // Align footer to bottom margin area of the SAME page
-  // Footer must be positioned using its actual rendered height
-  // (CSS vars live on ProseMirror, not pageBg)
+
+  /* Snap footer to bottom of page */
   const footerHeight = footer.offsetHeight;
+
+  // const top  = pageRect.bottom - hostRect.top - footerHeight;
+  // const left = pageRect.left   - hostRect.left;
+  // const width = pageRect.width;
+
+  // footer.style.top = `${top}px`;
+  // footer.style.left = `${left}px`;
+  // footer.style.width = `${width}px`;
+
   footer.style.top =
-    `${pageRect.bottom - hostRect.top - footerHeight}px`;
-  footer.style.left = `${pageRect.left - hostRect.left}px`;
-  footer.style.width = `${pageRect.width}px`;
+    `${pageRect.bottom - margins.bottom - hostRect.top}px`;
+
+  footer.style.left =
+    `${contentRect.left - hostRect.left}px`;
+
+  footer.style.width =
+    `${contentRect.width}px`;
+
+  footer.style.height =
+    `${margins.bottom}px`;
 
   applyEditHint(footer, 'footer');
+
+  // positionOverlayHorizontally(footer, hostRect, pageRect);
 
   const cacheKey = `${pageIndex}:footer`;
   if (headerFooterCache.has(cacheKey)) {
@@ -257,3 +323,4 @@ function attachFooter(host, pageBg, pageIndex) {
     document.body.classList.remove('rt-editing-footer');
   });
 }
+/* End of /src/rteditor/modules/pageHeaderFooter.js */

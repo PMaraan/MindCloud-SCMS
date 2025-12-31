@@ -156,18 +156,23 @@ body.editor-page .rt-sticky-header { padding-left: 1rem; padding-right: 1rem; }
 .rt-page-header,
 .rt-page-footer {
   position: absolute;
-  left: var(--rt-margin-left);
-  right: var(--rt-margin-right);
+  box-sizing: border-box;
+
   pointer-events: auto !important; /* allow editing */
   z-index: 3;
   user-select: text;
   cursor: text;
+
   font-size: 10pt;
   color: #444;
   outline: none;
-  box-sizing: border-box;
-  border-left: 1px dashed rgba(0,0,0,0.05); /* for tuning only; remove for production */
-  border-right: 1px dashed rgba(0,0,0,0.05); /* for tuning only; remove for production */
+
+  padding: 0;
+  /*padding-left: var(--rt-margin-left);
+  padding-right: var(--rt-margin-right);
+  border-left: 1px dashed rgba(0,0,0,0.05); /* for tuning only; remove for production 
+  border-right: 1px dashed rgba(0,0,0,0.05); /* for tuning only; remove for production 
+  */
 }
 
 .rt-page-header:focus,
@@ -204,7 +209,10 @@ body.editor-page .rt-sticky-header { padding-left: 1rem; padding-right: 1rem; }
 /* Container for headers and footers */
 #headerFooterLayer {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   z-index: 3;
   pointer-events: none;
 }

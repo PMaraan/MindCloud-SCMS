@@ -8,9 +8,28 @@
 
 import { attachPageHeaderFooter } from './pageHeaderFooter.js';
 
+let _resizeRAF = null;
+
+function scheduleVirtualPagesRender(editor, pageH_px, marginTop_px, marginBottom_px) {
+  if (_resizeRAF) cancelAnimationFrame(_resizeRAF);
+
+  _resizeRAF = requestAnimationFrame(() => {
+    renderVirtualPages(editor, pageH_px, marginTop_px, marginBottom_px);
+  });
+}
+
 export function renderVirtualPages(editor, pageH_px, marginTop_px, marginBottom_px) {
   const pageRoot = document.getElementById('pageRoot');
   if (!pageRoot || !editor?.view?.dom) return;
+
+  // Cache last page layout config for resize reflow
+  editor.__rt_lastPageConfig = {
+    pageHeightPx: pageH_px,
+    marginTopPx: marginTop_px,
+    marginBottomPx: marginBottom_px,
+    size: editor.__rt_lastPageConfig?.size,
+    orientation: editor.__rt_lastPageConfig?.orientation
+  };
 
   // The editor DOM (ProseMirror root)
   const prose = editor.view.dom;
@@ -85,6 +104,25 @@ export function renderVirtualPages(editor, pageH_px, marginTop_px, marginBottom_
       pageHeight: pageH_px,
       marginTop: marginTop_px,
       marginBottom: marginBottom_px,
+    });
+  }
+
+  // Ensure resize listener is attached once
+  if (!editor.__rt_resizeBound) {
+    editor.__rt_resizeBound = true;
+
+    window.addEventListener('resize', () => {
+      if (!editor.__rt_lastPageConfig) return;
+
+      const { pageHeightPx, marginTopPx, marginBottomPx } =
+        editor.__rt_lastPageConfig;
+
+      scheduleVirtualPagesRender(
+        editor,
+        pageHeightPx,
+        marginTopPx,
+        marginBottomPx
+      );
     });
   }
 }

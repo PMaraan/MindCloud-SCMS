@@ -465,8 +465,11 @@ export function runOnce(editor, {
     let cutGuard = 0;
     while (start < blocks.length && cutGuard < 200) {
       cutGuard++;
-      const firstTop = effectiveTop(blocks[start].el);
-      const limitY   = firstTop + usableH;
+      const pageTop = blocks[start].el
+        .closest('.ProseMirror')
+        ?.getBoundingClientRect().top ?? 0;
+
+      const limitY   = pageTop + marginTop_px + usableH;
       let i = -1;
       for (let k = start; k < blocks.length; k++) {
         const b = blocks[k];
@@ -562,3 +565,4 @@ export function runAutoPaginate(editor, opts = {}) {
   // contentEl, headerEl, footerEl, getPageConfig, clearExisting, forceResegment
   return runOnce(editor, opts);
 }
+/* End of paginationEngine.js */
