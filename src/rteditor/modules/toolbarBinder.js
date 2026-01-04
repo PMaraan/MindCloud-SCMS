@@ -215,3 +215,4 @@ export function bindBasicToolbar(editor, rootEl = document) {
   setCSSVar('--rt-margin-bottom', '25.4mm');
   setCSSVar('--rt-margin-left', '25.4mm');
 }
+/* End of toolbarBinder.js */

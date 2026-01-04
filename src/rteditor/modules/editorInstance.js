@@ -1,4 +1,4 @@
-// /src/rteditor/modules/editorInstance.js
+/* /src/rteditor/modules/editorInstance.js */
 import { Editor } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 
@@ -158,3 +158,4 @@ export default function initBasicEditor(opts) {
 
   return editor;
 }
+/* End of /src/rteditor/modules/editorInstance.js */

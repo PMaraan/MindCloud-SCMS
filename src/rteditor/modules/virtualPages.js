@@ -1,5 +1,5 @@
-// /src/rteditor/modules/virtualPages.js
 /**
+ * Filepath: /src/rteditor/modules/virtualPages.js
  * Virtual Page Renderer
  *
  * Pure DOM-only rendering of page sheets and margins.
@@ -140,3 +140,4 @@ export function cssLenToPx(val) {
   if (s.endsWith('cm')) return (parseFloat(s) || 0) * 10 / 25.4 * 96;
   return parseFloat(s) || 0;
 }
+/* End of /src/rteditor/modules/virtualPages.js */

@@ -1,3 +1,4 @@
+<!--  /app/Modules/RTEditor/Views/index.php -->
 <?php
 /**
  * RT Editor – Clean Build (no TipTap, no Yjs)
@@ -143,4 +144,5 @@ function asset_url(string $path): string {
       startEditorPage({ debug: false, editable: <?= $canEdit ? 'true' : 'false' ?> });
     </script>
   <?php endif; ?>
-  
+<!-- --- END OF FILE --- -->
+ 

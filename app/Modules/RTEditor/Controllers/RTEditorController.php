@@ -1,6 +1,6 @@
 <?php
+//  /app/Modules/RTEditor/Controllers/RTEditorController.php
 declare(strict_types=1);
-
 /**
  * RTEditorController
  * Path: /app/Modules/RTEditor/Controllers/RTEditorController.php
@@ -240,3 +240,4 @@ final class RTEditorController
     }
 
 }
+// --- END OF FILE ---

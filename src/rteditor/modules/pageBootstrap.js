@@ -3,7 +3,7 @@ import initBasicEditor from "./editorInstance.js";
 import { bindBasicToolbar } from "./toolbarBinder.js";
 import { runAutoPaginate } from "./paginationEngine.js";
 import { readInitialDocFromScriptTag, applyHydrationIfTrivial } from "./hydration.js"; // unused
-import { bindPageLayoutControls, getCurrentPageConfig } from "../page-layout.js";
+import { bindPageLayoutControls, getCurrentPageConfig } from "../page-layout.js"; // bindPageLayoutControls is never read
 
 // DEBUG helpers: expose runAutoPaginate so you can call it from the browser console
 window.__RT_runAutoPaginate = runAutoPaginate;
@@ -140,3 +140,4 @@ export async function startEditorPage(opts = {}) {
 
   return editor;
 }
+// --- END OF FILE ---
