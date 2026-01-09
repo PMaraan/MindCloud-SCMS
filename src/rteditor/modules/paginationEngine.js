@@ -1,3 +1,4 @@
+/* /src/rteditor/modules/paginationEngine.js */
 /**
  * Pagination Engine (Visual, DOM-only)
  * -----------------------------------
@@ -57,6 +58,13 @@ function effectiveTop(el) {
   const { mt } = getMargins(el);
   return r.top - mt;
 }
+/** Converts any block to ProseMirror-relative Y */
+function relativeTop(el, root) {
+  const r1 = el.getBoundingClientRect();
+  const r0 = root.getBoundingClientRect();
+  const { mt } = getMargins(el);
+  return (r1.top - r0.top) - mt;
+}
 function effectiveBottom(el) {
   const r = el.getBoundingClientRect();
   const { mb } = getMargins(el);
@@ -99,6 +107,35 @@ function computeSlackPx(blocks, startIdx, endIdx, contentEl, usableH) {
   const cap  = Math.max(medStep * 2.0, lh * 2.0, (usableH || 0) * 0.12 || 0);
 
   return Math.round(Math.min(base, cap));
+}
+
+// ---------- pagination spacers (DOM-only, ephemeral) ----------
+
+function removePaginationSpacers(prose) {
+  prose.querySelectorAll('.rt-page-spacer').forEach(el => el.remove());
+}
+
+function createPaginationSpacer(heightPx) {
+  const el = document.createElement('div');
+  el.className = 'rt-page-spacer';
+  el.style.height = `${Math.max(0, Math.round(heightPx))}px`;
+  el.setAttribute('aria-hidden', 'true');
+  el.setAttribute('contenteditable', 'false');
+  return el;
+}
+/**
+ * Creates a semantic spacer inside ProseMirror.
+ * These are:
+ * - DOM-only
+ * - client-local
+ * - never serialized
+ */
+function insertSpacerBefore(prose, refNode, height, reason) {
+  if (height <= 0 || !refNode) return;
+
+  const spacer = createPaginationSpacer(height);
+  spacer.dataset.reason = reason; // debug aid
+  prose.insertBefore(spacer, refNode);
 }
 
 // ---------- tiny utils ----------
@@ -242,6 +279,8 @@ export function runOnce(editor, {
   getPageConfig,
   safety = 14,
 } = {}) {
+  let lastLoggedCut = null;
+
   // Require editor and contentEl; pageEl may be null for nodeView page mode.
   if (!editor || !contentEl) {
     if (typeof console !== 'undefined') console.warn('[auto-pagination] runOnce aborted: missing editor or contentEl');
@@ -270,7 +309,7 @@ export function runOnce(editor, {
     // continue cautiously
   }
 
-   if (runOnce._running) {
+  if (runOnce._running) {
     if (DEBUG_FLAG()) console.log('[auto-pagination] runOnce skipped: already running');
     return;
   }
@@ -512,17 +551,40 @@ export function runOnce(editor, {
       }
 
       const cutPos = posAtBlockStart(editor, cutBlock.el);
-      if (DEBUG_FLAG) console.log('[auto-pagination] CUT', { index: cutIndex, pos: cutPos });
+      const cutDomIndex = blocks.indexOf(cutBlock);
+      if (DEBUG_FLAG()) {
+        const sig = `${cutIndex}:${cutPos}`;
+        if (sig !== lastLoggedCut) {
+          console.log('[auto-pagination] CUT', { index: cutIndex, pos: cutPos });
+          lastLoggedCut = sig;
+        }
+      }
 
-      if (typeof cutPos === 'number') breakPositions.push(cutPos);
+      if (typeof cutPos === 'number') {
+        breakPositions.push({
+          pos: cutPos,
+          domIndex: cutDomIndex
+        });
+      }
       else break;
-      start = cutIndex;
+      if (cutIndex <= start) {
+        // force forward progress to avoid stalling
+        start = start + 1;
+      } else {
+        start = cutIndex;
+      }
       if (start < blocks.length - 1 && effectiveBottom(blocks[start].el) - effectiveTop(blocks[start].el) > usableH) {
         start++;
       }
     }
     // normalise positions: integer, sorted, unique
-    computedBreakPositions = Array.from(new Set(breakPositions.map(p => Math.max(0, Math.floor(p))))).sort((a,b)=>a-b);
+    computedBreakPositions = breakPositions
+    .filter(b => b && typeof b.domIndex === 'number')
+    .map(b => ({
+      pos: Math.max(0, Math.floor(b.pos)),
+      domIndex: b.domIndex
+    }))
+    .sort((a, b) => a.domIndex - b.domIndex);
   } finally {
     endMeasure();
   }
@@ -540,7 +602,7 @@ export function runOnce(editor, {
   }
 
   // ---- Phase 1B: render visual page separators (DOM-only) ----
-  if (computedBreakPositions.length) {
+  if (computedBreakPositions.length && typeof renderPageSeparators === 'function') {
     renderPageSeparators(editor, contentEl, computedBreakPositions);
   } else {
     // Clear any stale separators
@@ -548,6 +610,121 @@ export function runOnce(editor, {
     const overlay = editorEl?.querySelector('.rt-page-overlay');
     if (overlay) {
       overlay.querySelectorAll('.rt-page-separator').forEach(el => el.remove());
+    }
+  }
+
+  // ============================================================
+  // Phase 2: Spacer cleanup + injection (DOM-only, per-client)
+  // ------------------------------------------------------------
+  // Purpose:
+  // - Prevent editor content from visually overlapping:
+  //   • headers
+  //   • footers
+  //   • inter-page gaps
+  // - Achieve WYSIWYG page flow WITHOUT mutating PM document
+  //
+  // Invariants:
+  // - Spacers are NOT part of editor state
+  // - Spacers are recalculated on every paginate pass
+  // - Removing content collapses pages naturally
+  // ============================================================
+
+  try {
+    const prose = editor?.view?.dom;
+    if (!prose) return;
+
+    // ----------------------------------------------------------
+    // Step 2.1: Remove ALL previously injected spacers
+    // ----------------------------------------------------------
+    // This ensures idempotency and prevents spacer accumulation
+    removePaginationSpacers(prose);
+
+    if (!computedBreakPositions.length) return;
+
+    // ----------------------------------------------------------
+    // Step 2.2: Collect current top-level PM block DOM nodes
+    // ----------------------------------------------------------
+    // We work purely in DOM order, never PM positions
+    const blocks = Array.from(prose.children).filter(el =>
+      el.nodeType === 1 &&
+      !el.classList.contains('rt-page-spacer') &&
+      !el.classList.contains('rt-page-separator')
+    );
+
+    // ----------------------------------------------------------
+    // Step 2.3: Resolve actual overlay heights
+    // ----------------------------------------------------------
+    // These come from #headerFooterLayer (authoritative)
+    const headerH = headerEl ? headerEl.getBoundingClientRect().height : 0;
+    const footerH = footerEl ? footerEl.getBoundingClientRect().height : 0;
+
+    // Small visual gap between pages (paper separation)
+    const pageGapPx = 12;
+
+    // ----------------------------------------------------------
+    // Step 2.4: Walk each virtual page cut and inject spacers
+    // ----------------------------------------------------------
+    let pageIndex = 0;
+
+    for (const cut of computedBreakPositions) {
+      const block = blocks[cut.domIndex];
+      if (!block) {
+        pageIndex++;
+        continue;
+      }
+
+      // ------------------------------------------------------
+      // HEADER spacer
+      // Pushes content BELOW the header overlay
+      // ------------------------------------------------------
+      insertSpacerBefore(
+        prose,
+        block,
+        headerH,
+        'header'
+      );
+
+      // ------------------------------------------------------
+      // FOOTER spacer
+      // Pushes content ABOVE the footer overlay
+      //
+      // We insert this AFTER usable content height is consumed,
+      // which is implicitly enforced by the pagination cut.
+      // ------------------------------------------------------
+      insertSpacerBefore(
+        prose,
+        block,
+        footerH,
+        'footer'
+      );
+
+      // ------------------------------------------------------
+      // INTER-PAGE GAP spacer
+      // Visual separation between paper sheets
+      // ------------------------------------------------------
+      insertSpacerBefore(
+        prose,
+        block,
+        pageGapPx,
+        'page-gap'
+      );
+
+      if (DEBUG_FLAG()) {
+        console.log('[spacer]', {
+          page: pageIndex + 1,
+          headerH: Math.round(headerH),
+          footerH: Math.round(footerH),
+          pageGapPx,
+          domIndex: cut.domIndex,
+        });
+      }
+
+      pageIndex++;
+    }
+
+  } catch (e) {
+    if (DEBUG_FLAG()) {
+      console.warn('[auto-pagination] spacer phase failed', e);
     }
   }
 

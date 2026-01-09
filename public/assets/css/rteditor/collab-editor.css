@@ -136,6 +136,18 @@ body.editor-page .rt-sticky-header { padding-left: 1rem; padding-right: 1rem; }
   z-index: 2;
 }
 
+/* =========================================================
+   Pagination spacers (DOM-only, non-semantic)
+   ========================================================= */
+
+.rt-page-spacer {
+  display: block;
+  width: 100%;
+  pointer-events: none;
+  user-select: none;
+  background: transparent;
+}
+
 .rt-page-bg-host {
   position: absolute;
   inset: 0;
