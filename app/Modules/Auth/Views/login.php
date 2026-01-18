@@ -65,7 +65,7 @@ $flash = \App\Helpers\FlashHelper::get();
                     name="password"
                     class="form-control password-input"
                     id="password-input"
-                    value="password"
+                    <?= (defined('APP_ENV') && APP_ENV === 'development') ? 'value="password"' : 'placeholder="Enter password"' ?>
                     required
                     autocomplete="current-password">
                   <button

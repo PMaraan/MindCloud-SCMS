@@ -1,6 +1,6 @@
 # Environment
 .env
-.envnode_modules/ 
+.env.local
 
 # Node / package manager artifacts
 node_modules/
@@ -20,4 +20,7 @@ Thumbs.db
 
 # Misc
 coverage/
-.env.local
+
+# Application logs
+/storage/logs/*
+!/storage/logs/.gitkeep

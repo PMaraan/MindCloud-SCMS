@@ -1,4 +1,4 @@
-// Path: /src/rteditor/modules/pageBootstrap.js
+/* Path: /src/rteditor/modules/pageBootstrap.js */
 import initBasicEditor from "./editorInstance.js";
 import { bindBasicToolbar } from "./toolbarBinder.js";
 import { runAutoPaginate } from "./paginationEngine.js";
@@ -140,4 +140,4 @@ export async function startEditorPage(opts = {}) {
 
   return editor;
 }
-// --- END OF FILE ---
+/* --- END OF FILE --- */

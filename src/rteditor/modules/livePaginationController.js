@@ -1,4 +1,4 @@
-// /src/rteditor/modules/livePaginationController.js
+/* /src/rteditor/modules/livePaginationController.js */
 
 /**
  * Live visual pagination controller.
@@ -64,3 +64,4 @@ export function attachLivePagination(editor, opts = {}) {
   // Initial run
   schedule();
 }
+/* end of /src/rteditor/modules/livePaginationController.js */
