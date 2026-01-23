@@ -40,7 +40,7 @@ define('APP_ENV', getenv('APP_ENV') ?: 'dev');
 define('UI_PER_PAGE_DEFAULT', (int)(getenv('UI_PER_PAGE_DEFAULT') ?: 10));
 
 // Normalize BASE_PATH
-$envBase = getenv('BASE_PATH') ?: '/MindCloud-SCMS';
+$envBase = getenv('BASE_PATH') ?: '';
 if ($envBase && $envBase !== '') {
     $base = '/' . trim($envBase, '/');
 } else {
