@@ -109,7 +109,7 @@ use App\Helpers\NotifyHelper;
 NotifyHelper::boot($db);
 
 // 6. Start router (function-style for now)
-require_once dirname(__DIR__) . '/Router/router.php';
+require_once dirname(__DIR__) . '/router/router.php';
 
 // Dispatch the request (normalize method default)
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
