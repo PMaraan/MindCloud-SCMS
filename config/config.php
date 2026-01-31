@@ -50,7 +50,7 @@ define('BASE_PATH', $basePath === '/' ? '' : $basePath);
 // Step 4: Define ASSET_BASE
 // Because ONLY /public is web-accessible (via .htaccess),
 // assets MUST be served from /public/assets
-define('ASSET_BASE', BASE_PATH . '/public/assets');
+define('ASSET_BASE', BASE_PATH . '/assets');
 
 // Step 5: Define role groupings (global arrays)
 $GLOBAL_ROLES  = ['VPAA', 'VPAA Secretary'];

@@ -10,7 +10,7 @@ $flash = \App\Helpers\FlashHelper::get();
   <title>LPU-SCMS | Login</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-  <link rel="stylesheet" href="<?= BASE_PATH ?>/public/assets/css/login-styles.css">
+  <link rel="stylesheet" href="<?= ASSET_BASE ?>/css/login-styles.css">
 </head>
 <body>
 
@@ -94,6 +94,6 @@ $flash = \App\Helpers\FlashHelper::get();
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="<?= BASE_PATH ?>/public/assets/js/login-script.js"></script>
+  <script src="<?= ASSET_BASE ?>/js/login-script.js"></script>
 </body>
 </html>
